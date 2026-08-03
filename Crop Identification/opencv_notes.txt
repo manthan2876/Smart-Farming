@@ -1,0 +1,30 @@
+imread("<path>", flag) => used to load image => flag is optional(1: color, 0: grayscale, -1: unchangeable)
+imshow("<window title>", image) => used to show image
+waitkey(<number>) => used to wait for key => 0: keep window open until any key is not pressed,
+destroyAllWindows() => used to close all image windows
+imwrite("<path>", image) => used to save image
+
+image.shape => it will give height, width and channel of image.
+
+grayscale conversion:
+cvtColor(image, <conversion>) => cv2.COLOR_BGR2GRAY: used to convert color to grayscale
+
+resizing and scaling image: 
+resize(image, dsize, fx, fy, interpolation) => dsize: first width and then height in tuple, fx and fy is scale factors, interpolation is method to resize in specific way
+
+cropping image: 
+we can do this by directly assigning ranged value of original image array means slicing.
+
+rotation and flipping:
+getRotationMatrix2D(center, angle, scale) => scale is how much you zoom in or zoom out during rotation, 1.0: same size, 0.5: half size, 2.0: double size
+
+warpAffine(image, M, (width, height)) => M is method which we created by "getRotationMatrix2D"
+
+flip(image, flipCode) => flipCode 0: vertically, 1: horizontally, -1: both
+
+Image drawing techniques:
+line(image, pt1, pt2, color, thickness) => used to draw line on image => pt1 and pt2 are points
+rectangle(image, pt1, pt2, color, thickness) => used to draw rectangle on image => thickness -1: fill whole rectangle
+circle(image, center, radius, color, thickness) => used to draw circle on image
+putText(image, text, org, font, fontScale, colcor, thickness) => used to put text on image => org is coordinate where text will appeared.
+
