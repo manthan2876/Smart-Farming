@@ -1,0 +1,87 @@
+name change of folders:
+
+Cotton Leaf Closed Environment -> Alternaria Leaf Spot : CLCE -> ALS
+Cotton Leaf Closed Environment -> Bacterial Blight : CLCE -> BB
+Cotton Leaf Closed Environment -> Fusarium Wilt : CLCE -> FW
+Cotton Leaf Closed Environment -> Healthy Leaf : CLCE -> HL
+Cotton Leaf Closed Environment -> Verticillium Wilt : CLCE -> VW
+
+Cotton Leaf Uncontrolled Environment -> Aphids : CLUE -> A
+Cotton Leaf Uncontrolled Environment -> Army worm : CLUE -> AW
+Cotton Leaf Uncontrolled Environment -> Bacterial Blight : CLUE -> BB
+Cotton Leaf Uncontrolled Environment -> Curl Virus : CLUE -> CV
+Cotton Leaf Uncontrolled Environment -> Fussarium Wilt : CLUE -> FW
+Cotton Leaf Uncontrolled Environment -> healthy : CLUE -> H
+Cotton Leaf Uncontrolled Environment -> Powdery Mildew : CLUE -> PM
+Cotton Leaf Uncontrolled Environment -> Target spot : CLUE -> TS
+
+Groundnut Leaf Created Dataset From (Groundnut Leaf Uncontrolled Environment) -> early_leaf_spot_1 : GLCDfGLUE -> ELS
+Groundnut Leaf Created Dataset From (Groundnut Leaf Uncontrolled Environment) -> early_rust_1 : GLCDfGLUE -> ER
+Groundnut Leaf Created Dataset From (Groundnut Leaf Uncontrolled Environment) -> healthy_leaf_1 : GLCDfGLUE -> HL
+Groundnut Leaf Created Dataset From (Groundnut Leaf Uncontrolled Environment) -> late_leaf_spot_1 : GLCDfGLUE -> LLS
+Groundnut Leaf Created Dataset From (Groundnut Leaf Uncontrolled Environment) -> nutrition_deficiency_1 : GLCDfGLUE -> ND
+Groundnut Leaf Created Dataset From (Groundnut Leaf Uncontrolled Environment) -> rust_1 : GLCDfGLUE -> R
+
+Groundnut Leaf Field Closeup Environment -> ALTERNARIA LEAF SPOT : GLFCE -> ALS
+Groundnut Leaf Field Closeup Environment -> HEALTHY : GLFCE -> H
+Groundnut Leaf Field Closeup Environment -> LEAF SPOT (EARLY AND LATE) : GLFCE -> LSEaL
+Groundnut Leaf Field Closeup Environment -> ROSETTE : GLFCE -> Ros
+Groundnut Leaf Field Closeup Environment -> RUST : GLFCE -> R
+
+Groundnut Leaf Uncontrolled Environment -> early_leaf_spot : GLUE -> ELS
+Groundnut Leaf Uncontrolled Environment -> healthy leaf : GLUE -> HL
+Groundnut Leaf Uncontrolled Environment -> late leaf spot : GLUE -> LLS
+Groundnut Leaf Uncontrolled Environment -> nutrition deficiency : GLUE -> ND
+Groundnut Leaf Uncontrolled Environment -> rust : GLUE -> R
+
+Pepper Bell Closed Environment -> Bacterial Spot : PBCE -> BS
+Pepper Bell Closed Environment -> Cercospora Leaf Spot : PBCE -> CLS
+Pepper Bell Closed Environment -> Healthy : PBCE -> H
+Pepper Bell Closed Environment -> Leaf Curl : PBCE -> LC
+Pepper Bell Closed Environment -> Nutrition Deficiency : PBCE -> ND
+Pepper Bell Closed Environment -> Powdery Mildew : PBCE -> PM
+
+Pepper Bell Uncontrolled Environment -> Aphid : PBUE -> A
+Pepper Bell Uncontrolled Environment -> Bacterial spot : PBUE -> BS
+Pepper Bell Uncontrolled Environment -> Blossom end rot : PBUE -> BER
+Pepper Bell Uncontrolled Environment -> Burn : PBUE -> B
+Pepper Bell Uncontrolled Environment -> Edema : PBUE -> E
+Pepper Bell Uncontrolled Environment -> Healthy : PBUE -> H
+Pepper Bell Uncontrolled Environment -> Leaf curl : PBUE -> LC
+Pepper Bell Uncontrolled Environment -> Leaf miners : PBUE -> LM
+Pepper Bell Uncontrolled Environment -> Mosaic virus : PBUE -> MV
+Pepper Bell Uncontrolled Environment -> Nutrient deficiency : PBUE -> ND
+Pepper Bell Uncontrolled Environment -> Powdery mildew : PBUE -> PM
+Pepper Bell Uncontrolled Environment -> Spider mite : PBUE -> SM
+Pepper Bell Uncontrolled Environment -> Thrips : PBUE -> T
+
+Potato Leaf Uncontrolled Environment -> Bacteria : PLUE -> B
+Potato Leaf Uncontrolled Environment -> Fungi : PLUE -> F
+Potato Leaf Uncontrolled Environment -> Healthy : PLUE -> H
+Potato Leaf Uncontrolled Environment -> Nematode : PLUE -> N
+Potato Leaf Uncontrolled Environment -> Pest : PLUE -> P
+Potato Leaf Uncontrolled Environment -> Phytopthora : PLUE -> Phy
+Potato Leaf Uncontrolled Environment -> Virus : PLUE -> V
+
+Potato leafs Closed Environment -> Early Blight : PLCE -> EB
+Potato leafs Closed Environment -> Healthy : PLCE -> H
+Potato leafs Closed Environment -> Late Blight : PLCE -> LB
+
+Tomato leaf Closed Environment -> Bacterial Spot : TLCE -> BS
+Tomato leaf Closed Environment -> Early Blight : TLCE -> EB
+Tomato leaf Closed Environment -> Healthy : TLCE -> H
+Tomato leaf Closed Environment -> Late Blight : TLCE -> LB
+
+Tomato Leaf Uncontrolled Environment -> Bacterial Spot : TLUE -> BS
+Tomato Leaf Uncontrolled Environment -> Burn Leaf : TLUE -> BL
+Tomato Leaf Uncontrolled Environment -> Defiency of Phosphor Magnesium : TLUE -> DoPM
+Tomato Leaf Uncontrolled Environment -> Early Blight : TLUE -> EB
+Tomato Leaf Uncontrolled Environment -> Healthy : TLUE -> H
+Tomato Leaf Uncontrolled Environment -> Late Blight : TLUE -> LB
+Tomato Leaf Uncontrolled Environment -> Leaf Miner : TLUE -> LM
+Tomato Leaf Uncontrolled Environment -> Mold Leaf : TLUE -> ML
+Tomato Leaf Uncontrolled Environment -> Mosaic Virus : TLUE -> MV
+Tomato Leaf Uncontrolled Environment -> Septoria : TLUE -> S
+Tomato Leaf Uncontrolled Environment -> Spider Mite : TLUE -> SM
+Tomato Leaf Uncontrolled Environment -> Wealth Leaf : TLUE -> WL
+Tomato Leaf Uncontrolled Environment -> Yellow Curl Virus : TLUE -> YCV

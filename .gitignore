@@ -137,3 +137,10 @@ Thumbs.db
 
 # Python Environment
 cropidentification
+
+# Ignore old files folder
+Crop\ Identification/notebooks/old\ files/
+**/old\ files/
+
+# YOLO dataset caches
+*.cache
