@@ -5,7 +5,7 @@ import os
 # ============================================================
 
 # Root folder whose tree you want to save
-ROOT_FOLDER = r"Z:\Projects\Smart Farming"
+ROOT_FOLDER = r"Z:\Projects\Smart-Farming"
 
 # ------------------------------------------------------------
 # FOLDERS TO COMPLETELY IGNORE
@@ -49,7 +49,8 @@ DATASET_FOLDERS = [
     "dataset_split",
     "disease_dataset",
     "generated_crops",
-    "pest_dataset"
+    "pest_dataset",
+    "processed_dataset-old"
 ]
 
 # Number of files to display for dataset folders

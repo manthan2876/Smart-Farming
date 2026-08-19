@@ -1,5 +1,5 @@
-Smart Farming/ (110840 files)
-    ├── Crop Identification/ (110831 files)
+Smart-Farming/ (110259 files)
+    ├── Crop Identification/ (110250 files)
         ├── Final Datasets/ (34552 files)
             ├── CLCE/ (1373 files)
                 ├── ALS/ (173 files)
@@ -530,7 +530,7 @@ Smart Farming/ (110840 files)
                     ├── TLUE_YCV_005.jpg
                     └── ... 148 more files
             ├── count.py
-        ├── notebooks/ (76268 files)
+        ├── notebooks/ (75687 files)
             ├── .gradio/ (2 files)
                 ├── flagged/ (2 files)
                     ├── Crop Prediction/ (0 files)
@@ -1477,36 +1477,42 @@ Smart Farming/ (110840 files)
                             ├── bell_paper_0030.JPG
                             ├── bell_paper_0033.JPG
                             ├── bell_paper_0052.JPG
+                            └── ... 143 more files
                         ├── Chilli/ (220 files)
                             ├── chilli_0030.jpg
                             ├── chilli_0045.jpg
                             ├── chilli_0049.jpg
                             ├── chilli_0050.jpg
                             ├── chilli_0060.jpg
+                            └── ... 215 more files
                         ├── Cotton/ (170 files)
                             ├── cotton_0016.jpg
                             ├── cotton_0030.jpg
                             ├── cotton_0033.jpg
                             ├── cotton_0045.jpg
                             ├── cotton_0057.jpg
+                            └── ... 165 more files
                         ├── Groundnut/ (275 files)
                             ├── groundnut_0031.jpg
                             ├── groundnut_0033.jpg
                             ├── groundnut_0044.jpg
                             ├── groundnut_0052.jpg
                             ├── groundnut_0064.jpg
+                            └── ... 270 more files
                         ├── Potato/ (154 files)
                             ├── potato_0016.jpg
                             ├── potato_0031.jpg
                             ├── potato_0033.jpg
                             ├── potato_0044.jpg
                             ├── potato_0050.jpg
+                            └── ... 149 more files
                         ├── Tomato/ (160 files)
                             ├── tomato_0030.JPG
                             ├── tomato_0031.JPG
                             ├── tomato_0045.JPG
                             ├── tomato_0050.JPG
                             ├── tomato_0066.JPG
+                            └── ... 155 more files
                     ├── train/ (9927 files)
                         ├── BellPepper/ (1361 files)
                             ├── bell_paper_0001.JPG
@@ -1514,36 +1520,42 @@ Smart Farming/ (110840 files)
                             ├── bell_paper_0003.JPG
                             ├── bell_paper_0004.JPG
                             ├── bell_paper_0005.JPG
+                            └── ... 1356 more files
                         ├── Chilli/ (1891 files)
                             ├── chilli_0001.jpg
                             ├── chilli_0002.jpg
                             ├── chilli_0003.jpg
                             ├── chilli_0004.jpg
                             ├── chilli_0005.jpg
+                            └── ... 1886 more files
                         ├── Cotton/ (1487 files)
                             ├── cotton_0001.jpg
                             ├── cotton_0002.jpg
                             ├── cotton_0003.jpg
                             ├── cotton_0004.jpg
                             ├── cotton_0005.jpg
+                            └── ... 1482 more files
                         ├── Groundnut/ (2331 files)
                             ├── groundnut_0001.jpg
                             ├── groundnut_0002.jpg
                             ├── groundnut_0003.jpg
                             ├── groundnut_0004.jpg
                             ├── groundnut_0005.jpg
+                            └── ... 2326 more files
                         ├── Potato/ (1405 files)
                             ├── new_potato_0001.jpg
                             ├── new_potato_0002.jpg
                             ├── new_potato_0003.jpg
                             ├── new_potato_0004.jpg
                             ├── new_potato_0005.jpg
+                            └── ... 1400 more files
                         ├── Tomato/ (1452 files)
                             ├── new_tomato_0001.jpeg
                             ├── new_tomato_0002.jpeg
                             ├── new_tomato_0003.jpg
                             ├── new_tomato_0004.jpg
                             ├── new_tomato_0005.jpg
+                            └── ... 1447 more files
                     ├── val/ (1227 files)
                         ├── BellPepper/ (168 files)
                             ├── bell_paper_0031.JPG
@@ -1551,36 +1563,42 @@ Smart Farming/ (110840 files)
                             ├── bell_paper_0045.JPG
                             ├── bell_paper_0050.JPG
                             ├── bell_paper_0059.JPG
+                            └── ... 163 more files
                         ├── Chilli/ (234 files)
                             ├── chilli_0014.jpg
                             ├── chilli_0024.jpg
                             ├── chilli_0052.jpg
                             ├── chilli_0057.jpg
                             ├── chilli_0070.jpg
+                            └── ... 229 more files
                         ├── Cotton/ (184 files)
                             ├── cotton_0024.jpg
                             ├── cotton_0031.jpg
                             ├── cotton_0044.jpg
                             ├── cotton_0050.jpg
                             ├── cotton_0052.jpg
+                            └── ... 179 more files
                         ├── Groundnut/ (289 files)
                             ├── groundnut_0030.jpg
                             ├── groundnut_0045.jpg
                             ├── groundnut_0046.jpg
                             ├── groundnut_0057.jpg
                             ├── groundnut_0071.jpg
+                            └── ... 284 more files
                         ├── Potato/ (173 files)
                             ├── new_potato_0001.jpg
                             ├── new_potato_0002.jpeg
                             ├── new_potato_0003.jpg
                             ├── new_potato_0004.jpg
                             ├── new_potato_0005.jpg
+                            └── ... 168 more files
                         ├── Tomato/ (179 files)
                             ├── new_tomato_0001.jpeg
                             ├── new_tomato_0002.jpeg
                             ├── new_tomato_0003.jpeg
                             ├── new_tomato_0004.jpg
                             ├── new_tomato_0005.jpeg
+                            └── ... 174 more files
                 ├── scripts-old/ (5 files)
                     ├── add_new_images.py
                     ├── download_images.py
@@ -1602,139 +1620,9 @@ Smart Farming/ (110840 files)
                 ├── evaluation-old.json
                 ├── manifest_old.csv
                 ├── prediction-old.json
-            ├── pest_dataset/ (546 files)
-                ├── test/ (82 files)
-                    ├── A/ (10 files)
-                        ├── CLUE_A_03_739518659397311224.jpg
-                        ├── CLUE_A_08_3198212592447483680.jpg
-                        ├── CLUE_A_11_5697262008145661406.jpg
-                        ├── CLUE_A_23_5165157992572042169.jpg
-                        ├── CLUE_A_25_8856479197594642783.jpg
-                        └── ... 5 more files
-                    ├── AW/ (6 files)
-                        ├── CLUE_AW_02_2142079286426003631.jpg
-                        ├── CLUE_AW_06_4694635014696004426.jpg
-                        ├── CLUE_AW_14_2004502047238337810.jpg
-                        ├── CLUE_AW_17_7409133396624482499.jpg
-                        ├── CLUE_AW_18_4896572105838062830.jpg
-                        └── ... 1 more files
-                    ├── LM/ (59 files)
-                        ├── PBUE_LM_13_2084649302365164554.jpg
-                        ├── TLUE_LM_011_1687425951538535397.jpg
-                        ├── TLUE_LM_016_1035020731097319536.jpg
-                        ├── TLUE_LM_017_2770444436319861795.jpg
-                        ├── TLUE_LM_019_7508602192157796681.jpg
-                        └── ... 54 more files
-                    ├── SM/ (7 files)
-                        ├── TLUE_SM_13_8181985165194566107.jpg
-                        ├── TLUE_SM_16_164458810668719659.jpg
-                        ├── TLUE_SM_26_6643780804750402133.jpg
-                        ├── TLUE_SM_32_2863766661337047634.jpg
-                        ├── TLUE_SM_34_7706156531036409316.jpg
-                        └── ... 2 more files
-                ├── train/ (380 files)
-                    ├── A/ (45 files)
-                        ├── CLUE_A_01_6650945680306855784.jpg
-                        ├── CLUE_A_04_6935346100972280592.jpg
-                        ├── CLUE_A_05_7896727311022303505.jpg
-                        ├── CLUE_A_06_488933358985091692.jpg
-                        ├── CLUE_A_07_3992077218652429963.jpg
-                        └── ... 40 more files
-                    ├── AW/ (28 files)
-                        ├── CLUE_AW_01_2196554392382644312.jpg
-                        ├── CLUE_AW_03_1068072986640720156.jpg
-                        ├── CLUE_AW_05_7598873497729803491.jpg
-                        ├── CLUE_AW_07_9154728954597869598.jpg
-                        ├── CLUE_AW_08_1169905346361160916.jpg
-                        └── ... 23 more files
-                    ├── LM/ (272 files)
-                        ├── PBUE_LM_01_5234488276866145272.jpg
-                        ├── PBUE_LM_03_6360391308324727596.jpg
-                        ├── PBUE_LM_04_3242398517044704732.jpg
-                        ├── PBUE_LM_06_7677125128196342679.jpg
-                        ├── PBUE_LM_07_4046476606866088670.jpg
-                        └── ... 267 more files
-                    ├── SM/ (35 files)
-                        ├── PBUE_SM_1_584491404724747041.jpg
-                        ├── TLUE_SM_05_12497755092504739.jpg
-                        ├── TLUE_SM_06_7155930696865298554.jpg
-                        ├── TLUE_SM_07_8739308074214334796.jpg
-                        ├── TLUE_SM_08_6612480187249913701.jpg
-                        └── ... 30 more files
-                ├── val/ (81 files)
-                    ├── A/ (9 files)
-                        ├── CLUE_A_02_4020971368761308270.jpg
-                        ├── CLUE_A_15_5762243562928536524.jpg
-                        ├── CLUE_A_20_7255626920545617741.jpg
-                        ├── CLUE_A_22_4177323766398960207.jpg
-                        ├── CLUE_A_24_3490784912056657675.jpg
-                        └── ... 4 more files
-                    ├── AW/ (6 files)
-                        ├── CLUE_AW_04_6152158297653422270.jpg
-                        ├── CLUE_AW_22_9092672892632574499.jpg
-                        ├── CLUE_AW_26_7382626742539646405.jpg
-                        ├── CLUE_AW_29_1673757598502934826.jpg
-                        ├── CLUE_AW_35_5756044102571598444.jpg
-                        └── ... 1 more files
-                    ├── LM/ (58 files)
-                        ├── PBUE_LM_02_9030557760027100225.jpg
-                        ├── PBUE_LM_05_2995155376771724377.jpg
-                        ├── TLUE_LM_003_7511893390015659285.jpg
-                        ├── TLUE_LM_004_6431683413540530530.jpg
-                        ├── TLUE_LM_008_3425482235930648062.jpg
-                        └── ... 53 more files
-                    ├── SM/ (8 files)
-                        ├── TLUE_SM_03_3212366056887003868.jpg
-                        ├── TLUE_SM_10_7303267726967144969.jpg
-                        ├── TLUE_SM_15_983015005917937770.jpg
-                        ├── TLUE_SM_20_3751654926839586816.jpg
-                        ├── TLUE_SM_29_8656508316390754922.jpg
-                        └── ... 3 more files
-                ├── test.cache
-                ├── train.cache
-                ├── val.cache
-            ├── runs/ (35 files)
-                ├── classify/ (35 files)
-                    ├── pest_classifier_runs/ (19 files)
-                        ├── yolov8n_cls_pest/ (19 files)
-                            ├── weights/ (2 files)
-                                ├── best.pt
-                                ├── last.pt
-                            ├── args.yaml
-                            ├── confusion_matrix.png
-                            ├── confusion_matrix_normalized.png
-                            ├── results.csv
-                            ├── results.png
-                            ├── train_batch0.jpg
-                            ├── train_batch1.jpg
-                            ├── train_batch2.jpg
-                            ├── train_batch480.jpg
-                            ├── train_batch481.jpg
-                            ├── train_batch482.jpg
-                            ├── val_batch0_labels.jpg
-                            ├── val_batch0_pred.jpg
-                            ├── val_batch1_labels.jpg
-                            ├── val_batch1_pred.jpg
-                            ├── val_batch2_labels.jpg
-                            ├── val_batch2_pred.jpg
-                    ├── val/ (8 files)
-                        ├── confusion_matrix.png
-                        ├── confusion_matrix_normalized.png
-                        ├── val_batch0_labels.jpg
-                        ├── val_batch0_pred.jpg
-                        ├── val_batch1_labels.jpg
-                        ├── val_batch1_pred.jpg
-                        ├── val_batch2_labels.jpg
-                        ├── val_batch2_pred.jpg
-                    ├── val-2/ (8 files)
-                        ├── confusion_matrix.png
-                        ├── confusion_matrix_normalized.png
-                        ├── val_batch0_labels.jpg
-                        ├── val_batch0_pred.jpg
-                        ├── val_batch1_labels.jpg
-                        ├── val_batch1_pred.jpg
-                        ├── val_batch2_labels.jpg
-                        ├── val_batch2_pred.jpg
+            ├── pest_dataset/ (0 files)
+                ├── train/ (0 files)
+                    ├── LM/ (0 files)
             ├── 01_prepare_crop_dataset.ipynb
             ├── 02_train_crop_identifier.ipynb
             ├── 03_leaf_segmentation.ipynb
