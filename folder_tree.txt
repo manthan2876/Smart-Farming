@@ -1,1670 +1,401 @@
-Smart-Farming/ (110259 files)
-    ├── Crop Identification/ (110250 files)
-        ├── Final Datasets/ (34552 files)
+Smart-Farming/ (110826 files)
+    ├── Datasets/ (98452 files)
+        ├── dataset_split/ (30404 files)
+            ├── test/ (4260 files)
+                ├── Cotton/ (288 files)
+                ├── Groundnut/ (695 files)
+                ├── Pepper Bell/ (1128 files)
+                ├── Potato/ (1152 files)
+                ├── Tomato/ (997 files)
+            ├── train/ (21885 files)
+                ├── Cotton/ (1347 files)
+                ├── Groundnut/ (5250 files)
+                ├── Pepper Bell/ (5265 files)
+                ├── Potato/ (5372 files)
+                ├── Tomato/ (4651 files)
+            ├── val/ (4259 files)
+                ├── Cotton/ (289 files)
+                ├── Groundnut/ (694 files)
+                ├── Pepper Bell/ (1129 files)
+                ├── Potato/ (1151 files)
+                ├── Tomato/ (996 files)
+        ├── disease_dataset/ (29772 files)
+            ├── Cotton/ (1844 files)
+                ├── test/ (277 files)
+                    ├── ALS/ (26 files)
+                    ├── BB/ (43 files)
+                    ├── CV/ (13 files)
+                    ├── FW/ (88 files)
+                    ├── H/ (56 files)
+                    ├── PM/ (6 files)
+                    ├── TS/ (6 files)
+                    ├── VW/ (39 files)
+                ├── train/ (1290 files)
+                    ├── ALS/ (120 files)
+                    ├── BB/ (199 files)
+                    ├── CV/ (60 files)
+                    ├── FW/ (411 files)
+                    ├── H/ (260 files)
+                    ├── PM/ (26 files)
+                    ├── TS/ (28 files)
+                    ├── VW/ (186 files)
+                ├── val/ (277 files)
+                    ├── ALS/ (26 files)
+                    ├── BB/ (43 files)
+                    ├── CV/ (12 files)
+                    ├── FW/ (89 files)
+                    ├── H/ (56 files)
+                    ├── PM/ (5 files)
+                    ├── TS/ (6 files)
+                    ├── VW/ (40 files)
+            ├── Groundnut/ (6639 files)
+                ├── test/ (695 files)
+                    ├── ALS/ (58 files)
+                    ├── H/ (228 files)
+                    ├── LS/ (294 files)
+                    ├── ND/ (49 files)
+                    ├── R/ (52 files)
+                    ├── Ros/ (14 files)
+                ├── train/ (5250 files)
+                    ├── ALS/ (270 files)
+                    ├── H/ (1409 files)
+                    ├── LS/ (2026 files)
+                    ├── ND/ (569 files)
+                    ├── R/ (912 files)
+                    ├── Ros/ (64 files)
+                ├── val/ (694 files)
+                    ├── ALS/ (57 files)
+                    ├── H/ (227 files)
+                    ├── LS/ (294 files)
+                    ├── ND/ (50 files)
+                    ├── R/ (52 files)
+                    ├── Ros/ (14 files)
+            ├── Pepper_Bell/ (7427 files)
+                ├── test/ (1115 files)
+                    ├── BS/ (536 files)
+                    ├── CLS/ (210 files)
+                    ├── E/ (5 files)
+                    ├── H/ (227 files)
+                    ├── LC/ (51 files)
+                    ├── ND/ (58 files)
+                    ├── PM/ (28 files)
+                ├── train/ (5198 files)
+                    ├── BS/ (2499 files)
+                    ├── CLS/ (980 files)
+                    ├── E/ (27 files)
+                    ├── H/ (1058 files)
+                    ├── LC/ (237 files)
+                    ├── ND/ (270 files)
+                    ├── PM/ (127 files)
+                ├── val/ (1114 files)
+                    ├── BS/ (535 files)
+                    ├── CLS/ (210 files)
+                    ├── E/ (6 files)
+                    ├── H/ (227 files)
+                    ├── LC/ (51 files)
+                    ├── ND/ (58 files)
+                    ├── PM/ (27 files)
+            ├── Potato/ (7675 files)
+                ├── test/ (1152 files)
+                    ├── B/ (84 files)
+                    ├── EB/ (266 files)
+                    ├── F/ (110 files)
+                    ├── H/ (224 files)
+                    ├── LB/ (290 files)
+                    ├── N/ (10 files)
+                    ├── P/ (90 files)
+                    ├── V/ (78 files)
+                ├── train/ (5372 files)
+                    ├── B/ (394 files)
+                    ├── EB/ (1239 files)
+                    ├── F/ (511 files)
+                    ├── H/ (1046 files)
+                    ├── LB/ (1352 files)
+                    ├── N/ (47 files)
+                    ├── P/ (418 files)
+                    ├── V/ (365 files)
+                ├── val/ (1151 files)
+                    ├── B/ (85 files)
+                    ├── EB/ (265 files)
+                    ├── F/ (109 files)
+                    ├── H/ (224 files)
+                    ├── LB/ (290 files)
+                    ├── N/ (11 files)
+                    ├── P/ (89 files)
+                    ├── V/ (78 files)
+            ├── Tomato/ (6187 files)
+                ├── test/ (929 files)
+                    ├── BS/ (182 files)
+                    ├── EB/ (220 files)
+                    ├── H/ (206 files)
+                    ├── LB/ (166 files)
+                    ├── ML/ (75 files)
+                    ├── MV/ (14 files)
+                    ├── S/ (45 files)
+                    ├── YCV/ (21 files)
+                ├── train/ (4330 files)
+                    ├── BS/ (850 files)
+                    ├── EB/ (1023 files)
+                    ├── H/ (958 files)
+                    ├── LB/ (774 files)
+                    ├── ML/ (352 files)
+                    ├── MV/ (65 files)
+                    ├── S/ (209 files)
+                    ├── YCV/ (99 files)
+                ├── val/ (928 files)
+                    ├── BS/ (183 files)
+                    ├── EB/ (219 files)
+                    ├── H/ (205 files)
+                    ├── LB/ (166 files)
+                    ├── ML/ (75 files)
+                    ├── MV/ (14 files)
+                    ├── S/ (45 files)
+                    ├── YCV/ (21 files)
+        ├── final_combined_datasets/ (34552 files)
             ├── CLCE/ (1373 files)
                 ├── ALS/ (173 files)
-                    ├── CLCE_ALS_001.png
-                    ├── CLCE_ALS_002.png
-                    ├── CLCE_ALS_003.png
-                    ├── CLCE_ALS_004.png
-                    ├── CLCE_ALS_005.png
-                    └── ... 168 more files
                 ├── BB/ (218 files)
-                    ├── CLCE_BB_001.png
-                    ├── CLCE_BB_002.png
-                    ├── CLCE_BB_003.png
-                    ├── CLCE_BB_004.png
-                    ├── CLCE_BB_005.png
-                    └── ... 213 more files
                 ├── FW/ (337 files)
-                    ├── CLCE_FW_001.png
-                    ├── CLCE_FW_002.png
-                    ├── CLCE_FW_003.png
-                    ├── CLCE_FW_004.png
-                    ├── CLCE_FW_005.png
-                    └── ... 332 more files
                 ├── HL/ (333 files)
-                    ├── CLCE_HL_001.png
-                    ├── CLCE_HL_002.png
-                    ├── CLCE_HL_003.png
-                    ├── CLCE_HL_004.png
-                    ├── CLCE_HL_005.png
-                    └── ... 328 more files
                 ├── VW/ (312 files)
-                    ├── CLCE_VW_001.png
-                    ├── CLCE_VW_002.png
-                    ├── CLCE_VW_003.png
-                    ├── CLCE_VW_004.png
-                    ├── CLCE_VW_005.png
-                    └── ... 307 more files
             ├── CLUE/ (1287 files)
                 ├── A/ (42 files)
-                    ├── CLUE_A_01.jpg
-                    ├── CLUE_A_02.jpg
-                    ├── CLUE_A_03.jpg
-                    ├── CLUE_A_04.jpg
-                    ├── CLUE_A_05.jpg
-                    └── ... 37 more files
                 ├── AW/ (40 files)
-                    ├── CLUE_AW_01.jpg
-                    ├── CLUE_AW_02.jpg
-                    ├── CLUE_AW_03.jpg
-                    ├── CLUE_AW_04.jpg
-                    ├── CLUE_AW_05.jpg
-                    └── ... 35 more files
                 ├── BB/ (124 files)
-                    ├── CLUE_BB_001.jpg
-                    ├── CLUE_BB_002.jpg
-                    ├── CLUE_BB_003.png
-                    ├── CLUE_BB_004.jpg
-                    ├── CLUE_BB_005.jpg
-                    └── ... 119 more files
                 ├── CV/ (113 files)
-                    ├── CLUE_CV_001.png
-                    ├── CLUE_CV_002.jpg
-                    ├── CLUE_CV_003.jpg
-                    ├── CLUE_CV_004.jpg
-                    ├── CLUE_CV_005.jpg
-                    └── ... 108 more files
                 ├── FW/ (419 files)
-                    ├── CLUE_FW_001.jpg
-                    ├── CLUE_FW_002.jpg
-                    ├── CLUE_FW_003.png
-                    ├── CLUE_FW_004.png
-                    ├── CLUE_FW_005.png
-                    └── ... 414 more files
                 ├── H/ (467 files)
-                    ├── CLUE_H_001.jpg
-                    ├── CLUE_H_002.jpg
-                    ├── CLUE_H_003.jpg
-                    ├── CLUE_H_004.jpg
-                    ├── CLUE_H_005.jpg
-                    └── ... 462 more files
                 ├── PM/ (40 files)
-                    ├── CLUE_PM_01.jpg
-                    ├── CLUE_PM_02.jpg
-                    ├── CLUE_PM_03.jpg
-                    ├── CLUE_PM_04.jpg
-                    ├── CLUE_PM_05.jpg
-                    └── ... 35 more files
                 ├── TS/ (42 files)
-                    ├── CLUE_TS_01.jpg
-                    ├── CLUE_TS_02.jpg
-                    ├── CLUE_TS_03.jpg
-                    ├── CLUE_TS_04.jpg
-                    ├── CLUE_TS_05.jpeg
-                    └── ... 37 more files
             ├── GLCDfGLUE/ (2451 files)
                 ├── ELS/ (409 files)
-                    ├── GLCDFGLUE_ELS_001.jpg
-                    ├── GLCDFGLUE_ELS_002.jpg
-                    ├── GLCDFGLUE_ELS_003.jpg
-                    ├── GLCDFGLUE_ELS_004.jpg
-                    ├── GLCDFGLUE_ELS_005.jpg
-                    └── ... 404 more files
                 ├── ER/ (409 files)
-                    ├── GLCDFGLUE_ER_001.jpg
-                    ├── GLCDFGLUE_ER_002.jpg
-                    ├── GLCDFGLUE_ER_003.jpg
-                    ├── GLCDFGLUE_ER_004.jpg
-                    ├── GLCDFGLUE_ER_005.jpg
-                    └── ... 404 more files
                 ├── HL/ (409 files)
-                    ├── GLCDFGLUE_HL_001.jpg
-                    ├── GLCDFGLUE_HL_002.jpg
-                    ├── GLCDFGLUE_HL_003.jpg
-                    ├── GLCDFGLUE_HL_004.jpg
-                    ├── GLCDFGLUE_HL_005.jpg
-                    └── ... 404 more files
                 ├── LLS/ (405 files)
-                    ├── GLCDFGLUE_LLS_001.jpg
-                    ├── GLCDFGLUE_LLS_002.jpg
-                    ├── GLCDFGLUE_LLS_003.jpg
-                    ├── GLCDFGLUE_LLS_004.jpg
-                    ├── GLCDFGLUE_LLS_005.jpg
-                    └── ... 400 more files
                 ├── ND/ (410 files)
-                    ├── GLCDFGLUE_ND_001.jpg
-                    ├── GLCDFGLUE_ND_002.jpg
-                    ├── GLCDFGLUE_ND_003.jpg
-                    ├── GLCDFGLUE_ND_004.jpg
-                    ├── GLCDFGLUE_ND_005.jpg
-                    └── ... 405 more files
                 ├── R/ (409 files)
-                    ├── GLCDFGLUE_R_001.jpg
-                    ├── GLCDFGLUE_R_002.jpg
-                    ├── GLCDFGLUE_R_003.jpg
-                    ├── GLCDFGLUE_R_004.jpg
-                    ├── GLCDFGLUE_R_005.jpg
-                    └── ... 404 more files
             ├── GLFCE/ (1720 files)
                 ├── ALS/ (450 files)
-                    ├── GLFCE_ALS_001.jpg
-                    ├── GLFCE_ALS_002.jpg
-                    ├── GLFCE_ALS_003.jpg
-                    ├── GLFCE_ALS_004.jpg
-                    ├── GLFCE_ALS_005.jpg
-                    └── ... 445 more files
                 ├── H/ (600 files)
-                    ├── GLFCE_H_001.jpg
-                    ├── GLFCE_H_002.jpg
-                    ├── GLFCE_H_003.jpg
-                    ├── GLFCE_H_004.jpg
-                    ├── GLFCE_H_005.jpg
-                    └── ... 595 more files
                 ├── LSEaL/ (450 files)
-                    ├── GLFCE_LSEaL_001.jpg
-                    ├── GLFCE_LSEaL_002.jpg
-                    ├── GLFCE_LSEaL_003.jpg
-                    ├── GLFCE_LSEaL_004.jpg
-                    ├── GLFCE_LSEaL_005.jpg
-                    └── ... 445 more files
                 ├── R/ (120 files)
-                    ├── GLFCE_R_001.jpg
-                    ├── GLFCE_R_002.jpg
-                    ├── GLFCE_R_003.jpg
-                    ├── GLFCE_R_004.jpg
-                    ├── GLFCE_R_005.jpg
-                    └── ... 115 more files
                 ├── Ros/ (100 files)
-                    ├── GLFCE_Ros_001.jpg
-                    ├── GLFCE_Ros_002.jpg
-                    ├── GLFCE_Ros_003.jpg
-                    ├── GLFCE_Ros_004.jpg
-                    ├── GLFCE_Ros_005.jpg
-                    └── ... 95 more files
             ├── GLUE/ (3172 files)
                 ├── ELS/ (904 files)
-                    ├── GLUE_ELS_001.jpg
-                    ├── GLUE_ELS_002.JPG
-                    ├── GLUE_ELS_003.JPG
-                    ├── GLUE_ELS_004.JPG
-                    ├── GLUE_ELS_005.JPG
-                    └── ... 899 more files
                 ├── HL/ (985 files)
-                    ├── GLUE_HL_001.JPG
-                    ├── GLUE_HL_002.JPG
-                    ├── GLUE_HL_003.JPG
-                    ├── GLUE_HL_004.JPG
-                    ├── GLUE_HL_005.JPG
-                    └── ... 980 more files
                 ├── LLS/ (697 files)
-                    ├── GLUE_LLS_001.jpg
-                    ├── GLUE_LLS_002.jpg
-                    ├── GLUE_LLS_003.jpg
-                    ├── GLUE_LLS_004.JPG
-                    ├── GLUE_LLS_005.JPG
-                    └── ... 692 more files
                 ├── ND/ (329 files)
-                    ├── GLUE_ND_001.JPG
-                    ├── GLUE_ND_002.JPG
-                    ├── GLUE_ND_003.JPG
-                    ├── GLUE_ND_004.JPG
-                    ├── GLUE_ND_005.JPG
-                    └── ... 324 more files
                 ├── R/ (257 files)
-                    ├── GLUE_R_001.jpg
-                    ├── GLUE_R_002.jpg
-                    ├── GLUE_R_003.jpg
-                    ├── GLUE_R_004.jpg
-                    ├── GLUE_R_005.jpg
-                    └── ... 252 more files
             ├── PBCE/ (9283 files)
                 ├── BS/ (4901 files)
-                    ├── PBCE_BS_0001.JPG
-                    ├── PBCE_BS_0002.JPG
-                    ├── PBCE_BS_0003.JPG
-                    ├── PBCE_BS_0004.JPG
-                    ├── PBCE_BS_0005.JPG
-                    └── ... 4896 more files
                 ├── CLS/ (1796 files)
-                    ├── PBCE_CLS_0001.JPG
-                    ├── PBCE_CLS_0002.JPG
-                    ├── PBCE_CLS_0003.JPG
-                    ├── PBCE_CLS_0004.JPG
-                    ├── PBCE_CLS_0005.jpg
-                    └── ... 1791 more files
                 ├── H/ (1524 files)
-                    ├── PBCE_H_0001.JPG
-                    ├── PBCE_H_0002.JPG
-                    ├── PBCE_H_0003.JPG
-                    ├── PBCE_H_0004.JPG
-                    ├── PBCE_H_0005.JPG
-                    └── ... 1519 more files
                 ├── LC/ (423 files)
-                    ├── PBCE_LC_001.JPG
-                    ├── PBCE_LC_002.JPG
-                    ├── PBCE_LC_003.JPG
-                    ├── PBCE_LC_004.JPG
-                    ├── PBCE_LC_005.JPG
-                    └── ... 418 more files
                 ├── ND/ (444 files)
-                    ├── PBCE_ND_001.JPG
-                    ├── PBCE_ND_002.JPG
-                    ├── PBCE_ND_003.JPG
-                    ├── PBCE_ND_004.JPG
-                    ├── PBCE_ND_005.JPG
-                    └── ... 439 more files
                 ├── PM/ (195 files)
-                    ├── PBCE_PM_001.JPG
-                    ├── PBCE_PM_002.JPG
-                    ├── PBCE_PM_003.JPG
-                    ├── PBCE_PM_004.JPG
-                    ├── PBCE_PM_005.JPG
-                    └── ... 190 more files
             ├── PBUE/ (291 files)
                 ├── A/ (24 files)
-                    ├── PBUE_A_01.jpg
-                    ├── PBUE_A_02.jpg
-                    ├── PBUE_A_03.jpg
-                    ├── PBUE_A_04.jpg
-                    ├── PBUE_A_05.jpg
-                    └── ... 19 more files
                 ├── B/ (5 files)
-                    ├── PBUE_B_1.jpg
-                    ├── PBUE_B_2.jpg
-                    ├── PBUE_B_3.jpg
-                    ├── PBUE_B_4.jpg
-                    ├── PBUE_B_5.jpg
                 ├── BER/ (23 files)
-                    ├── PBUE_BER_01.jpg
-                    ├── PBUE_BER_02.jpg
-                    ├── PBUE_BER_03.jpg
-                    ├── PBUE_BER_04.jpg
-                    ├── PBUE_BER_05.jpg
-                    └── ... 18 more files
                 ├── BS/ (29 files)
-                    ├── PBUE_BS_01.jpg
-                    ├── PBUE_BS_02.jpg
-                    ├── PBUE_BS_03.jpg
-                    ├── PBUE_BS_04.jpg
-                    ├── PBUE_BS_05.jpg
-                    └── ... 24 more files
                 ├── E/ (38 files)
-                    ├── PBUE_E_01.jpg
-                    ├── PBUE_E_02.jpg
-                    ├── PBUE_E_03.jpg
-                    ├── PBUE_E_04.jpg
-                    ├── PBUE_E_05.jpg
-                    └── ... 33 more files
                 ├── H/ (47 files)
-                    ├── PBUE_H_01.jpg
-                    ├── PBUE_H_02.jpg
-                    ├── PBUE_H_03.jpg
-                    ├── PBUE_H_04.jpg
-                    ├── PBUE_H_05.jpg
-                    └── ... 42 more files
                 ├── LC/ (29 files)
-                    ├── PBUE_LC_01.jpg
-                    ├── PBUE_LC_02.jpg
-                    ├── PBUE_LC_03.jpg
-                    ├── PBUE_LC_04.jpg
-                    ├── PBUE_LC_05.jpg
-                    └── ... 24 more files
                 ├── LM/ (14 files)
-                    ├── PBUE_LM_01.jpg
-                    ├── PBUE_LM_02.jpg
-                    ├── PBUE_LM_03.jpg
-                    ├── PBUE_LM_04.jpg
-                    ├── PBUE_LM_05.jpg
-                    └── ... 9 more files
                 ├── MV/ (25 files)
-                    ├── PBUE_MV_01.jpg
-                    ├── PBUE_MV_02.jpg
-                    ├── PBUE_MV_03.jpg
-                    ├── PBUE_MV_04.jpg
-                    ├── PBUE_MV_05.jpg
-                    └── ... 20 more files
                 ├── ND/ (31 files)
-                    ├── PBUE_ND_01.jpg
-                    ├── PBUE_ND_02.jpg
-                    ├── PBUE_ND_03.jpg
-                    ├── PBUE_ND_04.jpg
-                    ├── PBUE_ND_05.jpg
-                    └── ... 26 more files
                 ├── PM/ (22 files)
-                    ├── PBUE_PM_01.jpg
-                    ├── PBUE_PM_02.jpg
-                    ├── PBUE_PM_03.jpg
-                    ├── PBUE_PM_04.jpg
-                    ├── PBUE_PM_05.jpg
-                    └── ... 17 more files
                 ├── SM/ (1 files)
-                    ├── PBUE_SM_1.jpg
                 ├── T/ (3 files)
-                    ├── PBUE_T_1.jpg
-                    ├── PBUE_T_2.jpg
-                    ├── PBUE_T_3.jpg
             ├── PLCE/ (4758 files)
                 ├── EB/ (1800 files)
-                    ├── PLCE_EB_0001.jpg
-                    ├── PLCE_EB_0002.jpg
-                    ├── PLCE_EB_0003.jpg
-                    ├── PLCE_EB_0004.jpg
-                    ├── PLCE_EB_0005.jpg
-                    └── ... 1795 more files
                 ├── H/ (1316 files)
-                    ├── PLCE_H_0001.jpg
-                    ├── PLCE_H_0002.jpg
-                    ├── PLCE_H_0003.jpg
-                    ├── PLCE_H_0004.jpg
-                    ├── PLCE_H_0005.jpg
-                    └── ... 1311 more files
                 ├── LB/ (1642 files)
-                    ├── PLCE_LB_0001.JPG
-                    ├── PLCE_LB_0002.jpg
-                    ├── PLCE_LB_0003.jpg
-                    ├── PLCE_LB_0004.jpg
-                    ├── PLCE_LB_0005.jpg
-                    └── ... 1637 more files
             ├── PLUE/ (3076 files)
                 ├── B/ (569 files)
-                    ├── PLUE_B_001.JPG
-                    ├── PLUE_B_002.JPG
-                    ├── PLUE_B_003.JPG
-                    ├── PLUE_B_004.JPG
-                    ├── PLUE_B_005.JPG
-                    └── ... 564 more files
                 ├── F/ (748 files)
-                    ├── PLUE_F_001.jpg
-                    ├── PLUE_F_002.jpg
-                    ├── PLUE_F_003.JPG
-                    ├── PLUE_F_004.JPG
-                    ├── PLUE_F_005.JPG
-                    └── ... 743 more files
                 ├── H/ (201 files)
-                    ├── PLUE_H_001.jpg
-                    ├── PLUE_H_002.jpg
-                    ├── PLUE_H_003.jpg
-                    ├── PLUE_H_004.jpg
-                    ├── PLUE_H_005.jpg
-                    └── ... 196 more files
                 ├── N/ (68 files)
-                    ├── PLUE_N_01.jpg
-                    ├── PLUE_N_02.jpg
-                    ├── PLUE_N_03.jpg
-                    ├── PLUE_N_04.jpg
-                    ├── PLUE_N_05.jpg
-                    └── ... 63 more files
                 ├── P/ (611 files)
-                    ├── PLUE_P_001.jpg
-                    ├── PLUE_P_002.jpg
-                    ├── PLUE_P_003.jpg
-                    ├── PLUE_P_004.jpg
-                    ├── PLUE_P_005.jpg
-                    └── ... 606 more files
                 ├── Phy/ (347 files)
-                    ├── PLUE_Phy_001.jpg
-                    ├── PLUE_Phy_002.JPG
-                    ├── PLUE_Phy_003.JPG
-                    ├── PLUE_Phy_004.JPG
-                    ├── PLUE_Phy_005.JPG
-                    └── ... 342 more files
                 ├── V/ (532 files)
-                    ├── PLUE_V_001.JPG
-                    ├── PLUE_V_002.JPG
-                    ├── PLUE_V_003.JPG
-                    ├── PLUE_V_004.JPG
-                    ├── PLUE_V_005.JPG
-                    └── ... 527 more files
             ├── TLCE/ (4050 files)
                 ├── BS/ (1100 files)
-                    ├── TLCE_BS_0001.JPG
-                    ├── TLCE_BS_0002.JPG
-                    ├── TLCE_BS_0003.JPG
-                    ├── TLCE_BS_0004.JPG
-                    ├── TLCE_BS_0005.JPG
-                    └── ... 1095 more files
                 ├── EB/ (1100 files)
-                    ├── TLCE_EB_0001.JPG
-                    ├── TLCE_EB_0002.JPG
-                    ├── TLCE_EB_0003.JPG
-                    ├── TLCE_EB_0004.JPG
-                    ├── TLCE_EB_0005.JPG
-                    └── ... 1095 more files
                 ├── H/ (1100 files)
-                    ├── TLCE_H_0001.JPG
-                    ├── TLCE_H_0002.JPG
-                    ├── TLCE_H_0003.JPG
-                    ├── TLCE_H_0004.JPG
-                    ├── TLCE_H_0005.JPG
-                    └── ... 1095 more files
                 ├── LB/ (749 files)
-                    ├── TLCE_LB_001.jpg
-                    ├── TLCE_LB_002.JPG
-                    ├── TLCE_LB_003.JPG
-                    ├── TLCE_LB_004.JPG
-                    ├── TLCE_LB_005.JPG
-                    └── ... 744 more files
-                ├── cnn_train.py
             ├── TLUE/ (3090 files)
                 ├── BL/ (16 files)
-                    ├── TLUE_BL_01.jpg
-                    ├── TLUE_BL_02.jpg
-                    ├── TLUE_BL_03.jpg
-                    ├── TLUE_BL_04.jpg
-                    ├── TLUE_BL_05.jpg
-                    └── ... 11 more files
                 ├── BS/ (182 files)
-                    ├── TLUE_BS_001.jpg
-                    ├── TLUE_BS_002.jpg
-                    ├── TLUE_BS_003.jpg
-                    ├── TLUE_BS_004.jpg
-                    ├── TLUE_BS_005.jpg
-                    └── ... 177 more files
                 ├── DoPM/ (13 files)
-                    ├── TLUE_DoPM_01.jpg
-                    ├── TLUE_DoPM_02.jpg
-                    ├── TLUE_DoPM_03.jpg
-                    ├── TLUE_DoPM_04.jpg
-                    ├── TLUE_DoPM_05.jpg
-                    └── ... 8 more files
                 ├── EB/ (454 files)
-                    ├── TLUE_EB_001.jpg
-                    ├── TLUE_EB_002.jpg
-                    ├── TLUE_EB_003.jpg
-                    ├── TLUE_EB_004.jpg
-                    ├── TLUE_EB_005.jpg
-                    └── ... 449 more files
                 ├── H/ (303 files)
-                    ├── TLUE_H_001.jpg
-                    ├── TLUE_H_002.jpg
-                    ├── TLUE_H_003.jpg
-                    ├── TLUE_H_004.jpg
-                    ├── TLUE_H_005.jpg
-                    └── ... 298 more files
                 ├── LB/ (419 files)
-                    ├── TLUE_LB_001.jpg
-                    ├── TLUE_LB_002.jpg
-                    ├── TLUE_LB_003.jpg
-                    ├── TLUE_LB_004.jpg
-                    ├── TLUE_LB_005.jpg
-                    └── ... 414 more files
                 ├── LM/ (386 files)
-                    ├── TLUE_LM_001.jpg
-                    ├── TLUE_LM_002.jpg
-                    ├── TLUE_LM_003.jpg
-                    ├── TLUE_LM_004.jpg
-                    ├── TLUE_LM_005.jpg
-                    └── ... 381 more files
                 ├── ML/ (546 files)
-                    ├── TLUE_ML_001.jpg
-                    ├── TLUE_ML_002.jpg
-                    ├── TLUE_ML_003.jpg
-                    ├── TLUE_ML_004.jpg
-                    ├── TLUE_ML_005.jpg
-                    └── ... 541 more files
                 ├── MV/ (133 files)
-                    ├── TLUE_MV_001.jpg
-                    ├── TLUE_MV_002.jpg
-                    ├── TLUE_MV_003.jpg
-                    ├── TLUE_MV_004.jpg
-                    ├── TLUE_MV_005.jpg
-                    └── ... 128 more files
                 ├── S/ (382 files)
-                    ├── TLUE_S_001.jpg
-                    ├── TLUE_S_002.jpg
-                    ├── TLUE_S_003.jpg
-                    ├── TLUE_S_004.jpg
-                    ├── TLUE_S_005.jpg
-                    └── ... 377 more files
                 ├── SM/ (53 files)
-                    ├── TLUE_SM_01.jpg
-                    ├── TLUE_SM_02.jpg
-                    ├── TLUE_SM_03.jpg
-                    ├── TLUE_SM_04.jpg
-                    ├── TLUE_SM_05.jpg
-                    └── ... 48 more files
                 ├── WL/ (50 files)
-                    ├── TLUE_WL_01.jpg
-                    ├── TLUE_WL_02.jpg
-                    ├── TLUE_WL_03.jpg
-                    ├── TLUE_WL_04.jpg
-                    ├── TLUE_WL_05.jpg
-                    └── ... 45 more files
                 ├── YCV/ (153 files)
-                    ├── TLUE_YCV_001.jpg
-                    ├── TLUE_YCV_002.jpg
-                    ├── TLUE_YCV_003.jpg
-                    ├── TLUE_YCV_004.jpg
-                    ├── TLUE_YCV_005.jpg
-                    └── ... 148 more files
-            ├── count.py
-        ├── notebooks/ (75687 files)
-            ├── .gradio/ (2 files)
-                ├── flagged/ (2 files)
-                    ├── Crop Prediction/ (0 files)
-                    ├── Drag & drop a leaf photo here/ (1 files)
-                        ├── 34279336755600e17d24/ (1 files)
-                            ├── Rust (100).jpg
-                    ├── What the model actually sees (after leaf segmentation)/ (1 files)
-                        ├── 1348b312c7794d7db515/ (1 files)
-                            ├── image.webp
-            ├── dataset_split/ (30404 files)
-                ├── test/ (4260 files)
-                    ├── Cotton/ (288 files)
-                        ├── CLCE_ALS_006_6507366072499590667.png
-                        ├── CLCE_ALS_010_2684239336786510323.png
-                        ├── CLCE_ALS_016_2627639384663980423.png
-                        ├── CLCE_ALS_017_5246741763837259457.png
-                        ├── CLCE_ALS_023_4675586474880349937.png
-                        └── ... 283 more files
-                    ├── Groundnut/ (695 files)
-                        ├── GLFCE_ALS_001_617201308078650390.jpg
-                        ├── GLFCE_ALS_020_2526226414264876669.jpg
-                        ├── GLFCE_ALS_023_6008514633685571244.jpg
-                        ├── GLFCE_ALS_027_2059164738310580128.jpg
-                        ├── GLFCE_ALS_072_79168861513121931.jpg
-                        └── ... 690 more files
-                    ├── Pepper Bell/ (1128 files)
-                        ├── PBCE_BS_0002_5115050431378662151.JPG
-                        ├── PBCE_BS_0033_6316173870950392717.JPG
-                        ├── PBCE_BS_0097_8248192466323117193.JPG
-                        ├── PBCE_BS_0111_8476172060650968918.JPG
-                        ├── PBCE_BS_0235_1601603465183079099.JPG
-                        └── ... 1123 more files
-                    ├── Potato/ (1152 files)
-                        ├── PLCE_EB_0036_1820212088194777220.JPG
-                        ├── PLCE_EB_0037_860927556972475178.JPG
-                        ├── PLCE_EB_0040_8380932224832364930.JPG
-                        ├── PLCE_EB_0045_1343952679016685277.JPG
-                        ├── PLCE_EB_0046_1318259457727750919.JPG
-                        └── ... 1147 more files
-                    ├── Tomato/ (997 files)
-                        ├── TLCE_BS_0016_1380570930148674017.JPG
-                        ├── TLCE_BS_0027_1850493813251318351.JPG
-                        ├── TLCE_BS_0028_4671207180968386821.JPG
-                        ├── TLCE_BS_0038_8591069043054425771.JPG
-                        ├── TLCE_BS_0039_8536212593013334950.JPG
-                        └── ... 992 more files
-                ├── train/ (21885 files)
-                    ├── Cotton/ (1347 files)
-                        ├── CLCE_ALS_001_7339032035493918742.png
-                        ├── CLCE_ALS_003_6668625215023193346.png
-                        ├── CLCE_ALS_004_6157511708513902912.png
-                        ├── CLCE_ALS_005_2280102361074251595.png
-                        ├── CLCE_ALS_007_1479492805128232073.png
-                        └── ... 1342 more files
-                    ├── Groundnut/ (5250 files)
-                        ├── GLCDFGLUE_ELS_001_4286122132698305656.jpg
-                        ├── GLCDFGLUE_ELS_002_5942429396288030166.jpg
-                        ├── GLCDFGLUE_ELS_003_1013139700528477524.jpg
-                        ├── GLCDFGLUE_ELS_006_110742149499190930.jpg
-                        ├── GLCDFGLUE_ELS_008_3724701889519188605.jpg
-                        └── ... 5245 more files
-                    ├── Pepper Bell/ (5265 files)
-                        ├── PBCE_BS_0003_6467085247834946640.JPG
-                        ├── PBCE_BS_0004_7462358951349565386.JPG
-                        ├── PBCE_BS_0009_3257661849515345853.JPG
-                        ├── PBCE_BS_0012_8174682567325158860.JPG
-                        ├── PBCE_BS_0016_5712156506214521306.JPG
-                        └── ... 5260 more files
-                    ├── Potato/ (5372 files)
-                        ├── PLCE_EB_0031_7999863770461653417.JPG
-                        ├── PLCE_EB_0032_963863543867300013.JPG
-                        ├── PLCE_EB_0033_2142206680308288726.JPG
-                        ├── PLCE_EB_0035_1104587774409078284.JPG
-                        ├── PLCE_EB_0039_1117638731490128486.JPG
-                        └── ... 5367 more files
-                    ├── Tomato/ (4651 files)
-                        ├── TLCE_BS_0001_7140568747511788047.JPG
-                        ├── TLCE_BS_0002_8182440846179991833.JPG
-                        ├── TLCE_BS_0004_5302118213073076858.JPG
-                        ├── TLCE_BS_0005_5736977202192522127.JPG
-                        ├── TLCE_BS_0006_6219638404703608296.JPG
-                        └── ... 4646 more files
-                ├── val/ (4259 files)
-                    ├── Cotton/ (289 files)
-                        ├── CLCE_ALS_002_7808309234544839410.png
-                        ├── CLCE_ALS_019_4986546295776756126.png
-                        ├── CLCE_ALS_022_8763443693210737550.png
-                        ├── CLCE_ALS_024_896661920452078518.png
-                        ├── CLCE_ALS_034_956497811132026720.png
-                        └── ... 284 more files
-                    ├── Groundnut/ (694 files)
-                        ├── GLFCE_ALS_013_5887816990268393488.jpg
-                        ├── GLFCE_ALS_018_7676927542041758009.jpg
-                        ├── GLFCE_ALS_021_2590491463918768933.jpg
-                        ├── GLFCE_ALS_029_1119176917015552358.jpg
-                        ├── GLFCE_ALS_100_1410721976851624768.jpg
-                        └── ... 689 more files
-                    ├── Pepper Bell/ (1129 files)
-                        ├── PBCE_BS_0028_2891488685897101153.JPG
-                        ├── PBCE_BS_0061_9029821296320074879.JPG
-                        ├── PBCE_BS_0123_4762633579556923292.JPG
-                        ├── PBCE_BS_0151_4465450707917598064.JPG
-                        ├── PBCE_BS_0156_5402979274401086501.JPG
-                        └── ... 1124 more files
-                    ├── Potato/ (1151 files)
-                        ├── PLCE_EB_0034_5843623387905693902.JPG
-                        ├── PLCE_EB_0038_3946922741683295267.JPG
-                        ├── PLCE_EB_0042_424953606154251279.JPG
-                        ├── PLCE_EB_0051_8935862177807349520.JPG
-                        ├── PLCE_EB_0052_6289528636029613847.JPG
-                        └── ... 1146 more files
-                    ├── Tomato/ (996 files)
-                        ├── TLCE_BS_0003_4662037529084074311.JPG
-                        ├── TLCE_BS_0008_5778378846912719725.JPG
-                        ├── TLCE_BS_0011_1635536286432624639.JPG
-                        ├── TLCE_BS_0015_1103026065957460011.JPG
-                        ├── TLCE_BS_0040_448879635369358553.JPG
-                        └── ... 991 more files
-            ├── disease_dataset/ (29772 files)
-                ├── Cotton/ (1844 files)
-                    ├── test/ (277 files)
-                        ├── ALS/ (26 files)
-                            ├── img_1036440269589377222.png
-                            ├── img_1587712435968736282.png
-                            ├── img_167380503446218369.png
-                            ├── img_1816288838981272754.png
-                            ├── img_1928594810435784973.png
-                            └── ... 21 more files
-                        ├── BB/ (43 files)
-                            ├── img_102402301697141798.jpg
-                            ├── img_110584201111043604.png
-                            ├── img_1641796295398204537.jpg
-                            ├── img_1773818326917986231.jpg
-                            ├── img_2113785518241379664.png
-                            └── ... 38 more files
-                        ├── CV/ (13 files)
-                            ├── img_1125124635125029679.jpg
-                            ├── img_1256310700186493409.jpg
-                            ├── img_1683456289728808276.jpg
-                            ├── img_3276355314422318952.jpg
-                            ├── img_4110721901243660799.jpg
-                            └── ... 8 more files
-                        ├── FW/ (88 files)
-                            ├── img_100628962970334674.jpg
-                            ├── img_1167999115284240921.jpg
-                            ├── img_1300233256185292384.png
-                            ├── img_1323907905656047755.png
-                            ├── img_1476164265111393040.JPG
-                            └── ... 83 more files
-                        ├── H/ (56 files)
-                            ├── img_1351490103753081942.jpg
-                            ├── img_1449233373151421978.jpg
-                            ├── img_1554483291200115893.png
-                            ├── img_1645187761074149094.jpg
-                            ├── img_1704694000128068552.jpg
-                            └── ... 51 more files
-                        ├── PM/ (6 files)
-                            ├── img_2659743785820082123.jpg
-                            ├── img_3115987407906074289.jpg
-                            ├── img_3878413007862992783.jpg
-                            ├── img_6644461792586122400.jpg
-                            ├── img_6780712273679086380.jpg
-                            └── ... 1 more files
-                        ├── TS/ (6 files)
-                            ├── img_1278199675808167169.jpg
-                            ├── img_282236216973607745.jpg
-                            ├── img_3892377411585043112.jpeg
-                            ├── img_694635444902403459.jpg
-                            ├── img_7248298522350452237.jpg
-                            └── ... 1 more files
-                        ├── VW/ (39 files)
-                            ├── img_1074850099103088024.png
-                            ├── img_1162801636224038873.png
-                            ├── img_1240632705101676207.png
-                            ├── img_134976592899686446.png
-                            ├── img_1468383592207883236.png
-                            └── ... 34 more files
-                    ├── train/ (1290 files)
-                        ├── ALS/ (120 files)
-                            ├── img_1036268569542048348.png
-                            ├── img_1041548551853640367.png
-                            ├── img_1082438881604349502.png
-                            ├── img_1121933748471987329.png
-                            ├── img_1164627227954210627.png
-                            └── ... 115 more files
-                        ├── BB/ (199 files)
-                            ├── img_1063945244542793481.png
-                            ├── img_1072831968003978184.png
-                            ├── img_1088323547443541335.png
-                            ├── img_1148390554760212560.png
-                            ├── img_12142044036794186.png
-                            └── ... 194 more files
-                        ├── CV/ (60 files)
-                            ├── img_1075681982679333951.jpg
-                            ├── img_1191795389805751530.jpg
-                            ├── img_1290187390327204447.jpg
-                            ├── img_1334205546124355281.jpg
-                            ├── img_1710313753201407786.png
-                            └── ... 55 more files
-                        ├── FW/ (411 files)
-                            ├── img_1000729075157643013.png
-                            ├── img_1006128114744440247.jpg
-                            ├── img_1013596897797011177.png
-                            ├── img_1013838959131720529.jpg
-                            ├── img_1042235523449012255.jpg
-                            └── ... 406 more files
-                        ├── H/ (260 files)
-                            ├── img_1038913253616099299.jpg
-                            ├── img_1053211486923603819.png
-                            ├── img_1097209894747697166.png
-                            ├── img_1104387754359472956.jpg
-                            ├── img_1119857683606627702.png
-                            └── ... 255 more files
-                        ├── PM/ (26 files)
-                            ├── img_2216916978811927770.jpg
-                            ├── img_2479818248041040504.jpg
-                            ├── img_2584172913029149420.jpg
-                            ├── img_2711486057291119558.jpg
-                            ├── img_3040001111296705019.jpg
-                            └── ... 21 more files
-                        ├── TS/ (28 files)
-                            ├── img_1392526664113281414.jpg
-                            ├── img_1452392532849146744.jpg
-                            ├── img_1862592916113398750.jpg
-                            ├── img_2385308367728810824.jpg
-                            ├── img_2458981788474671879.jpg
-                            └── ... 23 more files
-                        ├── VW/ (186 files)
-                            ├── img_1170446663081649631.png
-                            ├── img_1187566611424121796.png
-                            ├── img_1252557106026543503.png
-                            ├── img_1262115903582613043.png
-                            ├── img_1273754433936804644.png
-                            └── ... 181 more files
-                    ├── val/ (277 files)
-                        ├── ALS/ (26 files)
-                            ├── img_1195858579154541782.png
-                            ├── img_1370206983844125259.png
-                            ├── img_147278696917577214.png
-                            ├── img_1820369039615827760.png
-                            ├── img_1879784318266171669.png
-                            └── ... 21 more files
-                        ├── BB/ (43 files)
-                            ├── img_1033404740913165979.jpg
-                            ├── img_1331453383297831232.jpg
-                            ├── img_1441511915922405827.jpg
-                            ├── img_2117657843861420722.jpg
-                            ├── img_2205715030800146335.jpg
-                            └── ... 38 more files
-                        ├── CV/ (12 files)
-                            ├── img_1063523843285001759.jpg
-                            ├── img_2852624327345889242.jpg
-                            ├── img_3227847515405012474.jpg
-                            ├── img_4814922103959397576.jpg
-                            ├── img_4911358973195119264.jpg
-                            └── ... 7 more files
-                        ├── FW/ (89 files)
-                            ├── img_1007869116873674181.png
-                            ├── img_1238981502494450057.png
-                            ├── img_1244871830978039145.jpg
-                            ├── img_1296122762117077514.jpg
-                            ├── img_145218036304698332.jpg
-                            └── ... 84 more files
-                        ├── H/ (56 files)
-                            ├── img_1025704976492530771.jpg
-                            ├── img_1054251677091558794.jpg
-                            ├── img_1190750396555362030.png
-                            ├── img_1380382072136732612.png
-                            ├── img_145357664284110701.jpg
-                            └── ... 51 more files
-                        ├── PM/ (5 files)
-                            ├── img_1265108706351259853.jpg
-                            ├── img_1984034270997087644.jpg
-                            ├── img_278972645282120208.jpg
-                            ├── img_7310210847690053798.jpg
-                            ├── img_8384552732554230977.jpg
-                        ├── TS/ (6 files)
-                            ├── img_4256395211917063549.jpg
-                            ├── img_6276273109718852696.jpg
-                            ├── img_7410925098863347232.jpg
-                            ├── img_7795911381804489617.jpg
-                            ├── img_7984434813010913151.jpg
-                            └── ... 1 more files
-                        ├── VW/ (40 files)
-                            ├── img_1029715332839154502.png
-                            ├── img_1056457551307189919.png
-                            ├── img_1108431291189456738.png
-                            ├── img_1153261992637672415.png
-                            ├── img_166081960745461585.png
-                            └── ... 35 more files
-                ├── Groundnut/ (6639 files)
-                    ├── test/ (695 files)
-                        ├── ALS/ (58 files)
-                            ├── img_1035705129571205711.jpg
-                            ├── img_1260831874976095848.jpg
-                            ├── img_1262032799641658907.jpg
-                            ├── img_1411572369558682597.jpg
-                            ├── img_1452263947138305655.jpg
-                            └── ... 53 more files
-                        ├── H/ (228 files)
-                            ├── img_1140463275259848818.JPG
-                            ├── img_1153600535235996809.JPG
-                            ├── img_1171082736802953637.JPG
-                            ├── img_1173803622247550164.JPG
-                            ├── img_1223403731729358993.JPG
-                            └── ... 223 more files
-                        ├── LS/ (294 files)
-                            ├── img_1048999432988770697.JPG
-                            ├── img_1061304622684385339.jpg
-                            ├── img_1088118628668739882.JPG
-                            ├── img_1099875145301723497.JPG
-                            ├── img_1118007592211455207.JPG
-                            └── ... 289 more files
-                        ├── ND/ (49 files)
-                            ├── img_1393933196987868723.JPG
-                            ├── img_1461905593557645716.JPG
-                            ├── img_1512277014233693440.JPG
-                            ├── img_169690885890415458.JPG
-                            ├── img_1721428803247346495.JPG
-                            └── ... 44 more files
-                        ├── R/ (52 files)
-                            ├── img_101605684063036394.JPG
-                            ├── img_1073736265790610953.JPG
-                            ├── img_1239539857259974049.jpg
-                            ├── img_1365403540425009580.jpg
-                            ├── img_1420086027197501054.JPG
-                            └── ... 47 more files
-                        ├── Ros/ (14 files)
-                            ├── img_1572439122325419332.jpg
-                            ├── img_2037690512222329488.jpg
-                            ├── img_2782005289608198049.jpg
-                            ├── img_3481807994987712787.jpg
-                            ├── img_3571102954453073026.jpg
-                            └── ... 9 more files
-                    ├── train/ (5250 files)
-                        ├── ALS/ (270 files)
-                            ├── img_1016769681081021511.jpg
-                            ├── img_1029206656775635193.jpg
-                            ├── img_1069780076766846073.jpg
-                            ├── img_1076870090732392430.jpg
-                            ├── img_1082762652240904109.jpg
-                            └── ... 265 more files
-                        ├── H/ (1409 files)
-                            ├── img_1003837984970346062.JPG
-                            ├── img_1022314541071969229.jpg
-                            ├── img_1027658392461997263.JPG
-                            ├── img_1029437006652161866.JPG
-                            ├── img_1032600885781729833.JPG
-                            └── ... 1404 more files
-                        ├── LS/ (2026 files)
-                            ├── img_1008214832046256206.jpg
-                            ├── img_1011692981020520883.JPG
-                            ├── img_1012878212789962345.JPG
-                            ├── img_102630044127508076.JPG
-                            ├── img_1032858286793987892.JPG
-                            └── ... 2021 more files
-                        ├── ND/ (569 files)
-                            ├── img_1002934027376926582.jpg
-                            ├── img_1006582493306641331.JPG
-                            ├── img_1013813917846366203.jpg
-                            ├── img_1015608848810848402.jpg
-                            ├── img_1022757530291027718.JPG
-                            └── ... 564 more files
-                        ├── R/ (912 files)
-                            ├── img_1000486904033591024.jpg
-                            ├── img_1007881514986300325.jpg
-                            ├── img_1010442587133957485.jpg
-                            ├── img_1022352092457189660.JPG
-                            ├── img_1022651854710283897.jpg
-                            └── ... 907 more files
-                        ├── Ros/ (64 files)
-                            ├── img_116101764294056405.jpg
-                            ├── img_1399817051334236770.jpg
-                            ├── img_1404319465524208561.jpg
-                            ├── img_1473397828470939006.jpg
-                            ├── img_1581264934407542812.jpg
-                            └── ... 59 more files
-                    ├── val/ (694 files)
-                        ├── ALS/ (57 files)
-                            ├── img_1088797573281780030.jpg
-                            ├── img_1255435939150693648.jpg
-                            ├── img_1256366646347660732.jpg
-                            ├── img_1412666521522772930.jpg
-                            ├── img_1515549378374377495.jpg
-                            └── ... 52 more files
-                        ├── H/ (227 files)
-                            ├── img_1014235164304150951.JPG
-                            ├── img_1077116064776927131.jpg
-                            ├── img_1092320949578247303.JPG
-                            ├── img_1202168077971976070.JPG
-                            ├── img_1204122546615409051.JPG
-                            └── ... 222 more files
-                        ├── LS/ (294 files)
-                            ├── img_1073420003724905137.jpg
-                            ├── img_1089173758431351852.JPG
-                            ├── img_1195570696001934170.JPG
-                            ├── img_1219357768133982657.jpg
-                            ├── img_1249885910789097763.JPG
-                            └── ... 289 more files
-                        ├── ND/ (50 files)
-                            ├── img_1177561357136456816.JPG
-                            ├── img_1296007452869880322.JPG
-                            ├── img_132316899208776742.JPG
-                            ├── img_134790969275789422.JPG
-                            ├── img_1460771479802622070.JPG
-                            └── ... 45 more files
-                        ├── R/ (52 files)
-                            ├── img_1466269885776615158.JPG
-                            ├── img_1536875490863767796.jpg
-                            ├── img_1627317071700810099.jpg
-                            ├── img_1639119765968438803.JPG
-                            ├── img_169071967944388547.jpg
-                            └── ... 47 more files
-                        ├── Ros/ (14 files)
-                            ├── img_100329728648561921.jpg
-                            ├── img_1894723506389467300.jpg
-                            ├── img_2018703545691130231.jpg
-                            ├── img_2076679065635532860.jpg
-                            ├── img_2383852096049982609.jpg
-                            └── ... 9 more files
-                ├── Pepper_Bell/ (7427 files)
-                    ├── test/ (1115 files)
-                        ├── BS/ (536 files)
-                            ├── img_1008228898965721745.JPG
-                            ├── img_1010553266441958854.JPG
-                            ├── img_1064855317998262257.jpg
-                            ├── img_1066653456461409899.JPG
-                            ├── img_112349569439257688.JPG
-                            └── ... 531 more files
-                        ├── CLS/ (210 files)
-                            ├── img_1027025758473581716.jpg
-                            ├── img_1101603345987740058.jpg
-                            ├── img_1237298314438057986.jpg
-                            ├── img_1246867916949637893.jpg
-                            ├── img_1260480031363818496.jpg
-                            └── ... 205 more files
-                        ├── E/ (5 files)
-                            ├── img_3843616896751225335.jpg
-                            ├── img_4469105208305802368.jpg
-                            ├── img_5614124456924712368.jpg
-                            ├── img_6530498937479171658.jpg
-                            ├── img_7775962366512282204.jpg
-                        ├── H/ (227 files)
-                            ├── img_1009201917096703501.JPG
-                            ├── img_1104599179695787460.JPG
-                            ├── img_1107841157606858232.JPG
-                            ├── img_113560659927185256.JPG
-                            ├── img_1245528307073296678.JPG
-                            └── ... 222 more files
-                        ├── LC/ (51 files)
-                            ├── img_1106732559282223481.JPG
-                            ├── img_133797951160720225.JPG
-                            ├── img_1484534513086038753.JPG
-                            ├── img_1548667276130646385.JPG
-                            ├── img_1566389396654314548.JPG
-                            └── ... 46 more files
-                        ├── ND/ (58 files)
-                            ├── img_1110149477458477341.JPG
-                            ├── img_119659668259203442.JPG
-                            ├── img_1351186673441407381.JPG
-                            ├── img_1459410663828248178.JPG
-                            ├── img_1496886226549869139.jpg
-                            └── ... 53 more files
-                        ├── PM/ (28 files)
-                            ├── img_1146817375264137276.JPG
-                            ├── img_1147109636431805132.JPG
-                            ├── img_1526668919603294664.JPG
-                            ├── img_2101213187932091872.JPG
-                            ├── img_2595557727988161946.JPG
-                            └── ... 23 more files
-                    ├── train/ (5198 files)
-                        ├── BS/ (2499 files)
-                            ├── img_1000576828750613947.JPG
-                            ├── img_1003306187353048840.JPG
-                            ├── img_1009563122593318079.jpg
-                            ├── img_1016548590369311511.jpg
-                            ├── img_1018647451485378566.jpg
-                            └── ... 2494 more files
-                        ├── CLS/ (980 files)
-                            ├── img_1010916511669927181.jpg
-                            ├── img_1012303717942612276.jpg
-                            ├── img_1013872462926689713.jpg
-                            ├── img_1026301825297539838.jpg
-                            ├── img_1027711405600572944.jpg
-                            └── ... 975 more files
-                        ├── E/ (27 files)
-                            ├── img_1068218386373204811.jpg
-                            ├── img_1371814243062882124.jpg
-                            ├── img_1452310443306626516.jpg
-                            ├── img_1514614130560702578.jpg
-                            ├── img_1641852841385652677.jpg
-                            └── ... 22 more files
-                        ├── H/ (1058 files)
-                            ├── img_1002909197552665701.JPG
-                            ├── img_1008207656221565268.JPG
-                            ├── img_1008682095671219701.JPG
-                            ├── img_1020298347942435468.JPG
-                            ├── img_1021021648854593748.JPG
-                            └── ... 1053 more files
-                        ├── LC/ (237 files)
-                            ├── img_1021286493470242084.JPG
-                            ├── img_1046496082496027886.JPG
-                            ├── img_1047838233098842208.JPG
-                            ├── img_1056908651269482300.JPG
-                            ├── img_1089093957840139717.jpg
-                            └── ... 232 more files
-                        ├── ND/ (270 files)
-                            ├── img_105542916230988211.JPG
-                            ├── img_1089553446482186780.JPG
-                            ├── img_1098604752712000071.JPG
-                            ├── img_116609845563800916.JPG
-                            ├── img_1210401709809295309.JPG
-                            └── ... 265 more files
-                        ├── PM/ (127 files)
-                            ├── img_1009451562217965374.JPG
-                            ├── img_1023789756641853736.JPG
-                            ├── img_1143042287335748041.jpg
-                            ├── img_1144423718354188919.JPG
-                            ├── img_116522741645914162.JPG
-                            └── ... 122 more files
-                    ├── val/ (1114 files)
-                        ├── BS/ (535 files)
-                            ├── img_1004445805584325935.JPG
-                            ├── img_1004876514415117305.JPG
-                            ├── img_1005104344503333130.JPG
-                            ├── img_1012170483198433091.JPG
-                            ├── img_1074144262708697406.JPG
-                            └── ... 530 more files
-                        ├── CLS/ (210 files)
-                            ├── img_1003394149154685965.jpg
-                            ├── img_1013364161379416891.jpg
-                            ├── img_1047750089219008116.jpg
-                            ├── img_1060885620194311915.jpg
-                            ├── img_110802918849949147.jpg
-                            └── ... 205 more files
-                        ├── E/ (6 files)
-                            ├── img_2208029683563505411.jpg
-                            ├── img_228953362312513550.jpg
-                            ├── img_5128687595917713887.jpg
-                            ├── img_5719371091958227718.jpg
-                            ├── img_6094301104988970866.jpg
-                            └── ... 1 more files
-                        ├── H/ (227 files)
-                            ├── img_1016046237392677351.JPG
-                            ├── img_1133358187323026594.JPG
-                            ├── img_1136413845877855017.JPG
-                            ├── img_1191549555307185908.JPG
-                            ├── img_1203751716348490498.jpg
-                            └── ... 222 more files
-                        ├── LC/ (51 files)
-                            ├── img_1041298856617903186.JPG
-                            ├── img_1332772629554594200.JPG
-                            ├── img_1479882109969238584.JPG
-                            ├── img_1707183589622049844.JPG
-                            ├── img_1786878100258071124.JPG
-                            └── ... 46 more files
-                        ├── ND/ (58 files)
-                            ├── img_1227267147593393906.JPG
-                            ├── img_12468795121760574.JPG
-                            ├── img_1352120030952630877.JPG
-                            ├── img_1525634120755985797.JPG
-                            ├── img_1533688604469965067.JPG
-                            └── ... 53 more files
-                        ├── PM/ (27 files)
-                            ├── img_1020930490715948207.jpg
-                            ├── img_1247879829774807467.JPG
-                            ├── img_1933044080662809136.JPG
-                            ├── img_263176812138873847.JPG
-                            ├── img_2681617943025442690.JPG
-                            └── ... 22 more files
-                ├── Potato/ (7675 files)
-                    ├── test/ (1152 files)
-                        ├── B/ (84 files)
-                            ├── img_1114562948992213755.JPG
-                            ├── img_1140143897227110020.JPG
-                            ├── img_1275607219751242672.jpg
-                            ├── img_1381445710812273457.JPG
-                            ├── img_1504965242044332523.jpg
-                            └── ... 79 more files
-                        ├── EB/ (266 files)
-                            ├── img_1022619098818206450.JPG
-                            ├── img_1025200234543205705.jpg
-                            ├── img_1046331595119653530.JPG
-                            ├── img_1053415235838091743.jpg
-                            ├── img_1089769219583389636.jpg
-                            └── ... 261 more files
-                        ├── F/ (110 files)
-                            ├── img_1045427497983037479.jpg
-                            ├── img_1057667828245753326.jpg
-                            ├── img_1159576258445690631.JPG
-                            ├── img_117894098580165766.jpg
-                            ├── img_1304961415498817666.jpg
-                            └── ... 105 more files
-                        ├── H/ (224 files)
-                            ├── img_1030721458810935618.jpg
-                            ├── img_1097678402009757411.jpg
-                            ├── img_1101555910475358316.jpg
-                            ├── img_111037515229622902.jpg
-                            ├── img_1236601985754352128.jpg
-                            └── ... 219 more files
-                        ├── LB/ (290 files)
-                            ├── img_1014623565118069921.jpg
-                            ├── img_1040753143415743197.jpg
-                            ├── img_1106328248745935765.JPG
-                            ├── img_111244973877569937.JPG
-                            ├── img_1125912112900854548.jpg
-                            └── ... 285 more files
-                        ├── N/ (10 files)
-                            ├── img_1852420551510555150.jpg
-                            ├── img_3516620512571945305.JPG
-                            ├── img_3533660129694366772.jpg
-                            ├── img_4821138428075097303.jpg
-                            ├── img_4935876204218832283.JPG
-                            └── ... 5 more files
-                        ├── P/ (90 files)
-                            ├── img_1059099990896208414.JPG
-                            ├── img_1096944830868857328.jpg
-                            ├── img_113425487563593872.jpg
-                            ├── img_1216258345733778159.jpg
-                            ├── img_1309562630707548736.JPG
-                            └── ... 85 more files
-                        ├── V/ (78 files)
-                            ├── img_1018580182631959160.jpg
-                            ├── img_109943273871280388.JPG
-                            ├── img_1246871067348713442.jpg
-                            ├── img_1636159414384156789.jpg
-                            ├── img_1871763710717913014.jpg
-                            └── ... 73 more files
-                    ├── train/ (5372 files)
-                        ├── B/ (394 files)
-                            ├── img_1003057491733828228.jpg
-                            ├── img_1025754273135014368.jpg
-                            ├── img_1030404173745215665.jpg
-                            ├── img_1036803821493661929.jpg
-                            ├── img_1048754642037339778.jpg
-                            └── ... 389 more files
-                        ├── EB/ (1239 files)
-                            ├── img_1009556214544786535.JPG
-                            ├── img_1021458816865427228.JPG
-                            ├── img_1028140756582808627.jpg
-                            ├── img_1028440569068831486.JPG
-                            ├── img_1043405104889002042.jpg
-                            └── ... 1234 more files
-                        ├── F/ (511 files)
-                            ├── img_1016817146211563652.jpg
-                            ├── img_1028322309412647361.jpg
-                            ├── img_1051380038903453357.jpg
-                            ├── img_1054613206809008815.jpg
-                            ├── img_107234409702601507.JPG
-                            └── ... 506 more files
-                        ├── H/ (1046 files)
-                            ├── img_1000120952596758131.jpg
-                            ├── img_1008561508204925124.jpg
-                            ├── img_1013815157131869752.jpg
-                            ├── img_1017207582723654227.jpg
-                            ├── img_1019352440073527360.jpg
-                            └── ... 1041 more files
-                        ├── LB/ (1352 files)
-                            ├── img_1000264403861853966.JPG
-                            ├── img_1001592231956239508.jpg
-                            ├── img_1020317301980914424.jpg
-                            ├── img_1020601477313330432.JPG
-                            ├── img_1021929208426466020.JPG
-                            └── ... 1347 more files
-                        ├── N/ (47 files)
-                            ├── img_1140034435492880367.JPG
-                            ├── img_1660995216273910420.JPG
-                            ├── img_1840938227911344922.JPG
-                            ├── img_1951239020487851427.jpg
-                            ├── img_2014113975925887876.JPG
-                            └── ... 42 more files
-                        ├── P/ (418 files)
-                            ├── img_1015243868939016114.jpg
-                            ├── img_1036794227984445628.jpg
-                            ├── img_1044171765882240771.jpg
-                            ├── img_1093762342876344290.jpg
-                            ├── img_1114245466444797098.jpg
-                            └── ... 413 more files
-                        ├── V/ (365 files)
-                            ├── img_1057200748610281569.JPG
-                            ├── img_1064479341742338616.JPG
-                            ├── img_1089869369249288826.jpg
-                            ├── img_1121633059262255696.jpg
-                            ├── img_1126079288944504483.jpg
-                            └── ... 360 more files
-                    ├── val/ (1151 files)
-                        ├── B/ (85 files)
-                            ├── img_1037147943590517745.JPG
-                            ├── img_109071553750323148.jpg
-                            ├── img_1300875777386512560.JPG
-                            ├── img_1342516599872564577.jpg
-                            ├── img_1475817191197797882.jpg
-                            └── ... 80 more files
-                        ├── EB/ (265 files)
-                            ├── img_1019908019591200431.JPG
-                            ├── img_1058146772640497304.jpg
-                            ├── img_1087508565657661864.jpg
-                            ├── img_1175894018777172645.jpg
-                            ├── img_1196674242306044803.JPG
-                            └── ... 260 more files
-                        ├── F/ (109 files)
-                            ├── img_1095115294866811597.JPG
-                            ├── img_1100837832711894693.jpg
-                            ├── img_1170164316571275367.jpg
-                            ├── img_1259834686307887925.jpg
-                            ├── img_1710859272455782128.jpg
-                            └── ... 104 more files
-                        ├── H/ (224 files)
-                            ├── img_1004569478861991394.jpg
-                            ├── img_1101495857818552065.jpg
-                            ├── img_1155359341064996216.jpg
-                            ├── img_1158117625993763266.jpg
-                            ├── img_1241086025794575282.jpg
-                            └── ... 219 more files
-                        ├── LB/ (290 files)
-                            ├── img_1020147300884206838.jpg
-                            ├── img_1021968535924520577.jpg
-                            ├── img_1046987475758653095.JPG
-                            ├── img_1088405791949835574.jpg
-                            ├── img_1094215894610379812.JPG
-                            └── ... 285 more files
-                        ├── N/ (11 files)
-                            ├── img_179516084134259726.jpg
-                            ├── img_2436860559747669616.jpg
-                            ├── img_3674235411103521643.JPG
-                            ├── img_5162326002688674883.JPG
-                            ├── img_5284979563354892006.jpg
-                            └── ... 6 more files
-                        ├── P/ (89 files)
-                            ├── img_120324780154104333.JPG
-                            ├── img_1238569787304908666.JPG
-                            ├── img_1241843982732262401.jpg
-                            ├── img_1251904564741257024.JPG
-                            ├── img_1272089774744408199.jpg
-                            └── ... 84 more files
-                        ├── V/ (78 files)
-                            ├── img_1098353624870979288.jpg
-                            ├── img_1253794285969405781.jpg
-                            ├── img_1332484540025266722.JPG
-                            ├── img_1333949817894813477.jpg
-                            ├── img_1412425390774114720.jpg
-                            └── ... 73 more files
-                ├── Tomato/ (6187 files)
-                    ├── test/ (929 files)
-                        ├── BS/ (182 files)
-                            ├── img_1060409608388004653.JPG
-                            ├── img_1105370269482615541.JPG
-                            ├── img_1130530237805348279.JPG
-                            ├── img_1222487916878975521.JPG
-                            ├── img_1255875479064381773.JPG
-                            └── ... 177 more files
-                        ├── EB/ (220 files)
-                            ├── img_1040646509506441238.JPG
-                            ├── img_1058954532283417898.JPG
-                            ├── img_1101867834745405228.JPG
-                            ├── img_1106729256553746644.JPG
-                            ├── img_1168415014701888988.jpg
-                            └── ... 215 more files
-                        ├── H/ (206 files)
-                            ├── img_1000041445826767453.JPG
-                            ├── img_1124927530527905332.JPG
-                            ├── img_1150446449738769545.JPG
-                            ├── img_1153340670724775971.jpg
-                            ├── img_1165262406156627937.jpg
-                            └── ... 201 more files
-                        ├── LB/ (166 files)
-                            ├── img_1022909663679138018.jpg
-                            ├── img_1023166657219694865.JPG
-                            ├── img_1095563732543914415.JPG
-                            ├── img_1104855602560585395.JPG
-                            ├── img_1143290961732547944.JPG
-                            └── ... 161 more files
-                        ├── ML/ (75 files)
-                            ├── img_108977916557401783.jpg
-                            ├── img_1243925598047857221.jpg
-                            ├── img_1251182469859500755.jpg
-                            ├── img_1266552858771411851.jpg
-                            ├── img_1550940833650691394.jpg
-                            └── ... 70 more files
-                        ├── MV/ (14 files)
-                            ├── img_2465017043852014499.jpg
-                            ├── img_288434632011816805.jpg
-                            ├── img_3283980349106275705.jpg
-                            ├── img_3831732485077965655.jpg
-                            ├── img_4349253969255114141.jpg
-                            └── ... 9 more files
-                        ├── S/ (45 files)
-                            ├── img_1168600158798427546.jpg
-                            ├── img_1249785215624095736.jpg
-                            ├── img_1318169622115096208.jpg
-                            ├── img_1769369204503221422.jpg
-                            ├── img_2052824347176227869.jpg
-                            └── ... 40 more files
-                        ├── YCV/ (21 files)
-                            ├── img_1243162246120483625.jpg
-                            ├── img_1417969966612128972.jpg
-                            ├── img_1522514043440033712.jpg
-                            ├── img_1724747568333163768.jpg
-                            ├── img_2584381580880045022.jpg
-                            └── ... 16 more files
-                    ├── train/ (4330 files)
-                        ├── BS/ (850 files)
-                            ├── img_100022738144634672.JPG
-                            ├── img_1002585353185045585.JPG
-                            ├── img_1014699829716211549.JPG
-                            ├── img_1014954115777857332.JPG
-                            ├── img_1017605690632348179.JPG
-                            └── ... 845 more files
-                        ├── EB/ (1023 files)
-                            ├── img_1008631743783768801.JPG
-                            ├── img_1011605926393398498.JPG
-                            ├── img_1013259113097670894.JPG
-                            ├── img_1019329632252814272.jpg
-                            ├── img_1030499395051074190.JPG
-                            └── ... 1018 more files
-                        ├── H/ (958 files)
-                            ├── img_100674140407682988.jpg
-                            ├── img_106373766143885173.JPG
-                            ├── img_1076428563174436998.JPG
-                            ├── img_1081377960751579438.JPG
-                            ├── img_1085412772231658093.jpg
-                            └── ... 953 more files
-                        ├── LB/ (774 files)
-                            ├── img_1008667377289918140.jpg
-                            ├── img_1018195163579437616.JPG
-                            ├── img_1028690447220077008.jpg
-                            ├── img_1042034956717299431.jpg
-                            ├── img_1044080277515337077.JPG
-                            └── ... 769 more files
-                        ├── ML/ (352 files)
-                            ├── img_1019619588277294467.jpg
-                            ├── img_1037375617786596830.jpg
-                            ├── img_1041442563582151268.jpg
-                            ├── img_1068513530695738502.jpg
-                            ├── img_1084385513142867090.jpg
-                            └── ... 347 more files
-                        ├── MV/ (65 files)
-                            ├── img_1132250467281502644.jpg
-                            ├── img_1158671090146413457.jpg
-                            ├── img_1196932022982770766.jpg
-                            ├── img_1266376770728373820.jpg
-                            ├── img_1271003501667399763.jpg
-                            └── ... 60 more files
-                        ├── S/ (209 files)
-                            ├── img_106422817310704142.jpg
-                            ├── img_1081943593465236879.jpg
-                            ├── img_1142653438941736051.jpg
-                            ├── img_1164964713403286655.jpg
-                            ├── img_1175779613826288850.jpg
-                            └── ... 204 more files
-                        ├── YCV/ (99 files)
-                            ├── img_1025097423743780109.jpg
-                            ├── img_1531164725458575035.jpg
-                            ├── img_1553867905782564049.jpg
-                            ├── img_1749438129594940261.jpg
-                            ├── img_1755111299121485992.jpg
-                            └── ... 94 more files
-                    ├── val/ (928 files)
-                        ├── BS/ (183 files)
-                            ├── img_1083160391840424467.JPG
-                            ├── img_1112378293310152793.JPG
-                            ├── img_1140459192917307179.JPG
-                            ├── img_1190283185819324709.JPG
-                            ├── img_1200863152448584236.JPG
-                            └── ... 178 more files
-                        ├── EB/ (219 files)
-                            ├── img_1058142251890702637.JPG
-                            ├── img_1082230878933852503.JPG
-                            ├── img_1110304614170518095.jpg
-                            ├── img_1113776819507261762.JPG
-                            ├── img_1161928052850063166.jpg
-                            └── ... 214 more files
-                        ├── H/ (205 files)
-                            ├── img_1037300445198578872.JPG
-                            ├── img_1039388981111144808.jpg
-                            ├── img_1039908602894681651.JPG
-                            ├── img_1043029842033499688.JPG
-                            ├── img_1060287336594596770.JPG
-                            └── ... 200 more files
-                        ├── LB/ (166 files)
-                            ├── img_1020061558667320444.jpg
-                            ├── img_1035194799844408259.jpg
-                            ├── img_1072408103882902780.JPG
-                            ├── img_1083797104437536658.JPG
-                            ├── img_108482235122639217.jpg
-                            └── ... 161 more files
-                        ├── ML/ (75 files)
-                            ├── img_100871994373925164.jpg
-                            ├── img_1032893281410525186.jpg
-                            ├── img_1245855250928165030.jpg
-                            ├── img_1466204944395881806.jpg
-                            ├── img_1672879524087046754.jpg
-                            └── ... 70 more files
-                        ├── MV/ (14 files)
-                            ├── img_1215537865338884170.jpg
-                            ├── img_1395915911562401317.jpg
-                            ├── img_1801918145440601081.jpg
-                            ├── img_2079534488243832621.jpg
-                            ├── img_2352189803860104342.jpg
-                            └── ... 9 more files
-                        ├── S/ (45 files)
-                            ├── img_1006651983176997015.jpg
-                            ├── img_1997865834054686389.jpg
-                            ├── img_2044840332283167611.jpg
-                            ├── img_2064150125705957609.jpg
-                            ├── img_251373473088722978.jpg
-                            └── ... 40 more files
-                        ├── YCV/ (21 files)
-                            ├── img_1457979756610645406.jpg
-                            ├── img_1849499662857185737.jpg
-                            ├── img_2161212909706572786.jpg
-                            ├── img_2551105748852745093.jpg
-                            ├── img_3487754401595041898.jpg
-                            └── ... 16 more files
-            ├── generated_crops/ (3172 files)
-                ├── groundnut/ (3172 files)
-                    ├── leaf_crops/ (3172 files)
-                        ├── GLUE_ELS_001.jpg
-                        ├── GLUE_ELS_002.JPG
-                        ├── GLUE_ELS_003.JPG
-                        ├── GLUE_ELS_004.JPG
-                        ├── GLUE_ELS_005.JPG
-                        └── ... 3167 more files
-                    ├── needs_review/ (0 files)
-            ├── models/ (12 files)
-                ├── crop_identifier_labels.json
-                ├── crop_identifier_v1.pth
-                ├── disease_Cotton.pth
-                ├── disease_Cotton_labels.json
-                ├── disease_Groundnut.pth
-                ├── disease_Groundnut_labels.json
-                ├── disease_Pepper_Bell.pth
-                ├── disease_Pepper_Bell_labels.json
-                ├── disease_Potato.pth
-                ├── disease_Potato_labels.json
-                ├── disease_Tomato.pth
-                ├── disease_Tomato_labels.json
-            ├── old files/ (12300 files)
-                ├── processed_dataset-old/ (12281 files)
-                    ├── test/ (1127 files)
-                        ├── BellPepper/ (148 files)
-                            ├── bell_paper_0016.JPG
-                            ├── bell_paper_0024.JPG
-                            ├── bell_paper_0030.JPG
-                            ├── bell_paper_0033.JPG
-                            ├── bell_paper_0052.JPG
-                            └── ... 143 more files
-                        ├── Chilli/ (220 files)
-                            ├── chilli_0030.jpg
-                            ├── chilli_0045.jpg
-                            ├── chilli_0049.jpg
-                            ├── chilli_0050.jpg
-                            ├── chilli_0060.jpg
-                            └── ... 215 more files
-                        ├── Cotton/ (170 files)
-                            ├── cotton_0016.jpg
-                            ├── cotton_0030.jpg
-                            ├── cotton_0033.jpg
-                            ├── cotton_0045.jpg
-                            ├── cotton_0057.jpg
-                            └── ... 165 more files
-                        ├── Groundnut/ (275 files)
-                            ├── groundnut_0031.jpg
-                            ├── groundnut_0033.jpg
-                            ├── groundnut_0044.jpg
-                            ├── groundnut_0052.jpg
-                            ├── groundnut_0064.jpg
-                            └── ... 270 more files
-                        ├── Potato/ (154 files)
-                            ├── potato_0016.jpg
-                            ├── potato_0031.jpg
-                            ├── potato_0033.jpg
-                            ├── potato_0044.jpg
-                            ├── potato_0050.jpg
-                            └── ... 149 more files
-                        ├── Tomato/ (160 files)
-                            ├── tomato_0030.JPG
-                            ├── tomato_0031.JPG
-                            ├── tomato_0045.JPG
-                            ├── tomato_0050.JPG
-                            ├── tomato_0066.JPG
-                            └── ... 155 more files
-                    ├── train/ (9927 files)
-                        ├── BellPepper/ (1361 files)
-                            ├── bell_paper_0001.JPG
-                            ├── bell_paper_0002.JPG
-                            ├── bell_paper_0003.JPG
-                            ├── bell_paper_0004.JPG
-                            ├── bell_paper_0005.JPG
-                            └── ... 1356 more files
-                        ├── Chilli/ (1891 files)
-                            ├── chilli_0001.jpg
-                            ├── chilli_0002.jpg
-                            ├── chilli_0003.jpg
-                            ├── chilli_0004.jpg
-                            ├── chilli_0005.jpg
-                            └── ... 1886 more files
-                        ├── Cotton/ (1487 files)
-                            ├── cotton_0001.jpg
-                            ├── cotton_0002.jpg
-                            ├── cotton_0003.jpg
-                            ├── cotton_0004.jpg
-                            ├── cotton_0005.jpg
-                            └── ... 1482 more files
-                        ├── Groundnut/ (2331 files)
-                            ├── groundnut_0001.jpg
-                            ├── groundnut_0002.jpg
-                            ├── groundnut_0003.jpg
-                            ├── groundnut_0004.jpg
-                            ├── groundnut_0005.jpg
-                            └── ... 2326 more files
-                        ├── Potato/ (1405 files)
-                            ├── new_potato_0001.jpg
-                            ├── new_potato_0002.jpg
-                            ├── new_potato_0003.jpg
-                            ├── new_potato_0004.jpg
-                            ├── new_potato_0005.jpg
-                            └── ... 1400 more files
-                        ├── Tomato/ (1452 files)
-                            ├── new_tomato_0001.jpeg
-                            ├── new_tomato_0002.jpeg
-                            ├── new_tomato_0003.jpg
-                            ├── new_tomato_0004.jpg
-                            ├── new_tomato_0005.jpg
-                            └── ... 1447 more files
-                    ├── val/ (1227 files)
-                        ├── BellPepper/ (168 files)
-                            ├── bell_paper_0031.JPG
-                            ├── bell_paper_0044.JPG
-                            ├── bell_paper_0045.JPG
-                            ├── bell_paper_0050.JPG
-                            ├── bell_paper_0059.JPG
-                            └── ... 163 more files
-                        ├── Chilli/ (234 files)
-                            ├── chilli_0014.jpg
-                            ├── chilli_0024.jpg
-                            ├── chilli_0052.jpg
-                            ├── chilli_0057.jpg
-                            ├── chilli_0070.jpg
-                            └── ... 229 more files
-                        ├── Cotton/ (184 files)
-                            ├── cotton_0024.jpg
-                            ├── cotton_0031.jpg
-                            ├── cotton_0044.jpg
-                            ├── cotton_0050.jpg
-                            ├── cotton_0052.jpg
-                            └── ... 179 more files
-                        ├── Groundnut/ (289 files)
-                            ├── groundnut_0030.jpg
-                            ├── groundnut_0045.jpg
-                            ├── groundnut_0046.jpg
-                            ├── groundnut_0057.jpg
-                            ├── groundnut_0071.jpg
-                            └── ... 284 more files
-                        ├── Potato/ (173 files)
-                            ├── new_potato_0001.jpg
-                            ├── new_potato_0002.jpeg
-                            ├── new_potato_0003.jpg
-                            ├── new_potato_0004.jpg
-                            ├── new_potato_0005.jpg
-                            └── ... 168 more files
-                        ├── Tomato/ (179 files)
-                            ├── new_tomato_0001.jpeg
-                            ├── new_tomato_0002.jpeg
-                            ├── new_tomato_0003.jpeg
-                            ├── new_tomato_0004.jpg
-                            ├── new_tomato_0005.jpeg
-                            └── ... 174 more files
-                ├── scripts-old/ (5 files)
-                    ├── add_new_images.py
-                    ├── download_images.py
-                    ├── lookup_taxa.py
-                    ├── retrain_v2.py
-                    ├── verify_v2.py
-                ├── test_images-old/ (6 files)
-                    ├── bellpepper.jpeg
-                    ├── chilli.jpg
-                    ├── cotton.jpg
-                    ├── groundnut.jpg
-                    ├── potato.jpg
-                    ├── tomato.jpg
-                ├── 01_data_preparation-old.ipynb
-                ├── 02_train_crop_identifier-old.ipynb
-                ├── 03_evaluation-old.ipynb
-                ├── 04_inference-old.ipynb
-                ├── classes-old.json
-                ├── evaluation-old.json
-                ├── manifest_old.csv
-                ├── prediction-old.json
-            ├── pest_dataset/ (0 files)
-                ├── train/ (0 files)
-                    ├── LM/ (0 files)
-            ├── 01_prepare_crop_dataset.ipynb
-            ├── 02_train_crop_identifier.ipynb
-            ├── 03_leaf_segmentation.ipynb
-            ├── 04_evaluation.ipynb
-            ├── 05_test_ui.ipynb
-            ├── 06_prepare_disease_dataset.ipynb
-            ├── 07_train_disease_classifier.ipynb
-            ├── 08_evaluate_disease_classifier.ipynb
-            ├── 09_decision_engine.ipynb
-            ├── 10_test_ui_full_pipeline.ipynb
-            ├── 11_train_pest_classifier.ipynb
-            ├── 12_evaluate_and_deploy_pest_model.ipynb
-            ├── 13_evaluate_and_test_pest_classifier.ipynb
-            ├── configurations.ipynb
+        ├── generated_crops/ (3172 files)
+            ├── groundnut/ (3172 files)
+                ├── leaf_crops/ (3172 files)
+                ├── needs_review/ (0 files)
+        ├── pest_dataset/ (546 files)
+            ├── test/ (82 files)
+                ├── A/ (10 files)
+                ├── AW/ (6 files)
+                ├── LM/ (59 files)
+                ├── SM/ (7 files)
+            ├── train/ (380 files)
+                ├── A/ (45 files)
+                ├── AW/ (28 files)
+                ├── LM/ (272 files)
+                ├── SM/ (35 files)
+            ├── val/ (81 files)
+                ├── A/ (9 files)
+                ├── AW/ (6 files)
+                ├── LM/ (58 files)
+                ├── SM/ (8 files)
+        ├── testing_images/ (6 files)
+            ├── aphids_tomato.jpeg
+            ├── army_worm_cotton.jpeg
+            ├── download.jpeg
+            ├── leaf_miner_tomato.jpeg
+            ├── sample.jpg
+            ├── spider_mite_tomato.jpeg
+    ├── Docs/ (8 files)
+        ├── AI-Powered-Monitoring-of-Crop-Health-Soil-Condition-and-Pest-Risks.pptx
+        ├── dataset descriptions.txt
+        ├── name change of folders.txt
+        ├── opencv_notes.txt
+        ├── smart_farming_roadmap.md
+        ├── smart_farming_roadmap.pdf
+        ├── smart_farming_roadmap_v2.md
+        ├── smart_farming_roadmap_v2.pdf
+    ├── models/ (44 files)
+        ├── csvs/ (1 files)
+            ├── manifest.csv
+        ├── matrixes/ (8 files)
             ├── confusion_matrix.png
             ├── confusion_matrix_Cotton.png
             ├── confusion_matrix_Groundnut.png
             ├── confusion_matrix_Pepper_Bell.png
             ├── confusion_matrix_Potato.png
             ├── confusion_matrix_Tomato.png
+            ├── confusion_matrix_pest.png
             ├── gradcam_samples.png
-            ├── manifest.csv
-            ├── project_config.py
-            ├── yolo26n.pt
-            ├── yolov8n-cls.pt
-        ├── aphids_tomato.jpeg
-        ├── army_worm_cotton.jpeg
-        ├── dataset descriptions.txt
-        ├── download.jpeg
-        ├── leaf_miner_tomato.jpeg
-        ├── name change of folders.txt
+        ├── pest_classifier/ (21 files)
+            ├── training/ (19 files)
+                ├── run/ (19 files)
+                    ├── weights/ (2 files)
+                        ├── best.pt
+                        ├── last.pt
+                    ├── args.yaml
+                    ├── confusion_matrix.png
+                    ├── confusion_matrix_normalized.png
+                    ├── results.csv
+                    ├── results.png
+                    ├── train_batch0.jpg
+                    ├── train_batch1.jpg
+                    ├── train_batch2.jpg
+                    ├── train_batch480.jpg
+                    ├── train_batch481.jpg
+                    ├── train_batch482.jpg
+                    ├── val_batch0_labels.jpg
+                    ├── val_batch0_pred.jpg
+                    ├── val_batch1_labels.jpg
+                    ├── val_batch1_pred.jpg
+                    ├── val_batch2_labels.jpg
+                    ├── val_batch2_pred.jpg
+            ├── last.pt
+            ├── pest_classifier.pt
+        ├── crop_identifier_labels.json
+        ├── crop_identifier_v1.pth
+        ├── disease_Cotton.pth
+        ├── disease_Cotton_labels.json
+        ├── disease_Groundnut.pth
+        ├── disease_Groundnut_labels.json
+        ├── disease_Pepper_Bell.pth
+        ├── disease_Pepper_Bell_labels.json
+        ├── disease_Potato.pth
+        ├── disease_Potato_labels.json
+        ├── disease_Tomato.pth
+        ├── disease_Tomato_labels.json
+        ├── yolo26n.pt
+        ├── yolov8n-cls.pt
+    ├── notebooks/ (18 files)
+        ├── .gradio/ (2 files)
+            ├── flagged/ (2 files)
+                ├── Crop Prediction/ (0 files)
+                ├── Drag & drop a leaf photo here/ (1 files)
+                    ├── 34279336755600e17d24/ (1 files)
+                        ├── Rust (100).jpg
+                ├── What the model actually sees (after leaf segmentation)/ (1 files)
+                    ├── 1348b312c7794d7db515/ (1 files)
+                        ├── image.webp
+        ├── 01_prepare_crop_dataset.ipynb
+        ├── 02_train_crop_identifier.ipynb
+        ├── 03_leaf_segmentation.ipynb
+        ├── 04_evaluation.ipynb
+        ├── 05_test_ui.ipynb
+        ├── 06_prepare_disease_dataset.ipynb
+        ├── 07_train_disease_classifier.ipynb
+        ├── 08_evaluate_disease_classifier.ipynb
+        ├── 09_decision_engine.ipynb
+        ├── 10_test_ui_full_pipeline.ipynb
+        ├── 11_train_pest_classifier.ipynb
+        ├── 12_evaluate_and_test_pest_classifier.ipynb
+        ├── configurations.ipynb
         ├── opencv_learning.ipynb
-        ├── opencv_notes.txt
+        ├── project_config.py
         ├── requirements.txt
-        ├── sample.jpg
-        ├── spider_mite_tomato.jpeg
+    ├── old_files/ (12300 files)
+        ├── processed_dataset-old/ (12281 files)
+            ├── test/ (1127 files)
+                ├── BellPepper/ (148 files)
+                ├── Chilli/ (220 files)
+                ├── Cotton/ (170 files)
+                ├── Groundnut/ (275 files)
+                ├── Potato/ (154 files)
+                ├── Tomato/ (160 files)
+            ├── train/ (9927 files)
+                ├── BellPepper/ (1361 files)
+                ├── Chilli/ (1891 files)
+                ├── Cotton/ (1487 files)
+                ├── Groundnut/ (2331 files)
+                ├── Potato/ (1405 files)
+                ├── Tomato/ (1452 files)
+            ├── val/ (1227 files)
+                ├── BellPepper/ (168 files)
+                ├── Chilli/ (234 files)
+                ├── Cotton/ (184 files)
+                ├── Groundnut/ (289 files)
+                ├── Potato/ (173 files)
+                ├── Tomato/ (179 files)
+        ├── scripts-old/ (5 files)
+            ├── add_new_images.py
+            ├── download_images.py
+            ├── lookup_taxa.py
+            ├── retrain_v2.py
+            ├── verify_v2.py
+        ├── test_images-old/ (6 files)
+            ├── bellpepper.jpeg
+            ├── chilli.jpg
+            ├── cotton.jpg
+            ├── groundnut.jpg
+            ├── potato.jpg
+            ├── tomato.jpg
+        ├── 01_data_preparation-old.ipynb
+        ├── 02_train_crop_identifier-old.ipynb
+        ├── 03_evaluation-old.ipynb
+        ├── 04_inference-old.ipynb
+        ├── classes-old.json
+        ├── evaluation-old.json
+        ├── manifest_old.csv
+        ├── prediction-old.json
     ├── .gitattributes
     ├── .gitignore
-    ├── AI-Powered-Monitoring-of-Crop-Health-Soil-Condition-and-Pest-Risks.pptx
     ├── count.py
     ├── folder_tree.txt
-    ├── smart_farming_roadmap.md
-    ├── smart_farming_roadmap.pdf
-    ├── smart_farming_roadmap_v2.md
-    ├── smart_farming_roadmap_v2.pdf

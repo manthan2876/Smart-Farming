@@ -139,8 +139,7 @@ Thumbs.db
 cropidentification
 
 # Ignore old files folder
-Crop\ Identification/notebooks/old\ files/
-**/old\ files/
+old_files/
 
 # YOLO dataset caches
 *.cache

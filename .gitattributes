@@ -7,8 +7,10 @@
 *.tar.gz filter=lfs diff=lfs merge=lfs -text
 
 # Correct relative paths with quotes to handle spaces properly
-"Crop Identification/Final Datasets/**" filter=lfs diff=lfs merge=lfs -text
-"Crop Identification/notebooks/pest_dataset/**" filter=lfs diff=lfs merge=lfs -text
-"Crop Identification/notebooks/dataset_split/**" filter=lfs diff=lfs merge=lfs -text
-"Crop Identification/notebooks/disease_dataset/**" filter=lfs diff=lfs merge=lfs -text
-"Crop Identification/notebooks/generated_crops/**" filter=lfs diff=lfs merge=lfs -text
+"Datasets/**" filter=lfs diff=lfs merge=lfs -text
+"Datasets/pest_dataset/**" filter=lfs diff=lfs merge=lfs -text
+"Datasets/dataset_split/**" filter=lfs diff=lfs merge=lfs -text
+"Datasets/disease_dataset/**" filter=lfs diff=lfs merge=lfs -text
+"Datasets/generated_crops/**" filter=lfs diff=lfs merge=lfs -text
+"Datasets/final_combined_datasets/**" filter=lfs diff=lfs merge=lfs -text
+"models/**" filter=lfs diff=lfs merge=lfs -text
