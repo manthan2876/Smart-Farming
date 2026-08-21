@@ -1,0 +1,16 @@
+
+models:
+  crop_identifier: "models/crop_identifier_v2.pth"
+  disease_models:
+    tomato: "models/tomato_disease_v1.pth"
+    potato: "models/potato_disease_v1.pth"
+    cotton: "models/cotton_disease_v1.pth"
+thresholds:
+  crop_confidence: 0.75
+  disease_confidence: 0.70
+  blur_var_threshold: 100.0
+  min_brightness: 40.0
+  max_brightness: 240.0
+storage:
+  upload_dir: "uploads/"
+  processed_dir: "processed/"

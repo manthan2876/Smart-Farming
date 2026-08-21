@@ -1,0 +1,40 @@
+
+models:
+  crop_identifier:
+    path: "models/crop_identifier_v1.pth"
+    labels: "models/crop_identifier_labels.json"
+    arch: "efficientnet_b0"
+  disease_models:
+    Cotton:
+      path: "models/disease_Cotton.pth"
+      labels: "models/disease_Cotton_labels.json"
+      arch: "efficientnet_b2"
+    Groundnut:
+      path: "models/disease_Groundnut.pth"
+      labels: "models/disease_Groundnut_labels.json"
+      arch: "efficientnet_b2"
+    Pepper_Bell:
+      path: "models/disease_Pepper_Bell.pth"
+      labels: "models/disease_Pepper_Bell_labels.json"
+      arch: "efficientnet_b2"
+    Potato:
+      path: "models/disease_Potato.pth"
+      labels: "models/disease_Potato_labels.json"
+      arch: "efficientnet_b2"
+    Tomato:
+      path: "models/disease_Tomato.pth"
+      labels: "models/disease_Tomato_labels.json"
+      arch: "efficientnet_b2"
+  pest_classifier:
+    path: "models/pest_classifier/pest_classifier.pt"
+
+thresholds:
+  crop_confidence: 0.75
+  disease_confidence: 0.60
+  blur_var_threshold: 100.0
+  min_brightness: 40.0
+  max_brightness: 240.0
+
+storage:
+  upload_dir: "uploads/"
+  processed_dir: "processed/"

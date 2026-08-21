@@ -1,0 +1,13 @@
+image_name,status,blur_score,brightness_score,quality_score,leaf_detected,processed_path
+aphids_tomato.jpeg,completed,1075.648296127532,114.93882157282015,595.293558850176,True,processed/aphids_tomato.jpeg
+army_worm_cotton.jpeg,completed,2983.2294775001415,114.01952908587258,1548.624503293007,True,processed/army_worm_cotton.jpeg
+blury_leaf_1.jpg,failed_blur,34.659609353198576,,,False,
+download.jpeg,completed,854.1033438014524,145.65716893527522,499.8802563683638,True,processed/download.jpeg
+leaf_miner_tomato.jpeg,completed,1051.3692058899355,148.88899046104927,600.1290981754923,True,processed/leaf_miner_tomato.jpeg
+low_brightness_leaf_1.jpg,failed_lighting,355.2278180986167,22.578473701917684,,False,
+opencv_test_1.jpg,completed,3271.99921217501,112.52719324391455,1692.2632027094623,True,processed/opencv_test_1.jpg
+opencv_test_2.jpg,completed,1102.6714701997582,160.6986028738606,631.6850365368094,True,processed/opencv_test_2.jpg
+opencv_test_3.jpg,completed,5559.615809736232,143.757793383333,2851.6868015597825,True,processed/opencv_test_3.jpg
+opencv_test_4.jpg,completed,1654.1557066835358,110.31443298969072,882.2350698366132,True,processed/opencv_test_4.jpg
+sample.jpg,completed,988.6790688413324,135.8726305673383,562.2758497043353,True,processed/sample.jpg
+spider_mite_tomato.jpeg,completed,1990.6938587408372,85.13679085941381,1037.9153248001255,True,processed/spider_mite_tomato.jpeg
