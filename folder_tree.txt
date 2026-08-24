@@ -1,4 +1,4 @@
-Smart-Farming/ (110870 files)
+Smart-Farming/ (98576 files)
     ├── Datasets/ (98458 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
@@ -271,19 +271,21 @@ Smart-Farming/ (110870 files)
             ├── opencv_test_4.jpg
             ├── sample.jpg
             ├── spider_mite_tomato.jpeg
-    ├── Docs/ (8 files)
-        ├── AI-Powered-Monitoring-of-Crop-Health-Soil-Condition-and-Pest-Risks.pptx
+    ├── Docs/ (9 files)
+        ├── Ai-Powered-Smart-Farming.pptx
         ├── dataset descriptions.txt
         ├── name change of folders.txt
         ├── opencv_notes.txt
+        ├── research-notes_on_how-weather-affect-on-crop.txt
         ├── smart_farming_roadmap.md
         ├── smart_farming_roadmap.pdf
         ├── smart_farming_roadmap_v2.md
         ├── smart_farming_roadmap_v2.pdf
-    ├── backend/ (22 files)
-        ├── processed/ (1 files)
+    ├── backend/ (28 files)
+        ├── processed/ (2 files)
+            ├── aphids_tomato.jpeg
             ├── sample.jpg
-        ├── services/ (14 files)
+        ├── services/ (18 files)
             ├── crop_identifier/ (2 files)
                 ├── __init__.py
                 ├── predictor.py
@@ -300,13 +302,20 @@ Smart-Farming/ (110870 files)
                 ├── __init__.py
                 ├── leaf_isolator.py
                 ├── service.py
+            ├── recommendation/ (2 files)
+                ├── __init__.py
+                ├── service.py
             ├── severity/ (2 files)
                 ├── __init__.py
                 ├── estimator.py
+            ├── weather/ (2 files)
+                ├── __init__.py
+                ├── service.py
             ├── __init__.py
         ├── utils/ (2 files)
             ├── __init__.py
             ├── model_loader.py
+        ├── .env
         ├── config.yaml
         ├── context.py
         ├── pipeline.py
@@ -399,50 +408,6 @@ Smart-Farming/ (110870 files)
         ├── project_config.py
         ├── requirements.txt
         ├── yolov8n-cls.pt
-    ├── old_files/ (12300 files)
-        ├── processed_dataset-old/ (12281 files)
-            ├── test/ (1127 files)
-                ├── BellPepper/ (148 files)
-                ├── Chilli/ (220 files)
-                ├── Cotton/ (170 files)
-                ├── Groundnut/ (275 files)
-                ├── Potato/ (154 files)
-                ├── Tomato/ (160 files)
-            ├── train/ (9927 files)
-                ├── BellPepper/ (1361 files)
-                ├── Chilli/ (1891 files)
-                ├── Cotton/ (1487 files)
-                ├── Groundnut/ (2331 files)
-                ├── Potato/ (1405 files)
-                ├── Tomato/ (1452 files)
-            ├── val/ (1227 files)
-                ├── BellPepper/ (168 files)
-                ├── Chilli/ (234 files)
-                ├── Cotton/ (184 files)
-                ├── Groundnut/ (289 files)
-                ├── Potato/ (173 files)
-                ├── Tomato/ (179 files)
-        ├── scripts-old/ (5 files)
-            ├── add_new_images.py
-            ├── download_images.py
-            ├── lookup_taxa.py
-            ├── retrain_v2.py
-            ├── verify_v2.py
-        ├── test_images-old/ (6 files)
-            ├── bellpepper.jpeg
-            ├── chilli.jpg
-            ├── cotton.jpg
-            ├── groundnut.jpg
-            ├── potato.jpg
-            ├── tomato.jpg
-        ├── 01_data_preparation-old.ipynb
-        ├── 02_train_crop_identifier-old.ipynb
-        ├── 03_evaluation-old.ipynb
-        ├── 04_inference-old.ipynb
-        ├── classes-old.json
-        ├── evaluation-old.json
-        ├── manifest_old.csv
-        ├── prediction-old.json
     ├── .gitattributes
     ├── .gitignore
     ├── count.py

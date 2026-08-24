@@ -13,6 +13,7 @@ from services.disease_classifier.predictor import predict_disease
 from services.severity.estimator import estimate_severity
 from services.pest_detector.predictor import predict_pest
 from services.weather.service import fetch_weather
+from services.recommendation.service import generate_recommendation
 
 _CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
@@ -33,10 +34,9 @@ def run_pipeline(context: dict) -> dict:
     context = predict_disease(context, _CONFIG)
     context = estimate_severity(context)
     context = predict_pest(context, _CONFIG)
-    
-    # Integrated Weather Fetch Stage before recommendations
     context = fetch_weather(context, _CONFIG)
-    
+    context = generate_recommendation(context, _CONFIG)
+
     return context
 
 def reload_config() -> None:

@@ -1,7 +1,7 @@
 import os
 
 ROOT_FOLDER = r"Z:\Projects\Smart-Farming"
-IGNORE_FOLDERS = [".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build"]
+IGNORE_FOLDERS = [".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build", "old_files"]
 DATASET_FOLDERS = ["datasets", "final_combined_datasets", "dataset_split", "disease_dataset", "generated_crops", "pest_dataset", "processed_dataset-old"]
 OUTPUT_FILE = "folder_tree.txt"
 

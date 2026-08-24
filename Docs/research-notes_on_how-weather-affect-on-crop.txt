@@ -1,0 +1,13 @@
+Components used in getting farming weather data:
+
+anemometer: detect wind which is used to determine when to give fertilizer and chemicals using sprays
+thermometer: detect temperature which is used to calculate GDD(Growing Degree Days)
+Hygrometer: detect humidity in air which is help to determine watering schedule
+Barometer: detect atmospheric pressure of air which help to predict weather conditions like rain, storms and all which help to do preventions to protect crop
+rain gauge: calculate how much rainfall has been happened which help to watering
+pyranometer: calculate solar radiations which help to adjust protection of crop from too much or too little radiations
+uv sensor: measures uv rays which help to optimize planting schedules, protect crop from sun damage
+leaf wetness sensor: measure surface water which helps to control fungal disease
+soil moisture sensor: calculates soils moisture which helps to prevent overwatering or underwatering
+soil temperature sensor: calculates soils temperature which help to determine planting timing so soil temperature greatly impect seed germinations and growth rate
+
