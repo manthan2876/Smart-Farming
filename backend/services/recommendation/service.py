@@ -1,30 +1,71 @@
 """
-service.py — LLM Recommendation Service
-Generates actionable farming recommendations using Gemini based on 
-crop, disease, severity, pests, weather, and location.
+Smart Farming - Remote AI Recommendation Service
+
+Uses Hugging Face Inference Providers instead of loading
+a large LLM locally.
+
+Model:
+    Qwen/Qwen2.5-1.5B-Instruct
+
+Provider:
+    Hugging Face Inference Providers
+
+Required environment variable:
+    HF_TOKEN
 """
 
-import os
 import json
+import os
 from typing import Any
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from huggingface_hub import InferenceClient
 
 load_dotenv()
 
-def generate_recommendation(context: dict, config: dict[str, Any] = None) -> dict:
-    """
-    Constructs a detailed prompt from the shared context dictionary and 
-    calls the Gemini API to generate structured agricultural advice.
-    """
-    # 1. Check if preprocessing and core stages completed
-    if context["status"]["preprocessing"] != "completed":
-        context["status"]["recommendation"] = "skipped"
-        context["notes"].append("Recommendation skipped because preprocessing failed.")
-        return context
+MODEL_ID = "Qwen/Qwen3-4B-Instruct-2507"
+HF_TOKEN = os.getenv("HF_TOKEN")
+_CLIENT_CACHE = InferenceClient(
+    api_key=HF_TOKEN,
+    provider="nscale",
+)
 
-    # 2. Extract context data
+def _get_hf_client() -> InferenceClient:
+    """Create and cache the Hugging Face InferenceClient."""
+    global _CLIENT_CACHE
+    if _CLIENT_CACHE is not None:
+        return _CLIENT_CACHE
+    if not HF_TOKEN:
+        raise RuntimeError(
+            "HF_TOKEN environment variable is not set. "
+            "Create a Hugging Face token with "
+            "'Make calls to Inference Providers' permission "
+            "and store it in backend/.env."
+        )
+    print("[INFO] Initializing Hugging Face Inference Client...")
+    print(f"[INFO] Recommendation model: {MODEL_ID}")
+    print("[INFO] Provider: nscale")
+    _CLIENT_CACHE = InferenceClient(api_key=HF_TOKEN, provider="nscale")
+    return _CLIENT_CACHE
+
+def _extract_json(text: str) -> dict:
+    if not text:
+        raise ValueError("Hugging Face returned an empty response.")
+    response_text = text.strip()
+    if "```json" in response_text:
+        response_text = response_text.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in response_text:
+        response_text = response_text.split("```", 1)[1].split("```", 1)[0].strip()
+    start_idx = response_text.find("{")
+    end_idx = response_text.rfind("}")
+    if start_idx == -1 or end_idx == -1:
+        raise ValueError(f"No JSON object found in Hugging Face response: {response_text[:500]}")
+    json_text = response_text[start_idx:end_idx + 1]
+    data = json.loads(json_text)
+    if not isinstance(data, dict):
+        raise ValueError("Model response JSON is not an object.")
+    return data
+
+def _build_prompt(context: dict) -> str:
     crop = context.get("crop", {})
     disease = context.get("disease", {})
     severity = context.get("severity", {})
@@ -33,80 +74,117 @@ def generate_recommendation(context: dict, config: dict[str, Any] = None) -> dic
     user = context.get("user", {})
 
     crop_label = crop.get("label", "Unknown Crop")
-    crop_conf = crop.get("confidence", 0.0)
-    
+    crop_confidence = crop.get("confidence", 0.0)
     disease_label = disease.get("label", "Unknown")
-    disease_conf = disease.get("confidence", 0.0)
-    
-    severity_pct = severity.get("percent", 0.0)
-    severity_bucket = severity.get("bucket", "N/A")
-    
+    disease_confidence = disease.get("confidence", 0.0)
+    severity_percent = severity.get("percent", 0.0)
+    severity_bucket = severity.get("bucket", "Unknown")
     location = user.get("location", "Unknown Location")
-    
-    # Format weather summary
-    weather_desc = weather.get("description", "N/A")
-    temp = weather.get("temperature_celsius", "N/A")
+    temperature = weather.get("temperature_celsius", "N/A")
     humidity = weather.get("humidity_percent", "N/A")
     wind_speed = weather.get("wind_speed_m_s", "N/A")
+    weather_condition = weather.get("condition", "N/A")
+    weather_description = weather.get("description", "N/A")
 
-    # Format pests summary
-    pest_summary = ", ".join([f"{p.get('label')} ({p.get('confidence'):.2f})" for p in pests]) if pests else "None detected"
+    pest_items = []
+    for pest in pests:
+        label = pest.get("label", "Unknown")
+        confidence = pest.get("confidence", 0.0)
+        try:
+            confidence = float(confidence)
+        except (TypeError, ValueError):
+            confidence = 0.0
+        pest_items.append(f"{label} ({confidence:.3f})")
+    pest_summary = ", ".join(pest_items) if pest_items else "No pest detected"
 
-    # 3. Initialize Gemini API Client
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API")
-    if not api_key:
-        context["status"]["recommendation"] = "failed"
-        context["notes"].append("Recommendation failed: GEMINI_API_KEY is missing in environment variables.")
+    prompt = f"""
+You are an agricultural advisory AI for a Smart Farming system.
+Analyze the following crop diagnostic information.
+
+IMPORTANT:
+- Give practical and concise agricultural recommendations.
+- Do not invent measurements that are not provided.
+- Consider crop, disease, severity, pests, weather and location.
+- Do not provide dangerous or excessive chemical instructions.
+- Recommend following the pesticide/fungicide label and local agricultural guidance.
+- Return ONLY valid JSON.
+- Do not use Markdown.
+- Do not add explanations outside the JSON.
+
+FARM DIAGNOSTIC DATA
+Location: {location}
+Crop: {crop_label}
+Crop confidence: {crop_confidence}
+Disease / Condition: {disease_label}
+Disease confidence: {disease_confidence}
+Disease severity: {severity_percent}%
+Severity category: {severity_bucket}
+Detected pests: {pest_summary}
+Weather condition: {weather_condition}
+Weather description: {weather_description}
+Temperature: {temperature} °C
+Humidity: {humidity} %
+Wind speed: {wind_speed} m/s
+
+RETURN EXACTLY THIS JSON STRUCTURE:
+{{
+    "fertilizer": "Specific fertilizer or nutrient-management recommendation",
+    "pesticide": "Disease and pest management recommendation",
+    "irrigation": "Irrigation recommendation considering weather and disease severity",
+    "prevention_tips": "Disease and pest prevention recommendations"
+}}
+"""
+    return prompt.strip()
+
+def generate_recommendation(context: dict, config: dict[str, Any] = None) -> dict:
+    if context["status"]["preprocessing"] != "completed":
+        context["status"]["recommendation"] = "skipped"
+        context["notes"].append("Recommendation skipped because preprocessing failed.")
         return context
 
     try:
-        client = genai.Client(api_key=api_key)
-
-        # 4. Construct the Prompt
-        prompt = f"""
-You are an expert agricultural AI assistant. Analyze the following farm diagnostic report and provide precise, actionable recommendations for the farmer.
-
-DIAGNOSTIC REPORT:
-- Location: {location}
-- Detected Crop: {crop_label} (Confidence: {crop_conf})
-- Disease/Condition: {disease_label} (Confidence: {disease_conf})
-- Infection Severity: {severity_pct}% (Bucket: {severity_bucket})
-- Detected Pests: {pest_summary}
-- Current Weather: {temp}°C, Humidity: {humidity}%, Wind: {wind_speed} m/s, Condition: {weather_desc}
-
-Provide your response strictly in the following valid JSON structure with these exact keys:
-{{
-  "fertilizer": "Recommended fertilizer adjustments or soil nutrients",
-  "pesticide": "Recommended treatment, chemical or organic, considering severity and weather",
-  "irrigation": "Specific watering advice based on current weather and humidity",
-  "prevention_tips": "Long-term disease and pest prevention practices for future cycles"
-}}
-"""
-
-        # 5. Call Gemini Model (using standard structured response generation)
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.2,
-            ),
+        print("[INFO] Generating recommendation using Hugging Face...")
+        client = _get_hf_client()
+        prompt = _build_prompt(context)
+        completion = client.chat.completions.create(
+            model=MODEL_ID,
+            messages=[
+                {"role": "system", "content": "You are an expert agricultural advisory assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=350,
+            temperature=0.2,
         )
+        if not completion.choices:
+            raise RuntimeError("Hugging Face returned no completion choices.")
+        message = completion.choices[0].message
+        response_text = message.content
+        if not response_text:
+            raise RuntimeError("Hugging Face returned empty model content.")
+        print("[INFO] Hugging Face response received.")
 
-        # 6. Parse and store response
-        recommendation_data = json.loads(response.text)
-        context["recommendation"] = recommendation_data
+        recommendation_data = _extract_json(response_text)
+        recommendation = {
+            "fertilizer": recommendation_data.get("fertilizer", "N/A"),
+            "pesticide": recommendation_data.get("pesticide", "N/A"),
+            "irrigation": recommendation_data.get("irrigation", "N/A"),
+            "prevention_tips": recommendation_data.get("prevention_tips", "N/A"),
+        }
+        context["recommendation"] = recommendation
         context["status"]["recommendation"] = "completed"
+        print("[OK] Hugging Face recommendation generated successfully.")
 
     except Exception as exc:
+        error_message = f"Hugging Face recommendation error: {type(exc).__name__}: {exc}"
+        print(f"[ERROR] {error_message}")
         context["status"]["recommendation"] = "failed"
-        context["notes"].append(f"Recommendation generation error: {exc}")
+        context["notes"].append(error_message)
         context["recommendation"] = {
             "error": str(exc),
-            "fertilizer": "N/A",
-            "pesticide": "N/A",
-            "irrigation": "N/A",
-            "prevention_tips": "N/A"
+            "fertilizer": "Use fertilizer according to crop requirements and soil-test results.",
+            "pesticide": "Use an appropriate registered treatment for the diagnosed disease or pest and follow the product label.",
+            "irrigation": "Maintain consistent soil moisture while avoiding waterlogging and excess leaf wetness.",
+            "prevention_tips": "Maintain proper plant spacing, field sanitation, ventilation and regular crop monitoring.",
         }
 
     return context
