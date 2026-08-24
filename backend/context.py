@@ -1,80 +1,40 @@
-"""
-context.py — Factory for the shared pipeline context object.
-
-Every stage in the pipeline reads from and writes to this same dict.
-This is the single most important architectural decision in the project:
-no stage calls another stage directly — they all communicate via the context.
-"""
-
+# context.py — Factory for the shared pipeline context object.
 import uuid
 from typing import Any
-
 
 def create_context(
     image_path: str,
     user_id: str = "anon",
     location: str = "Unknown",
+    lat: float = 52.2297,  # Default or dynamic latitude
+    lon: float = 21.0122,  # Default or dynamic longitude
     language: str = "English",
 ) -> dict[str, Any]:
-    """
-    Create a fresh pipeline context for a single prediction request.
-
-    Args:
-        image_path: Absolute or relative path to the raw uploaded image.
-        user_id: Identifier for the requesting user.
-        location: Geographic location of the farmer.
-        language: Preferred output language.
-
-    Returns:
-        A context dict with all fields initialised to their pending / None state.
-    """
-
     return {
         "request_id": str(uuid.uuid4()),
-
-        # ====================================================================
-        # USER / REQUEST INFORMATION
-        # ====================================================================
 
         "user": {
             "user_id": user_id,
             "location": location,
+            "lat": lat,
+            "lon": lon,
             "language": language,
         },
 
-        # ====================================================================
-        # IMAGE INFORMATION
-        # ====================================================================
-
         "image": {
-            # Original uploaded image
             "raw_path": str(image_path),
-
-            # Processed image saved by preprocessing
             "processed_path": None,
-
-            # In-memory processed leaf image (BGR)
             "leaf_crop": None,
-
-            # Image quality metrics
             "quality_score": None,
             "blur_score": None,
             "brightness_score": None,
             "leaf_detected": False,
         },
 
-        # ====================================================================
-        # CROP IDENTIFICATION
-        # ====================================================================
-
         "crop": {
             "label": None,
             "confidence": None,
         },
-
-        # ====================================================================
-        # DISEASE CLASSIFICATION
-        # ====================================================================
 
         "disease": {
             "label": None,
@@ -83,37 +43,11 @@ def create_context(
             "all_probs": None,
         },
 
-        # ====================================================================
-        # SEVERITY ESTIMATION
-        # ====================================================================
-
         "severity": {
             "percent": None,
             "affected_area": None,
             "bucket": None,
         },
-
-        # ====================================================================
-        # PEST CLASSIFICATION
-        # ====================================================================
-        #
-        # IMPORTANT:
-        # The current YOLO model is a CLASSIFICATION model.
-        #
-        # It predicts which pest class is present in the image.
-        # It does NOT detect individual pest objects or provide bounding boxes.
-        #
-        # Example:
-        #
-        # pests = [
-        #     {
-        #         "label": "Leaf Miner",
-        #         "confidence": 0.923
-        #     },
-        #     ...
-        # ]
-        #
-        # ====================================================================
 
         "pests": [],
 
@@ -127,24 +61,23 @@ def create_context(
         # ====================================================================
         # WEATHER
         # ====================================================================
-
-        "weather": {},
-
-        # ====================================================================
-        # RECOMMENDATION
-        # ====================================================================
+        "weather": {
+            "temperature_celsius": None,
+            "feels_like_celsius": None,
+            "temp_min": None,
+            "temp_max": None,
+            "humidity_percent": None,
+            "pressure_hpa": None,
+            "wind_speed_m_s": None,
+            "wind_deg": None,
+            "cloudiness_percent": None,
+            "condition": None,
+            "description": None,
+            "status": "pending",
+        },
 
         "recommendation": {},
-
-        # ====================================================================
-        # NOTES / WARNINGS
-        # ====================================================================
-
         "notes": [],
-
-        # ====================================================================
-        # PIPELINE STATUS
-        # ====================================================================
 
         "status": {
             "preprocessing": "pending",
@@ -152,10 +85,8 @@ def create_context(
             "decision_routing": "pending",
             "disease_classification": "pending",
             "severity": "pending",
-
-            # Keep the existing public pipeline status name for compatibility.
             "pest_detection": "pending",
-
+            "weather": "pending",  # Added status tracking for weather
             "recommendation": "pending",
         },
     }
