@@ -2,20 +2,24 @@
 pipeline.py — Pipeline Orchestrator
 """
 
+import sys
 from pathlib import Path
 from typing import Any
 import yaml
 
-from services.preprocessing.service import OpenCVPreprocessorService
-from services.crop_identifier.predictor import predict_crop
-from services.decision_engine.router import route_to_disease_model
-from services.disease_classifier.predictor import predict_disease
-from services.severity.estimator import estimate_severity
-from services.pest_detector.predictor import predict_pest
-from services.weather.service import fetch_weather
-from services.recommendation.service import generate_recommendation
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-_CONFIG_PATH = Path(__file__).parent / "config.yaml"
+from backend.services.preprocessing.service import OpenCVPreprocessorService
+from backend.services.crop_identifier.predictor import predict_crop
+from backend.services.decision_engine.router import route_to_disease_model
+from backend.services.disease_classifier.predictor import predict_disease
+from backend.services.severity.estimator import estimate_severity
+from backend.services.pest_detector.predictor import predict_pest
+from backend.services.weather.service import fetch_weather
+from backend.services.recommendation.service import generate_recommendation
+
+_CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
 
 def _load_config(config_path: Path = _CONFIG_PATH) -> dict[str, Any]:
     with open(config_path, "r", encoding="utf-8") as f:

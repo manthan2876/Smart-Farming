@@ -1,4 +1,4 @@
-Smart-Farming/ (98578 files)
+Smart-Farming/ (98610 files)
     ├── Datasets/ (98458 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
@@ -271,7 +271,7 @@ Smart-Farming/ (98578 files)
             ├── opencv_test_4.jpg
             ├── sample.jpg
             ├── spider_mite_tomato.jpeg
-    ├── Docs/ (9 files)
+    ├── Docs/ (10 files)
         ├── Ai-Powered-Smart-Farming.pptx
         ├── dataset descriptions.txt
         ├── name change of folders.txt
@@ -279,12 +279,45 @@ Smart-Farming/ (98578 files)
         ├── research-notes_on_how-weather-affect-on-crop.txt
         ├── smart_farming_roadmap.md
         ├── smart_farming_roadmap.pdf
+        ├── smart_farming_roadmap_stage10_plus.pdf
         ├── smart_farming_roadmap_v2.md
         ├── smart_farming_roadmap_v2.pdf
-    ├── backend/ (29 files)
-        ├── processed/ (2 files)
-            ├── aphids_tomato.jpeg
-            ├── sample.jpg
+    ├── backend/ (60 files)
+        ├── .agents/ (2 files)
+            ├── skills/ (2 files)
+                ├── library-skills/ (2 files)
+                    ├── .library-skills.json
+                    ├── SKILL.md
+        ├── .fastapicloud/ (3 files)
+            ├── .gitignore
+            ├── README.md
+            ├── cloud.json
+        ├── .pytest_cache/ (5 files)
+            ├── v/ (2 files)
+                ├── cache/ (2 files)
+                    ├── lastfailed
+                    ├── nodeids
+            ├── .gitignore
+            ├── CACHEDIR.TAG
+            ├── README.md
+        ├── api/ (4 files)
+            ├── __init__.py
+            ├── deps.py
+            ├── routes.py
+            ├── schemas.py
+        ├── data/ (4 files)
+            ├── processed/ (2 files)
+                ├── aphids_tomato.jpeg
+                ├── sample.jpg
+            ├── uploads/ (2 files)
+                ├── b1e2bcf8c22d4d58826f64a2d9792d53.jpg
+                ├── c353e1e1deb64fedbf3518a5e6f19289.jpg
+        ├── database/ (5 files)
+            ├── __init__.py
+            ├── init_db.py
+            ├── models.py
+            ├── repository.py
+            ├── session.py
         ├── services/ (18 files)
             ├── crop_identifier/ (2 files)
                 ├── __init__.py
@@ -312,16 +345,29 @@ Smart-Farming/ (98578 files)
                 ├── __init__.py
                 ├── service.py
             ├── __init__.py
+        ├── src/ (5 files)
+            ├── backend.egg-info/ (5 files)
+                ├── PKG-INFO
+                ├── SOURCES.txt
+                ├── dependency_links.txt
+                ├── requires.txt
+                ├── top_level.txt
+        ├── tests/ (3 files)
+            ├── test_api.py
+            ├── test_hf_recommendation.py
+            ├── test_pipeline.py
         ├── utils/ (2 files)
             ├── __init__.py
             ├── model_loader.py
         ├── .env
+        ├── .env.example
         ├── config.yaml
         ├── context.py
+        ├── main.py
         ├── pipeline.py
+        ├── pyproject.toml
         ├── requirements.txt
-        ├── test_hf_recommendation.py
-        ├── test_pipeline.py
+        ├── uv.lock
     ├── models/ (48 files)
         ├── csvs/ (7 files)
             ├── cotton_disease_manifest.csv

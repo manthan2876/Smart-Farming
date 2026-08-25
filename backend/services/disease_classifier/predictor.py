@@ -30,7 +30,7 @@ import torch
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from utils.model_loader import load_efficientnet, DEVICE
+from backend.utils.model_loader import load_efficientnet, DEVICE
 
 
 _EVAL_TF = A.Compose([

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 import cv2
 import numpy as np
 
@@ -36,7 +36,7 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
         return context
 
     try:
-        from utils.model_loader import load_yolo
+        from backend.utils.model_loader import load_yolo
         model = load_yolo(model_path)
     except Exception as exc:
         context["notes"].append(f"Failed to load pest classifier: {type(exc).__name__}: {exc}")
@@ -84,14 +84,14 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
 
     try:
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        results = model.predict(source=image_rgb, verbose=False)
+        results = list(model.predict(source=image_rgb, verbose=False))
 
         if not results:
             context["notes"].append("YOLO returned no classification results.")
             context["status"]["pest_detection"] = "failed"
             return context
 
-        result = results[0]
+        result = cast(Any, results[0])
         if result.probs is None:
             context["notes"].append(
                 "YOLO result does not contain classification probabilities. "
@@ -100,7 +100,10 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
             context["status"]["pest_detection"] = "failed"
             return context
 
-        probs = result.probs.data.cpu().numpy()
+        raw_probs = result.probs.data
+        if hasattr(raw_probs, "cpu"):
+            raw_probs = raw_probs.cpu().numpy()
+        probs = np.asarray(raw_probs)
         names = result.names
 
         if probs.size == 0:

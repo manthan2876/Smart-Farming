@@ -36,5 +36,5 @@ thresholds:
   max_brightness: 240.0
 
 storage:
-  upload_dir: "uploads/"
-  processed_dir: "processed/"
+  upload_dir: "data/uploads/"
+  processed_dir: "data/processed/"

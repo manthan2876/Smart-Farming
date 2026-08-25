@@ -22,12 +22,12 @@ the farmer an actionable error message.
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import cv2
 import numpy as np
 
-from services.preprocessing.leaf_isolator import isolate_subject_leaf
+from backend.services.preprocessing.leaf_isolator import isolate_subject_leaf
 
 
 class OpenCVPreprocessorService:
@@ -172,11 +172,12 @@ class OpenCVPreprocessorService:
             print("[Preprocessing] No plant-like region found (watershed).")
             return None
 
-        _, sure_fg = cv2.threshold(dist_transform, 0.15 * max_distance, 255, 0)
-        sure_fg = np.uint8(sure_fg)
-        unknown = cv2.subtract(sure_bg, sure_fg)
+        threshold_value = float(0.15 * float(max_distance))
+        _, sure_fg = cv2.threshold(dist_transform, threshold_value, 255.0, cv2.THRESH_BINARY)
+        sure_fg = np.asarray(sure_fg, dtype=np.uint8)
+        unknown = cv2.subtract(cast(Any, sure_bg), cast(Any, sure_fg))
 
-        _, markers = cv2.connectedComponents(sure_fg)
+        _, markers = cv2.connectedComponents(cast(Any, sure_fg))
         markers = markers + 1
         markers[unknown == 255] = 0
         markers = cv2.watershed(image, markers)
@@ -184,11 +185,12 @@ class OpenCVPreprocessorService:
         valid_mask = np.zeros_like(im_threshold)
         leaf_found = False
 
-        if markers.max() >= 2:
-            for i in range(2, markers.max() + 1):
-                component_mask = np.uint8(markers == i) * 255
+        marker_count = int(markers.max())
+        if marker_count >= 2:
+            for i in range(2, marker_count + 1):
+                component_mask = np.asarray(np.uint8(markers == i) * 255)
                 contours, _ = cv2.findContours(
-                    component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+                    cast(Any, component_mask), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
                 )
                 for cnt in contours:
                     area = cv2.contourArea(cnt)

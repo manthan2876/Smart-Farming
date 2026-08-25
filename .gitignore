@@ -92,8 +92,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-# Ignore virtual env directory in the repository
-cropidentification/
+# Python Environment
+cropidentification
 
 # Spyder project settings
 .spyderproject
@@ -135,11 +135,17 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Python Environment
-cropidentification
-
 # Ignore old files folder
 old_files/
 
 # YOLO dataset caches
 *.cache
+
+# Lock files
+*.lock
+
+# agent skills
+.agents
+
+# fast api clode files
+.fastapicloud
