@@ -1,0 +1,4 @@
+export const en = {
+  dashboard: 'Dashboard', scan: 'Scan Crop', history: 'History', farm: 'My Farm', alerts: 'Alerts', profile: 'Profile', settings: 'Settings', logout: 'Logout',
+  greeting: 'Good afternoon', scanCta: 'Scan Your Crop', scanCtaCopy: 'Upload a leaf photo to detect crop disease and get advice.', startScan: 'Start Scan', recent: 'Recent Diagnoses', viewResult: 'View Result', noAlerts: 'No active alerts', save: 'Save Changes',
+}

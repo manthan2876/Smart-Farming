@@ -1,0 +1,4 @@
+export const gu = {
+  dashboard: 'ડેશબોર્ડ', scan: 'પાક સ્કેન', history: 'ઇતિહાસ', farm: 'મારું ખેતર', alerts: 'ચેતવણીઓ', profile: 'પ્રોફાઇલ', settings: 'સેટિંગ્સ', logout: 'લૉગઆઉટ',
+  greeting: 'શુભ બપોર', scanCta: 'તમારો પાક સ્કેન કરો', scanCtaCopy: 'પાકનો રોગ ઓળખવા પાનનો ફોટો અપલોડ કરો.', startScan: 'સ્કેન શરૂ કરો', recent: 'તાજેતરના નિદાન', viewResult: 'પરિણામ જુઓ', noAlerts: 'કોઈ સક્રિય ચેતવણી નથી', save: 'ફેરફારો સાચવો',
+}
