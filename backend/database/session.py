@@ -3,11 +3,16 @@ from __future__ import annotations
 import os
 from collections.abc import Generator
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi import HTTPException
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
+
+_BACKEND_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(_BACKEND_DIR / ".env")
 
 
 def database_url() -> str:

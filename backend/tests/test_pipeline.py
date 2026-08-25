@@ -3,17 +3,13 @@ test_pipeline.py — Standalone smoke test for the full Smart Farming pipeline.
 """
 
 import pprint
-import sys
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent
 
-if str(BACKEND_DIR) not in sys.path:
-    sys.path.insert(0, str(BACKEND_DIR))
-
-from context import create_context
-from pipeline import run_pipeline
+from backend.context import create_context
+from backend.pipeline import run_pipeline
 
 DEFAULT_TEST_IMAGE = PROJECT_ROOT / "Datasets" / "testing_images" / "aphids_tomato.jpeg"
 

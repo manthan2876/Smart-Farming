@@ -2,10 +2,84 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from backend.database.models import Feedback, Prediction, Recommendation, User
+from backend.database.models import Farm, Feedback, Image, Prediction, Recommendation, User
+
+
+def create_user(
+    session: Session,
+    *,
+    user_id: str,
+    name: str,
+    phone: str | None,
+    email: str | None,
+    password_hash: str,
+    language: str,
+    location: str | None,
+    latitude: float | None,
+    longitude: float | None,
+    crop_history: list[str],
+) -> User:
+    user = User(
+        id=user_id,
+        name=name,
+        phone=phone,
+        email=email,
+        password_hash=password_hash,
+        language=language,
+    )
+    user.farm = Farm(
+        location=location,
+        latitude=latitude,
+        longitude=longitude,
+        crop_history=crop_history,
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+def find_user_by_identifier(session: Session, identifier: str) -> User | None:
+    return session.scalar(
+        select(User).where(or_(User.email == identifier, User.phone == identifier))
+    )
+
+
+def get_user(session: Session, user_id: str) -> User | None:
+    return session.get(User, user_id)
+
+
+def update_profile(
+    session: Session,
+    user: User,
+    *,
+    name: str | None,
+    language: str | None,
+    location: str | None,
+    latitude: float | None,
+    longitude: float | None,
+    crop_history: list[str] | None,
+) -> User:
+    if name is not None:
+        user.name = name
+    if language is not None:
+        user.language = language
+    if user.farm is None:
+        user.farm = Farm()
+    if location is not None:
+        user.farm.location = location
+    if latitude is not None:
+        user.farm.latitude = latitude
+    if longitude is not None:
+        user.farm.longitude = longitude
+    if crop_history is not None:
+        user.farm.crop_history = crop_history
+    session.commit()
+    session.refresh(user)
+    return user
 
 
 def record_prediction(session: Session, user_id: str, result: dict[str, Any]) -> Prediction:
@@ -19,8 +93,20 @@ def record_prediction(session: Session, user_id: str, result: dict[str, Any]) ->
     crop = result.get("crop", {})
     disease = result.get("disease", {})
     severity = result.get("severity", {})
+    image_record = Image(
+        user_id=user_id,
+        raw_path=str(image.get("raw_path", "")),
+        processed_path=image.get("processed_path"),
+        quality_score=image.get("quality_score"),
+        blur_score=image.get("blur_score"),
+        brightness_score=image.get("brightness_score"),
+        leaf_detected=bool(image.get("leaf_detected", False)),
+    )
+    session.add(image_record)
+    session.flush()
     prediction = Prediction(
         user_id=user_id,
+        image_id=image_record.id,
         raw_path=str(image.get("raw_path", "")),
         processed_path=image.get("processed_path"),
         crop=crop.get("label"),

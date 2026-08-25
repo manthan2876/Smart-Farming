@@ -1,4 +1,4 @@
-Smart-Farming/ (98610 files)
+Smart-Farming/ (98615 files)
     ├── Datasets/ (98458 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
@@ -282,36 +282,33 @@ Smart-Farming/ (98610 files)
         ├── smart_farming_roadmap_stage10_plus.pdf
         ├── smart_farming_roadmap_v2.md
         ├── smart_farming_roadmap_v2.pdf
-    ├── backend/ (60 files)
-        ├── .agents/ (2 files)
-            ├── skills/ (2 files)
-                ├── library-skills/ (2 files)
-                    ├── .library-skills.json
-                    ├── SKILL.md
-        ├── .fastapicloud/ (3 files)
-            ├── .gitignore
-            ├── README.md
-            ├── cloud.json
-        ├── .pytest_cache/ (5 files)
-            ├── v/ (2 files)
-                ├── cache/ (2 files)
-                    ├── lastfailed
-                    ├── nodeids
-            ├── .gitignore
-            ├── CACHEDIR.TAG
-            ├── README.md
-        ├── api/ (4 files)
+    ├── backend/ (65 files)
+        ├── api/ (6 files)
             ├── __init__.py
+            ├── auth.py
+            ├── auth_routes.py
             ├── deps.py
             ├── routes.py
             ├── schemas.py
-        ├── data/ (4 files)
+        ├── backend.egg-info/ (5 files)
+            ├── PKG-INFO
+            ├── SOURCES.txt
+            ├── dependency_links.txt
+            ├── requires.txt
+            ├── top_level.txt
+        ├── data/ (10 files)
             ├── processed/ (2 files)
                 ├── aphids_tomato.jpeg
                 ├── sample.jpg
-            ├── uploads/ (2 files)
+            ├── uploads/ (8 files)
+                ├── 2c2def08dd044c2884812080dce6f57b.jpg
+                ├── 620b1875386c474aa97d3a58e04a8de6.jpg
+                ├── a58eda726cfd4cf293c30661f59e2bb4.jpg
+                ├── ad5d3dd120f94efbae25f1b634188f05.jpg
                 ├── b1e2bcf8c22d4d58826f64a2d9792d53.jpg
                 ├── c353e1e1deb64fedbf3518a5e6f19289.jpg
+                ├── d944f1900c584573b706bfb3bf7bd108.jpg
+                ├── dd3416d71a4447ca89f9581c68b627c7.jpg
         ├── database/ (5 files)
             ├── __init__.py
             ├── init_db.py
@@ -352,12 +349,14 @@ Smart-Farming/ (98610 files)
                 ├── dependency_links.txt
                 ├── requires.txt
                 ├── top_level.txt
-        ├── tests/ (3 files)
+        ├── tests/ (4 files)
             ├── test_api.py
+            ├── test_auth.py
             ├── test_hf_recommendation.py
             ├── test_pipeline.py
-        ├── utils/ (2 files)
+        ├── utils/ (3 files)
             ├── __init__.py
+            ├── logging.py
             ├── model_loader.py
         ├── .env
         ├── .env.example

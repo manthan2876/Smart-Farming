@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,7 @@ from backend.context import create_context
 from backend.database.repository import add_feedback, get_prediction, list_predictions, record_prediction
 from backend.database.session import get_session
 from backend.pipeline import run_pipeline
+from backend.utils.logging import prediction_event
 
 router = APIRouter()
 
@@ -28,6 +30,7 @@ _BACKEND_DIR = Path(__file__).resolve().parents[1]
 _UPLOAD_DIR = _BACKEND_DIR / "data" / "uploads"
 _MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_LOGGER = logging.getLogger("smart-farming.api")
 
 
 def _json_safe(value: Any) -> Any:
@@ -137,6 +140,13 @@ async def predict(
             language=language,
         )
         result = run_pipeline(context)
+        prediction_event(
+            _LOGGER,
+            "pipeline_completed",
+            request_id=result.get("request_id"),
+            user_id=user_id,
+            preprocessing_status=result.get("status", {}).get("preprocessing"),
+        )
         preprocessing_status = result.get("status", {}).get("preprocessing")
         if preprocessing_status != "completed":
             raise HTTPException(
@@ -154,6 +164,13 @@ async def predict(
                 detail="Prediction completed, but the database is unavailable.",
             ) from exc
         public_result["prediction_id"] = prediction.id
+        prediction_event(
+            _LOGGER,
+            "prediction_logged",
+            request_id=public_result.get("request_id"),
+            prediction_id=prediction.id,
+            user_id=user_id,
+        )
         return public_result
     finally:
         await file.close()
@@ -203,6 +220,13 @@ async def feedback(
         if prediction is None:
             raise HTTPException(status_code=404, detail="Prediction not found.")
         saved = add_feedback(session, prediction, payload.is_correct, payload.farmer_note)
+        prediction_event(
+            _LOGGER,
+            "feedback_recorded",
+            prediction_id=saved.prediction_id,
+            user_id=user_id,
+            is_correct=saved.is_correct,
+        )
     except HTTPException:
         raise
     except SQLAlchemyError as exc:
@@ -214,16 +238,6 @@ async def feedback(
         is_correct=saved.is_correct,
         farmer_note=saved.farmer_note,
     )
-
-
-@router.post("/auth/register", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-async def register_placeholder() -> dict[str, str]:
-    raise HTTPException(status_code=501, detail="Registration is scheduled for Stage 12.")
-
-
-@router.post("/auth/login", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-async def login_placeholder() -> dict[str, str]:
-    raise HTTPException(status_code=501, detail="Login is scheduled for Stage 12.")
 
 
 @router.get("/admin/metrics", status_code=status.HTTP_501_NOT_IMPLEMENTED)

@@ -21,10 +21,44 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(320), unique=True, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(500), nullable=True)
     language: Mapped[str] = mapped_column(String(32), default="English")
+    role: Mapped[str] = mapped_column(String(32), default="farmer")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     predictions: Mapped[list[Prediction]] = relationship(back_populates="user")
+    farm: Mapped[Farm | None] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
+    images: Mapped[list[Image]] = relationship(back_populates="user")
+
+
+class Farm(Base):
+    __tablename__ = "farms"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
+    location: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    crop_history: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    user: Mapped[User] = relationship(back_populates="farm")
+
+
+class Image(Base):
+    __tablename__ = "images"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    raw_path: Mapped[str] = mapped_column(Text)
+    processed_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    quality_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    blur_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    brightness_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    leaf_detected: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    user: Mapped[User] = relationship(back_populates="images")
+    prediction: Mapped[Prediction | None] = relationship(back_populates="image", uselist=False)
 
 
 class Prediction(Base):
@@ -32,6 +66,7 @@ class Prediction(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    image_id: Mapped[int | None] = mapped_column(ForeignKey("images.id"), nullable=True)
     raw_path: Mapped[str] = mapped_column(Text)
     processed_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     crop: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -44,6 +79,7 @@ class Prediction(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
 
     user: Mapped[User] = relationship(back_populates="predictions")
+    image: Mapped[Image | None] = relationship(back_populates="prediction")
     recommendation: Mapped[Recommendation | None] = relationship(back_populates="prediction", uselist=False, cascade="all, delete-orphan")
     feedback: Mapped[list[Feedback]] = relationship(back_populates="prediction", cascade="all, delete-orphan")
 

@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from sqlalchemy import create_engine
 
-from backend.database.models import Base
-from backend.database.session import database_url
+try:
+    from backend.database.models import Base
+    from backend.database.session import database_url
+except ModuleNotFoundError:
+    from database.models import Base
+    from database.session import database_url
 
 
 def initialize_database() -> None:
