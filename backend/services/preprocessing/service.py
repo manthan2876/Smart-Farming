@@ -47,7 +47,9 @@ class OpenCVPreprocessorService:
         self.thresholds = config.get("thresholds", {})
         self.storage = config.get("storage", {})
 
-        self.blur_threshold: float = float(self.thresholds.get("blur_var_threshold", 100.0))
+        self.blur_threshold: float = float(
+            self.thresholds.get("blur_var_threshold", 100.0)
+        )
         self.min_brightness: float = float(self.thresholds.get("min_brightness", 40.0))
         self.max_brightness: float = float(self.thresholds.get("max_brightness", 240.0))
         self.processed_dir: str = self.storage.get("processed_dir", "processed/")
@@ -173,7 +175,9 @@ class OpenCVPreprocessorService:
             return None
 
         threshold_value = float(0.15 * float(max_distance))
-        _, sure_fg = cv2.threshold(dist_transform, threshold_value, 255.0, cv2.THRESH_BINARY)
+        _, sure_fg = cv2.threshold(
+            dist_transform, threshold_value, 255.0, cv2.THRESH_BINARY
+        )
         sure_fg = np.asarray(sure_fg, dtype=np.uint8)
         unknown = cv2.subtract(cast(Any, sure_bg), cast(Any, sure_fg))
 
@@ -190,7 +194,9 @@ class OpenCVPreprocessorService:
             for i in range(2, marker_count + 1):
                 component_mask = np.asarray(np.uint8(markers == i) * 255)
                 contours, _ = cv2.findContours(
-                    cast(Any, component_mask), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+                    cast(Any, component_mask),
+                    cv2.RETR_EXTERNAL,
+                    cv2.CHAIN_APPROX_SIMPLE,
                 )
                 for cnt in contours:
                     area = cv2.contourArea(cnt)

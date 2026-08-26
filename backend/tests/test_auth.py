@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from backend.api.auth import create_token_pair, decode_token, hash_password, verify_password
+from backend.api.auth import (
+    create_token_pair,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 
 
 def test_password_hash_round_trip() -> None:
@@ -22,4 +27,6 @@ def test_access_and_refresh_tokens_have_separate_types() -> None:
     except ValueError:
         pass
     else:
-        raise AssertionError("A refresh token must not authenticate as an access token.")
+        raise AssertionError(
+            "A refresh token must not authenticate as an access token."
+        )

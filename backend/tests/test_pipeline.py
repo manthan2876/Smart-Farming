@@ -26,7 +26,12 @@ def safe_confidence(value):
 def print_stage_status(stage, status):
     if status == "completed":
         icon = "[OK]"
-    elif status in ("skipped", "not_run", "no_model_available", "skipped_low_confidence"):
+    elif status in (
+        "skipped",
+        "not_run",
+        "no_model_available",
+        "skipped_low_confidence",
+    ):
         icon = "[--]"
     elif str(status).startswith("failed"):
         icon = "[FAIL]"
@@ -51,13 +56,17 @@ def print_result_section(result):
     # CROP
     crop_label = crop.get("label")
     crop_confidence = crop.get("confidence")
-    print(f"\nCrop       : {crop_label if crop_label is not None else 'N/A'}  (confidence={safe_confidence(crop_confidence)})")
+    print(
+        f"\nCrop       : {crop_label if crop_label is not None else 'N/A'}  (confidence={safe_confidence(crop_confidence)})"
+    )
 
     # DISEASE
     disease_label = disease.get("label")
     disease_confidence = disease.get("confidence")
     disease_model = disease.get("model_used")
-    print(f"Disease    : {disease_label if disease_label is not None else 'N/A'}  (confidence={safe_confidence(disease_confidence)}, model={disease_model if disease_model is not None else 'N/A'})")
+    print(
+        f"Disease    : {disease_label if disease_label is not None else 'N/A'}  (confidence={safe_confidence(disease_confidence)}, model={disease_model if disease_model is not None else 'N/A'})"
+    )
 
     # SEVERITY
     severity_percent = severity.get("percent")
@@ -65,7 +74,9 @@ def print_result_section(result):
     affected_area = severity.get("affected_area")
 
     if severity_percent is not None:
-        print(f"Severity   : {severity_percent}%  ({severity_bucket if severity_bucket else 'N/A'})")
+        print(
+            f"Severity   : {severity_percent}%  ({severity_bucket if severity_bucket else 'N/A'})"
+        )
     else:
         print("Severity   : N/A")
 
@@ -76,8 +87,12 @@ def print_result_section(result):
     print("\nWeather Data")
     print("-" * 70)
     if weather.get("status") == "success":
-        print(f"Condition   : {weather.get('condition')} ({weather.get('description')})")
-        print(f"Temperature : {weather.get('temperature_celsius')}°C (Feels like: {weather.get('feels_like_celsius')}°C)")
+        print(
+            f"Condition   : {weather.get('condition')} ({weather.get('description')})"
+        )
+        print(
+            f"Temperature : {weather.get('temperature_celsius')}°C (Feels like: {weather.get('feels_like_celsius')}°C)"
+        )
         print(f"Humidity    : {weather.get('humidity_percent')}%")
         print(f"Wind Speed  : {weather.get('wind_speed_m_s')} m/s")
     else:
@@ -108,7 +123,9 @@ def print_result_section(result):
     if pests:
         print("\nPredicted pest classes:")
         for index, pest in enumerate(pests, start=1):
-            print(f"  {index}. {pest.get('label', 'Unknown')} (confidence={safe_confidence(pest.get('confidence'))})")
+            print(
+                f"  {index}. {pest.get('label', 'Unknown')} (confidence={safe_confidence(pest.get('confidence'))})"
+            )
     else:
         print("Pests      : No pest classification result")
 
@@ -118,7 +135,9 @@ def main():
     print("SMART FARMING - PIPELINE SMOKE TEST")
     print("=" * 70)
 
-    image_path = Path(sys.argv[1]).expanduser() if len(sys.argv) > 1 else DEFAULT_TEST_IMAGE
+    image_path = (
+        Path(sys.argv[1]).expanduser() if len(sys.argv) > 1 else DEFAULT_TEST_IMAGE
+    )
     image_path = image_path.resolve()
 
     if not image_path.exists() or not image_path.is_file():

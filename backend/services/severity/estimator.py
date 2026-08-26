@@ -77,6 +77,7 @@ PALE_UPPER = np.array([179, 80, 255], dtype=np.uint8)
 # PUBLIC API
 # ============================================================================
 
+
 def estimate_severity(context: dict) -> dict:
     """Estimate visually affected leaf area."""
     if context["status"]["preprocessing"] != "completed":
@@ -101,9 +102,7 @@ def estimate_severity(context: dict) -> dict:
         image_path = Path(processed_path)
 
         if not image_path.exists():
-            context["notes"].append(
-                f"Processed image not found: {image_path}"
-            )
+            context["notes"].append(f"Processed image not found: {image_path}")
             context["status"]["severity"] = "failed"
             return context
 
@@ -113,30 +112,22 @@ def estimate_severity(context: dict) -> dict:
         )
 
         if image_bgr is None:
-            context["notes"].append(
-                f"Could not read processed image: {image_path}"
-            )
+            context["notes"].append(f"Could not read processed image: {image_path}")
             context["status"]["severity"] = "failed"
             return context
 
     if not isinstance(image_bgr, np.ndarray):
-        context["notes"].append(
-            "Severity estimation received an invalid image object."
-        )
+        context["notes"].append("Severity estimation received an invalid image object.")
         context["status"]["severity"] = "failed"
         return context
 
     if image_bgr.size == 0:
-        context["notes"].append(
-            "Severity estimation received an empty image."
-        )
+        context["notes"].append("Severity estimation received an empty image.")
         context["status"]["severity"] = "failed"
         return context
 
     if len(image_bgr.shape) != 3 or image_bgr.shape[2] != 3:
-        context["notes"].append(
-            "Severity estimation requires a 3-channel BGR image."
-        )
+        context["notes"].append("Severity estimation requires a 3-channel BGR image.")
         context["status"]["severity"] = "failed"
         return context
 
@@ -158,9 +149,11 @@ def estimate_severity(context: dict) -> dict:
 
     return context
 
+
 # ============================================================================
 # CORE SEVERITY COMPUTATION
 # ============================================================================
+
 
 def _compute_severity(
     image_bgr: np.ndarray,
@@ -180,9 +173,7 @@ def _compute_severity(
         hsv=hsv,
     )
 
-    total_leaf_pixels = int(
-        np.count_nonzero(leaf_mask)
-    )
+    total_leaf_pixels = int(np.count_nonzero(leaf_mask))
 
     if total_leaf_pixels < MIN_LEAF_PIXELS:
         return None, None
@@ -194,9 +185,7 @@ def _compute_severity(
         leaf_mask=leaf_mask,
     )
 
-    disease_mask = _clean_binary_mask(
-        disease_mask
-    )
+    disease_mask = _clean_binary_mask(disease_mask)
 
     disease_mask = cv2.bitwise_and(
         disease_mask,
@@ -208,13 +197,9 @@ def _compute_severity(
         min_area=MIN_COMPONENT_AREA,
     )
 
-    diseased_pixels = int(
-        np.count_nonzero(disease_mask)
-    )
+    diseased_pixels = int(np.count_nonzero(disease_mask))
 
-    affected_area = (
-        diseased_pixels / total_leaf_pixels
-    )
+    affected_area = diseased_pixels / total_leaf_pixels
 
     severity_percent = affected_area * 100.0
 
@@ -236,9 +221,11 @@ def _compute_severity(
 
     return severity_percent, affected_area
 
+
 # ============================================================================
 # LEAF MASK
 # ============================================================================
+
 
 def _build_leaf_mask(
     image_bgr: np.ndarray,
@@ -301,15 +288,15 @@ def _build_leaf_mask(
         ),
     )
 
-    leaf_mask = _keep_relevant_leaf_regions(
-        leaf_mask
-    )
+    leaf_mask = _keep_relevant_leaf_regions(leaf_mask)
 
     return leaf_mask
+
 
 # ============================================================================
 # DISEASE MASK
 # ============================================================================
+
 
 def _build_disease_mask(
     image_bgr: np.ndarray,
@@ -371,9 +358,11 @@ def _build_disease_mask(
 
     return disease_mask
 
+
 # ============================================================================
 # CANDIDATE FILTERING
 # ============================================================================
+
 
 def _filter_weak_candidates(
     disease_mask: np.ndarray,
@@ -393,57 +382,23 @@ def _filter_weak_candidates(
     a_channel = lab[:, :, 1]
     b_channel = lab[:, :, 2]
 
-    strong_yellow = (
-        (h >= 18)
-        & (h <= 38)
-        & (s >= 60)
-        & (v >= 70)
-    )
+    strong_yellow = (h >= 18) & (h <= 38) & (s >= 60) & (v >= 70)
 
-    strong_brown = (
-        (h >= 5)
-        & (h <= 28)
-        & (s >= 45)
-        & (v >= 25)
-        & (v <= 190)
-    )
+    strong_brown = (h >= 5) & (h <= 28) & (s >= 45) & (v >= 25) & (v <= 190)
 
-    strong_dark = (
-        (v <= 65)
-        & (s >= 25)
-    )
+    strong_dark = (v <= 65) & (s >= 25)
 
-    pale_abnormal = (
-        (s <= 75)
-        & (v >= 120)
-        & (l_channel >= 130)
-        & (b_channel >= 125)
-    )
+    pale_abnormal = (s <= 75) & (v >= 120) & (l_channel >= 130) & (b_channel >= 125)
 
-    lab_abnormal = (
-        (
-            (a_channel >= 125)
-            & (b_channel >= 135)
-        )
-        |
-        (
-            (a_channel >= 135)
-            & (b_channel >= 125)
-        )
+    lab_abnormal = ((a_channel >= 125) & (b_channel >= 135)) | (
+        (a_channel >= 135) & (b_channel >= 125)
     )
 
     strong_candidate = (
-        strong_yellow
-        | strong_brown
-        | strong_dark
-        | pale_abnormal
-        | lab_abnormal
+        strong_yellow | strong_brown | strong_dark | pale_abnormal | lab_abnormal
     )
 
-    strong_candidate = (
-        strong_candidate.astype(np.uint8)
-        * 255
-    )
+    strong_candidate = strong_candidate.astype(np.uint8) * 255
 
     filtered = cv2.bitwise_and(
         disease_mask,
@@ -457,9 +412,11 @@ def _filter_weak_candidates(
 
     return filtered
 
+
 # ============================================================================
 # MORPHOLOGICAL CLEANUP
 # ============================================================================
+
 
 def _clean_binary_mask(
     mask: np.ndarray,
@@ -492,9 +449,11 @@ def _clean_binary_mask(
 
     return mask
 
+
 # ============================================================================
 # CONNECTED COMPONENT FILTER
 # ============================================================================
+
 
 def _remove_small_components(
     mask: np.ndarray,
@@ -512,18 +471,18 @@ def _remove_small_components(
     cleaned = np.zeros_like(mask)
 
     for label_id in range(1, num_labels):
-        area = int(
-            stats[label_id, cv2.CC_STAT_AREA]
-        )
+        area = int(stats[label_id, cv2.CC_STAT_AREA])
 
         if area >= min_area:
             cleaned[labels == label_id] = 255
 
     return cleaned
 
+
 # ============================================================================
 # RELEVANT LEAF REGION SELECTION
 # ============================================================================
+
 
 def _keep_relevant_leaf_regions(
     mask: np.ndarray,
@@ -540,14 +499,10 @@ def _keep_relevant_leaf_regions(
     components = []
 
     for label_id in range(1, num_labels):
-        area = int(
-            stats[label_id, cv2.CC_STAT_AREA]
-        )
+        area = int(stats[label_id, cv2.CC_STAT_AREA])
 
         if area > 0:
-            components.append(
-                (label_id, area)
-            )
+            components.append((label_id, area))
 
     if not components:
         return np.zeros_like(mask)
@@ -572,9 +527,11 @@ def _keep_relevant_leaf_regions(
 
     return result
 
+
 # ============================================================================
 # SEVERITY BUCKET
 # ============================================================================
+
 
 def _severity_bucket(
     percent: float,

@@ -1,4 +1,18 @@
 export const hi = {
-  dashboard: 'डैशबोर्ड', scan: 'फसल स्कैन', history: 'इतिहास', farm: 'मेरा खेत', alerts: 'चेतावनियाँ', profile: 'प्रोफ़ाइल', settings: 'सेटिंग्स', logout: 'लॉग आउट',
-  greeting: 'नमस्कार', scanCta: 'अपनी फसल स्कैन करें', scanCtaCopy: 'फसल की बीमारी पहचानने के लिए पत्ती की तस्वीर अपलोड करें।', startScan: 'स्कैन शुरू करें', recent: 'हाल के निदान', viewResult: 'परिणाम देखें', noAlerts: 'कोई सक्रिय चेतावनी नहीं', save: 'बदलाव सहेजें',
-}
+  dashboard: "डैशबोर्ड",
+  scan: "फसल स्कैन",
+  history: "इतिहास",
+  farm: "मेरा खेत",
+  alerts: "चेतावनियाँ",
+  profile: "प्रोफ़ाइल",
+  settings: "सेटिंग्स",
+  logout: "लॉग आउट",
+  greeting: "नमस्कार",
+  scanCta: "अपनी फसल स्कैन करें",
+  scanCtaCopy: "फसल की बीमारी पहचानने के लिए पत्ती की तस्वीर अपलोड करें।",
+  startScan: "स्कैन शुरू करें",
+  recent: "हाल के निदान",
+  viewResult: "परिणाम देखें",
+  noAlerts: "कोई सक्रिय चेतावनी नहीं",
+  save: "बदलाव सहेजें",
+};

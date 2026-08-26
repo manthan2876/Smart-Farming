@@ -4,10 +4,13 @@ from typing import Any, cast
 import cv2
 import numpy as np
 
+
 def predict_pest(context: dict, config: dict[str, Any]) -> dict:
     if context["status"]["preprocessing"] != "completed":
         context["status"]["pest_detection"] = "skipped"
-        context["notes"].append("Pest classification skipped because preprocessing did not complete.")
+        context["notes"].append(
+            "Pest classification skipped because preprocessing did not complete."
+        )
         return context
 
     pest_cfg = config.get("models", {}).get("pest_classifier", {})
@@ -37,9 +40,12 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
 
     try:
         from backend.utils.model_loader import load_yolo
+
         model = load_yolo(model_path)
     except Exception as exc:
-        context["notes"].append(f"Failed to load pest classifier: {type(exc).__name__}: {exc}")
+        context["notes"].append(
+            f"Failed to load pest classifier: {type(exc).__name__}: {exc}"
+        )
         context["status"]["pest_detection"] = "failed"
         return context
 
@@ -52,7 +58,9 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
     if image_bgr is None:
         processed_path = context["image"].get("processed_path")
         if not processed_path:
-            context["notes"].append("No leaf crop or processed image available for pest classification.")
+            context["notes"].append(
+                "No leaf crop or processed image available for pest classification."
+            )
             context["status"]["pest_detection"] = "failed"
             return context
 
@@ -107,7 +115,9 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
         names = result.names
 
         if probs.size == 0:
-            context["notes"].append("YOLO returned an empty classification probability vector.")
+            context["notes"].append(
+                "YOLO returned an empty classification probability vector."
+            )
             context["status"]["pest_detection"] = "failed"
             return context
 
@@ -116,10 +126,12 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
         for index, probability in enumerate(probs):
             label = str(names.get(index, index))
             conf = float(probability)
-            predictions.append({
-                "label": label,
-                "confidence": conf,
-            })
+            predictions.append(
+                {
+                    "label": label,
+                    "confidence": conf,
+                }
+            )
             all_probs_dict[label] = conf
 
         predictions.sort(key=lambda item: item["confidence"], reverse=True)
@@ -140,8 +152,10 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
 
         primary_prediction = predictions[0]
         pest_confidence = primary_prediction["confidence"]
-        pest_confidence_threshold = config.get("thresholds", {}).get("pest_confidence", 0.60)
-        
+        pest_confidence_threshold = config.get("thresholds", {}).get(
+            "pest_confidence", 0.60
+        )
+
         if pest_confidence < pest_confidence_threshold:
             context["notes"].append(
                 f"Pest classification confidence ({pest_confidence:.2f}) is below threshold "
@@ -156,6 +170,8 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
         return context
 
     except Exception as exc:
-        context["notes"].append(f"Pest classification error: {type(exc).__name__}: {exc}")
+        context["notes"].append(
+            f"Pest classification error: {type(exc).__name__}: {exc}"
+        )
         context["status"]["pest_detection"] = "failed"
         return context

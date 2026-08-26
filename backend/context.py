@@ -2,6 +2,7 @@
 import uuid
 from typing import Any
 
+
 def create_context(
     image_path: str,
     user_id: str = "anon",
@@ -12,7 +13,6 @@ def create_context(
 ) -> dict[str, Any]:
     return {
         "request_id": str(uuid.uuid4()),
-
         "user": {
             "user_id": user_id,
             "location": location,
@@ -20,7 +20,6 @@ def create_context(
             "lon": lon,
             "language": language,
         },
-
         "image": {
             "raw_path": str(image_path),
             "processed_path": None,
@@ -30,34 +29,28 @@ def create_context(
             "brightness_score": None,
             "leaf_detected": False,
         },
-
         "crop": {
             "label": None,
             "confidence": None,
         },
-
         "disease": {
             "label": None,
             "confidence": None,
             "model_used": None,
             "all_probs": None,
         },
-
         "severity": {
             "percent": None,
             "affected_area": None,
             "bucket": None,
         },
-
         "pests": [],
-
         "pest_classification": {
             "model_type": "classification",
             "model_used": None,
             "top_k": 3,
             "all_probs": None,
         },
-
         # ====================================================================
         # WEATHER
         # ====================================================================
@@ -75,10 +68,8 @@ def create_context(
             "description": None,
             "status": "pending",
         },
-
         "recommendation": {},
         "notes": [],
-
         "status": {
             "preprocessing": "pending",
             "crop_identification": "pending",

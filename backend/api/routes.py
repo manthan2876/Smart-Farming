@@ -19,7 +19,12 @@ from backend.api.schemas import (
     PredictionResponse,
 )
 from backend.context import create_context
-from backend.database.repository import add_feedback, get_prediction, list_predictions, record_prediction
+from backend.database.repository import (
+    add_feedback,
+    get_prediction,
+    list_predictions,
+    record_prediction,
+)
 from backend.database.session import get_session
 from backend.pipeline import run_pipeline
 from backend.utils.logging import prediction_event
@@ -39,7 +44,11 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, dict):
-        return {str(key): _json_safe(item) for key, item in value.items() if not str(key).startswith("_")}
+        return {
+            str(key): _json_safe(item)
+            for key, item in value.items()
+            if not str(key).startswith("_")
+        }
     if isinstance(value, (list, tuple)):
         return [_json_safe(item) for item in value]
     if hasattr(value, "tolist"):
@@ -48,7 +57,9 @@ def _json_safe(value: Any) -> Any:
 
 
 def _public_result(context: dict[str, Any]) -> dict[str, Any]:
-    public_context = {key: value for key, value in context.items() if not key.startswith("_")}
+    public_context = {
+        key: value for key, value in context.items() if not key.startswith("_")
+    }
     public_context["image"] = {
         key: value
         for key, value in public_context.get("image", {}).items()
@@ -201,12 +212,18 @@ async def history(
     session: Session = Depends(get_session),
 ) -> list[dict[str, Any]]:
     if offset < 0 or limit < 1 or limit > 100:
-        raise HTTPException(status_code=422, detail="offset must be non-negative and limit must be 1-100.")
+        raise HTTPException(
+            status_code=422,
+            detail="offset must be non-negative and limit must be 1-100.",
+        )
     try:
         predictions = list_predictions(session, user_id, offset, limit)
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
-    return [{**prediction.result, "prediction_id": prediction.id} for prediction in predictions]
+    return [
+        {**prediction.result, "prediction_id": prediction.id}
+        for prediction in predictions
+    ]
 
 
 @router.post("/feedback", response_model=FeedbackResponse, status_code=201)
@@ -219,7 +236,9 @@ async def feedback(
         prediction = get_prediction(session, payload.prediction_id, user_id)
         if prediction is None:
             raise HTTPException(status_code=404, detail="Prediction not found.")
-        saved = add_feedback(session, prediction, payload.is_correct, payload.farmer_note)
+        saved = add_feedback(
+            session, prediction, payload.is_correct, payload.farmer_note
+        )
         prediction_event(
             _LOGGER,
             "feedback_recorded",

@@ -32,12 +32,13 @@ from albumentations.pytorch import ToTensorV2
 
 from backend.utils.model_loader import load_efficientnet, DEVICE
 
-
-_EVAL_TF = A.Compose([
-    A.Resize(224, 224),
-    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-    ToTensorV2(),
-])
+_EVAL_TF = A.Compose(
+    [
+        A.Resize(224, 224),
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        ToTensorV2(),
+    ]
+)
 
 
 def predict_disease(context: dict, config: dict[str, Any]) -> dict:
@@ -58,12 +59,16 @@ def predict_disease(context: dict, config: dict[str, Any]) -> dict:
 
     model_cfg = context.pop("_disease_model_cfg", None)
     if model_cfg is None:
-        context["notes"].append("Disease model config missing from context (internal error).")
+        context["notes"].append(
+            "Disease model config missing from context (internal error)."
+        )
         context["status"]["disease_classification"] = "failed"
         return context
 
     # ── Resolve model paths from config ───────────────────────────────
-    base_dir = Path(__file__).resolve().parent.parent.parent.parent  # project root (Smart-Farming/)
+    base_dir = (
+        Path(__file__).resolve().parent.parent.parent.parent
+    )  # project root (Smart-Farming/)
     model_path = base_dir / model_cfg["path"]
     labels_path = base_dir / model_cfg["labels"]
     arch = model_cfg.get("arch", "efficientnet_b2")

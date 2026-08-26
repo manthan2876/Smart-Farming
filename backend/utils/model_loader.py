@@ -56,7 +56,9 @@ def load_efficientnet(
     model.eval()
 
     _model_cache[cache_key] = (model, classes)
-    print(f"[ModelLoader] Loaded '{arch}' from {model_path.name} ({len(classes)} classes) on {device}")
+    print(
+        f"[ModelLoader] Loaded '{arch}' from {model_path.name} ({len(classes)} classes) on {device}"
+    )
     return _model_cache[cache_key]
 
 
@@ -79,6 +81,7 @@ def load_yolo(model_path: str | Path):
 
     try:
         from ultralytics import YOLO
+
         model = YOLO(str(model_path))
         _model_cache[cache_key] = model
         print(f"[ModelLoader] Loaded YOLO model from {model_path.name}")

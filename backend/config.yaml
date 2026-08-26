@@ -1,4 +1,3 @@
-
 models:
   crop_identifier:
     path: "models/crop_identifier_v1.pth"

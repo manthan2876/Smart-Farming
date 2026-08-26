@@ -22,7 +22,10 @@ response = client.chat.completions.create(
     model=MODEL,
     messages=[
         {"role": "system", "content": "You are an agricultural advisory assistant."},
-        {"role": "user", "content": "A tomato crop has leaf mold with 55% affected area. Humidity is 67% and temperature is 18.4 C. Give concise treatment advice."},
+        {
+            "role": "user",
+            "content": "A tomato crop has leaf mold with 55% affected area. Humidity is 67% and temperature is 18.4 C. Give concise treatment advice.",
+        },
     ],
     max_tokens=200,
     temperature=0.2,

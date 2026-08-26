@@ -5,7 +5,14 @@ from typing import Any
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from backend.database.models import Farm, Feedback, Image, Prediction, Recommendation, User
+from backend.database.models import (
+    Farm,
+    Feedback,
+    Image,
+    Prediction,
+    Recommendation,
+    User,
+)
 
 
 def create_user(
@@ -21,6 +28,8 @@ def create_user(
     latitude: float | None,
     longitude: float | None,
     crop_history: list[str],
+    farm_name: str | None = None,
+    farm_area_acres: float | None = None,
 ) -> User:
     user = User(
         id=user_id,
@@ -31,7 +40,9 @@ def create_user(
         language=language,
     )
     user.farm = Farm(
+        name=farm_name,
         location=location,
+        area_acres=farm_area_acres,
         latitude=latitude,
         longitude=longitude,
         crop_history=crop_history,
@@ -62,6 +73,8 @@ def update_profile(
     latitude: float | None,
     longitude: float | None,
     crop_history: list[str] | None,
+    farm_name: str | None = None,
+    farm_area_acres: float | None = None,
 ) -> User:
     if name is not None:
         user.name = name
@@ -71,6 +84,10 @@ def update_profile(
         user.farm = Farm()
     if location is not None:
         user.farm.location = location
+    if farm_name is not None:
+        user.farm.name = farm_name
+    if farm_area_acres is not None:
+        user.farm.area_acres = farm_area_acres
     if latitude is not None:
         user.farm.latitude = latitude
     if longitude is not None:
@@ -82,7 +99,24 @@ def update_profile(
     return user
 
 
-def record_prediction(session: Session, user_id: str, result: dict[str, Any]) -> Prediction:
+def save_farm(session: Session, user: User, data: dict[str, Any]) -> Farm:
+    if user.farm is None:
+        user.farm = Farm(user_id=user.id)
+    user.farm.name = data["name"]
+    user.farm.location = data["location"]
+    user.farm.area_acres = data["area_acres"]
+    user.farm.latitude = data.get("latitude")
+    user.farm.longitude = data.get("longitude")
+    user.farm.crop_history = data.get("crop_history", [])
+    session.add(user.farm)
+    session.commit()
+    session.refresh(user.farm)
+    return user.farm
+
+
+def record_prediction(
+    session: Session, user_id: str, result: dict[str, Any]
+) -> Prediction:
     user = session.get(User, user_id)
     if user is None:
         user = User(id=user_id)
@@ -129,13 +163,19 @@ def record_prediction(session: Session, user_id: str, result: dict[str, Any]) ->
     return prediction
 
 
-def get_prediction(session: Session, prediction_id: int, user_id: str) -> Prediction | None:
+def get_prediction(
+    session: Session, prediction_id: int, user_id: str
+) -> Prediction | None:
     return session.scalar(
-        select(Prediction).where(Prediction.id == prediction_id, Prediction.user_id == user_id)
+        select(Prediction).where(
+            Prediction.id == prediction_id, Prediction.user_id == user_id
+        )
     )
 
 
-def list_predictions(session: Session, user_id: str, offset: int, limit: int) -> list[Prediction]:
+def list_predictions(
+    session: Session, user_id: str, offset: int, limit: int
+) -> list[Prediction]:
     return list(
         session.scalars(
             select(Prediction)

@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from backend.api.auth import create_token_pair, decode_token, hash_password, verify_password
+from backend.api.auth import (
+    create_token_pair,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 from backend.api.deps import get_current_user
 from backend.api.schemas import (
     AuthResponse,
@@ -15,8 +20,16 @@ from backend.api.schemas import (
     ProfileUpdateRequest,
     RefreshRequest,
     RegisterRequest,
+    FarmRequest,
+    FarmResponse,
 )
-from backend.database.repository import create_user, find_user_by_identifier, get_user, update_profile
+from backend.database.repository import (
+    create_user,
+    find_user_by_identifier,
+    get_user,
+    save_farm,
+    update_profile,
+)
 from backend.database.session import get_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -35,13 +48,19 @@ def _profile(user) -> ProfileResponse:
         latitude=farm.latitude if farm else None,
         longitude=farm.longitude if farm else None,
         crop_history=farm.crop_history if farm else [],
+        farm_name=farm.name if farm else None,
+        farm_area_acres=farm.area_acres if farm else None,
     )
 
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
-async def register(payload: RegisterRequest, session: Session = Depends(get_session)) -> AuthResponse:
+async def register(
+    payload: RegisterRequest, session: Session = Depends(get_session)
+) -> AuthResponse:
     if not payload.phone and not payload.email:
-        raise HTTPException(status_code=422, detail="Provide a phone number or email address.")
+        raise HTTPException(
+            status_code=422, detail="Provide a phone number or email address."
+        )
     try:
         user = create_user(
             session,
@@ -55,10 +74,14 @@ async def register(payload: RegisterRequest, session: Session = Depends(get_sess
             latitude=payload.latitude,
             longitude=payload.longitude,
             crop_history=payload.crop_history,
+            farm_name=payload.farm_name,
+            farm_area_acres=payload.farm_area_acres,
         )
     except IntegrityError as exc:
         session.rollback()
-        raise HTTPException(status_code=409, detail="Phone or email is already registered.") from exc
+        raise HTTPException(
+            status_code=409, detail="Phone or email is already registered."
+        ) from exc
     except SQLAlchemyError as exc:
         session.rollback()
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
@@ -66,13 +89,21 @@ async def register(payload: RegisterRequest, session: Session = Depends(get_sess
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(payload: LoginRequest, session: Session = Depends(get_session)) -> AuthResponse:
+async def login(
+    payload: LoginRequest, session: Session = Depends(get_session)
+) -> AuthResponse:
     try:
         user = find_user_by_identifier(session, payload.identifier)
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
-    if user is None or not user.password_hash or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
+    if (
+        user is None
+        or not user.password_hash
+        or not verify_password(payload.password, user.password_hash)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials."
+        )
     return AuthResponse(tokens=create_token_pair(user.id), user=_profile(user))
 
 
@@ -86,7 +117,9 @@ async def refresh(payload: RefreshRequest) -> dict[str, str | int]:
 
 
 @router.get("/profile", response_model=ProfileResponse)
-async def profile(user_id: str = Depends(get_current_user), session: Session = Depends(get_session)) -> ProfileResponse:
+async def profile(
+    user_id: str = Depends(get_current_user), session: Session = Depends(get_session)
+) -> ProfileResponse:
     try:
         user = get_user(session, user_id)
     except SQLAlchemyError as exc:
@@ -122,3 +155,52 @@ async def update_farmer_profile(
         session.rollback()
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
     return _profile(user)
+
+
+@router.get("/farm", response_model=FarmResponse)
+async def get_farm(
+    user_id: str = Depends(get_current_user), session: Session = Depends(get_session)
+) -> FarmResponse:
+    try:
+        user = get_user(session, user_id)
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
+    if user is None or user.farm is None:
+        raise HTTPException(status_code=404, detail="Farm has not been configured.")
+    farm = user.farm
+    return FarmResponse(
+        id=farm.id,
+        name=farm.name,
+        location=farm.location,
+        area_acres=farm.area_acres,
+        latitude=farm.latitude,
+        longitude=farm.longitude,
+        crop_history=farm.crop_history or [],
+    )
+
+
+@router.put("/farm", response_model=FarmResponse)
+async def save_farmer_farm(
+    payload: FarmRequest,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> FarmResponse:
+    try:
+        user = get_user(session, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="Farmer profile not found.")
+        farm = save_farm(session, user, payload.model_dump())
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        session.rollback()
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
+    return FarmResponse(
+        id=farm.id,
+        name=farm.name,
+        location=farm.location,
+        area_acres=farm.area_acres,
+        latitude=farm.latitude,
+        longitude=farm.longitude,
+        crop_history=farm.crop_history or [],
+    )

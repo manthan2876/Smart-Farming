@@ -76,9 +76,7 @@ def route_to_disease_model(context: dict, config: dict[str, Any]) -> dict:
     # ── Store resolved config for disease classifier ───────────────────
     # Prefix with "_" to mark as internal — strip before returning to API.
     context["_disease_model_cfg"] = model_cfg
-    context["disease"]["model_used"] = (
-        f"disease_{crop_label.replace(' ', '_')}"
-    )
+    context["disease"]["model_used"] = f"disease_{crop_label.replace(' ', '_')}"
     context["status"]["decision_routing"] = "completed"
 
     return context

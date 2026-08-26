@@ -26,13 +26,14 @@ from albumentations.pytorch import ToTensorV2
 
 from backend.utils.model_loader import load_efficientnet, DEVICE
 
-
 # ── Albumentations evaluation transform (no augmentation) ─────────────────
-_EVAL_TF = A.Compose([
-    A.Resize(224, 224),
-    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-    ToTensorV2(),
-])
+_EVAL_TF = A.Compose(
+    [
+        A.Resize(224, 224),
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        ToTensorV2(),
+    ]
+)
 
 
 def predict_crop(context: dict, config: dict[str, Any]) -> dict:
@@ -55,7 +56,9 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
     crop_cfg = config["models"]["crop_identifier"]
 
     # Resolve paths relative to the backend/ directory (or absolute).
-    base_dir = Path(__file__).resolve().parent.parent.parent.parent  # project root (Smart-Farming/)
+    base_dir = (
+        Path(__file__).resolve().parent.parent.parent.parent
+    )  # project root (Smart-Farming/)
     model_path = base_dir / crop_cfg["path"]
     labels_path = base_dir / crop_cfg["labels"]
     arch = crop_cfg.get("arch", "efficientnet_b0")
@@ -63,9 +66,7 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
     # ── Load model (cached after first call) ───────────────────────────
     result = load_efficientnet(model_path, labels_path, arch)
     if result is None:
-        context["notes"].append(
-            f"Crop identifier model not found at {model_path}."
-        )
+        context["notes"].append(f"Crop identifier model not found at {model_path}.")
         context["status"]["crop_identification"] = "failed"
         return context
 
@@ -78,7 +79,9 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
         # Fallback: load from disk if in-memory array is missing
         processed_path = context["image"].get("processed_path")
         if not processed_path:
-            context["notes"].append("No processed image available for crop identification.")
+            context["notes"].append(
+                "No processed image available for crop identification."
+            )
             context["status"]["crop_identification"] = "failed"
             return context
         image_bgr = cv2.imread(processed_path, cv2.IMREAD_COLOR)
@@ -107,6 +110,7 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
 
 
 # ── Shared inference helper ────────────────────────────────────────────────
+
 
 def _run_inference(
     model: torch.nn.Module,

@@ -4,9 +4,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def fetch_weather(context: dict, config: dict = None) -> dict:
     """
-    Fetches current weather data from OpenWeather using coordinates 
+    Fetches current weather data from OpenWeather using coordinates
     from context['user'] and populates context['weather'].
     """
     user_info = context.get("user", {})
@@ -33,21 +34,18 @@ def fetch_weather(context: dict, config: dict = None) -> dict:
                 "cloudiness_percent": data["clouds"]["all"],
                 "condition": data["weather"][0]["main"],
                 "description": data["weather"][0]["description"],
-                "status": "success"
+                "status": "success",
             }
             context["status"]["weather"] = "completed"
         else:
             context["weather"] = {
-                "status": "failed", 
-                "message": data.get("message", "Unknown error")
+                "status": "failed",
+                "message": data.get("message", "Unknown error"),
             }
             context["status"]["weather"] = "failed"
 
     except Exception as exc:
-        context["weather"] = {
-            "status": "error", 
-            "message": str(exc)
-        }
+        context["weather"] = {"status": "error", "message": str(exc)}
         context["status"]["weather"] = "failed"
         context["notes"].append(f"Weather fetch error: {exc}")
 

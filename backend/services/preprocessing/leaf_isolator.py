@@ -33,7 +33,7 @@ def compute_sharpness_map(gray: np.ndarray, ksize: int = 25) -> np.ndarray:
         A float map where higher values = sharper / more in-focus pixels.
     """
     lap = cv2.Laplacian(gray, cv2.CV_64F)
-    lap_sq = lap ** 2
+    lap_sq = lap**2
     local_mean = cv2.blur(lap_sq, (ksize, ksize))
     return local_mean
 

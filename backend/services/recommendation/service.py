@@ -29,6 +29,7 @@ _CLIENT_CACHE = InferenceClient(
     provider="nscale",
 )
 
+
 def _get_hf_client() -> InferenceClient:
     """Create and cache the Hugging Face InferenceClient."""
     global _CLIENT_CACHE
@@ -47,6 +48,7 @@ def _get_hf_client() -> InferenceClient:
     _CLIENT_CACHE = InferenceClient(api_key=HF_TOKEN, provider="nscale")
     return _CLIENT_CACHE
 
+
 def _extract_json(text: str) -> dict:
     if not text:
         raise ValueError("Hugging Face returned an empty response.")
@@ -58,12 +60,15 @@ def _extract_json(text: str) -> dict:
     start_idx = response_text.find("{")
     end_idx = response_text.rfind("}")
     if start_idx == -1 or end_idx == -1:
-        raise ValueError(f"No JSON object found in Hugging Face response: {response_text[:500]}")
-    json_text = response_text[start_idx:end_idx + 1]
+        raise ValueError(
+            f"No JSON object found in Hugging Face response: {response_text[:500]}"
+        )
+    json_text = response_text[start_idx : end_idx + 1]
     data = json.loads(json_text)
     if not isinstance(data, dict):
         raise ValueError("Model response JSON is not an object.")
     return data
+
 
 def _build_prompt(context: dict) -> str:
     crop = context.get("crop", {})
@@ -136,6 +141,7 @@ RETURN EXACTLY THIS JSON STRUCTURE:
 """
     return prompt.strip()
 
+
 def generate_recommendation(context: dict, config: dict[str, Any] = None) -> dict:
     if context["status"]["preprocessing"] != "completed":
         context["status"]["recommendation"] = "skipped"
@@ -149,7 +155,10 @@ def generate_recommendation(context: dict, config: dict[str, Any] = None) -> dic
         completion = client.chat.completions.create(
             model=MODEL_ID,
             messages=[
-                {"role": "system", "content": "You are an expert agricultural advisory assistant."},
+                {
+                    "role": "system",
+                    "content": "You are an expert agricultural advisory assistant.",
+                },
                 {"role": "user", "content": prompt},
             ],
             max_tokens=350,
@@ -175,7 +184,9 @@ def generate_recommendation(context: dict, config: dict[str, Any] = None) -> dic
         print("[OK] Hugging Face recommendation generated successfully.")
 
     except Exception as exc:
-        error_message = f"Hugging Face recommendation error: {type(exc).__name__}: {exc}"
+        error_message = (
+            f"Hugging Face recommendation error: {type(exc).__name__}: {exc}"
+        )
         print(f"[ERROR] {error_message}")
         context["status"]["recommendation"] = "failed"
         context["notes"].append(error_message)

@@ -25,10 +25,14 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(String(500), nullable=True)
     language: Mapped[str] = mapped_column(String(32), default="English")
     role: Mapped[str] = mapped_column(String(32), default="farmer")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     predictions: Mapped[list[Prediction]] = relationship(back_populates="user")
-    farm: Mapped[Farm | None] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
+    farm: Mapped[Farm | None] = relationship(
+        back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
     images: Mapped[list[Image]] = relationship(back_populates="user")
 
 
@@ -37,7 +41,9 @@ class Farm(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
+    name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     location: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    area_acres: Mapped[float | None] = mapped_column(Float, nullable=True)
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     crop_history: Mapped[list[str]] = mapped_column(JSON, default=list)
@@ -58,7 +64,9 @@ class Image(Base):
     leaf_detected: Mapped[bool] = mapped_column(Boolean, default=False)
 
     user: Mapped[User] = relationship(back_populates="images")
-    prediction: Mapped[Prediction | None] = relationship(back_populates="image", uselist=False)
+    prediction: Mapped[Prediction | None] = relationship(
+        back_populates="image", uselist=False
+    )
 
 
 class Prediction(Base):
@@ -76,19 +84,27 @@ class Prediction(Base):
     model_used: Mapped[str | None] = mapped_column(String(200), nullable=True)
     severity_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     result: Mapped[dict[str, Any]] = mapped_column(JSON)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
 
     user: Mapped[User] = relationship(back_populates="predictions")
     image: Mapped[Image | None] = relationship(back_populates="prediction")
-    recommendation: Mapped[Recommendation | None] = relationship(back_populates="prediction", uselist=False, cascade="all, delete-orphan")
-    feedback: Mapped[list[Feedback]] = relationship(back_populates="prediction", cascade="all, delete-orphan")
+    recommendation: Mapped[Recommendation | None] = relationship(
+        back_populates="prediction", uselist=False, cascade="all, delete-orphan"
+    )
+    feedback: Mapped[list[Feedback]] = relationship(
+        back_populates="prediction", cascade="all, delete-orphan"
+    )
 
 
 class Recommendation(Base):
     __tablename__ = "recommendations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    prediction_id: Mapped[int] = mapped_column(ForeignKey("predictions.id"), unique=True)
+    prediction_id: Mapped[int] = mapped_column(
+        ForeignKey("predictions.id"), unique=True
+    )
     fertilizer: Mapped[str | None] = mapped_column(Text, nullable=True)
     pesticide: Mapped[str | None] = mapped_column(Text, nullable=True)
     irrigation: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -104,6 +120,8 @@ class Feedback(Base):
     prediction_id: Mapped[int] = mapped_column(ForeignKey("predictions.id"), index=True)
     is_correct: Mapped[bool] = mapped_column(Boolean)
     farmer_note: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     prediction: Mapped[Prediction] = relationship(back_populates="feedback")

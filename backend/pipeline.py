@@ -21,12 +21,15 @@ from backend.services.recommendation.service import generate_recommendation
 
 _CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
 
+
 def _load_config(config_path: Path = _CONFIG_PATH) -> dict[str, Any]:
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
+
 _CONFIG: dict[str, Any] = _load_config()
 _PREPROCESSOR = OpenCVPreprocessorService(_CONFIG)
+
 
 def run_pipeline(context: dict) -> dict:
     context = _PREPROCESSOR.process(context)
@@ -42,6 +45,7 @@ def run_pipeline(context: dict) -> dict:
     context = generate_recommendation(context, _CONFIG)
 
     return context
+
 
 def reload_config() -> None:
     global _CONFIG, _PREPROCESSOR
