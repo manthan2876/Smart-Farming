@@ -35,10 +35,15 @@ p {
 }
 .app-shell {
   display: flex;
+  align-items: flex-start;
   min-height: 100vh;
 }
 .sidebar {
   width: 248px;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
   flex: none;
   padding: 30px 20px 22px;
   display: flex;

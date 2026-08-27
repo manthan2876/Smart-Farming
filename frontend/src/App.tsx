@@ -77,26 +77,6 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const { token, user, ready } = useAuth();
-  if (!ready)
-    return <div className="app-loading">Opening your field journal…</div>;
-  const active: Page =
-    location.pathname === "/scan" || location.pathname === "/upload"
-      ? "scan"
-      : location.pathname === "/history"
-        ? "history"
-        : location.pathname === "/farm"
-          ? "farm"
-          : location.pathname === "/alerts"
-            ? "alerts"
-            : location.pathname === "/profile"
-              ? "profile"
-              : location.pathname === "/settings"
-                ? "settings"
-                : location.pathname.startsWith("/expert")
-                  ? "expert"
-                  : location.pathname.startsWith("/admin")
-                    ? "admin"
-                    : "overview";
   const [selected, setSelected] = useState<Prediction>(demoPrediction);
   const { data: liveHistory = [] } = useQuery({
     queryKey: ["history", token],
@@ -148,6 +128,26 @@ export default function App() {
       );
     }
   }
+  if (!ready)
+    return <div className="app-loading">Opening your field journal…</div>;
+  const active: Page =
+    location.pathname === "/scan" || location.pathname === "/upload"
+      ? "scan"
+      : location.pathname === "/history"
+        ? "history"
+        : location.pathname === "/farm"
+          ? "farm"
+          : location.pathname === "/alerts"
+            ? "alerts"
+            : location.pathname === "/profile"
+              ? "profile"
+              : location.pathname === "/settings"
+                ? "settings"
+                : location.pathname.startsWith("/expert")
+                  ? "expert"
+                  : location.pathname.startsWith("/admin")
+                    ? "admin"
+                    : "overview";
   function selectPrediction(item: Prediction) {
     setSelected(item);
     navigate(`/result/${item.prediction_id ?? ""}`);

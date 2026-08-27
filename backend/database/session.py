@@ -24,13 +24,14 @@ def database_url() -> str:
 
 @lru_cache(maxsize=1)
 def _session_factory() -> sessionmaker[Session]:
-    engine = create_engine(database_url(), pool_pre_ping=True)
+    engine = create_engine(database_url(), pool_size=3, max_overflow=0, pool_recycle=1200, pool_pre_ping=True)
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
 def get_session() -> Generator[Session, None, None]:
     try:
         session = _session_factory()()
+        session.connection()
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
     try:

@@ -76,7 +76,7 @@ export function FarmPage({
             <span className="eyebrow">Farm name</span>
             <input
               required
-              value={farm.name}
+              value={farm.name ?? ""}
               onChange={(e) => setFarm({ ...farm, name: e.target.value })}
               placeholder="North plot farm"
             />
@@ -97,7 +97,7 @@ export function FarmPage({
               type="number"
               min="0"
               step="0.1"
-              value={farm.area_acres}
+              value={farm.area_acres ?? 0}
               onChange={(e) =>
                 setFarm({ ...farm, area_acres: Number(e.target.value) })
               }

@@ -219,7 +219,10 @@ async def history(
     try:
         predictions = list_predictions(session, user_id, offset, limit)
     except SQLAlchemyError as exc:
-        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
+        # <-- TEMPORARY DEBUG PRINT -->
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=503, detail=f"DB Error: {str(exc)}") from exc
     return [
         {**prediction.result, "prediction_id": prediction.id}
         for prediction in predictions

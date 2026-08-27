@@ -34,6 +34,10 @@ class User(Base):
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
     images: Mapped[list[Image]] = relationship(back_populates="user")
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="user")
+    expert_reviews: Mapped[list["ExpertReview"]] = relationship(
+        back_populates="expert", foreign_keys="ExpertReview.expert_id"
+    )
 
 
 class Farm(Base):
@@ -49,6 +53,9 @@ class Farm(Base):
     crop_history: Mapped[list[str]] = mapped_column(JSON, default=list)
 
     user: Mapped[User] = relationship(back_populates="farm")
+    plots: Mapped[list["Plot"]] = relationship(
+        back_populates="farm", cascade="all, delete-orphan"
+    )
 
 
 class Image(Base):
@@ -74,6 +81,9 @@ class Prediction(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    plot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("plots.id"), nullable=True, index=True
+    )
     image_id: Mapped[int | None] = mapped_column(ForeignKey("images.id"), nullable=True)
     raw_path: Mapped[str] = mapped_column(Text)
     processed_path: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -89,6 +99,7 @@ class Prediction(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="predictions")
+    plot: Mapped["Plot | None"] = relationship(back_populates="predictions")
     image: Mapped[Image | None] = relationship(back_populates="prediction")
     recommendation: Mapped[Recommendation | None] = relationship(
         back_populates="prediction", uselist=False, cascade="all, delete-orphan"
@@ -96,6 +107,10 @@ class Prediction(Base):
     feedback: Mapped[list[Feedback]] = relationship(
         back_populates="prediction", cascade="all, delete-orphan"
     )
+    expert_review: Mapped["ExpertReview | None"] = relationship(
+        back_populates="prediction", uselist=False, cascade="all, delete-orphan"
+    )
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="prediction")
 
 
 class Recommendation(Base):
@@ -125,3 +140,92 @@ class Feedback(Base):
     )
 
     prediction: Mapped[Prediction] = relationship(back_populates="feedback")
+
+
+class Plot(Base):
+    __tablename__ = "plots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farms.id"), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    crop: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    area_acres: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="healthy")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+
+    farm: Mapped[Farm] = relationship(back_populates="plots")
+    predictions: Mapped[list[Prediction]] = relationship(back_populates="plot")
+    alerts: Mapped[list["Alert"]] = relationship(back_populates="plot")
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    prediction_id: Mapped[int | None] = mapped_column(
+        ForeignKey("predictions.id"), nullable=True, index=True
+    )
+    plot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("plots.id"), nullable=True, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(40))
+    severity: Mapped[str] = mapped_column(String(32), default="medium")
+    title: Mapped[str] = mapped_column(String(240))
+    body: Mapped[str] = mapped_column(Text)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
+
+    user: Mapped[User] = relationship(back_populates="alerts")
+    prediction: Mapped[Prediction | None] = relationship(back_populates="alerts")
+    plot: Mapped[Plot | None] = relationship(back_populates="alerts")
+
+
+class ExpertReview(Base):
+    __tablename__ = "expert_reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    prediction_id: Mapped[int] = mapped_column(
+        ForeignKey("predictions.id"), unique=True
+    )
+    expert_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    status: Mapped[str] = mapped_column(String(40), default="pending")
+    decision: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    corrected_disease: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    corrected_severity: Mapped[float | None] = mapped_column(Float, nullable=True)
+    farmer_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    internal_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    prediction: Mapped[Prediction] = relationship(back_populates="expert_review")
+    expert: Mapped[User | None] = relationship(
+        back_populates="expert_reviews", foreign_keys=[expert_id]
+    )
+
+
+class MlopsRun(Base):
+    __tablename__ = "mlops_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    model_name: Mapped[str] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(40), default="queued")
+    epoch: Mapped[int] = mapped_column(Integer, default=0)
+    total_epochs: Mapped[int] = mapped_column(Integer, default=20)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
