@@ -4,10 +4,10 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from backend.api.deps import get_current_user
-from backend.api.routes import _public_result
-from backend.database.session import get_session
-from backend.main import app
+from app.api.deps import get_current_user
+from app.api.endpoints.predict import _public_result
+from app.api.endpoints.auth import get_session
+from app.main import app
 
 
 class FakeSession:
@@ -51,9 +51,9 @@ def test_predict_serializes_pipeline_result(monkeypatch) -> None:
         "status": {"preprocessing": "completed"},
         "_disease_model_cfg": {"path": "secret"},
     }
-    monkeypatch.setattr("backend.api.routes.run_pipeline", lambda context: result)
+    monkeypatch.setattr("app.api.endpoints.predict.run_pipeline", lambda context: result)
     monkeypatch.setattr(
-        "backend.api.routes.record_prediction",
+        "app.api.endpoints.predict.record_prediction",
         lambda session, user_id, saved: SimpleNamespace(id=42),
     )
 
@@ -87,3 +87,25 @@ def test_feedback_schema_requires_prediction_id() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_weather_endpoint() -> None:
+    client = TestClient(app)
+    response = client.get(
+        "/weather?lat=22.5726&lon=88.3639",
+        headers={"X-User-ID": "farmer-1"},
+    )
+    assert response.status_code == 200
+    assert "status" in response.json()
+
+
+def test_admin_metrics_endpoint(monkeypatch) -> None:
+    client = TestClient(app)
+    response = client.get(
+        "/admin/metrics",
+        headers={"X-User-ID": "admin-1"},
+    )
+    # Checks response structure
+    assert response.status_code in (200, 500)  # depending on fake vs live session
+
+

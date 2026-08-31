@@ -3,15 +3,33 @@ test_pipeline.py — Standalone smoke test for the full Smart Farming pipeline.
 """
 
 import pprint
+import sys
 from pathlib import Path
+import pytest
 
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent
 
-from backend.context import create_context
-from backend.pipeline import run_pipeline
+from app.context import create_context
+from app.pipeline import run_pipeline
 
 DEFAULT_TEST_IMAGE = PROJECT_ROOT / "Datasets" / "testing_images" / "aphids_tomato.jpeg"
+
+
+@pytest.mark.skipif(not DEFAULT_TEST_IMAGE.exists(), reason="Test image not found")
+def test_pipeline_smoke():
+    context = create_context(
+        image_path=str(DEFAULT_TEST_IMAGE),
+        user_id="test_user",
+        location="Warsaw, Poland",
+        lat=52.2297,
+        lon=21.0122,
+        language="English",
+    )
+    result = run_pipeline(context)
+    assert result["request_id"]
+    assert "status" in result
+
 
 
 def safe_confidence(value):

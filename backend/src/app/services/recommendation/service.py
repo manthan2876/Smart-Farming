@@ -24,10 +24,8 @@ load_dotenv()
 
 MODEL_ID = "Qwen/Qwen3-4B-Instruct-2507"
 HF_TOKEN = os.getenv("HF_TOKEN")
-_CLIENT_CACHE = InferenceClient(
-    api_key=HF_TOKEN,
-    provider="nscale",
-)
+_CLIENT_CACHE: InferenceClient | None = None
+
 
 
 def _get_hf_client() -> InferenceClient:

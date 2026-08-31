@@ -11,21 +11,44 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-_BACKEND_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(_BACKEND_DIR / ".env")
+def _find_env_file() -> Path | None:
+    candidates = [
+        Path(__file__).resolve().parents[3] / ".env",  # backend/.env
+        Path(__file__).resolve().parents[4] / ".env",  # project/.env
+        Path.cwd() / ".env",
+        Path.cwd() / "backend" / ".env",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return None
+
+
+env_file = _find_env_file()
+if env_file:
+    load_dotenv(env_file)
+else:
+    load_dotenv()
 
 
 def database_url() -> str:
     return os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://postgres@localhost:5432/smart_farming",
+        "sqlite:///./dev_database.db",
     )
 
 
 @lru_cache(maxsize=1)
 def _session_factory() -> sessionmaker[Session]:
-    engine = create_engine(database_url(), pool_size=3, max_overflow=0, pool_recycle=1200, pool_pre_ping=True)
+    url = database_url()
+    if url.startswith("sqlite"):
+        engine = create_engine(url, connect_args={"check_same_thread": False})
+    else:
+        engine = create_engine(
+            url, pool_size=3, max_overflow=0, pool_recycle=1200, pool_pre_ping=True
+        )
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
 
 
 def get_session() -> Generator[Session, None, None]:

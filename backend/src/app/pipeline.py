@@ -19,12 +19,28 @@ from app.services.pest_detector.predictor import predict_pest
 from app.services.weather.service import fetch_weather
 from app.services.recommendation.service import generate_recommendation
 
-_CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
+def _find_config_path() -> Path:
+    candidates = [
+        Path(__file__).resolve().parents[2] / "config.yaml",  # backend/config.yaml
+        Path(__file__).resolve().parents[3] / "config.yaml",  # Smart-Farming/config.yaml
+        Path(__file__).resolve().parent / "config.yaml",      # app/config.yaml
+        Path.cwd() / "config.yaml",
+        Path.cwd() / "backend" / "config.yaml",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return Path(__file__).resolve().parents[2] / "config.yaml"
 
 
-def _load_config(config_path: Path = _CONFIG_PATH) -> dict[str, Any]:
-    with open(config_path, "r", encoding="utf-8") as f:
+_CONFIG_PATH = _find_config_path()
+
+
+def _load_config(config_path: Path | None = None) -> dict[str, Any]:
+    target = config_path or _find_config_path()
+    with open(target, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
 
 
 _CONFIG: dict[str, Any] = _load_config()

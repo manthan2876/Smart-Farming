@@ -21,6 +21,24 @@ _model_cache: dict = {}
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+def resolve_project_path(rel_or_abs_path: str | Path) -> Path:
+    p = Path(rel_or_abs_path)
+    if p.is_absolute() and p.exists():
+        return p
+    # Candidate search roots
+    roots = [
+        Path(__file__).resolve().parents[4],  # Smart-Farming root
+        Path(__file__).resolve().parents[3],  # backend
+        Path.cwd(),
+        Path.cwd().parent,
+    ]
+    for r in roots:
+        candidate = r / p
+        if candidate.exists():
+            return candidate
+    return roots[0] / p
+
+
 def load_efficientnet(
     model_path: str | Path,
     labels_path: str | Path,
@@ -33,8 +51,8 @@ def load_efficientnet(
     Returns (model, classes) or None if either file is missing.
     Results are cached by model_path so the file is only loaded once.
     """
-    model_path = Path(model_path)
-    labels_path = Path(labels_path)
+    model_path = resolve_project_path(model_path)
+    labels_path = resolve_project_path(labels_path)
     cache_key = str(model_path)
 
     if cache_key in _model_cache:
@@ -46,6 +64,7 @@ def load_efficientnet(
     if not labels_path.exists():
         print(f"[ModelLoader] Labels file not found: {labels_path}")
         return None
+
 
     with open(labels_path, "r", encoding="utf-8") as f:
         classes = json.load(f)

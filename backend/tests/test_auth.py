@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.api.auth import (
+from app.api import (
     create_token_pair,
     decode_token,
     hash_password,
@@ -30,3 +30,13 @@ def test_access_and_refresh_tokens_have_separate_types() -> None:
         raise AssertionError(
             "A refresh token must not authenticate as an access token."
         )
+
+
+def test_decode_invalid_token() -> None:
+    try:
+        decode_token("invalid.token.payload")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Invalid token should raise ValueError.")
+

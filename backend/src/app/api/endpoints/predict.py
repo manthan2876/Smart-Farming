@@ -18,11 +18,14 @@ from app.crud import record_prediction, get_prediction
 
 router = APIRouter()
 
-_BACKEND_DIR = Path(__file__).resolve().parents[1]
+_BACKEND_DIR = Path(__file__).resolve().parents[4]
 _UPLOAD_DIR = _BACKEND_DIR / "data" / "uploads"
+if not _UPLOAD_DIR.parent.exists():
+    _UPLOAD_DIR = Path.cwd() / "data" / "uploads"
 _MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _LOGGER = logging.getLogger("smart-farming.api")
+
 
 def _public_result(context: dict[str, Any]) -> dict[str, Any]:
     public_context = {

@@ -36,8 +36,10 @@ def record_prediction(
     )
     session.add(image_record)
     session.flush()
+    plot_id = result.get("plot_id") or result.get("user", {}).get("plot_id")
     prediction = Prediction(
         user_id=user_id,
+        plot_id=plot_id,
         image_id=image_record.id,
         raw_path=str(image.get("raw_path", "")),
         processed_path=image.get("processed_path"),

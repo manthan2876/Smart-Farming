@@ -76,7 +76,10 @@ export function ResultPage({
               onOpen={() => undefined}
             />
           </div>
-          <GradCamOverlay />
+          <GradCamOverlay
+            rawImage={prediction.image?.raw_path}
+            processedImage={prediction.image?.processed_path}
+          />
           <div className="context-strip">
             <span>
               <CloudSun size={17} />{" "}
