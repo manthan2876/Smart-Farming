@@ -2,16 +2,22 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { CropsPage } from "./pages/CropsPage";
+import { ExternalLink } from "lucide-react";
 // import { DashboardPage } from "./pages/DashboardPage";
 // import { ScanPage } from "./pages/ScanPage";
 // import { PredictionResultPage } from "./pages/PredictionResultPage";
 // import { HistoryPage } from "./pages/HistoryPage";
 // import { FarmSettingsPage } from "./pages/FarmSettingsPage";
 // import { WeatherPage } from "./pages/WeatherPage";
-// import { CropsPage } from "./pages/CropsPage";
 // import { AdminMetricsPage } from "./pages/AdminMetricsPage";
 // import { AdminFeedbackPage } from "./pages/AdminFeedbackPage";
 // import { ProtectedRoute } from "./components/ProtectedRoute";
+
+function ExternalRedirect({ to }: { to: string }) {
+  window.location.href = to;
+  return null;
+}
 
 export default function App() {
   return (
@@ -20,8 +26,8 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/register" element={<RegisterPage />} />
-      {/*<Route path="/crops" element={<CropsPage />} />
-      <Route path="/docs" element={() => { window.location.href = "http://localhost:8000/docs"; return null; }} />
+      <Route path="/crops" element={<CropsPage />} />
+      <Route path="/docs" element={<ExternalRedirect to="http://localhost:8000/docs" />} />
 
       {/* Protected Farmer Routes 
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
