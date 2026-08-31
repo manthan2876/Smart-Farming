@@ -1,0 +1,143 @@
+backend/ (117 files)
+    ├── backend.egg-info/ (5 files)
+        ├── PKG-INFO
+        ├── SOURCES.txt
+        ├── dependency_links.txt
+        ├── requires.txt
+        ├── top_level.txt
+    ├── data/ (24 files)
+        ├── processed/ (7 files)
+            ├── 6359f33a263a4942ac0c31b43804de3c.jpg
+            ├── 75f4ace0b8f1488c885246430ca523ce.jpeg
+            ├── 98059dfa90c846148d43fc07f5e74598.jpeg
+            ├── aphids_tomato.jpeg
+            ├── ed94f61b31b94cada1c91c600499e825.jpeg
+            ├── fd54bba53da140ec90f7aeabd6d8cbe0.jpeg
+            ├── sample.jpg
+        ├── uploads/ (17 files)
+            ├── 1886134986384015b307b5208d07dc56.jpg
+            ├── 2c2def08dd044c2884812080dce6f57b.jpg
+            ├── 54d89d98754347978c70a8ccb1df6bf2.jpg
+            ├── 620b1875386c474aa97d3a58e04a8de6.jpg
+            ├── 6359f33a263a4942ac0c31b43804de3c.jpg
+            ├── 74e876c2388d455d834dfd16518d1b8e.jpg
+            ├── 75f4ace0b8f1488c885246430ca523ce.jpeg
+            ├── 98059dfa90c846148d43fc07f5e74598.jpeg
+            ├── a55fe87264e34f7982e3cc53b8d6d068.jpg
+            ├── a58eda726cfd4cf293c30661f59e2bb4.jpg
+            ├── ad5d3dd120f94efbae25f1b634188f05.jpg
+            ├── b1e2bcf8c22d4d58826f64a2d9792d53.jpg
+            ├── c353e1e1deb64fedbf3518a5e6f19289.jpg
+            ├── d944f1900c584573b706bfb3bf7bd108.jpg
+            ├── dd3416d71a4447ca89f9581c68b627c7.jpg
+            ├── ed94f61b31b94cada1c91c600499e825.jpeg
+            ├── fd54bba53da140ec90f7aeabd6d8cbe0.jpeg
+    ├── src/ (75 files)
+        ├── app/ (70 files)
+            ├── api/ (11 files)
+                ├── endpoints/ (9 files)
+                    ├── __init__.py
+                    ├── adminMatrix.py
+                    ├── auth.py
+                    ├── crops.py
+                    ├── feedback.py
+                    ├── health.py
+                    ├── history.py
+                    ├── predict.py
+                    ├── weather.py
+                ├── __init__.py
+                ├── deps.py
+            ├── core/ (7 files)
+                ├── __init__.py
+                ├── config.py
+                ├── database.py
+                ├── init_db.py
+                ├── repository.py
+                ├── security.py
+                ├── session.py
+            ├── crud/ (2 files)
+                ├── __init__.py
+                ├── user.py
+            ├── models/ (11 files)
+                ├── __init__.py
+                ├── alert.py
+                ├── expertReview.py
+                ├── farm.py
+                ├── feedback.py
+                ├── image
+                ├── mlopsRun.py
+                ├── plot.py
+                ├── prediction.py
+                ├── recommendation.py
+                ├── user.py
+            ├── public/ (1 files)
+                ├── aphids_tomato.jpeg
+            ├── schemas/ (13 files)
+                ├── __init__.py
+                ├── alert.py
+                ├── crop.py
+                ├── expertReview.py
+                ├── farm.py
+                ├── feedback.py
+                ├── health.py
+                ├── image
+                ├── mlopsRun.py
+                ├── plot.py
+                ├── prediction.py
+                ├── recommendation.py
+                ├── user.py
+            ├── services/ (18 files)
+                ├── crop_identifier/ (2 files)
+                    ├── __init__.py
+                    ├── predictor.py
+                ├── decision_engine/ (2 files)
+                    ├── __init__.py
+                    ├── router.py
+                ├── disease_classifier/ (2 files)
+                    ├── __init__.py
+                    ├── predictor.py
+                ├── pest_detector/ (2 files)
+                    ├── __init__.py
+                    ├── predictor.py
+                ├── preprocessing/ (3 files)
+                    ├── __init__.py
+                    ├── leaf_isolator.py
+                    ├── service.py
+                ├── recommendation/ (2 files)
+                    ├── __init__.py
+                    ├── service.py
+                ├── severity/ (2 files)
+                    ├── __init__.py
+                    ├── estimator.py
+                ├── weather/ (2 files)
+                    ├── __init__.py
+                    ├── service.py
+                ├── __init__.py
+            ├── utils/ (3 files)
+                ├── __init__.py
+                ├── logging.py
+                ├── model_loader.py
+            ├── __init__.py
+            ├── context.py
+            ├── main.py
+            ├── pipeline.py
+        ├── backend.egg-info/ (5 files)
+            ├── PKG-INFO
+            ├── SOURCES.txt
+            ├── dependency_links.txt
+            ├── requires.txt
+            ├── top_level.txt
+    ├── tests/ (4 files)
+        ├── test_api.py
+        ├── test_auth.py
+        ├── test_hf_recommendation.py
+        ├── test_pipeline.py
+    ├── .env
+    ├── .env.example
+    ├── config.yaml
+    ├── count.py
+    ├── folder_tree.txt
+    ├── package-lock.json
+    ├── pyproject.toml
+    ├── requirements.txt
+    ├── uv.lock

@@ -21,8 +21,11 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
-    "PyJWT>=2.8.0",
+    "pyjwt>=2.8.0",
     "pwdlib[argon2]>=0.2.0",
+    "uvicorn[standard]>=0.22.0",
+    "pytest>=8.0.0",
+    "passlib>=1.7.4",
 ]
 
 [project.optional-dependencies]
@@ -32,8 +35,8 @@ dev = [
 ]
 
 [tool.fastapi]
-entrypoint = "main:app"
+entrypoint = "app.main:app"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["api*", "database*", "services*", "utils*"]
+where = ["src"]
+include = ["app*"]
