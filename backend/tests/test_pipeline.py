@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 BACKEND_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = BACKEND_DIR.parent
+PROJECT_ROOT = BACKEND_DIR.parent.parent
 
 from app.context import create_context
 from app.pipeline import run_pipeline

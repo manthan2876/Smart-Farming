@@ -67,7 +67,7 @@ def predict_disease(context: dict, config: dict[str, Any]) -> dict:
 
     # ── Resolve model paths from config ───────────────────────────────
     base_dir = (
-        Path(__file__).resolve().parent.parent.parent.parent
+        Path(__file__).resolve().parent.parent.parent.parent.parent.parent
     )  # project root (Smart-Farming/)
     model_path = base_dir / model_cfg["path"]
     labels_path = base_dir / model_cfg["labels"]

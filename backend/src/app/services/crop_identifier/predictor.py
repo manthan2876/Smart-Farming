@@ -57,7 +57,7 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
 
     # Resolve paths relative to the backend/ directory (or absolute).
     base_dir = (
-        Path(__file__).resolve().parent.parent.parent.parent
+        Path(__file__).resolve().parent.parent.parent.parent.parent.parent
     )  # project root (Smart-Farming/)
     model_path = base_dir / crop_cfg["path"]
     labels_path = base_dir / crop_cfg["labels"]

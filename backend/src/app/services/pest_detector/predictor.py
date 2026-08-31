@@ -25,7 +25,7 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
         context["status"]["pest_detection"] = "skipped"
         return context
 
-    project_root = Path(__file__).resolve().parents[3]
+    project_root = Path(__file__).resolve().parents[5]
     model_path = (project_root / model_relative_path).resolve()
 
     if not model_path.exists():
