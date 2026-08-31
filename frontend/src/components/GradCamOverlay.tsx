@@ -9,9 +9,9 @@ interface GradCamOverlayProps {
 export function GradCamOverlay({ rawImage, processedImage }: GradCamOverlayProps) {
   const [mode, setMode] = useState<"overlay" | "side_by_side">("overlay");
   const [opacity, setOpacity] = useState<number>(70);
-
-  const displayImage = rawImage || processedImage || imagePath;
-
+  const api_url = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";  
+  const displayImage = api_url + '/' + processedImage || imagePath;
+  console.log(displayImage);
   return (
     <div className="gradcam-panel">
       <div className="gradcam-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>

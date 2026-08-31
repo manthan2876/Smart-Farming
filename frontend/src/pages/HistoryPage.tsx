@@ -1,7 +1,7 @@
 import { ArrowUpRight, ChevronDown, Filter } from "lucide-react";
 import { useState } from "react";
 import type { Prediction } from "../api/types";
-import { confidence, imagePath, severityTone } from "../lib/format";
+import { confidence, severityTone } from "../lib/format";
 
 export function HistoryPage({
   history,
@@ -23,6 +23,7 @@ export function HistoryPage({
       (crop === "All crops" || item.crop.label === crop) &&
       (disease === "All conditions" || item.disease.label === disease),
   );
+  const api_url = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";  
   return (
     <section className="history-page">
       <div className="section-head">
@@ -56,14 +57,18 @@ export function HistoryPage({
           <span>Date</span>
           <span />
         </div>
-        {filtered.map((item) => (
+        {filtered.map((item) => {
+          const itemRawPath = item.image.processed_path || "";
+          const itemCleanPath = itemRawPath.replace(/^\/+/, "").replace(/^data\//, "");
+          const itemImageSrc = `${api_url}/data/${itemCleanPath}`; 
+          return (
           <button
             className="table-row"
             key={item.prediction_id}
             onClick={() => onSelect(item)}
           >
             <span className="reading-cell">
-              <img src={imagePath} alt="" />
+              <img src={itemImageSrc} alt="" />
               <b>{item.disease.label}</b>
             </span>
             <span>{item.crop.label}</span>
@@ -75,7 +80,7 @@ export function HistoryPage({
             <span>25 Aug 2026</span>
             <ArrowUpRight size={16} />
           </button>
-        ))}
+        )})}
       </div>
     </section>
   );

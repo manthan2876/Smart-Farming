@@ -3,17 +3,13 @@ import { ArrowUpRight, Leaf, LockKeyhole } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export function AuthPage({ mode }: { mode: "login" | "register" }) {
-  const isRegister = mode === "register";
-  const { signIn, signUp } = useAuth();
+export function LoginPage() {
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState({
-    name: "",
     identifier: "",
     password: "",
-    location: "Anand, Gujarat",
-    language: "English",
   });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -22,16 +18,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
     setBusy(true);
     setError("");
     try {
-      if (isRegister)
-        await signUp({
-          name: form.name,
-          email: form.identifier,
-          password: form.password,
-          location: form.location,
-          language: form.language,
-          crop_history: ["Tomato"],
-        });
-      else await signIn(form.identifier, form.password);
+      await signIn(form.identifier, form.password);
       navigate(searchParams.get("next") ?? "/");
     } catch (reason) {
       setError(
@@ -74,29 +61,11 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
         <span className="round-icon">
           <LockKeyhole size={18} />
         </span>
-        <p className="eyebrow">
-          {isRegister ? "Create your farm profile" : "Farmer access"}
-        </p>
-        <h2>
-          {isRegister
-            ? "Start your field journal."
-            : "Welcome back to the field."}
-        </h2>
+        <p className="eyebrow">{"Farmer access"}</p>
+        <h2>{"Welcome back to the field."}</h2>
         <p className="auth-copy">
-          {isRegister
-            ? "Save every reading to one trusted crop history."
-            : "Sign in to sync live scans and recommendations."}
+          {"Sign in to sync live scans and recommendations."}
         </p>
-        {isRegister && (
-          <label>
-            Full name
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </label>
-        )}
         <label>
           Email or phone
           <input
@@ -116,32 +85,20 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
         </label>
-        {isRegister && (
-          <label>
-            Farm location
-            <input
-              required
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-            />
-          </label>
-        )}
         {error && <p className="auth-error">{error}</p>}
         <button className="primary auth-submit" disabled={busy}>
           {busy ? (
             "Connecting…"
           ) : (
             <>
-              {isRegister ? "Create profile" : "Sign in"}{" "}
+              {"Sign in"}
               <ArrowUpRight size={16} />
             </>
           )}
         </button>
         <p className="auth-switch">
-          {isRegister ? "Already have a profile?" : "New to Fieldnote?"}{" "}
-          <Link to={isRegister ? "/login" : "/register"}>
-            {isRegister ? "Sign in" : "Create one"}
-          </Link>
+          {"New to Fieldnote? "}
+          <Link to={"/auth/register"}>{"Create one"}</Link>
         </p>
       </form>
     </main>

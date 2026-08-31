@@ -14,8 +14,8 @@ export function LandingPage() {
           </span>
         </span>
         <div>
-          <Link to="/login">Sign in</Link>
-          <Link className="landing-nav-cta" to="/register">
+          <Link to="/auth/login">Sign in</Link>
+          <Link className="landing-nav-cta" to="/auth/register">
             Create account <ArrowRight size={15} />
           </Link>
         </div>

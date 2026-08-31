@@ -52,14 +52,16 @@ app.include_router(health_router)
 app.include_router(admin_router)
 
 # Mount static storage directories for uploaded and processed images
-_BACKEND_DIR = Path(__file__).resolve().parents[2]
+_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 _DATA_DIR = _BACKEND_DIR / "data"
+
+print(f"-> Serving static files from: {_DATA_DIR.resolve()}")
 _DATA_DIR.mkdir(parents=True, exist_ok=True)
 (_DATA_DIR / "uploads").mkdir(parents=True, exist_ok=True)
 (_DATA_DIR / "processed").mkdir(parents=True, exist_ok=True)
 
-app.mount("/data", StaticFiles(directory=str(_DATA_DIR)), name="data")
+app.mount("/data", StaticFiles(directory=str(_DATA_DIR.resolve())), name="data")
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return {"message": "Smart Farming API", "docs": "/docs"}
+    return {"message": "Smart Farming API", "docs": "/docs"}

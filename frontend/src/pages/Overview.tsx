@@ -19,6 +19,7 @@ export function Overview({
   onSelect,
   onHistory,
 }: Props) {
+  const api_url = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
   return (
     <>
       <section className="hero-grid">
@@ -90,13 +91,17 @@ export function Overview({
         </button>
       </section>
       <div className="scan-list">
-        {history.slice(0, 3).map((item) => (
+        {history.slice(0, 3).map((item) =>{
+          const itemRawPath = item.image.processed_path || "";
+          const itemCleanPath = itemRawPath.replace(/^\/+/, "").replace(/^data\//, "");
+          const itemImageSrc = `${api_url}/data/${itemCleanPath}`;
+          return (
           <button
             className="scan-row"
             key={item.prediction_id}
             onClick={() => onSelect(item)}
           >
-            <img src={imagePath} alt="" />
+            <img src={itemImageSrc} alt="" />
             <span>
               <b>{item.disease.label}</b>
               <small>
@@ -111,7 +116,7 @@ export function Overview({
             </span>
             <ArrowUpRight size={16} />
           </button>
-        ))}
+        )})}
       </div>
     </>
   );
