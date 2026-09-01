@@ -1,130 +1,96 @@
-import {
-  Activity,
-  Bell,
-  Camera,
-  ChevronDown,
-  Leaf,
-  LogOut,
-  Settings,
-  ShieldCheck,
-  Sprout,
-  UserRound,
-  BarChart3,
-  Tractor,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { dictionary, type Language } from "../i18n";
+import { 
+  LayoutDashboard, 
+  Scan, 
+  History, 
+  MapPin, 
+  CloudSun, 
+  Sprout, 
+  ShieldAlert, 
+  FileText, 
+  LogOut 
+} from "lucide-react";
 
-type Page =
-  | "overview"
-  | "scan"
-  | "history"
-  | "farm"
-  | "alerts"
-  | "profile"
-  | "settings"
-  | "admin"
-  | "expert";
-type Props = { active: Page; onNavigate: (page: Page) => void };
-
-export function Sidebar({ active, onNavigate }: Props) {
+export default function Sidebar() {
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { user, signOut, language } = useAuth();
-  const labels = dictionary((language || "English") as Language);
-  function logout() {
+  const isAdmin = user?.role === "admin";
+
+  const handleSignOut = () => {
     signOut();
-    navigate("/");
-  }
+    navigate("/auth/login");
+  };
+
   return (
-    <aside className="sidebar">
-      <div className="brand">
-        <span className="brand-mark">
-          <Leaf size={18} />
-        </span>
-        <span>
-          fieldnote<small>smart farming</small>
-        </span>
+    <aside className="app-sidebar">
+      <div className="sidebar-header">
+        <div className="logo-icon">🌿</div>
+        <div className="logo-text">
+          <h2>Smart Farming</h2>
+          <span className="user-role-badge">{user?.role || "Farmer"}</span>
+        </div>
       </div>
-      <div className="season-tag">
-        <span className="pulse-dot" /> Kharif season <b>•</b> 2026
-      </div>
-      <nav>
-        <button
-          className={active === "overview" ? "nav-active" : ""}
-          onClick={() => onNavigate("overview")}
-        >
-          <Activity size={18} /> {labels.dashboard}
-        </button>
-        <button
-          className={active === "scan" ? "nav-active" : ""}
-          onClick={() => onNavigate("scan")}
-        >
-          <Camera size={18} /> {labels.scan} <span className="nav-key">N</span>
-        </button>
-        <button
-          className={active === "history" ? "nav-active" : ""}
-          onClick={() => onNavigate("history")}
-        >
-          <Sprout size={18} /> {labels.history}
-        </button>
-        <button
-          className={active === "farm" ? "nav-active" : ""}
-          onClick={() => onNavigate("farm")}
-        >
-          <Tractor size={18} /> {labels.farm}
-        </button>
-        <button
-          className={active === "alerts" ? "nav-active" : ""}
-          onClick={() => onNavigate("alerts")}
-        >
-          <Bell size={18} /> {labels.alerts}
-        </button>
-        <button
-          className={active === "profile" ? "nav-active" : ""}
-          onClick={() => onNavigate("profile")}
-        >
-          <UserRound size={18} /> {labels.profile}
-        </button>
-        <button
-          className={active === "settings" ? "nav-active" : ""}
-          onClick={() => onNavigate("settings")}
-        >
-          <Settings size={18} /> {labels.settings}
-        </button>
-        {(user?.role === "expert" || user?.role === "admin") && (
-          <button
-            className={active === "expert" ? "nav-active" : ""}
-            onClick={() => onNavigate("expert")}
-          >
-            <ShieldCheck size={18} /> Expert queue
-          </button>
-        )}
-        {user?.role === "admin" && (
-          <button
-            className={active === "admin" ? "nav-active" : ""}
-            onClick={() => onNavigate("admin")}
-          >
-            <BarChart3 size={18} /> Admin metrics
-          </button>
+
+      <nav className="sidebar-nav">
+        <div className="nav-section">
+          <span className="nav-section-title">Core</span>
+          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <LayoutDashboard size={20} />
+            <span>Dashboard</span>
+          </NavLink>
+          <NavLink to="/scan" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <Scan size={20} />
+            <span>AI Diagnostic Scan</span>
+          </NavLink>
+          <NavLink to="/history" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <History size={20} />
+            <span>Scan History</span>
+          </NavLink>
+        </div>
+
+        <div className="nav-section">
+          <span className="nav-section-title">Management</span>
+          <NavLink to="/farm/settings" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <MapPin size={20} />
+            <span>Farm Settings</span>
+          </NavLink>
+          <NavLink to="/weather" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <CloudSun size={20} />
+            <span>Weather Advisory</span>
+          </NavLink>
+          <NavLink to="/crops" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <Sprout size={20} />
+            <span>Supported Crops</span>
+          </NavLink>
+        </div>
+
+        {isAdmin && (
+          <div className="nav-section">
+            <span className="nav-section-title">Administration</span>
+            <NavLink to="/admin/metrics" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              <ShieldAlert size={20} />
+              <span>System Metrics</span>
+            </NavLink>
+            <NavLink to="/admin/feedback" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              <FileText size={20} />
+              <span>Expert Feedback</span>
+            </NavLink>
+          </div>
         )}
       </nav>
-      <div className="sidebar-note">
-        <ShieldCheck size={20} />
-        <p>Your crop data stays linked to your farm profile.</p>
-      </div>
-      <button className="logout-button" onClick={logout}>
-        <LogOut size={16} /> {labels.logout}
-      </button>
-      <div className="profile-mini">
-        <div className="avatar">
-          {user?.name?.slice(0, 2).toUpperCase() ?? "MP"}
+
+      <div className="sidebar-footer">
+        <div className="user-profile-snippet">
+          <div className="avatar">{user?.name ? user.name.charAt(0).toUpperCase() : "F"}</div>
+          <div className="user-info">
+            <span className="user-name">{user?.name || "Farmer"}</span>
+            <span className="user-email">{user?.email || user?.phone || ""}</span>
+          </div>
         </div>
-        <div>
-          <strong>{user?.name ?? "Farmer"}</strong>
-          <span>{user?.location ?? "Set your farm location"}</span>
-        </div>
-        <ChevronDown size={15} />
+        <button onClick={handleSignOut} className="btn-signout" title="Sign Out">
+          <LogOut size={18} />
+        </button>
       </div>
     </aside>
   );

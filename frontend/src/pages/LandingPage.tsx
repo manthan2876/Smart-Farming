@@ -1,78 +1,79 @@
-import { ArrowRight, Camera, Leaf, ShieldCheck, Sprout } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Sprout, Scan, ShieldCheck, CloudSun, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
-export function LandingPage() {
+export default function LandingPage() {
   return (
-    <main className="landing-page">
-      <nav className="landing-nav">
-        <span className="brand">
-          <span className="brand-mark">
-            <Leaf size={18} />
-          </span>
-          <span>
-            fieldnote<small>smart farming</small>
-          </span>
-        </span>
-        <div>
-          <Link to="/auth/login">Sign in</Link>
-          <Link className="landing-nav-cta" to="/auth/register">
-            Create account <ArrowRight size={15} />
-          </Link>
+    <div className="landing-page">
+      {/* Top Navbar */}
+      <nav className="landing-navbar">
+        <div className="brand">
+          <span className="logo">🌱</span>
+          <span className="brand-name">Smart Farming</span>
+        </div>
+        <div className="nav-actions">
+          <Link to="/crops" className="btn btn-ghost">Supported Crops</Link>
+          <Link to="/auth/login" className="btn btn-outline">Sign In</Link>
+          <Link to="/auth/register" className="btn btn-primary">Get Started</Link>
         </div>
       </nav>
-      <section className="landing-hero">
-        <div className="landing-copy">
-          <p className="eyebrow">AI crop diagnosis · built for the field</p>
-          <h1>
-            Know what your
-            <br />
-            <em>crop needs next.</em>
-          </h1>
+
+      {/* Hero Section */}
+      <section className="hero-section">
+        <motion.div 
+          className="hero-content"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <span className="badge-pill mb-3">🚀 Next-Gen AI Agronomy Platform</span>
+          <h1>Protect Your Harvest with <span>Instant AI Disease Diagnostics</span></h1>
           <p>
-            Photograph a leaf. Fieldnote checks image quality, identifies the
-            crop and disease, measures severity, and turns the result into
-            practical action.
+            Upload leaf photographs to instantly run OpenCV quality validation, pest identification, 
+            severity metrics, and localized multi-lingual LLM remedy recommendations.
           </p>
-          <Link className="primary landing-cta" to="/register">
-            Start your field journal <ArrowRight size={17} />
-          </Link>
-          <div className="landing-proof">
-            <span>
-              <ShieldCheck size={16} /> Safety-first advice
-            </span>
-            <span>
-              <Sprout size={16} /> Five supported crops
-            </span>
+          <div className="hero-cta-group">
+            <Link to="/auth/register" className="btn btn-primary btn-lg btn-glow">
+              Create Free Account <ArrowRight size={18} />
+            </Link>
+            <Link to="/crops" className="btn btn-secondary btn-lg">
+              Explore Crops
+            </Link>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="features-section container">
+        <div className="section-title text-center mb-5">
+          <h2>Core Capabilities Built for Modern Farms</h2>
+          <p>Everything you need from seeding to harvest management.</p>
+        </div>
+
+        <div className="features-grid">
+          <div className="feature-card card">
+            <Scan size={32} className="text-primary mb-3" />
+            <h3>AI Leaf Diagnostics</h3>
+            <p>Instant disease classification with Grad-CAM visual explainability overlays and confidence grading.</p>
+          </div>
+          <div className="feature-card card">
+            <CloudSun size={32} className="text-warning mb-3" />
+            <h3>Live Weather Telemetry</h3>
+            <p>Real-time atmospheric monitoring for precise pesticide spray timing and irrigation scheduling.</p>
+          </div>
+          <div className="feature-card card">
+            <ShieldCheck size={32} className="text-success mb-3" />
+            <h3>MLOps Feedback Loop</h3>
+            <p>Farmer verification notes fed directly back into our model retraining pipeline for continuous accuracy.</p>
           </div>
         </div>
-        <div className="landing-visual">
-          <img
-            src="/aphids_tomato.jpeg"
-            alt="Tomato leaf ready for a crop health scan"
-          />
-          <div className="landing-scan-tag">
-            <span className="pulse-dot" /> Ready for a closer look
-          </div>
-          <div className="landing-orbit orbit-one" />
-          <div className="landing-orbit orbit-two" />
-        </div>
       </section>
-      <section className="landing-flow">
-        <p className="eyebrow">From leaf to next action</p>
-        <div>
-          <span>
-            <Camera size={17} /> Capture
-          </span>
-          <i>→</i>
-          <span>
-            <Leaf size={17} /> Understand
-          </span>
-          <i>→</i>
-          <span>
-            <Sprout size={17} /> Act early
-          </span>
-        </div>
-      </section>
-    </main>
+
+      {/* Footer */}
+      <footer className="landing-footer text-center">
+        <p>© 2026 Smart Farming Backend & Frontend Suite. All rights reserved.</p>
+        <p className="mt-1"><Link to="/docs" target="_blank" className="link-inline">Interactive API Documentation (Swagger)</Link></p>
+      </footer>
+    </div>
   );
 }

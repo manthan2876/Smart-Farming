@@ -10,12 +10,23 @@ export async function request<T>(
   token?: string | null,
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  // Automatically attach Content-Type if a body is being sent
+  if (options.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  
   if (!response.ok)
     throw new Error(
       (await response.json().catch(() => null))?.detail ??
         `Request failed (${response.status})`,
     );
+    
   return response.json() as Promise<T>;
 }

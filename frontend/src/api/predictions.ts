@@ -1,9 +1,10 @@
 import { request } from "./client";
-import type { Prediction } from "./types";
+import type { Prediction, WeatherData } from "./types";
 
-export async function history(token: string) {
-  return request<Prediction[]>("/history?limit=20", {}, token);
+export async function history(token: string, limit = 20, offset = 0) {
+  return request<Prediction[]>(`/history?limit=${limit}&offset=${offset}`, {}, token);
 }
+
 export async function getPrediction(id: string, token: string) {
   return request<Prediction>(`/predictions/${id}`, {}, token);
 }
@@ -41,3 +42,7 @@ export async function submitFeedback(
 export async function crops() {
   return request<{ crops: string[] }>("/crops");
 }
+export async function weather(lat: number, lon: number, token: string) {
+  return request<WeatherData>(`/weather?lat=${lat}&lon=${lon}`, {}, token);
+}
+

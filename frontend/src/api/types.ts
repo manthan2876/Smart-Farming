@@ -34,8 +34,10 @@ export type Profile = {
   email?: string;
   phone?: string;
   language: string;
-  role?: string;
+  role: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   crop_history: string[];
   farm_name?: string;
   farm_area_acres?: number;
@@ -48,6 +50,39 @@ export type Farm = {
   latitude?: number;
   longitude?: number;
   crop_history: string[];
+};
+
+export type WeatherData = {
+  status: string;
+  temperature_celsius?: number;
+  humidity_percent?: number;
+  wind_speed_mps?: number;
+  pressure_hpa?: number;
+  cloudiness_percent?: number;
+  condition?: string;
+  city?: string;
+};
+
+export type AdminMetrics = {
+  total_predictions: number;
+  total_scans?: number;
+  total_feedback?: number;
+  accuracy_rate_pct: number | null; // Add this
+  feedback_accuracy_pct?: number | null; // Keep this as an alias if needed
+  avg_crop_confidence: number | null;
+  avg_disease_confidence: number | null;
+  avg_quality_score: number | null;
+  crop_distribution: Record<string, number>;
+  disease_distribution: Record<string, number>;
+};
+export type FeedbackLog = {
+  id: number;
+  prediction_id: number;
+  crop: string | null;
+  disease: string | null;
+  is_correct: boolean;
+  farmer_note: string | null;
+  created_at: string;
 };
 
 export const demoPrediction: Prediction = {

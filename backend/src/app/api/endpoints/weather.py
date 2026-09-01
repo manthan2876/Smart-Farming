@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends
 from app.api import get_current_user
 from app.context import create_context
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 def _json_safe(value: Any) -> Any:
@@ -43,4 +45,18 @@ async def weather(
         lon=lon,
     )
     result = fetch_weather(context, {})
-    return _json_safe(result.get("weather", {}))
+    
+    logger.info(f"Weather service raw result: {result}")
+    
+    weather_data = result.get("weather", result) if isinstance(result, dict) else {}
+    
+    logger.info(f"Extracted weather data: {weather_data}")
+    
+    return _json_safe({
+        "temperature": weather_data.get("temperature_celsius") or weather_data.get("temperature"),
+        "description": weather_data.get("description", "Clear skies"),
+        "humidity": weather_data.get("humidity_percent") or weather_data.get("humidity"),
+        "wind_speed": weather_data.get("wind_speed_m_s") or weather_data.get("wind_speed"),
+        "pressure": weather_data.get("pressure_hpa") or weather_data.get("pressure"),
+        "cloudiness": weather_data.get("cloudiness_percent") or weather_data.get("cloudiness"),
+    })

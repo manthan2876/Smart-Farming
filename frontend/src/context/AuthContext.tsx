@@ -1,114 +1,101 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import { login, profile, register } from "../api/auth";
-import type { Profile } from "../api/types";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { login, profile, register, AuthResponse } from "../api/auth";
+import { Profile } from "../api/types";
 
-type AuthValue = {
-  token: string | null;
+interface AuthContextType {
   user: Profile | null;
-  ready: boolean;
-  language: string;
-  setLanguage: (language: string) => void;
-  signIn: (identifier: string, password: string) => Promise<void>;
-  signUp: (payload: {
-    name: string;
-    email: string;
-    password: string;
-    location: string;
-    language: string;
-    crop_history: string[];
-  }) => Promise<void>;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  signIn: (identifier: string, pass: string) => Promise<void>;
+  signUp: (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => Promise<void>;
   signOut: () => void;
-};
-const AuthContext = createContext<AuthValue | null>(null);
-const tokenKey = "fieldnote_access_token";
+  refreshProfile: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState(() => localStorage.getItem(tokenKey));
   const [user, setUser] = useState<Profile | null>(null);
-  const [language, setLanguageState] = useState(
-    () => localStorage.getItem("fieldnote_language") ?? "English",
-  );
-  const [ready, setReady] = useState(() => !localStorage.getItem(tokenKey));
-  useEffect(() => {
-    if (!token) {
-      setReady(true);
-      return;
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem("smart_farm_token"));
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const fetchUserProfile = async (authToken: string) => {
+    try {
+      const userData = await profile(authToken);
+      setUser(userData);
+    } catch {
+      signOut();
+    } finally {
+      setIsLoading(false);
     }
-    profile(token)
-      .then((data) => {
-        setUser(data);
-        setLanguageState(data.language);
-      })
-      .catch(() => {
-        localStorage.removeItem(tokenKey);
-        setToken(null);
-      })
-      .finally(() => setReady(true));
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchUserProfile(token);
+    } else {
+      setIsLoading(false);
+    }
   }, [token]);
-  async function signIn(identifier: string, password: string) {
-    const response = await login(identifier, password);
-    localStorage.setItem(tokenKey, response.tokens.access_token);
-    localStorage.setItem(
-      "fieldnote_refresh_token",
-      response.tokens.refresh_token,
-    );
-    setToken(response.tokens.access_token);
-    setUser(response.user);
-  }
-  async function signUp(payload: {
-    name: string;
-    email: string;
-    password: string;
-    location: string;
-    language: string;
-    crop_history: string[];
-  }) {
-    const response = await register(payload);
-    localStorage.setItem(tokenKey, response.tokens.access_token);
-    localStorage.setItem(
-      "fieldnote_refresh_token",
-      response.tokens.refresh_token,
-    );
-    setToken(response.tokens.access_token);
-    setUser(response.user);
-  }
-  function signOut() {
-    localStorage.removeItem(tokenKey);
-    localStorage.removeItem("fieldnote_refresh_token");
+
+  const signIn = async (identifier: string, pass: string) => {
+    const res: AuthResponse = await login(identifier, pass);
+    const accessToken = res.tokens.access_token;
+    localStorage.setItem("smart_farm_token", accessToken);
+    setToken(accessToken);
+    setUser(res.user);
+  };
+
+  const signUp = async (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => {
+    const res: AuthResponse = await register({
+      name: payload.name,
+      email: payload.email || "",
+      password: payload.password,
+      location: payload.location,
+      language: payload.language,
+      crop_history: payload.crop_history || [],
+    });
+    const accessToken = res.tokens.access_token;
+    localStorage.setItem("smart_farm_token", accessToken);
+    setToken(accessToken);
+    setUser(res.user);
+  };
+
+  const signOut = () => {
+    localStorage.removeItem("smart_farm_token");
     setToken(null);
     setUser(null);
-  }
-  function setLanguage(language: string) {
-    localStorage.setItem("fieldnote_language", language);
-    setLanguageState(language);
-    setUser((current) => (current ? { ...current, language } : current));
-  }
+  };
+
+  const refreshProfile = async () => {
+    if (token) {
+      await fetchUserProfile(token);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
-        token,
         user,
-        ready,
-        language,
-        setLanguage,
+        token,
+        isAuthenticated: !!token && !!user,
+        isLoading,
         signIn,
         signUp,
         signOut,
+        refreshProfile,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
+
 export function useAuth() {
-  const value = useContext(AuthContext);
-  if (!value) throw new Error("useAuth must be used within AuthProvider");
-  return value;
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }
-export { profile };
