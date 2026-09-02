@@ -37,6 +37,9 @@ def initialize_database() -> None:
                 connection.execute(
                     text("ALTER TABLE predictions ADD COLUMN IF NOT EXISTS severity_pct FLOAT")
                 )
+                connection.execute(
+                    text("ALTER TABLE predictions ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES predictions(id)")
+                )
         except Exception as exc:
             print(f"[InitDB] Note on migrations: {exc}")
     print("Smart Farming database tables are ready.")

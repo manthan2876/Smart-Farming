@@ -9,9 +9,9 @@ import "../styles/DashboardPage.css";
 interface ScanItem {
   id?: number;
   prediction_id?: number;
-  crop_name?: string;
-  disease_name?: string;
-  severity_bucket?: string;
+  crop?: { label?: string };
+  disease?: { label?: string };
+  severity?: { bucket?: string };
   created_at?: string;
 }
 
@@ -73,8 +73,8 @@ export default function DashboardPage() {
                 <span className="temp-desc">{weather.condition || "Clear"}</span>
               </div>
               <div className="weather-substats">
-                <div><span>Humidity</span><strong>{weather.humidity_percent ?? "--"}%</strong></div>
-                <div><span>Wind</span><strong>{weather.wind_speed_mps ?? "--"} km/h</strong></div>
+                <div><span>Humidity</span><h4 className="disease-title">{weather.humidity_percent ?? "--"}%</h4></div>
+                <div><span>Wind</span><h4 className="disease-title">{weather.wind_speed_mps ?? "--"} km/h</h4></div>
               </div>
             </div>
           ) : (
@@ -94,12 +94,12 @@ export default function DashboardPage() {
           </div>
           <div className="stats-grid">
             <div className="stat-item">
-              <span>Location</span>
-              <strong>{user?.location || "Unknown"}</strong>
+              <span className="stat-label">Location</span>
+              <div className="stat-val">{user?.location || "Unknown"}</div>
             </div>
             <div className="stat-item">
-              <span>Crops</span>
-              <strong>{user?.crop_history?.length || 0} active</strong>
+              <span className="stat-label">Crops</span>
+              <div className="stat-val">{user?.crop_history?.length || 0} active</div>
             </div>
           </div>
         </motion.div>
@@ -122,16 +122,16 @@ export default function DashboardPage() {
             <Link to="/scan" className="btn btn-outline">Start First Scan</Link>
           </div>
         ) : (
-          <div className="scan-list">
+          <div className="scans-list">
             {history.map((scan) => (
-              <Link to={`/prediction/${scan.prediction_id}`} key={scan.prediction_id} className="scan-list-item">
-                <div className="scan-info">
-                  <span className="scan-crop-badge">{scan.crop_name}</span>
-                  <strong>{scan.disease_name || "Unknown"}</strong>
+              <Link to={`/predictions/${scan.prediction_id}`} key={scan.prediction_id} className="scan-row-item" style={{textDecoration: "none", color: "inherit"}}>
+                <div className="scan-row-info">
+                  <span className="crop-badge">{scan.crop?.label || "Unknown Crop"}</span>
+                  <h4 className="disease-title">{scan.disease?.label || "Unknown Disease" || "Unknown"}</h4>
                 </div>
                 <div className="scan-meta">
-                  <span className={`severity-indicator ${scan.severity_bucket?.toLowerCase() || 'unknown'}`}>
-                    {scan.severity_bucket}
+                  <span className={`severity-indicator ${scan.severity?.bucket || "N/A"?.toLowerCase() || 'unknown'}`}>
+                    {scan.severity?.bucket || "N/A"}
                   </span>
                   <span className="scan-date">
                     {scan.created_at ? new Date(scan.created_at).toLocaleDateString() : "Just now"}
@@ -145,3 +145,9 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
+
+
+
+

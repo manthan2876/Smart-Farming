@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+﻿from datetime import datetime, timezone
 from typing import Any
 from app.core import Base
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, JSON, String, Text
@@ -21,6 +21,8 @@ class Prediction(Base):
     disease_conf: Mapped[float | None] = mapped_column(Float, nullable=True)
     model_used: Mapped[str | None] = mapped_column(String(200), nullable=True)
     severity_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="ready")
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("predictions.id"), nullable=True, index=True)
     result: Mapped[dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), 
@@ -38,5 +40,8 @@ class Prediction(Base):
     )
     expert_review: Mapped["ExpertReview | None"] = relationship(
         back_populates="prediction", uselist=False, cascade="all, delete-orphan"
+    )
+    parent: Mapped["Prediction | None"] = relationship(
+        "Prediction", remote_side="[Prediction.id]", backref="follow_ups"
     )
     alerts: Mapped[list["Alert"]] = relationship(back_populates="prediction")

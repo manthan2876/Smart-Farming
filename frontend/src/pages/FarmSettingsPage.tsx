@@ -20,7 +20,7 @@ export default function FarmSettingsPage() {
 
   const { data: farmData, isLoading } = useQuery({
     queryKey: ["farmSettings"],
-    queryFn: () => request<any>("/auth/farm", {}, token!),
+    queryFn: () => request<any>("/farm", {}, token!),
     enabled: !!token,
   });
 
@@ -37,7 +37,7 @@ export default function FarmSettingsPage() {
 
   const mutation = useMutation({
     mutationFn: async (updatedPayload: any) => {
-      return request("/auth/farm", {
+      return request("/farm", {
         method: "PUT",
         body: JSON.stringify(updatedPayload),
       }, token!);

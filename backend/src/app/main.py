@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +6,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import (
     auth_router,
+    profile_router,
+    farm_router,
     predict_router,
     history_router,
     feedback_router,
@@ -13,6 +15,7 @@ from app.api import (
     crops_router,
     health_router,
     admin_router,
+    expert_router,
 )
 from app.utils import configure_logging
 
@@ -43,6 +46,8 @@ app.add_middleware(
 
 # Include all modular routers
 app.include_router(auth_router)
+app.include_router(profile_router)
+app.include_router(farm_router)
 app.include_router(predict_router)
 app.include_router(history_router)
 app.include_router(feedback_router)
@@ -50,6 +55,7 @@ app.include_router(weather_router)
 app.include_router(crops_router)
 app.include_router(health_router)
 app.include_router(admin_router)
+app.include_router(expert_router)
 
 # Mount static storage directories for uploaded and processed images
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent

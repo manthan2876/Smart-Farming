@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any
 
@@ -10,6 +10,7 @@ from app.models import (
     Prediction,
     Recommendation,
     User,
+    ExpertReview,
 )
 
 def record_prediction(
@@ -36,7 +37,18 @@ def record_prediction(
     )
     session.add(image_record)
     session.flush()
+    
     plot_id = result.get("plot_id") or result.get("user", {}).get("plot_id")
+    
+    d_conf = disease.get("confidence") or 0.0
+    sev_pct = severity.get("percent") or 0.0
+    pests = result.get("pests", [])
+    
+    status = "ready"
+    if d_conf < 0.70 or (sev_pct > 60 and pests):
+        status = "pending_expert_review"
+        result["status"]["expert_review"] = "pending"
+    
     prediction = Prediction(
         user_id=user_id,
         plot_id=plot_id,
@@ -46,11 +58,16 @@ def record_prediction(
         crop=crop.get("label"),
         crop_conf=crop.get("confidence"),
         disease=disease.get("label"),
-        disease_conf=disease.get("confidence"),
+        disease_conf=d_conf,
         model_used=disease.get("model_used"),
-        severity_pct=severity.get("percent"),
+        severity_pct=sev_pct,
+        status=status,
         result=result,
     )
+    
+    if status == "pending_expert_review":
+        prediction.expert_review = ExpertReview(status="pending")
+        
     prediction.recommendation = Recommendation(
         fertilizer=result.get("recommendation", {}).get("fertilizer"),
         pesticide=result.get("recommendation", {}).get("pesticide"),
@@ -80,6 +97,7 @@ def list_predictions(
         session.scalars(
             select(Prediction)
             .where(Prediction.user_id == user_id)
+            .where(Prediction.parent_id.is_(None))
             .order_by(Prediction.created_at.desc())
             .offset(offset)
             .limit(limit)

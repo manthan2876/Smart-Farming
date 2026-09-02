@@ -46,3 +46,9 @@ export async function weather(lat: number, lon: number, token: string) {
   return request<WeatherData>(`/weather?lat=${lat}&lon=${lon}`, {}, token);
 }
 
+
+export async function rescan(id: number | string, file: File, token: string) {
+  const body = new FormData();
+  body.append("file", file);
+  return request<Prediction>(`/predictions/${id}/rescan`, { method: "POST", body }, token);
+}

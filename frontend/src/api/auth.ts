@@ -1,4 +1,4 @@
-import { request } from "./client";
+﻿import { request } from "./client";
 import type { Profile } from "./types";
 
 type Tokens = {
@@ -34,11 +34,11 @@ export async function register(payload: {
   });
 }
 export async function profile(token: string) {
-  return request<Profile>("/auth/profile", {}, token);
+  return request<Profile>("/profile", {}, token);
 }
 export async function updateProfile(payload: Partial<Profile>, token: string) {
   return request<Profile>(
-    "/auth/profile",
+    "/profile",
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

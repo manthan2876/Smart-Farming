@@ -1,37 +1,20 @@
 ﻿from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api import get_current_user
+from app.api.deps import get_current_user
 from app.context import create_context
 from app.core import get_session
 from app.crud import get_user
+from app.utils.json_utils import _json_safe
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-def _json_safe(value: Any) -> Any:
-    if value is None or isinstance(value, (str, int, float, bool)):
-        return value
-    if isinstance(value, Path):
-        return str(value)
-    if isinstance(value, dict):
-        return {
-            str(key): _json_safe(item)
-            for key, item in value.items()
-            if not str(key).startswith("_")
-        }
-    if isinstance(value, (list, tuple)):
-        return [_json_safe(item) for item in value]
-    if hasattr(value, "tolist"):
-        return _json_safe(value.tolist())
-    return str(value)
 
 @router.get("/weather")
 async def weather(

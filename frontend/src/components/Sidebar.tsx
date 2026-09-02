@@ -15,7 +15,7 @@ import {
 export default function Sidebar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "expert";
 
   const handleSignOut = () => {
     signOut();
@@ -75,6 +75,10 @@ export default function Sidebar() {
             <NavLink to="/admin/feedback" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
               <FileText size={20} />
               <span>Expert Feedback</span>
+            </NavLink>
+            <NavLink to="/admin/expert" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              <ShieldAlert size={20} />
+              <span>Expert Triage Queue</span>
             </NavLink>
           </div>
         )}

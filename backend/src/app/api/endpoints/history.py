@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import uuid
 import logging
@@ -10,12 +10,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.schemas import PredictionResponse
-from app.api import get_current_user, get_session
+from app.api.deps import get_current_user
+from app.core import get_session
 from app.crud import list_predictions
 
 router = APIRouter()
 
-@router.get("/history", response_model=list[PredictionResponse])
+@router.get("/history")
 async def history(
     offset: int = 0,
     limit: int = 20,
@@ -30,11 +31,13 @@ async def history(
     try:
         predictions = list_predictions(session, user_id, offset, limit)
     except SQLAlchemyError as exc:
-        # <-- TEMPORARY DEBUG PRINT -->
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=503, detail=f"DB Error: {str(exc)}") from exc
-    return [
-        {**prediction.result, "prediction_id": prediction.id}
-        for prediction in predictions
-    ]
+        
+    results = []
+    for p in predictions:
+        res = dict(p.result)
+        res["prediction_id"] = p.id
+        res["created_at"] = p.created_at.isoformat() if p.created_at else None
+        results.append(res)
+        
+    return results

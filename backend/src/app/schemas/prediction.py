@@ -24,3 +24,6 @@ class PredictionResponse(BaseModel):
     recommendation: dict[str, Any]
     notes: list[str]
     status: dict[str, str]
+    expert_review_data: dict[str, Any] | None = None
+    historical_images: list[dict[str, str]] | None = None
+    follow_up: dict[str, Any] | None = None

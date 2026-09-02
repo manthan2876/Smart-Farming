@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import uuid
 import logging
@@ -9,7 +9,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api import _json_safe, get_current_user, get_session
+from app.api.deps import get_current_user
+from app.core import get_session
+from app.utils.json_utils import _json_safe
 from app.schemas import PredictionResponse, ErrorResponse
 from app.context import create_context
 from app.pipeline import run_pipeline
@@ -159,4 +161,151 @@ async def prediction_detail(
         raise HTTPException(status_code=404, detail="Prediction not found.")
     result = dict(prediction.result)
     result["prediction_id"] = prediction.id
+    
+    # Traverse parent chain for historical images
+    hist = []
+    curr = prediction.parent
+    while curr:
+        curr_res = curr.result
+        old_image = curr_res.get("image", {})
+        if old_image:
+            hist.append({
+                "raw_path": old_image.get("raw_path"),
+                "processed_path": old_image.get("processed_path")
+            })
+        curr = curr.parent
+        
+    # We want chronological order (oldest first)
+    if hist:
+        hist.reverse()
+        result["historical_images"] = hist
+    
+    # Check for expert review
+    if prediction.expert_review and prediction.status == "verified":
+        result["expert_review_data"] = {
+            "decision": prediction.expert_review.decision,
+            "corrected_disease": prediction.expert_review.corrected_disease,
+            "farmer_guidance": prediction.expert_review.farmer_guidance,
+        }
+        
+    # Check for follow_ups
+    if hasattr(prediction, "follow_ups") and prediction.follow_ups:
+        latest_follow_up = prediction.follow_ups[-1]
+        fu_res = dict(latest_follow_up.result)
+        fu_res["prediction_id"] = latest_follow_up.id
+        fu_res["status_string"] = latest_follow_up.status
+        if latest_follow_up.expert_review and latest_follow_up.status == "verified":
+            fu_res["expert_review_data"] = {
+                "decision": latest_follow_up.expert_review.decision,
+                "corrected_disease": latest_follow_up.expert_review.corrected_disease,
+                "farmer_guidance": latest_follow_up.expert_review.farmer_guidance,
+            }
+        result["follow_up"] = fu_res
+        
     return result
+
+@router.post("/predictions/{prediction_id}/rescan", response_model=PredictionResponse)
+async def rescan_prediction(
+    prediction_id: int,
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    from app.models import Prediction, ExpertReview
+    
+    # 1. Fetch existing prediction
+    try:
+        old_prediction = get_prediction(session, prediction_id, user_id)
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
+    if old_prediction is None:
+        raise HTTPException(status_code=404, detail="Prediction not found.")
+
+    if file.content_type not in _ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Upload a JPEG, PNG, or WebP image.",
+        )
+
+    # 2. Save new image
+    suffix = Path(file.filename or "upload.jpg").suffix.lower()
+    if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
+        suffix = ".jpg" if file.content_type == "image/jpeg" else ".png"
+    
+    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}{suffix}"
+    upload_path = _UPLOAD_DIR / filename
+    relative_image_path = f"data/uploads/{filename}"
+
+    size = 0
+    try:
+        with upload_path.open("wb") as destination:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > _MAX_UPLOAD_BYTES:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail="Image exceeds the 10 MB upload limit.",
+                    )
+                destination.write(chunk)
+
+        # 3. Run pipeline on new image
+        old_res = dict(old_prediction.result)
+        location = old_res.get("location", "Unknown")
+        language = old_res.get("language", "English")
+        
+        context = create_context(
+            image_path=str(upload_path),
+            user_id=user_id,
+            location=location,
+            lat=52.2297,
+            lon=21.0122,
+            language=language,
+        )
+        new_result = run_pipeline(context)
+        
+        preprocessing_status = new_result.get("status", {}).get("preprocessing")
+        if preprocessing_status != "completed":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Image quality check failed; please upload a clearer leaf image.",
+            )
+            
+        if "image" in new_result and isinstance(new_result["image"], dict):
+            new_result["image"]["raw_path"] = relative_image_path
+            
+        public_new_result = _public_result(new_result)
+        
+        # Determine status
+        d_conf = public_new_result.get("disease", {}).get("confidence", 0.0)
+        sev_pct = public_new_result.get("severity", {}).get("percent", 0.0)
+        pests = public_new_result.get("pests", [])
+        
+        new_status = "ready"
+        res_status = dict(public_new_result.get("status", {}))
+        res_status["expert_review"] = "not_requested"
+        
+        if d_conf < 0.70 or (sev_pct > 60 and pests):
+            new_status = "pending_expert_review"
+            res_status["expert_review"] = "pending"
+            
+        public_new_result["status"] = res_status
+        public_new_result["user"] = old_res.get("user", {})
+        
+        # 4. Create NEW prediction with parent_id
+        new_pred = record_prediction(session, user_id, public_new_result)
+        new_pred.parent_id = old_prediction.id
+        new_pred.status = new_status
+        
+        if hasattr(new_pred, "image_path"):
+            new_pred.image_path = relative_image_path
+            
+        if new_status == "pending_expert_review":
+            new_pred.expert_review = ExpertReview(status="pending")
+            
+        session.commit()
+        
+        public_new_result["prediction_id"] = new_pred.id
+        return public_new_result
+    finally:
+        await file.close()

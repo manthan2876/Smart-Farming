@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+﻿import { Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import AboutPage from "./pages/AboutPage";
 import ServicesPage from "./pages/ServicesPage";
@@ -13,6 +13,8 @@ import WeatherPage from "./pages/WeatherPage";
 import CropsPage from "./pages/CropsPage";
 import AdminMetricsPage from "./pages/AdminMetricsPage";
 import AdminFeedbackPage from "./pages/AdminFeedbackPage";
+import ExpertQueuePage from "./pages/ExpertQueuePage";
+import ExpertReviewPage from "./pages/ExpertReviewPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
 
@@ -45,6 +47,8 @@ export default function App() {
         {/* Admin Only Routes */}
         <Route path="/admin/metrics" element={<ProtectedRoute adminOnly><AdminMetricsPage /></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute adminOnly><AdminFeedbackPage /></ProtectedRoute>} />
+        <Route path="/admin/expert" element={<ProtectedRoute adminOnly><ExpertQueuePage /></ProtectedRoute>} />
+        <Route path="/admin/expert/:id" element={<ProtectedRoute adminOnly><ExpertReviewPage /></ProtectedRoute>} />
       </Route>
 
       {/* Fallback */}

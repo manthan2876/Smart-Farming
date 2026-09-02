@@ -15,8 +15,8 @@ export async function request<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  // Automatically attach Content-Type if a body is being sent
-  if (options.body && !headers.has("Content-Type")) {
+  // Automatically attach Content-Type if a body is being sent and it's not FormData
+  if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 

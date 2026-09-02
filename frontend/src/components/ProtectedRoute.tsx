@@ -25,7 +25,7 @@ export default function ProtectedRoute({ children, adminOnly = false }: Protecte
   }
 
   // If route requires admin rights and user is not an admin, redirect to dashboard
-  if (adminOnly && user?.role !== "admin") {
+  if (adminOnly && user?.role !== "admin" && user?.role !== "expert") {
     return <Navigate to="/dashboard" replace />;
   }
 

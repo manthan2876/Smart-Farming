@@ -24,8 +24,18 @@ export type Prediction = {
     irrigation?: string;
     prevention_tips?: string;
   };
-  status: Record<string, string>;
+  status: string | Record<string, string>;
   notes: string[];
+  expert_review_data?: {
+    decision: string;
+    corrected_disease?: string;
+    farmer_guidance?: string;
+  };
+  historical_images?: {
+    raw_path?: string;
+    processed_path?: string;
+  }[];
+  follow_up?: Prediction;
 };
 
 export type Profile = {

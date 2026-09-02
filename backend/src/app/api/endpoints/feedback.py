@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 
@@ -7,7 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.schemas import FeedbackRequest, FeedbackResponse
-from app.api import get_current_user, get_session
+from app.api.deps import get_current_user
+from app.core import get_session
 from app.crud import get_prediction, add_feedback
 from app.utils import prediction_event
 
