@@ -7,6 +7,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import ScanPage from "./pages/ScanPage";
 import PredictionResultPage from "./pages/PredictionResultPage";
+import ProcessingPage from "./pages/ProcessingPage";
 import HistoryPage from "./pages/HistoryPage";
 import FarmSettingsPage from "./pages/FarmSettingsPage";
 import WeatherPage from "./pages/WeatherPage";
@@ -39,6 +40,7 @@ export default function App() {
       <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/scan" element={<ScanPage />} />
+        <Route path="/predictions/:id/processing" element={<ProcessingPage />} />
         <Route path="/predictions/:id" element={<PredictionResultPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/farm/settings" element={<FarmSettingsPage />} />

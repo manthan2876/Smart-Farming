@@ -38,17 +38,62 @@ def run_background_pipeline(
     is_rescan: bool = False,
     parent_id: int | None = None
 ):
-    from app.core import SessionLocal
+    from app.core.session import _session_factory
     from app.models import Prediction, ExpertReview
     import logging
     _BG_LOGGER = logging.getLogger("smart-farming.background")
     
-    db = SessionLocal()
+    db = _session_factory()()
     try:
-        # Run heavy pipeline
-        from app.pipeline import run_pipeline
-        result = run_pipeline(context)
+        # Run heavy pipeline incrementally
+        from app.pipeline import (
+            _PREPROCESSOR, predict_crop, route_to_disease_model, 
+            predict_disease, estimate_severity, predict_pest, 
+            fetch_weather, generate_recommendation, _CONFIG
+        )
+        from app.api.endpoints.predict import _public_result
+        import time
         
+        def _update_partial(ctx):
+            p = db.query(Prediction).get(prediction_id)
+            if p:
+                partial = _public_result(ctx)
+                if "image" in partial and isinstance(partial["image"], dict):
+                    partial["image"]["raw_path"] = relative_image_path
+                if "status" not in partial:
+                    partial["status"] = {}
+                partial["status"]["pipeline"] = "processing"
+                p.result = partial
+                db.commit()
+
+        # Step 1
+        context = _PREPROCESSOR.process(context)
+        _update_partial(context) # Artificial delay for UI visualization
+        
+        if context["status"]["preprocessing"] == "completed":
+            # Step 2: Crop
+            context = predict_crop(context, _CONFIG)
+            context["status"]["crop_identification"] = "completed"
+            _update_partial(context)
+
+            # Step 3: Disease
+            context = route_to_disease_model(context, _CONFIG)
+            context = predict_disease(context, _CONFIG)
+            context = estimate_severity(context)
+            context["status"]["disease_classification"] = "completed"
+            _update_partial(context)
+
+            # Step 4: Pest & Weather
+            context = predict_pest(context, _CONFIG)
+            context = fetch_weather(context, _CONFIG)
+            context["status"]["pest_detection"] = "completed"
+            _update_partial(context)
+
+            # Step 5: Advisory
+            context = generate_recommendation(context, _CONFIG)
+            _update_partial(context)
+
+        result = context
         preprocessing_status = result.get("status", {}).get("preprocessing")
         if preprocessing_status != "completed":
             new_status = "failed"
@@ -59,18 +104,58 @@ def run_background_pipeline(
             
             public_result = _public_result(result)
             
-            # Determine status
+            # Determine status via comprehensive rules
             d_conf = public_result.get("disease", {}).get("confidence", 0.0)
+            c_conf = public_result.get("crop", {}).get("confidence", 0.0)
             sev_pct = public_result.get("severity", {}).get("percent", 0.0)
             pests = public_result.get("pests", [])
+            img_qual = public_result.get("image", {}).get("quality_score", 1.0)
+            all_probs = public_result.get("disease", {}).get("all_probs", {})
+            advisory = public_result.get("recommendation", {})
             
             new_status = "ready"
             res_status = dict(public_result.get("status", {}))
             res_status["expert_review"] = "not_requested"
+            res_status["pipeline"] = "completed"
             
-            if d_conf < 0.70 or (sev_pct > 60 and pests):
+            requires_expert = False
+            review_reasons = []
+            mask_advisory = False
+            
+            # Rule 1: Confidence
+            if d_conf < 0.70:
+                requires_expert = True
+                mask_advisory = True
+                review_reasons.append(f"Low disease confidence ({d_conf})")
+            if c_conf > 0.0 and c_conf < 0.75:
+                requires_expert = True
+                mask_advisory = True
+                review_reasons.append(f"Borderline crop identification ({c_conf})")
+                
+            # Rule 3: Advisory Issues
+            if not advisory or "error" in advisory:
+                requires_expert = True
+                mask_advisory = True
+                review_reasons.append("Incomplete or unsafe LLM advisory generated")
+                
+            # Rule 4: Image Quality & Mixed Pathologies
+            if img_qual < 0.6:
+                requires_expert = True
+                mask_advisory = True
+                review_reasons.append("Marginal image quality")
+                
+            if all_probs:
+                high_probs = [v for k, v in all_probs.items() if v > 0.3]
+                if len(high_probs) >= 2:
+                    requires_expert = True
+                    mask_advisory = True
+                    review_reasons.append("Mixed pathologies detected (multiple >0.3)")
+                    
+            if requires_expert:
                 new_status = "pending_expert_review"
                 res_status["expert_review"] = "pending"
+                res_status["expert_reason"] = "; ".join(review_reasons)
+                res_status["mask_advisory"] = mask_advisory
                 
             public_result["status"] = res_status
             
@@ -88,11 +173,13 @@ def run_background_pipeline(
                 pred.image_path = relative_image_path
                 
             if new_status == "pending_expert_review":
-                pred.expert_review = ExpertReview(status="pending")
+                if not pred.expert_review:
+                    pred.expert_review = ExpertReview(status="pending")
                 
             db.commit()
     except Exception as e:
         _BG_LOGGER.error(f"Background ML Pipeline failed: {e}")
+        db.rollback()
         pred = db.query(Prediction).filter(Prediction.id == prediction_id).first()
         if pred:
             pred.status = "failed"

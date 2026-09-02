@@ -1,5 +1,5 @@
-Smart-Farming/ (98745 files)
-    ├── Datasets/ (98458 files)
+Smart-Farming/ (98760 files)
+    ├── Datasets/ (98459 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
                 ├── Cotton/ (288 files)
@@ -151,7 +151,7 @@ Smart-Farming/ (98745 files)
                     ├── Mosaic Virus/ (14 files)
                     ├── Septoria/ (45 files)
                     ├── Yellow Curl Virus/ (21 files)
-        ├── final_combined_datasets/ (34552 files)
+        ├── final_combined_datasets/ (34553 files)
             ├── CLCE/ (1373 files)
                 ├── ALS/ (173 files)
                 ├── BB/ (218 files)
@@ -284,19 +284,22 @@ Smart-Farming/ (98745 files)
         ├── smart_farming_roadmap_v2.md
         ├── smart_farming_roadmap_v2.pdf
         ├── ui-redesign-plan-cursor.md
-    ├── backend/ (129 files)
+    ├── backend/ (142 files)
         ├── backend.egg-info/ (5 files)
             ├── PKG-INFO
             ├── SOURCES.txt
             ├── dependency_links.txt
             ├── requires.txt
             ├── top_level.txt
-        ├── data/ (32 files)
-            ├── processed/ (16 files)
+        ├── data/ (45 files)
+            ├── processed/ (21 files)
                 ├── 042b30782140498998e3a636a74866fd.jpg
                 ├── 06262c114c1d4b72bb38518e3853c802.jpg
                 ├── 0c82517c083447ca87f519c310f1a930.jpg
+                ├── 1538c02b698e42f989af6cd558d59c85.png
                 ├── 1cd44ed7cf5f4b0abaf67f77186a3eef.jpg
+                ├── 276fe9d093c14998879294f947d21e3e.png
+                ├── 27e1f16b7926456ba6582167d53d14c5.png
                 ├── 2e5a206f0367460dbc67919930c23106.jpeg
                 ├── 373efbe00f7d454b88ded3fb945b8838.jpeg
                 ├── 3799f9c7e3b34067a80418b3a9f33d1d.jpeg
@@ -306,23 +309,33 @@ Smart-Farming/ (98745 files)
                 ├── 8626b80baeec458fa3b1c58241ef30d4.jpg
                 ├── 89b2466f3e8e46ffbdf3fa7ce5c2bcd2.jpg
                 ├── 9e7087aa204e4ddf8e1150c69fd063b7.jpg
+                ├── b4cb7dde57bb412f995343cedfd012f3.png
+                ├── b61a636bbaa74129ac5b7c868c70c1b6.png
                 ├── c22ef544328041159b88e3ca6d4e9207.jpg
                 ├── f52d99916b8e4d5894f266b17d3609a6.jpeg
                 ├── fa96823382904946a02ef5d3518fca61.jpg
-            ├── uploads/ (16 files)
+            ├── uploads/ (24 files)
                 ├── 042b30782140498998e3a636a74866fd.jpg
                 ├── 06262c114c1d4b72bb38518e3853c802.jpg
                 ├── 0c82517c083447ca87f519c310f1a930.jpg
+                ├── 1538c02b698e42f989af6cd558d59c85.png
                 ├── 1cd44ed7cf5f4b0abaf67f77186a3eef.jpg
+                ├── 276fe9d093c14998879294f947d21e3e.png
+                ├── 27e1f16b7926456ba6582167d53d14c5.png
+                ├── 29a2c7689d964d0a9399bc4c83d23a16.png
                 ├── 2e5a206f0367460dbc67919930c23106.jpeg
                 ├── 373efbe00f7d454b88ded3fb945b8838.jpeg
                 ├── 3799f9c7e3b34067a80418b3a9f33d1d.jpeg
                 ├── 60834df4994b44f2a0b5a5c7b150bdee.jpg
                 ├── 71ff428eb4c4434eb3dbf9da587eea8c.jpg
                 ├── 8032105b782e419e882e14f85666c012.jpeg
+                ├── 83613b2ec58043a6bdda24aa3c93d28c.jpg
                 ├── 8626b80baeec458fa3b1c58241ef30d4.jpg
                 ├── 89b2466f3e8e46ffbdf3fa7ce5c2bcd2.jpg
                 ├── 9e7087aa204e4ddf8e1150c69fd063b7.jpg
+                ├── b4cb7dde57bb412f995343cedfd012f3.png
+                ├── b61a636bbaa74129ac5b7c868c70c1b6.png
+                ├── b8eaf6f0fbea47c3af00d1fd21e93924.png
                 ├── c22ef544328041159b88e3ca6d4e9207.jpg
                 ├── f52d99916b8e4d5894f266b17d3609a6.jpeg
                 ├── fa96823382904946a02ef5d3518fca61.jpg
@@ -442,10 +455,10 @@ Smart-Farming/ (98745 files)
     ├── data/ (0 files)
         ├── processed/ (0 files)
         ├── uploads/ (0 files)
-    ├── frontend/ (63 files)
+    ├── frontend/ (64 files)
         ├── public/ (1 files)
             ├── aphids_tomato.jpeg
-        ├── src/ (50 files)
+        ├── src/ (51 files)
             ├── api/ (8 files)
                 ├── admin.ts
                 ├── auth.ts
@@ -470,7 +483,7 @@ Smart-Farming/ (98745 files)
                 ├── gu.ts
                 ├── hi.ts
                 ├── index.ts
-            ├── pages/ (16 files)
+            ├── pages/ (17 files)
                 ├── AboutPage.tsx
                 ├── AdminFeedbackPage.tsx
                 ├── AdminMetricsPage.tsx
@@ -483,6 +496,7 @@ Smart-Farming/ (98745 files)
                 ├── LandingPage.tsx
                 ├── LoginPage.tsx
                 ├── PredictionResultPage.tsx
+                ├── ProcessingPage.tsx
                 ├── RegisterPage.tsx
                 ├── ScanPage.tsx
                 ├── ServicesPage.tsx

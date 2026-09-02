@@ -25,6 +25,12 @@ load_dotenv()
 
 MODEL_ID = "Qwen/Qwen3-4B-Instruct-2507"
 HF_TOKEN = os.getenv("HF_TOKEN")
+class LLMRecommendation(BaseModel):
+    immediate_action: str = Field(description="Immediate actions to take")
+    treatment: str = Field(description="Long term treatment plan")
+    prevention: str = Field(description="How to prevent this in the future")
+    monitoring: str = Field(description="How to monitor the situation")
+
 _CLIENT_CACHE: InferenceClient | None = None
 
 
@@ -132,10 +138,10 @@ Wind speed: {wind_speed} m/s
 
 RETURN EXACTLY THIS JSON STRUCTURE:
 {{
-    "fertilizer": "Specific fertilizer or nutrient-management recommendation",
-    "pesticide": "Disease and pest management recommendation",
-    "irrigation": "Irrigation recommendation considering weather and disease severity",
-    "prevention_tips": "Disease and pest prevention recommendations"
+    "immediate_action": "Immediate actions to take based on disease and weather",
+    "treatment": "Long term treatment plan or pesticide recommendation",
+    "prevention": "How to prevent this in the future",
+    "monitoring": "How to monitor the situation or manage irrigation"
 }}
 """
     return prompt.strip()
@@ -175,11 +181,34 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
         print("[INFO] Hugging Face response received.")
 
         recommendation_data = _extract_json(response_text)
+        
+        # Legacy mapping for stubborn LLMs
+        if "fertilizer" in recommendation_data and "immediate_action" not in recommendation_data:
+            recommendation_data["immediate_action"] = recommendation_data.pop("fertilizer")
+        if "pesticide" in recommendation_data and "treatment" not in recommendation_data:
+            recommendation_data["treatment"] = recommendation_data.pop("pesticide")
+        if "prevention_tips" in recommendation_data and "prevention" not in recommendation_data:
+            recommendation_data["prevention"] = recommendation_data.pop("prevention_tips")
+        if "irrigation" in recommendation_data and "monitoring" not in recommendation_data:
+            recommendation_data["monitoring"] = recommendation_data.pop("irrigation")
+
         # Deterministic Guardrails
         try:
             validated = LLMRecommendation(**recommendation_data)
+            context["recommendation"] = validated.model_dump()
         except ValidationError as ve:
-            raise ValueError(f"LLM output failed safety validation: {ve}")
+            print(f"[ERROR] LLM Validation Error: {ve}")
+            context["recommendation"] = {
+                "error": "LLM output failed safety validation",
+                "details": str(ve),
+                "immediate_action": "Isolate affected plants if possible.",
+                "treatment": "Use an appropriate registered treatment for the diagnosed disease and follow product label strictly.",
+                "prevention": "Maintain proper plant spacing and field sanitation.",
+                "monitoring": "Monitor the crop daily for spread.",
+                "safety_disclaimer": "DISCLAIMER: Always follow local agricultural guidelines, product labels, and environmental regulations when applying chemical treatments."
+            }
+            context["status"]["recommendation"] = "completed"
+            return context
 
         disclaimer = "DISCLAIMER: Always follow local agricultural guidelines, product labels, and environmental regulations when applying chemical treatments."
         

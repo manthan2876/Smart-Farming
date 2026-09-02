@@ -23,7 +23,7 @@ class PredictionResponse(BaseModel):
     weather: dict[str, Any]
     recommendation: dict[str, Any]
     notes: list[str]
-    status: dict[str, str]
+    status: dict[str, Any]
     expert_review_data: dict[str, Any] | None = None
     historical_images: list[dict[str, str]] | None = None
     follow_up: dict[str, Any] | None = None

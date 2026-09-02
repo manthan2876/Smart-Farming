@@ -24,14 +24,21 @@ async def get_expert_queue(
     results = []
     for r in reviews:
         pred = r.prediction
+        result_json = pred.result or {}
+        
+        crop = result_json.get("crop", {}).get("label") or pred.crop
+        disease = result_json.get("disease", {}).get("label") or pred.disease
+        disease_conf = result_json.get("disease", {}).get("confidence") or pred.disease_conf
+        severity_pct = result_json.get("severity", {}).get("percent") or pred.severity_pct
+
         results.append({
             "review_id": r.id,
             "prediction_id": r.prediction_id,
             "status": r.status,
-            "crop": pred.crop,
-            "disease": pred.disease,
-            "disease_conf": pred.disease_conf,
-            "severity_pct": pred.severity_pct,
+            "crop": crop,
+            "disease": disease,
+            "disease_conf": disease_conf,
+            "severity_pct": severity_pct,
             "created_at": r.created_at.isoformat() if r.created_at else None
         })
     return results
@@ -46,6 +53,13 @@ async def get_expert_review(
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
     pred = review.prediction
+    result_json = pred.result or {}
+    
+    crop = result_json.get("crop", {}).get("label") or pred.crop
+    disease = result_json.get("disease", {}).get("label") or pred.disease
+    disease_conf = result_json.get("disease", {}).get("confidence") or pred.disease_conf
+    severity_pct = result_json.get("severity", {}).get("percent") or pred.severity_pct
+
     return {
         "review_id": review.id,
         "prediction_id": review.prediction_id,
@@ -56,10 +70,10 @@ async def get_expert_review(
         "internal_note": review.internal_note,
         "raw_path": pred.raw_path,
         "processed_path": pred.processed_path,
-        "crop": pred.crop,
-        "disease": pred.disease,
-        "disease_conf": pred.disease_conf,
-        "severity_pct": pred.severity_pct,
+        "crop": crop,
+        "disease": disease,
+        "disease_conf": disease_conf,
+        "severity_pct": severity_pct,
         "created_at": review.created_at.isoformat() if review.created_at else None
     }
 
@@ -95,6 +109,8 @@ async def post_expert_review(
         # We need a new dictionary to trigger the change, or use flag_modified
         new_status = dict(res["status"])
         new_status["expert_review"] = "verified"
+        if "mask_advisory" in new_status:
+            new_status["mask_advisory"] = False
         res["status"] = new_status
         
     review.prediction.result = res

@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { getPrediction } from "../api/predictions";
 import { request } from "../api/client";
 import { motion } from "motion/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import "../styles/ResultPage.css";
 import "../styles/DashboardPage.css"; // Ensure standard utilities exist
@@ -98,6 +98,7 @@ export default function PredictionResultPage() {
   const isProcessing = (primary.status as any)?.pipeline === "processing" || (primary.status as any)?.preprocessing === "processing";
 
   const renderPredictionBlock = (pred: any, isOld: boolean = false) => {
+    const isAdvisoryMasked = (pred.status as any)?.mask_advisory === true || ((pred.status as any)?.expert_review === "pending" && !pred.recommendation?.immediate_action);
     const rawImageUrl = pred.image?.raw_path ? `http://localhost:8000/${pred.image.raw_path}` : null;
     const processedImageUrl = pred.image?.processed_path ? `http://localhost:8000/${pred.image.processed_path}` : null;
     
@@ -181,22 +182,46 @@ export default function PredictionResultPage() {
             </div>
           </div>
 
-          {pred.recommendation && (pred.status as any)?.expert_review !== "pending" && (
-            <div className="advisory-panel">
-              <h3>LLM Advisory Plan</h3>
-              <div className="advisory-content">
-                {pred.recommendation.fertilizer && <p><strong>Fertilizer:</strong> {pred.recommendation.fertilizer}</p>}
-                {pred.recommendation.pesticide && <p><strong>Pesticide:</strong> {pred.recommendation.pesticide}</p>}
-                {pred.recommendation.irrigation && <p><strong>Irrigation:</strong> {pred.recommendation.irrigation}</p>}
-                {pred.recommendation.prevention_tips && <p><strong>Prevention:</strong> {pred.recommendation.prevention_tips}</p>}
-              </div>
-              {prediction.recommendation?.safety_disclaimer && (
-                <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#fef2f2", borderLeft: "4px solid #ef4444", borderRadius: "0 8px 8px 0", fontSize: "0.85rem", color: "#991b1b" }}>
-                  <strong>Important:</strong> {prediction.recommendation.safety_disclaimer}
-                </div>
-              )}
+          {isAdvisoryMasked ? (
+            <div style={{ marginTop: "2rem", padding: "2rem", background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "12px", textAlign: "center", color: "#64748b" }}>
+              <ShieldAlert size={32} style={{ margin: "0 auto 1rem auto", opacity: 0.5 }} />
+              <h4 style={{ margin: "0 0 0.5rem 0" }}>Advisory Masked (Review Required)</h4>
+              <p style={{ margin: 0, maxWidth: "500px", marginInline: "auto" }}>To ensure farm safety, the AI treatment recommendations have been securely held by the rule engine until an expert verifies the severity and diagnosis.</p>
             </div>
-          )}
+          ) : pred.recommendation && Object.keys(pred.recommendation).length > 0 ? (
+            <div className="advisory-panel" style={{ marginTop: "2rem" }}>
+              <h3>LLM Advisory Plan</h3>
+              <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
+                {(pred.recommendation.immediate_action || pred.recommendation.action || pred.recommendation.fertilizer) && (
+                  <div style={{ background: "#fdf2f2", padding: "1.25rem", borderRadius: "12px", border: "1px solid #fca5a5" }}>
+                    <h4 style={{ color: "#b91c1c", margin: "0 0 0.5rem 0" }}>Immediate Action / Fertilizer</h4>
+                    <p style={{ margin: 0, color: "#7f1d1d", fontSize: "0.95rem" }}>{pred.recommendation.immediate_action || pred.recommendation.action || pred.recommendation.fertilizer}</p>
+                  </div>
+                )}
+                {(pred.recommendation.treatment || pred.recommendation.pesticide) && (
+                  <div style={{ background: "#f0fdf4", padding: "1.25rem", borderRadius: "12px", border: "1px solid #86efac" }}>
+                    <h4 style={{ color: "#15803d", margin: "0 0 0.5rem 0" }}>Treatment Plan / Pesticide</h4>
+                    <p style={{ margin: 0, color: "#166534", fontSize: "0.95rem" }}>{pred.recommendation.treatment || pred.recommendation.pesticide}</p>
+                  </div>
+                )}
+                {(pred.recommendation.prevention || pred.recommendation.prevention_tips) && (
+                  <div style={{ background: "#eff6ff", padding: "1.25rem", borderRadius: "12px", border: "1px solid #bfdbfe" }}>
+                    <h4 style={{ color: "#1d4ed8", margin: "0 0 0.5rem 0" }}>Prevention</h4>
+                    <p style={{ margin: 0, color: "#1e3a8a", fontSize: "0.95rem" }}>{pred.recommendation.prevention || pred.recommendation.prevention_tips}</p>
+                  </div>
+                )}
+                {(pred.recommendation.monitoring || pred.recommendation.irrigation) && (
+                  <div style={{ background: "#f8fafc", padding: "1.25rem", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                    <h4 style={{ color: "#475569", margin: "0 0 0.5rem 0" }}>Monitoring / Irrigation</h4>
+                    <p style={{ margin: 0, color: "#334155", fontSize: "0.95rem" }}>{pred.recommendation.monitoring || pred.recommendation.irrigation}</p>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#fef2f2", borderLeft: "4px solid #ef4444", borderRadius: "0 8px 8px 0", fontSize: "0.85rem", color: "#991b1b" }}>
+                <strong>Important:</strong> {pred.recommendation.safety_disclaimer || "Always follow local agricultural guidelines and strictly adhere to chemical label instructions."}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     );

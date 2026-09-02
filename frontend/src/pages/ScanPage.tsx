@@ -75,7 +75,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       const result = await response.json();
       // Match the backend key 'prediction_id' instead of 'id'
-      navigate(`/predictions/${result.prediction_id}`);
+      navigate(`/predictions/${result.prediction_id}/processing`);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred during analysis.");
       setLoading(false);
