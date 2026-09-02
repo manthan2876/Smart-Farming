@@ -1,4 +1,5 @@
-﻿"""
+from pydantic import BaseModel, Field, ValidationError
+"""
 Smart Farming - Remote AI Recommendation Service
 
 Uses Hugging Face Inference Providers instead of loading
@@ -174,11 +175,20 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
         print("[INFO] Hugging Face response received.")
 
         recommendation_data = _extract_json(response_text)
+        # Deterministic Guardrails
+        try:
+            validated = LLMRecommendation(**recommendation_data)
+        except ValidationError as ve:
+            raise ValueError(f"LLM output failed safety validation: {ve}")
+
+        disclaimer = "DISCLAIMER: Always follow local agricultural guidelines, product labels, and environmental regulations when applying chemical treatments."
+        
         recommendation = {
-            "fertilizer": recommendation_data.get("fertilizer", "N/A"),
-            "pesticide": recommendation_data.get("pesticide", "N/A"),
-            "irrigation": recommendation_data.get("irrigation", "N/A"),
-            "prevention_tips": recommendation_data.get("prevention_tips", "N/A"),
+            "immediate_action": validated.immediate_action,
+            "treatment": validated.treatment,
+            "prevention": validated.prevention,
+            "monitoring": validated.monitoring,
+            "safety_disclaimer": disclaimer
         }
         context["recommendation"] = recommendation
         context["status"]["recommendation"] = "completed"
@@ -193,10 +203,11 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
         context["notes"].append(error_message)
         context["recommendation"] = {
             "error": str(exc),
-            "fertilizer": "Use fertilizer according to crop requirements and soil-test results.",
-            "pesticide": "Use an appropriate registered treatment for the diagnosed disease or pest and follow the product label.",
-            "irrigation": "Maintain consistent soil moisture while avoiding waterlogging and excess leaf wetness.",
-            "prevention_tips": "Maintain proper plant spacing, field sanitation, ventilation and regular crop monitoring.",
+            "immediate_action": "Isolate affected plants if possible.",
+            "treatment": "Use an appropriate registered treatment for the diagnosed disease and follow product label strictly.",
+            "prevention": "Maintain proper plant spacing and field sanitation.",
+            "monitoring": "Monitor the crop daily for spread.",
+            "safety_disclaimer": "DISCLAIMER: Always follow local agricultural guidelines, product labels, and environmental regulations when applying chemical treatments."
         }
 
     return context

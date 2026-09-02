@@ -2,6 +2,14 @@ from __future__ import annotations
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
+
+class PlotResponse(BaseModel):
+    id: int
+    name: str
+    crop: str | None
+    area_acres: float | None
+    status: str
+
 class FarmResponse(BaseModel):
     id: int
     name: str | None
@@ -10,6 +18,7 @@ class FarmResponse(BaseModel):
     latitude: float | None
     longitude: float | None
     crop_history: list[str]
+    plots: list[PlotResponse] = []
 
 
 class FarmRequest(BaseModel):

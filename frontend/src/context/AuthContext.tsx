@@ -37,6 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setIsLoading(false);
     }
+
+    const handleTokenRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      setToken(customEvent.detail);
+    };
+
+    window.addEventListener("tokenRefreshed", handleTokenRefresh);
+    return () => window.removeEventListener("tokenRefreshed", handleTokenRefresh);
   }, [token]);
 
   const signIn = async (identifier: string, pass: string) => {

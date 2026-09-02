@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { 
+  Bell,
   LayoutDashboard, 
   Scan, 
   History, 
@@ -12,10 +13,31 @@ import {
   LogOut 
 } from "lucide-react";
 
+
+import { useQuery } from "@tanstack/react-query";
+import { request } from "../api/client";
+import { useState } from "react";
+
 export default function Sidebar() {
-  const { user, signOut } = useAuth();
+  const { user, token, signOut } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === "admin" || user?.role === "expert";
+
+  const { data: alerts = [], refetch: refetchAlerts } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => request<any[]>("/alerts", {}, token!),
+    enabled: !!token,
+    refetchInterval: 15000,
+  });
+
+  const unreadCount = alerts.filter((a: any) => !a.is_read).length;
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const markRead = async (id: number) => {
+    await request(`/alerts/${id}/read`, { method: "POST" }, token!);
+    refetchAlerts();
+  };
+
 
   const handleSignOut = () => {
     signOut();

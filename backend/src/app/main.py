@@ -1,9 +1,10 @@
-﻿import os
+import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.api.endpoints.alerts import router as alerts_router
 from app.api import (
     auth_router,
     profile_router,
@@ -21,11 +22,22 @@ from app.utils import configure_logging
 
 configure_logging()
 
+from contextlib import asynccontextmanager
+from app.core.scheduler import start_scheduler, shutdown_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_scheduler()
+    yield
+    shutdown_scheduler()
+
 app = FastAPI(
     title="Smart Farming API",
     version="0.1.0",
     description="HTTP delivery layer for the Smart Farming diagnostic pipeline.",
+    lifespan=lifespan
 )
+
 
 allowed_origins = [
     origin.strip()
@@ -54,6 +66,7 @@ app.include_router(feedback_router)
 app.include_router(weather_router)
 app.include_router(crops_router)
 app.include_router(health_router)
+app.include_router(alerts_router)
 app.include_router(admin_router)
 app.include_router(expert_router)
 

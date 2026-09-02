@@ -1,3 +1,12 @@
+
+export interface Plot {
+  id: number;
+  name: string;
+  crop?: string;
+  area_acres?: number;
+  status: string;
+}
+
 ﻿export type Pest = { label?: string; confidence?: number };
 export type Prediction = {
   prediction_id?: number;
@@ -19,10 +28,11 @@ export type Prediction = {
     status?: string;
   };
   recommendation: {
-    fertilizer?: string;
-    pesticide?: string;
-    irrigation?: string;
-    prevention_tips?: string;
+    immediate_action?: string;
+    treatment?: string;
+    prevention?: string;
+    monitoring?: string;
+    safety_disclaimer?: string;
   };
   status: string | Record<string, string>;
   notes: string[];
@@ -49,6 +59,7 @@ export type Profile = {
   latitude?: number;
   longitude?: number;
   crop_history: string[];
+  plots: Plot[];
   farm_name?: string;
   farm_area_acres?: number;
 };
@@ -60,6 +71,7 @@ export type Farm = {
   latitude?: number;
   longitude?: number;
   crop_history: string[];
+  plots: Plot[];
 };
 
 export type WeatherData = {
@@ -119,11 +131,11 @@ export const demoPrediction: Prediction = {
     status: "success",
   },
   recommendation: {
-    fertilizer: "Pause nitrogen for 7 days; keep potassium steady.",
-    pesticide: "Use a registered aphid treatment according to its label.",
-    irrigation: "Water at the soil line in the early morning.",
-    prevention_tips:
-      "Inspect new growth every 48 hours and remove heavily affected leaves.",
+    immediate_action: "Isolate affected plants if possible.",
+    treatment: "Use a registered aphid treatment according to its label.",
+    prevention: "Inspect new growth every 48 hours.",
+    monitoring: "Check for aphid resurgence daily.",
+    safety_disclaimer: "DISCLAIMER: Always follow local agricultural guidelines.",
   },
   status: {
     preprocessing: "completed",

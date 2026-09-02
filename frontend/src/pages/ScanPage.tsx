@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { getFarm } from '../api/farm';
 ﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +18,15 @@ export default function ScanPage() {
   const [lon, setLon] = useState(user?.longitude?.toString() || "72.1519");
   const [language, setLanguage] = useState("English");
   const [loading, setLoading] = useState(false);
+  const [plotId, setPlotId] = useState<number | undefined>(undefined);
+  
+  const { data: farmData } = useQuery({
+    queryKey: ["farm"],
+    queryFn: () => getFarm(token!),
+    enabled: !!token,
+  });
+  
+  const plots = farmData?.plots || [];
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

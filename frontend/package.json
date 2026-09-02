@@ -11,11 +11,14 @@
   "dependencies": {
     "@tanstack/react-query": "^5.102.3",
     "@vitejs/plugin-react": "latest",
+    "browser-image-compression": "^2.0.2",
+    "es-toolkit": "^1.52.0",
     "lucide-react": "latest",
     "motion": "^13.1.1",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "^7.18.2",
+    "recharts": "^3.10.1",
     "vite": "latest"
   },
   "devDependencies": {

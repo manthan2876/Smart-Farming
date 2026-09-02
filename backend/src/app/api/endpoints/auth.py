@@ -1,7 +1,7 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.api.deps import hash_password, verify_password, create_token_pair, decode_token
@@ -39,7 +39,7 @@ def _profile(user) -> ProfileResponse:
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
 async def register(
-    payload: RegisterRequest, session: Session = Depends(get_session)
+    payload: RegisterRequest, response: Response, session: Session = Depends(get_session)
 ) -> AuthResponse:
     if not payload.phone and not payload.email:
         raise HTTPException(
@@ -69,12 +69,22 @@ async def register(
     except SQLAlchemyError as exc:
         session.rollback()
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
-    return AuthResponse(tokens=create_token_pair(user.id), user=_profile(user))
+        
+    tokens = create_token_pair(user.id)
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens["refresh_token"],
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60,
+    )
+    return AuthResponse(tokens=tokens, user=_profile(user))
 
 
 @router.post("/login", response_model=AuthResponse)
 async def login(
-    payload: LoginRequest, session: Session = Depends(get_session)
+    payload: LoginRequest, response: Response, session: Session = Depends(get_session)
 ) -> AuthResponse:
     try:
         user = find_user_by_identifier(session, payload.identifier)
@@ -88,13 +98,36 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials."
         )
-    return AuthResponse(tokens=create_token_pair(user.id), user=_profile(user))
+    
+    tokens = create_token_pair(user.id)
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens["refresh_token"],
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60,
+    )
+    return AuthResponse(tokens=tokens, user=_profile(user))
 
 
 @router.post("/refresh", response_model=dict[str, str | int])
-async def refresh(payload: RefreshRequest) -> dict[str, str | int]:
+async def refresh(request: Request, response: Response) -> dict[str, str | int]:
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Missing refresh token.")
     try:
-        user_id = decode_token(payload.refresh_token, expected_type="refresh")
+        user_id = decode_token(refresh_token, expected_type="refresh")
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
-    return create_token_pair(user_id)
+        
+    tokens = create_token_pair(user_id)
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens["refresh_token"],
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60,
+    )
+    return tokens

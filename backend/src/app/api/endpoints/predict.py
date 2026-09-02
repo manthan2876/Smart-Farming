@@ -1,11 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import uuid
 import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, BackgroundTasks
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -29,6 +29,78 @@ _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _LOGGER = logging.getLogger("smart-farming.api")
 
 
+
+def run_background_pipeline(
+    prediction_id: int, 
+    user_id: str,
+    context: dict,
+    relative_image_path: str,
+    is_rescan: bool = False,
+    parent_id: int | None = None
+):
+    from app.core import SessionLocal
+    from app.models import Prediction, ExpertReview
+    import logging
+    _BG_LOGGER = logging.getLogger("smart-farming.background")
+    
+    db = SessionLocal()
+    try:
+        # Run heavy pipeline
+        from app.pipeline import run_pipeline
+        result = run_pipeline(context)
+        
+        preprocessing_status = result.get("status", {}).get("preprocessing")
+        if preprocessing_status != "completed":
+            new_status = "failed"
+            public_result = {"error": "Image quality check failed; please upload a clearer leaf image."}
+        else:
+            if "image" in result and isinstance(result["image"], dict):
+                result["image"]["raw_path"] = relative_image_path
+            
+            public_result = _public_result(result)
+            
+            # Determine status
+            d_conf = public_result.get("disease", {}).get("confidence", 0.0)
+            sev_pct = public_result.get("severity", {}).get("percent", 0.0)
+            pests = public_result.get("pests", [])
+            
+            new_status = "ready"
+            res_status = dict(public_result.get("status", {}))
+            res_status["expert_review"] = "not_requested"
+            
+            if d_conf < 0.70 or (sev_pct > 60 and pests):
+                new_status = "pending_expert_review"
+                res_status["expert_review"] = "pending"
+                
+            public_result["status"] = res_status
+            
+        # Update Database Record
+        pred = db.query(Prediction).filter(Prediction.id == prediction_id).first()
+        if pred:
+            # Merge context user data
+            if not public_result.get("error"):
+                public_result["user"] = {"id": user_id}
+            
+            pred.result = public_result
+            pred.status = new_status
+            
+            if hasattr(pred, "image_path"):
+                pred.image_path = relative_image_path
+                
+            if new_status == "pending_expert_review":
+                pred.expert_review = ExpertReview(status="pending")
+                
+            db.commit()
+    except Exception as e:
+        _BG_LOGGER.error(f"Background ML Pipeline failed: {e}")
+        pred = db.query(Prediction).filter(Prediction.id == prediction_id).first()
+        if pred:
+            pred.status = "failed"
+            pred.result = {"error": str(e)}
+            db.commit()
+    finally:
+        db.close()
+
 def _public_result(context: dict[str, Any]) -> dict[str, Any]:
     public_context = {
         key: value for key, value in context.items() if not key.startswith("_")
@@ -51,11 +123,13 @@ def _public_result(context: dict[str, Any]) -> dict[str, Any]:
     },
 )
 async def predict(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     location: str = Form(default="Unknown"),
     lat: float = Form(default=52.2297),
     lon: float = Form(default=21.0122),
     language: str = Form(default="English"),
+    plot_id: int | None = Form(default=None),
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -72,8 +146,6 @@ async def predict(
     _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid.uuid4().hex}{suffix}"
     upload_path = _UPLOAD_DIR / filename
-    
-    # Clean relative path format with forward slashes for database storage
     relative_image_path = f"data/uploads/{filename}"
 
     size = 0
@@ -87,8 +159,8 @@ async def predict(
                         detail="Image exceeds the 10 MB upload limit.",
                     )
                 destination.write(chunk)
-
-        # Absolute path is required here so the pipeline/preprocessing can read the file from disk
+        
+        # Create context
         context = create_context(
             image_path=str(upload_path),
             user_id=user_id,
@@ -97,53 +169,33 @@ async def predict(
             lon=lon,
             language=language,
         )
-        result = run_pipeline(context)
         
-        prediction_event(
-            _LOGGER,
-            "pipeline_completed",
-            request_id=result.get("request_id"),
-            user_id=user_id,
-            preprocessing_status=result.get("status", {}).get("preprocessing"),
-        )
-        preprocessing_status = result.get("status", {}).get("preprocessing")
-        if preprocessing_status != "completed":
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Image quality check failed; please upload a clearer leaf image.",
-                headers={"X-Pipeline-Status": str(preprocessing_status)},
-            )
-
-        # Overwrite the absolute path with the clean relative path in the result dictionary
-        if "image" in result and isinstance(result["image"], dict):
-            result["image"]["raw_path"] = relative_image_path
-
-        public_result = _public_result(result)
+        # Create placeholder prediction record
+        placeholder_result = {
+            "request_id": str(uuid.uuid4()),
+            "user": {"id": user_id},
+            "image": {"raw_path": relative_image_path, "processed_path": None, "resolution": None, "channels": None, "quality_score": 1.0, "format": suffix},
+            "crop": {}, "disease": {}, "severity": {}, "pests": [], "pest_classification": {}, "weather": {}, "recommendation": {}, "notes": [],
+            "status": {"preprocessing": "processing", "pipeline": "processing", "expert_review": "not_requested"}
+        }
         
-        try:
-            prediction = record_prediction(session, user_id, public_result)
-            
-            # Directly override database record attributes if stored in dedicated table columns
-            if hasattr(prediction, "image_path"):
-                prediction.image_path = relative_image_path
-                session.commit()
-                
-        except SQLAlchemyError as exc:
-            session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Prediction completed, but the database is unavailable.",
-            ) from exc
-            
-        public_result["prediction_id"] = prediction.id
-        prediction_event(
-            _LOGGER,
-            "prediction_logged",
-            request_id=public_result.get("request_id"),
-            prediction_id=prediction.id,
+        new_pred = record_prediction(session, user_id, placeholder_result)
+        if plot_id:
+            new_pred.plot_id = plot_id
+        new_pred.status = "processing"
+        session.commit()
+        
+        # Dispatch background task
+        background_tasks.add_task(
+            run_background_pipeline,
+            prediction_id=new_pred.id,
             user_id=user_id,
+            context=context,
+            relative_image_path=relative_image_path
         )
-        return public_result
+        
+        placeholder_result["prediction_id"] = new_pred.id
+        return placeholder_result
     finally:
         await file.close()
 
@@ -170,6 +222,11 @@ async def prediction_detail(
         old_image = curr_res.get("image", {})
         if old_image:
             hist.append({
+                "id": curr.id,
+                "created_at": curr.created_at.isoformat(),
+                "disease": curr_res.get("disease", {}).get("label", "Unknown"),
+                "severity_pct": curr_res.get("severity", {}).get("percent", 0.0),
+                "severity_bucket": curr_res.get("severity", {}).get("bucket", "Unknown"),
                 "raw_path": old_image.get("raw_path"),
                 "processed_path": old_image.get("processed_path")
             })
@@ -207,7 +264,9 @@ async def prediction_detail(
 @router.post("/predictions/{prediction_id}/rescan", response_model=PredictionResponse)
 async def rescan_prediction(
     prediction_id: int,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    plot_id: int | None = Form(default=None),
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -249,7 +308,6 @@ async def rescan_prediction(
                     )
                 destination.write(chunk)
 
-        # 3. Run pipeline on new image
         old_res = dict(old_prediction.result)
         location = old_res.get("location", "Unknown")
         language = old_res.get("language", "English")
@@ -262,50 +320,34 @@ async def rescan_prediction(
             lon=21.0122,
             language=language,
         )
-        new_result = run_pipeline(context)
         
-        preprocessing_status = new_result.get("status", {}).get("preprocessing")
-        if preprocessing_status != "completed":
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Image quality check failed; please upload a clearer leaf image.",
-            )
-            
-        if "image" in new_result and isinstance(new_result["image"], dict):
-            new_result["image"]["raw_path"] = relative_image_path
-            
-        public_new_result = _public_result(new_result)
+        # Create placeholder prediction record
+        placeholder_result = {
+            "request_id": str(uuid.uuid4()),
+            "user": {"id": user_id},
+            "image": {"raw_path": relative_image_path, "processed_path": None, "resolution": None, "channels": None, "quality_score": 1.0, "format": suffix},
+            "crop": {}, "disease": {}, "severity": {}, "pests": [], "pest_classification": {}, "weather": {}, "recommendation": {}, "notes": [],
+            "status": {"preprocessing": "processing", "pipeline": "processing", "expert_review": "not_requested"}
+        }
         
-        # Determine status
-        d_conf = public_new_result.get("disease", {}).get("confidence", 0.0)
-        sev_pct = public_new_result.get("severity", {}).get("percent", 0.0)
-        pests = public_new_result.get("pests", [])
-        
-        new_status = "ready"
-        res_status = dict(public_new_result.get("status", {}))
-        res_status["expert_review"] = "not_requested"
-        
-        if d_conf < 0.70 or (sev_pct > 60 and pests):
-            new_status = "pending_expert_review"
-            res_status["expert_review"] = "pending"
-            
-        public_new_result["status"] = res_status
-        public_new_result["user"] = old_res.get("user", {})
-        
-        # 4. Create NEW prediction with parent_id
-        new_pred = record_prediction(session, user_id, public_new_result)
+        new_pred = record_prediction(session, user_id, placeholder_result)
+        if plot_id:
+            new_pred.plot_id = plot_id
         new_pred.parent_id = old_prediction.id
-        new_pred.status = new_status
-        
-        if hasattr(new_pred, "image_path"):
-            new_pred.image_path = relative_image_path
-            
-        if new_status == "pending_expert_review":
-            new_pred.expert_review = ExpertReview(status="pending")
-            
+        new_pred.plot_id = plot_id or old_prediction.plot_id
+        new_pred.status = "processing"
         session.commit()
         
-        public_new_result["prediction_id"] = new_pred.id
-        return public_new_result
+        # Dispatch background task
+        background_tasks.add_task(
+            run_background_pipeline,
+            prediction_id=new_pred.id,
+            user_id=user_id,
+            context=context,
+            relative_image_path=relative_image_path
+        )
+        
+        placeholder_result["prediction_id"] = new_pred.id
+        return placeholder_result
     finally:
         await file.close()

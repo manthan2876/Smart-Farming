@@ -1,4 +1,4 @@
-﻿from app.api.deps import (
+from app.api.deps import (
     get_current_user,
     create_token_pair,
     decode_token,

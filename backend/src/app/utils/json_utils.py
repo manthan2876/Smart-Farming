@@ -1,4 +1,4 @@
-﻿from typing import Any
+from typing import Any
 from pathlib import Path
 
 def _json_safe(value: Any) -> Any:

@@ -79,3 +79,25 @@ def get_current_user(
             detail="A bearer access token is required.",
         )
     return x_user_id.strip()
+
+from app.core import get_session
+from app.crud import get_user
+from sqlalchemy.orm import Session
+
+def require_expert_role(
+    user_id: str = Depends(get_current_user), 
+    session: Session = Depends(get_session)
+) -> str:
+    user = get_user(session, user_id)
+    if not user or user.role not in ["expert", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized. Expert role required.")
+    return user_id
+
+def require_admin_role(
+    user_id: str = Depends(get_current_user), 
+    session: Session = Depends(get_session)
+) -> str:
+    user = get_user(session, user_id)
+    if not user or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized. Admin role required.")
+    return user_id

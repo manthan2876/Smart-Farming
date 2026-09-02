@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import Any
 from app.core import Base
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, JSON, String, Text

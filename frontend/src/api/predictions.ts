@@ -10,13 +10,14 @@ export async function getPrediction(id: string, token: string) {
 }
 export async function predict(
   file: File,
-  metadata: { location: string; language: string },
+  metadata: { location: string; language: string; plot_id?: number },
   token: string,
 ) {
   const body = new FormData();
   body.append("file", file);
   body.append("location", metadata.location);
   body.append("language", metadata.language);
+  if (metadata.plot_id) body.append("plot_id", metadata.plot_id.toString());
   return request<Prediction>("/predict", { method: "POST", body }, token);
 }
 export async function submitFeedback(
@@ -47,7 +48,7 @@ export async function weather(lat: number, lon: number, token: string) {
 }
 
 
-export async function rescan(id: number | string, file: File, token: string) {
+export async function rescan(id: number | string, file: File, token: string, plot_id?: number) {
   const body = new FormData();
   body.append("file", file);
   return request<Prediction>(`/predictions/${id}/rescan`, { method: "POST", body }, token);

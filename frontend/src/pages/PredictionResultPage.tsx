@@ -6,6 +6,7 @@ import { getPrediction } from "../api/predictions";
 import { request } from "../api/client";
 import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
+import imageCompression from "browser-image-compression";
 import "../styles/ResultPage.css";
 import "../styles/DashboardPage.css"; // Ensure standard utilities exist
 
@@ -21,9 +22,23 @@ export default function PredictionResultPage() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [farmerNote, setFarmerNote] = useState("");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
+      const selected = e.target.files[0];
+      try {
+        setIsUploading(true);
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1440,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(selected, options);
+        setSelectedFile(compressedFile);
+      } catch (err) {
+        console.error("Compression error:", err);
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -48,7 +63,13 @@ export default function PredictionResultPage() {
   const { data: prediction, isLoading, isError, refetch } = useQuery({
     queryKey: ["prediction", id],
     queryFn: () => getPrediction(id as string, token!),
-    enabled: !!id && !!token,
+    refetchInterval: (query) => {
+      const p = query.state.data;
+      if (!p) return false;
+      const latest = p.follow_up || p;
+      if ((latest.status as any)?.pipeline === "processing" || (latest.status as any)?.preprocessing === "processing") return 2000;
+      return false;
+    }
   });
 
   const submitFeedback = async (correct: boolean) => {
@@ -74,6 +95,7 @@ export default function PredictionResultPage() {
   const primary = prediction.follow_up || prediction;
   const old = prediction.follow_up ? prediction : null;
   const isPendingReview = (primary.status as any)?.expert_review === "pending";
+  const isProcessing = (primary.status as any)?.pipeline === "processing" || (primary.status as any)?.preprocessing === "processing";
 
   const renderPredictionBlock = (pred: any, isOld: boolean = false) => {
     const rawImageUrl = pred.image?.raw_path ? `http://localhost:8000/${pred.image.raw_path}` : null;
@@ -168,6 +190,11 @@ export default function PredictionResultPage() {
                 {pred.recommendation.irrigation && <p><strong>Irrigation:</strong> {pred.recommendation.irrigation}</p>}
                 {pred.recommendation.prevention_tips && <p><strong>Prevention:</strong> {pred.recommendation.prevention_tips}</p>}
               </div>
+              {prediction.recommendation?.safety_disclaimer && (
+                <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#fef2f2", borderLeft: "4px solid #ef4444", borderRadius: "0 8px 8px 0", fontSize: "0.85rem", color: "#991b1b" }}>
+                  <strong>Important:</strong> {prediction.recommendation.safety_disclaimer}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -199,8 +226,33 @@ export default function PredictionResultPage() {
           </div>
         )}
 
+        {primary.historical_images && primary.historical_images.length > 0 && (
+          <div style={{ marginBottom: "2rem", padding: "1.5rem", background: "#f8fafc", borderRadius: "12px", border: "1px solid #cbd5e1" }}>
+            <h3 style={{ margin: "0 0 1rem 0", color: "#334155" }}>Disease Progression Timeline</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", overflowX: "auto", paddingBottom: "0.5rem" }}>
+              {primary.historical_images.map((h: any, i: number) => (
+                <div key={i} style={{ display: "flex", alignItems: "center" }}>
+                  <div style={{ padding: "1rem", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", minWidth: "150px" }}>
+                    <div style={{ fontSize: "0.8rem", color: "#64748b" }}>{new Date(h.created_at).toLocaleDateString()}</div>
+                    <div style={{ fontWeight: "bold", color: "#0f172a", margin: "0.25rem 0" }}>{h.disease}</div>
+                    <div style={{ fontSize: "0.85rem", color: h.severity_pct > 60 ? "#ef4444" : "#10b981" }}>Sev: {h.severity_pct}%</div>
+                  </div>
+                  <div style={{ width: "30px", height: "2px", background: "#cbd5e1", margin: "0 0.5rem" }}></div>
+                </div>
+              ))}
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ padding: "1rem", background: "#e0f2fe", border: "2px solid #38bdf8", borderRadius: "8px", minWidth: "150px" }}>
+                  <div style={{ fontSize: "0.8rem", color: "#0369a1", fontWeight: "bold" }}>Latest Scan</div>
+                  <div style={{ fontWeight: "bold", color: "#0f172a", margin: "0.25rem 0" }}>{primary.disease?.label || "Unknown"}</div>
+                  <div style={{ fontSize: "0.85rem", color: (primary.severity?.percent || 0) > 60 ? "#ef4444" : "#10b981" }}>Sev: {primary.severity?.percent || 0}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Render Primary (Newest) Prediction */}
-        {renderPredictionBlock(primary, false)}
+        {isProcessing ? <div style={{ padding: "4rem", textAlign: "center", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}><Loader2 size={48} className="animate-spin" style={{ margin: "0 auto", color: "#10b981" }} /><h2 style={{ marginTop: "1.5rem", color: "#0F3D2E" }}>Running AI Pipeline...</h2><p style={{ color: "#666" }}>Analyzing your crop image in the background. Please wait.</p></div> : renderPredictionBlock(primary, false)}
 
         {/* Render Old (Original) Prediction as a collapsible section if it exists */}
         {old && (

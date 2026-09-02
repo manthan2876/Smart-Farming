@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -28,6 +28,13 @@ async def get_farmer_farm(
         latitude=farm.latitude,
         longitude=farm.longitude,
         crop_history=farm.crop_history or [],
+        plots=[{
+            "id": p.id,
+            "name": p.name,
+            "crop": p.crop,
+            "area_acres": p.area_acres,
+            "status": p.status
+        } for p in farm.plots]
     )
 
 @router.put("", response_model=FarmResponse)
@@ -54,5 +61,12 @@ async def save_farmer_farm(
         latitude=farm.latitude,
         longitude=farm.longitude,
         crop_history=farm.crop_history or [],
+        plots=[{
+            "id": p.id,
+            "name": p.name,
+            "crop": p.crop,
+            "area_acres": p.area_acres,
+            "status": p.status
+        } for p in farm.plots]
     )
 
