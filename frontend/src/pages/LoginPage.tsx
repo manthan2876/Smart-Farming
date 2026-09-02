@@ -1,86 +1,89 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+﻿import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { LogIn, Sprout } from "lucide-react";
+import { motion } from "motion/react";
+import "../styles/AuthPages.css";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { signIn } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setError("");
     setLoading(true);
-
     try {
-      await signIn(username, password);
+      await signIn(identifier, password);
       navigate("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Invalid credentials or server error.");
+      setError(err.message || "Failed to login. Please check your credentials.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-page-layout">
-      <motion.div 
-        className="auth-card card"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-      >
-        <div className="auth-header">
-          <div className="logo-icon-lg">🌱</div>
-          <h2>Farmer Portal Login</h2>
-          <p>Access your smart farming dashboard and history</p>
+    <div className="auth-page">
+      <div className="auth-split">
+        <div className="auth-left">
+          <motion.div 
+            className="auth-card"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <div style={{ marginBottom: "2rem" }}>
+              <Sprout size={40} color="#0F3D2E" />
+            </div>
+            <h2>Welcome Back</h2>
+            <p className="auth-subtitle">[ACCESS YOUR DASHBOARD]</p>
+
+            {error && <div className="alert alert-error">{error}</div>}
+
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="form-group">
+                <label>Email or Phone</label>
+                <input 
+                  type="text" 
+                  value={identifier} 
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="farmer@example.com"
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input 
+                  type="password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required 
+                />
+              </div>
+              <button type="submit" disabled={loading}>
+                {loading ? "Authenticating..." : "Sign In"}
+              </button>
+            </form>
+
+            <div className="auth-links">
+              Don't have an account? <Link to="/auth/register">Create Account</Link>
+              <br/><br/>
+              <Link to="/" style={{ textDecoration: "none", color: "#728079" }}>← Back to Home</Link>
+            </div>
+          </motion.div>
         </div>
-
-        {error && (
-          <div className="alert alert-error">
-            <AlertCircle size={16} />
-            <span>{error}</span>
+        <div className="auth-right">
+          <div className="auth-quote">
+            <h2>"Data-driven decisions start here. Monitor, analyze, and protect your harvest."</h2>
+            <p>[SMART FARMING INTELLIGENCE]</p>
           </div>
-        )}
-
-        <form onSubmit={handleLogin} className="auth-form">
-          <div className="form-group">
-            <label><Mail size={16} /> Email or Phone Number</label>
-            <input 
-              type="text" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              placeholder="farmer@example.com"
-              className="form-control"
-              required 
-            />
-          </div>
-
-          <div className="form-group">
-            <label><Lock size={16} /> Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              placeholder="••••••••"
-              className="form-control"
-              required 
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary btn-full btn-glow" disabled={loading}>
-            <LogIn size={18} /> {loading ? "Authenticating..." : "Sign In"}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <p>Don't have an account? <Link to="/auth/register">Register as a Farmer</Link></p>
-          <p className="mt-2"><Link to="/">← Back to Home</Link></p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

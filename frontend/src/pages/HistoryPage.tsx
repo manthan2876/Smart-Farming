@@ -1,10 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
 import { History, ArrowRight, Filter, Search } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import "../styles/HistoryPage.css";
 
 interface PredictionRecord {
   prediction_id: number | string | null;

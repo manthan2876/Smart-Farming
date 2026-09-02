@@ -1,4 +1,4 @@
-"""
+﻿"""
 Smart Farming - Remote AI Recommendation Service
 
 Uses Hugging Face Inference Providers instead of loading
@@ -125,7 +125,7 @@ Severity category: {severity_bucket}
 Detected pests: {pest_summary}
 Weather condition: {weather_condition}
 Weather description: {weather_description}
-Temperature: {temperature} °C
+Temperature: {temperature} Â°C
 Humidity: {humidity} %
 Wind speed: {wind_speed} m/s
 
@@ -200,3 +200,46 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
         }
 
     return context
+
+def generate_weather_advisory(user_profile: dict, weather_data: dict) -> str:
+    """Generates an agronomic advisory string based on weather and field history."""
+    try:
+        client = _get_hf_client()
+        
+        crops = user_profile.get("crop_history", [])
+        location = user_profile.get("location", "Unknown")
+        farm_name = user_profile.get("farm_name", "Unknown Farm")
+        area = user_profile.get("farm_area_acres", "Unknown")
+        
+        temp = weather_data.get("temperature_celsius", weather_data.get("temperature", "N/A"))
+        humidity = weather_data.get("humidity_percent", weather_data.get("humidity", "N/A"))
+        condition = weather_data.get("condition", weather_data.get("description", "N/A"))
+        
+        prompt = f"""You are an expert agronomist AI.
+Analyze the following farm data and current weather conditions.
+Write a single, practical paragraph advising the farmer on what actions to take today.
+
+FARM DATA
+Location: {location}
+Farm Name: {farm_name}
+Area: {area} acres
+Current/Historical Crops: {', '.join(crops) if crops else 'Unknown'}
+
+WEATHER CONDITIONS
+Temperature: {temp}C
+Humidity: {humidity}%
+Condition: {condition}
+
+Provide only the advisory paragraph. No markdown, no conversational filler."""
+        
+        response = client.chat_completion(
+            messages=[{"role": "user", "content": prompt}],
+            model=MODEL_ID,
+            max_tokens=200,
+            temperature=0.3,
+        )
+        text = response.choices[0].message.content.strip()
+        return text
+    except Exception as e:
+        print(f"[ERROR] Weather advisory generation failed: {e}")
+        return ""

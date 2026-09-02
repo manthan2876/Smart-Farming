@@ -50,6 +50,7 @@ from typing import Optional, Tuple
 import cv2
 import numpy as np
 
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -131,7 +132,46 @@ def estimate_severity(context: dict) -> dict:
         context["status"]["severity"] = "failed"
         return context
 
-    percent, affected_area = _compute_severity(image_bgr)
+    percent, affected_area, disease_mask = _compute_severity(image_bgr)
+
+    if disease_mask is not None and context["image"].get("processed_path"):
+
+
+        
+        # Build a rough activation map similar to CNN feature maps
+        # The user's image shows: Disease = Blue (0), Healthy = Green/Yellow (~150), Background = Red (255)
+        # We need the leaf_mask to know background vs healthy
+        
+        # Re-create leaf mask (we already have it, but for simplicity we can estimate background)
+        # Background is where image is very dark or we can just use a simple threshold
+        gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+        _, rough_leaf_mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+        
+        # 1. Start with background (255 = Red in JET)
+        activation = np.full(image_bgr.shape[:2], 255, dtype=np.uint8)
+        
+        # 2. Healthy leaf area (140 = Yellow/Green in JET)
+        activation[rough_leaf_mask > 0] = 140
+        
+        # 3. Disease area (0 = Blue in JET)
+        # Dilate disease mask slightly to make spots bigger like the reference image
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        dilated_disease = cv2.dilate(disease_mask, kernel, iterations=2)
+        activation[dilated_disease > 0] = 0
+        
+        # 4. Downsample to simulate a 14x14 CNN feature map, then upsample with interpolation
+        h, w = activation.shape
+        small = cv2.resize(activation, (14, 14), interpolation=cv2.INTER_AREA)
+        smooth_activation = cv2.resize(small, (w, h), interpolation=cv2.INTER_CUBIC)
+        
+        # 5. Apply JET Colormap
+        heatmap = cv2.applyColorMap(smooth_activation, cv2.COLORMAP_JET)
+        
+        # 6. Blend with the original image (about 50/50 blend like the reference image)
+        overlay = cv2.addWeighted(image_bgr, 0.4, heatmap, 0.6, 0)
+        
+        processed_path = context["image"]["processed_path"]
+        cv2.imwrite(processed_path, overlay)
 
     if percent is None or affected_area is None:
         context["notes"].append(
@@ -157,7 +197,7 @@ def estimate_severity(context: dict) -> dict:
 
 def _compute_severity(
     image_bgr: np.ndarray,
-) -> Tuple[Optional[float], Optional[float]]:
+) -> Tuple[Optional[float], Optional[float], Optional[np.ndarray]]:
     """Compute visually abnormal leaf area."""
     hsv = cv2.cvtColor(
         image_bgr,
@@ -176,7 +216,7 @@ def _compute_severity(
     total_leaf_pixels = int(np.count_nonzero(leaf_mask))
 
     if total_leaf_pixels < MIN_LEAF_PIXELS:
-        return None, None
+        return None, None, None
 
     disease_mask = _build_disease_mask(
         image_bgr=image_bgr,
@@ -219,7 +259,7 @@ def _compute_severity(
         )
     )
 
-    return severity_percent, affected_area
+    return severity_percent, affected_area, disease_mask
 
 
 # ============================================================================

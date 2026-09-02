@@ -1,84 +1,76 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
+import { motion } from "motion/react";
+import { Link } from "react-router-dom";
+import { Cloud, Droplets, Wind, ThermometerSun } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { request } from "../api/client";
-import { CloudSun, Thermometer, Droplets, Wind, Gauge, Cloud } from "lucide-react";
-import { motion } from "framer-motion";
+import { weather as fetchWeather } from "../api/predictions";
+
+import "../styles/WeatherCrops.css";
 
 export default function WeatherPage() {
   const { user, token } = useAuth();
-  const lat = user?.latitude || 21.7645;
-  const lon = user?.longitude || 72.1519;
-
-  const { data: weather, isLoading, error } = useQuery({
-    queryKey: ["liveWeatherFull", lat, lon],
-    queryFn: () => request<any>(`/weather?lat=${lat}&lon=${lon}`, {}, token!),
+  
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["weather", user?.latitude, user?.longitude],
+    queryFn: () => fetchWeather(user?.latitude || 0, user?.longitude || 0, token!),
     enabled: !!token,
   });
 
-  // Helper to safely format values while respecting 0 as a valid number
-  const formatVal = (val: number | undefined | null, unit: string = "") => 
-    val !== undefined && val !== null ? `${val}${unit}` : `--${unit}`;
+  if (isLoading) return <div className="weather-page"><p>Loading regional weather data...</p></div>;
+  if (isError || !data) return <div className="weather-page"><p>Failed to load weather data.</p></div>;
+
+  const temp = data.temperature_celsius ?? "--";
+  const hum = data.humidity_percent ?? "--";
+  const wind = data.wind_speed_mps ?? "--";
 
   return (
-    <div className="weather-page">
+    <motion.div className="weather-page" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="page-header">
-        <h1>Live Weather & Advisory</h1>
-        <p>Real-time atmospheric telemetry for optimal irrigation and disease spray planning.</p>
+        <h1>Regional Weather Context</h1>
+        <Link to="/dashboard" className="back-btn">← Back to Dashboard</Link>
       </div>
 
-      {isLoading ? (
-        <div className="loading-state"><div className="spinner"></div><p>Fetching satellite weather telemetry...</p></div>
-      ) : error ? (
-        <div className="error-state text-danger"><p>Failed to load weather telemetry. Please check your connection.</p></div>
-      ) : (
-        <motion.div 
-          className="weather-dashboard-grid"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="weather-hero-card card">
-            <div className="hero-main-info">
-              <CloudSun size={64} className="text-warning" />
-              <div>
-                <h2>{formatVal(weather?.temperature, "°C")}</h2>
-                <p className="condition-text">{weather?.description || "Clear skies"}</p>
-                <span className="location-pill">Coordinates: {lat}, {lon}</span>
-              </div>
-            </div>
-          </div>
+      <div className="weather-hero">
+        <div>
+          <h2>{temp}°C</h2>
+          <p>{data.condition?.toUpperCase() || "CLEAR CONDITIONS"} • {user?.location || "FARM LOCATION"}</p>
+        </div>
+        <div className="weather-icon-large">
+          <Cloud size={100} color="#e1fc84" />
+        </div>
+      </div>
 
-          <div className="weather-metrics-grid">
-            <div className="metric-card card">
-              <Droplets size={24} className="text-primary" />
-              <div>
-                <span>Humidity</span>
-                <h3>{formatVal(weather?.humidity, "%")}</h3>
-              </div>
-            </div>
-            <div className="metric-card card">
-              <Wind size={24} className="text-info" />
-              <div>
-                <span>Wind Speed</span>
-                <h3>{formatVal(weather?.wind_speed, " km/h")}</h3>
-              </div>
-            </div>
-            <div className="metric-card card">
-              <Gauge size={24} className="text-success" />
-              <div>
-                <span>Pressure</span>
-                <h3>{formatVal(weather?.pressure, " hPa")}</h3>
-              </div>
-            </div>
-            <div className="metric-card card">
-              <Cloud size={24} className="text-secondary" />
-              <div>
-                <span>Cloudiness</span>
-                <h3>{formatVal(weather?.cloudiness, "%")}</h3>
-              </div>
-            </div>
+      <div className="weather-details">
+        <div className="weather-stat">
+          <h4>Humidity</h4>
+          <p>{hum}%</p>
+        </div>
+        <div className="weather-stat">
+          <h4>Wind Speed</h4>
+          <p>{wind} km/h</p>
+        </div>
+        <div className="weather-stat">
+          <h4>Status</h4>
+          <p>Active</p>
+        </div>
+      </div>
+
+      <div className="weather-advisory">
+        <h3>Agronomic Weather Advisory</h3>
+        {data.advisory ? (
+          <div className="advisory-content">
+             <div style={{ whiteSpace: "pre-wrap" }}>{data.advisory}</div>
           </div>
-        </motion.div>
-      )}
-    </div>
+        ) : (
+          <p>
+            {(data.humidity_percent || 0) > 70 
+              ? "High humidity conditions detected. These conditions are highly conducive to fungal outbreaks such as Blight and Mildew. Ensure adequate spacing between crops for airflow and consider preventative fungicidal sprays if symptoms appear."
+              : (data.temperature_celsius || 0) > 35
+              ? "High temperatures detected. Risk of heat stress and rapid moisture loss. Increase irrigation frequency and monitor for pest populations which may spike in dry, hot conditions."
+              : "Current weather conditions are optimal for general crop development. Maintain standard monitoring and watering schedules."}
+          </p>
+        )}
+      </div>
+    </motion.div>
   );
 }

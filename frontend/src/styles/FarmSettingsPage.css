@@ -1,0 +1,94 @@
+﻿.farm-settings-page { padding-bottom: 4rem; }
+.settings-header { margin-bottom: 3rem; }
+.settings-header h1 { font-family: 'Newsreader', serif; font-size: 2.5rem; color: #0F3D2E; }
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+.settings-sidebar {
+  background: #0F3D2E;
+  color: #fff;
+  padding: 2rem;
+  border-radius: 20px;
+}
+.settings-sidebar h3 { color: #e1fc84; margin-bottom: 1rem; }
+.settings-sidebar p { color: #d1d5db; font-size: 0.9rem; line-height: 1.6; }
+
+.settings-form-area {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.form-section {
+  background: #fff;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  border: 1px solid #eee;
+}
+.form-section h3 {
+  font-size: 1.5rem;
+  color: #0F3D2E;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+.form-group label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  font-weight: bold;
+  color: #728079;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+.form-control {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fdfdf9;
+  transition: all 0.2s;
+}
+.form-control:focus {
+  border-color: #0F3D2E;
+  background: #fff;
+  outline: none;
+}
+.crop-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.crop-check {
+  padding: 1rem;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: bold;
+  color: #0F3D2E;
+  transition: all 0.2s;
+}
+.crop-check.checked, .crop-check:hover {
+  border-color: #e1fc84;
+  background: #f4fbf4;
+}
+.btn-save {
+  background: #000;
+  color: #e1fc84;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 999px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-save:hover { background: #e1fc84; color: #000; }

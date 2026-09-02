@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Sprout, Scan, ShieldCheck, CloudSun, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { Sprout, Droplet, Bug } from "lucide-react";
+import { motion } from "motion/react";
+import "../styles/LandingPage.css";
 
 export default function LandingPage() {
   return (
@@ -8,72 +9,93 @@ export default function LandingPage() {
       {/* Top Navbar */}
       <nav className="landing-navbar">
         <div className="brand">
-          <span className="logo">🌱</span>
           <span className="brand-name">Smart Farming</span>
         </div>
         <div className="nav-actions">
-          <Link to="/crops" className="btn btn-ghost">Supported Crops</Link>
-          <Link to="/auth/login" className="btn btn-outline">Sign In</Link>
-          <Link to="/auth/register" className="btn btn-primary">Get Started</Link>
+          <Link to="/about">About</Link>
+          <Link to="/services">Services</Link>
+          <Link to="/crops">Technology</Link>
+          <Link to="/auth/login" className="btn-primary">Sign In</Link>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="hero-section">
-        <motion.div 
-          className="hero-content"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <span className="badge-pill mb-3">🚀 Next-Gen AI Agronomy Platform</span>
-          <h1>Protect Your Harvest with <span>Instant AI Disease Diagnostics</span></h1>
-          <p>
-            Upload leaf photographs to instantly run OpenCV quality validation, pest identification, 
-            severity metrics, and localized multi-lingual LLM remedy recommendations.
-          </p>
-          <div className="hero-cta-group">
-            <Link to="/auth/register" className="btn btn-primary btn-lg btn-glow">
-              Create Free Account <ArrowRight size={18} />
-            </Link>
-            <Link to="/crops" className="btn btn-secondary btn-lg">
-              Explore Crops
-            </Link>
-          </div>
-        </motion.div>
-      </section>
+      <section className="hero-split">
+        <div className="hero-left">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            Smarter Farming Starts Here
+          </motion.h1>
+          
+          <motion.div 
+            className="center-sprout"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Sprout size={80} color="#2C3A32" strokeWidth={1} />
+          </motion.div>
 
-      {/* Features Grid */}
-      <section className="features-section container">
-        <div className="section-title text-center mb-5">
-          <h2>Core Capabilities Built for Modern Farms</h2>
-          <p>Everything you need from seeding to harvest management.</p>
+          <div className="hero-left-bottom">
+            <p>
+              <strong>[We are Marbam,]</strong><br/>
+              We turn your farm's data into clear, simple actions that boost efficiency, increase yield, and improve your bottom line.
+            </p>
+            <div className="hero-buttons">
+              <Link to="/auth/register" className="wix-btn wix-btn-neon">Start A Demo</Link>
+              <Link to="/auth/login" className="wix-btn wix-btn-outline">Learn More</Link>
+            </div>
+          </div>
         </div>
 
-        <div className="features-grid">
-          <div className="feature-card card">
-            <Scan size={32} className="text-primary mb-3" />
-            <h3>AI Leaf Diagnostics</h3>
-            <p>Instant disease classification with Grad-CAM visual explainability overlays and confidence grading.</p>
-          </div>
-          <div className="feature-card card">
-            <CloudSun size={32} className="text-warning mb-3" />
-            <h3>Live Weather Telemetry</h3>
-            <p>Real-time atmospheric monitoring for precise pesticide spray timing and irrigation scheduling.</p>
-          </div>
-          <div className="feature-card card">
-            <ShieldCheck size={32} className="text-success mb-3" />
-            <h3>MLOps Feedback Loop</h3>
-            <p>Farmer verification notes fed directly back into our model retraining pipeline for continuous accuracy.</p>
+        <div className="hero-right">
+          <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop" alt="Farmer in field" />
+          <div className="hero-stats-overlay">
+            <div className="stat-item">
+              <h4><span>[01]</span> 32% Higher Yields</h4>
+              <p>From every treated acre</p>
+            </div>
+            <div className="stat-item">
+              <h4><span>[02]</span> 45% Less Water Use</h4>
+              <p>Per ton of crop</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="landing-footer text-center">
-        <p>© 2026 Smart Farming Backend & Frontend Suite. All rights reserved.</p>
-        <p className="mt-1"><Link to="/docs" target="_blank" className="link-inline">Interactive API Documentation (Swagger)</Link></p>
-      </footer>
+      {/* Impact Section */}
+      <section className="impact-section">
+        <div className="impact-title">
+          The Impact of Smarter Decisions
+        </div>
+        <div className="impact-content">
+          <h2>When intelligence guides your operation, the results speak for themselves. From row crops to orchards and greenhouse, our clients achieve:</h2>
+          
+          <div className="impact-grid">
+            <div className="impact-item">
+              <h4><span>[01]</span> 40%</h4>
+              <p>More Efficient Water &<br/>Nutrient Use</p>
+            </div>
+            <div className="impact-item">
+              <div className="impact-icon"><Droplet color="#3b82f6" size={32} /></div>
+              <h4><span>[02]</span> Up to 25%</h4>
+              <p>Higher Harvest Value</p>
+            </div>
+            <div className="impact-item">
+              <h4><span>[03]</span> 98%</h4>
+              <p>Accuracy in Predictive<br/>Threat Detection</p>
+            </div>
+            <div className="impact-item">
+              <div className="impact-icon"><Bug color="#D67756" size={32} /></div>
+              <h4><span>[04]</span> Millions</h4>
+              <p>of smart decisions made<br/>daily across our network</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

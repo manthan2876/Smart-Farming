@@ -1,4 +1,4 @@
-export type Pest = { label?: string; confidence?: number };
+﻿export type Pest = { label?: string; confidence?: number };
 export type Prediction = {
   prediction_id?: number;
   request_id: string;
@@ -61,14 +61,15 @@ export type WeatherData = {
   cloudiness_percent?: number;
   condition?: string;
   city?: string;
+  advisory?: string;
 };
 
 export type AdminMetrics = {
   total_predictions: number;
   total_scans?: number;
   total_feedback?: number;
-  accuracy_rate_pct: number | null; // Add this
-  feedback_accuracy_pct?: number | null; // Keep this as an alias if needed
+  accuracy_rate_pct: number | null; 
+  feedback_accuracy_pct?: number | null; 
   avg_crop_confidence: number | null;
   avg_disease_confidence: number | null;
   avg_quality_score: number | null;

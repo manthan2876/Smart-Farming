@@ -1,30 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { CloudSun, Activity, Scan, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
-import { Scan, CloudSun, ArrowRight, ShieldCheck, Activity } from "lucide-react";
-import { motion } from "framer-motion";
-
-interface SeverityObj {
-  percent?: number;
-  affected_area?: number;
-  bucket?: string;
-}
+import { motion } from "motion/react";
+import "../styles/DashboardPage.css";
 
 interface ScanItem {
-  prediction_id?: number;
   id?: number;
-  crop?: { label: string; confidence?: number };
-  disease?: { label: string; confidence?: number };
-  severity?: SeverityObj | string | number;
+  prediction_id?: number;
+  crop_name?: string;
+  disease_name?: string;
+  severity_bucket?: string;
   created_at?: string;
 }
 
 interface WeatherData {
-  temperature: number;
-  humidity: number;
-  description: string;
-  wind_speed: number;
+  temperature_celsius?: number;
+  humidity_percent?: number;
+  condition?: string;
+  wind_speed_mps?: number;
 }
 
 export default function DashboardPage() {
@@ -49,7 +44,7 @@ export default function DashboardPage() {
     <div className="dashboard-page">
       <header className="dashboard-welcome-banner">
         <div className="welcome-text">
-          <h1>Welcome back, {user?.name || "Farmer"}! 🌱</h1>
+          <h1>Welcome back, {user?.name || "Farmer"}! </h1>
           <p>Monitor your crop health, analyze leaf scans with AI, and track local weather conditions in real-time.</p>
         </div>
         <div className="welcome-action">
@@ -74,12 +69,12 @@ export default function DashboardPage() {
           {weather ? (
             <div className="weather-stats-row">
               <div className="temp-display">
-                <span className="temp-value">{weather.temperature}°C</span>
-                <span className="temp-desc">{weather.description}</span>
+                <span className="temp-value">{weather.temperature_celsius ?? "--"}°C</span>
+                <span className="temp-desc">{weather.condition || "Clear"}</span>
               </div>
               <div className="weather-substats">
-                <div><span>Humidity</span><strong>{weather.humidity}%</strong></div>
-                <div><span>Wind</span><strong>{weather.wind_speed} km/h</strong></div>
+                <div><span>Humidity</span><strong>{weather.humidity_percent ?? "--"}%</strong></div>
+                <div><span>Wind</span><strong>{weather.wind_speed_mps ?? "--"} km/h</strong></div>
               </div>
             </div>
           ) : (
@@ -99,73 +94,54 @@ export default function DashboardPage() {
           </div>
           <div className="stats-grid">
             <div className="stat-item">
-              <span className="stat-label">Farm Location</span>
-              <strong className="stat-val">{user?.location || "Configured"}</strong>
+              <span>Location</span>
+              <strong>{user?.location || "Unknown"}</strong>
             </div>
             <div className="stat-item">
-              <span className="stat-label">AI Model Status</span>
-              <strong className="stat-val text-success"><ShieldCheck size={16} /> Online</strong>
+              <span>Crops</span>
+              <strong>{user?.crop_history?.length || 0} active</strong>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Recent Scans Section */}
-      <motion.section 
-        className="recent-scans-section"
+      <motion.div 
+        className="dashboard-card recent-scans-card"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div className="section-header">
-          <h2>Recent Diagnostic Scans</h2>
-          <Link to="/history" className="view-all-link">View Full History</Link>
+        <div className="card-header">
+          <h3>Recent Diagnostics</h3>
+          <Link to="/history" className="link-inline">View All <ArrowRight size={14} /></Link>
         </div>
-
+        
         {history.length === 0 ? (
-          <div className="empty-scans-box">
-            <p>No scans recorded yet. Upload your first crop leaf photo to run an AI diagnostic check.</p>
-            <Link to="/scan" className="btn btn-outline btn-sm">Run First Scan</Link>
+          <div className="empty-state">
+            <p>No recent scans found.</p>
+            <Link to="/scan" className="btn btn-outline">Start First Scan</Link>
           </div>
         ) : (
-          <div className="scans-list">
-            {history.map((scan, index) => {
-              const scanId = scan.prediction_id || scan.id || index;
-              const cropName = scan.crop?.label || "Unknown Crop";
-              const diseaseName = scan.disease?.label || "Healthy / Unknown";
-              
-              // Handle severity object safely
-              let severityLabel = "Unknown";
-              let severityClass = "";
-              if (scan.severity && typeof scan.severity === "object") {
-                severityLabel = scan.severity.bucket || `${scan.severity.percent ?? 0}%`;
-                severityClass = (scan.severity.bucket || "").toLowerCase();
-              } else if (scan.severity) {
-                severityLabel = String(scan.severity);
-                severityClass = severityLabel.toLowerCase();
-              }
-
-              const scanDate = scan.created_at ? new Date(scan.created_at).toLocaleDateString() : "";
-
-              return (
-                <Link to={`/predictions/${scanId}`} key={scanId} className="scan-row-item">
-                  <div className="scan-row-info">
-                    <span className="crop-badge">{cropName}</span>
-                    <h4 className="disease-title">{diseaseName}</h4>
-                    {scanDate && <span className="scan-date">{scanDate}</span>}
-                  </div>
-                  <div className="scan-row-meta">
-                    <span className={`severity-pill ${severityClass}`}>
-                      {severityLabel}
-                    </span>
-                    <ArrowRight size={16} className="arrow-icon" />
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="scan-list">
+            {history.map((scan) => (
+              <Link to={`/prediction/${scan.prediction_id}`} key={scan.prediction_id} className="scan-list-item">
+                <div className="scan-info">
+                  <span className="scan-crop-badge">{scan.crop_name}</span>
+                  <strong>{scan.disease_name || "Unknown"}</strong>
+                </div>
+                <div className="scan-meta">
+                  <span className={`severity-indicator ${scan.severity_bucket?.toLowerCase() || 'unknown'}`}>
+                    {scan.severity_bucket}
+                  </span>
+                  <span className="scan-date">
+                    {scan.created_at ? new Date(scan.created_at).toLocaleDateString() : "Just now"}
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
-      </motion.section>
+      </motion.div>
     </div>
   );
 }

@@ -1,0 +1,75 @@
+﻿.history-page { padding-bottom: 4rem; }
+.history-header { margin-bottom: 2rem; }
+.history-header h1 { font-family: 'Newsreader', serif; font-size: 2.5rem; color: #0F3D2E; }
+
+.history-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  border: 1px solid #eee;
+  padding: 2rem;
+}
+.filter-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+.filter-pill {
+  padding: 0.5rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #fdfdf9;
+  color: #728079;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: monospace;
+}
+.filter-pill.active, .filter-pill:hover {
+  background: #0F3D2E;
+  color: #e1fc84;
+  border-color: #0F3D2E;
+}
+
+.history-grid-header {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 80px;
+  gap: 1rem;
+  padding: 0 1.5rem 1rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #728079;
+  font-weight: bold;
+}
+.scan-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.scan-row-item {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 80px;
+  gap: 1rem;
+  align-items: center;
+  background: #fdfdf9;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  text-decoration: none;
+  color: #1f2d26;
+  transition: all 0.2s;
+}
+.scan-row-item:hover {
+  background: #fff;
+  border-color: #0F3D2E;
+  box-shadow: 0 5px 15px rgba(15, 61, 46, 0.08);
+  transform: translateY(-2px);
+}
+.crop-badge {
+  font-family: monospace;
+  background: rgba(15, 61, 46, 0.05);
+  color: #0F3D2E;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+.disease-title { font-weight: bold; font-size: 1.1rem; }

@@ -103,3 +103,13 @@ async def get_admin_feedback(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch feedback logs: {exc}",
         ) from exc
+
+@router.post("/feedback/{feedback_id}/review")
+async def review_feedback(
+    feedback_id: int,
+    payload: dict,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # Mock expert review update
+    return {"status": "success", "feedback_id": feedback_id, "expert_status": payload.get("expert_status")}

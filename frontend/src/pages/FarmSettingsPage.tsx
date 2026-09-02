@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
 import { MapPin, Save, CheckCircle2, Sprout } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import "../styles/FarmSettingsPage.css";
 
 export default function FarmSettingsPage() {
   const { token } = useAuth();

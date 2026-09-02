@@ -1,0 +1,62 @@
+﻿.scan-page { padding-bottom: 4rem; }
+.scan-page .page-header {
+  margin-bottom: 3rem;
+}
+.scan-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+}
+.upload-section {
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  border: 1px solid #eee;
+}
+.dropzone {
+  border: 2px dashed #0F3D2E;
+  border-radius: 16px;
+  background: #fdfdf9;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dropzone:hover {
+  background: #f4fbf4;
+  border-color: #e1fc84;
+}
+.dropzone-prompt h3 { color: #0F3D2E; margin: 1rem 0 0.5rem; }
+.parameters-section {
+  background: #0F3D2E;
+  color: #fff;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(15,61,46,0.2);
+}
+.parameters-section h3 { color: #e1fc84; margin-bottom: 2rem; font-family: 'Newsreader', serif; font-size: 1.8rem; }
+.parameters-section label { color: #d1d5db; }
+.parameters-section .form-control {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+}
+.parameters-section .form-control:focus {
+  background: rgba(255,255,255,0.15);
+  border-color: #e1fc84;
+}
+.parameters-section .btn-primary {
+  background: #e1fc84;
+  color: #000;
+  border: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+.parameters-section .btn-primary:hover {
+  background: #fff;
+  box-shadow: 0 0 15px rgba(225,252,132,0.4);
+}

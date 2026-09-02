@@ -1,8 +1,9 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Upload, Camera, MapPin, Globe, AlertCircle, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import "../styles/ScanPage.css";
 
 export default function ScanPage() {
   const { token, user } = useAuth();
@@ -162,8 +163,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                 className="form-control"
               >
                 <option value="English">English</option>
-                <option value="Hindi">Hindi (हिंदी)</option>
-                <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+                <option value="Hindi">Hindi (à¤¹à¤¿à¤‚à¤¦à¥€)</option>
+                <option value="Gujarati">Gujarati (àª—à«àªœàª°àª¾àª¤à«€)</option>
               </select>
             </div>
 
