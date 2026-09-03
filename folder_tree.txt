@@ -1,5 +1,5 @@
-Smart-Farming/ (98763 files)
-    ├── Datasets/ (98458 files)
+Smart-Farming/ (98733 files)
+    ├── Datasets/ (98459 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
                 ├── Cotton/ (288 files)
@@ -258,7 +258,8 @@ Smart-Farming/ (98763 files)
                 ├── Army Worm/ (6 files)
                 ├── Leaf Miner/ (58 files)
                 ├── Spider Mite/ (8 files)
-        ├── testing_images/ (12 files)
+        ├── testing_images/ (13 files)
+            ├── How To Keep Aphids Off Tomato Plants - 4 Simple Secrets To Success!.jfif
             ├── aphids_tomato.jpeg
             ├── army_worm_cotton.jpeg
             ├── blury_leaf_1.jpg
@@ -284,67 +285,29 @@ Smart-Farming/ (98763 files)
         ├── smart_farming_roadmap_v2.md
         ├── smart_farming_roadmap_v2.pdf
         ├── ui-redesign-plan-cursor.md
-    ├── backend/ (145 files)
+    ├── backend/ (113 files)
         ├── backend.egg-info/ (5 files)
             ├── PKG-INFO
             ├── SOURCES.txt
             ├── dependency_links.txt
             ├── requires.txt
             ├── top_level.txt
-        ├── data/ (47 files)
-            ├── processed/ (22 files)
-                ├── 042b30782140498998e3a636a74866fd.jpg
-                ├── 06262c114c1d4b72bb38518e3853c802.jpg
-                ├── 0c82517c083447ca87f519c310f1a930.jpg
-                ├── 1538c02b698e42f989af6cd558d59c85.png
-                ├── 1cd44ed7cf5f4b0abaf67f77186a3eef.jpg
-                ├── 276fe9d093c14998879294f947d21e3e.png
-                ├── 27e1f16b7926456ba6582167d53d14c5.png
-                ├── 2e5a206f0367460dbc67919930c23106.jpeg
-                ├── 373efbe00f7d454b88ded3fb945b8838.jpeg
-                ├── 3799f9c7e3b34067a80418b3a9f33d1d.jpeg
-                ├── 60834df4994b44f2a0b5a5c7b150bdee.jpg
-                ├── 71ff428eb4c4434eb3dbf9da587eea8c.jpg
-                ├── 8032105b782e419e882e14f85666c012.jpeg
-                ├── 8626b80baeec458fa3b1c58241ef30d4.jpg
-                ├── 89b2466f3e8e46ffbdf3fa7ce5c2bcd2.jpg
-                ├── 9e7087aa204e4ddf8e1150c69fd063b7.jpg
-                ├── b4cb7dde57bb412f995343cedfd012f3.png
-                ├── b61a636bbaa74129ac5b7c868c70c1b6.png
-                ├── c22ef544328041159b88e3ca6d4e9207.jpg
-                ├── f52d99916b8e4d5894f266b17d3609a6.jpeg
-                ├── fa96823382904946a02ef5d3518fca61.jpg
+        ├── data/ (9 files)
+            ├── processed/ (0 files)
+            ├── uploads/ (9 files)
+                ├── 1bc248003a12410c980999e45c0ad4df.jpg
+                ├── 2313e9854d044cd6bed81fd34c01abab.jpg
+                ├── 2525c3db29b044a390cf87ed7b2e8a55.jpg
+                ├── 382dd590c61447a885cc8d1dd76bba1b.jpg
+                ├── 5a21c5683d54413ba06cee2417aea79e.jpg
+                ├── 6a30584caac94157bf43ed9c7f19ed81.jpg
+                ├── bd44b62f58a440c1b646a1c0fde6cf4f.jpg
+                ├── f2cd1b2fc93a4c23b7e5b3ce6f25bc35.jpg
                 ├── fcae3399c41e40829dec9e75c8c0c1df.jpeg
-            ├── uploads/ (25 files)
-                ├── 042b30782140498998e3a636a74866fd.jpg
-                ├── 06262c114c1d4b72bb38518e3853c802.jpg
-                ├── 0c82517c083447ca87f519c310f1a930.jpg
-                ├── 1538c02b698e42f989af6cd558d59c85.png
-                ├── 1cd44ed7cf5f4b0abaf67f77186a3eef.jpg
-                ├── 276fe9d093c14998879294f947d21e3e.png
-                ├── 27e1f16b7926456ba6582167d53d14c5.png
-                ├── 29a2c7689d964d0a9399bc4c83d23a16.png
-                ├── 2e5a206f0367460dbc67919930c23106.jpeg
-                ├── 373efbe00f7d454b88ded3fb945b8838.jpeg
-                ├── 3799f9c7e3b34067a80418b3a9f33d1d.jpeg
-                ├── 60834df4994b44f2a0b5a5c7b150bdee.jpg
-                ├── 71ff428eb4c4434eb3dbf9da587eea8c.jpg
-                ├── 8032105b782e419e882e14f85666c012.jpeg
-                ├── 83613b2ec58043a6bdda24aa3c93d28c.jpg
-                ├── 8626b80baeec458fa3b1c58241ef30d4.jpg
-                ├── 89b2466f3e8e46ffbdf3fa7ce5c2bcd2.jpg
-                ├── 9e7087aa204e4ddf8e1150c69fd063b7.jpg
-                ├── b4cb7dde57bb412f995343cedfd012f3.png
-                ├── b61a636bbaa74129ac5b7c868c70c1b6.png
-                ├── b8eaf6f0fbea47c3af00d1fd21e93924.png
-                ├── c22ef544328041159b88e3ca6d4e9207.jpg
-                ├── f52d99916b8e4d5894f266b17d3609a6.jpeg
-                ├── fa96823382904946a02ef5d3518fca61.jpg
-                ├── fcae3399c41e40829dec9e75c8c0c1df.jpeg
-        ├── src/ (79 files)
-            ├── app/ (74 files)
-                ├── api/ (15 files)
-                    ├── endpoints/ (13 files)
+        ├── src/ (85 files)
+            ├── app/ (80 files)
+                ├── api/ (17 files)
+                    ├── endpoints/ (15 files)
                         ├── __init__.py
                         ├── admin.py
                         ├── alerts.py
@@ -355,16 +318,20 @@ Smart-Farming/ (98763 files)
                         ├── feedback.py
                         ├── health.py
                         ├── history.py
+                        ├── mlops.py
                         ├── predict.py
                         ├── profile.py
+                        ├── tts.py
                         ├── weather.py
                     ├── __init__.py
                     ├── deps.py
-                ├── core/ (7 files)
+                ├── core/ (9 files)
                     ├── __init__.py
+                    ├── arq.py
                     ├── config.py
                     ├── database.py
                     ├── init_db.py
+                    ├── limiter.py
                     ├── scheduler.py
                     ├── security.py
                     ├── session.py
@@ -398,7 +365,7 @@ Smart-Farming/ (98763 files)
                     ├── plot.py
                     ├── prediction.py
                     ├── user.py
-                ├── services/ (18 files)
+                ├── services/ (19 files)
                     ├── crop_identifier/ (2 files)
                         ├── __init__.py
                         ├── predictor.py
@@ -425,6 +392,7 @@ Smart-Farming/ (98763 files)
                         ├── __init__.py
                         ├── service.py
                     ├── __init__.py
+                    ├── weather_cron.py
                 ├── utils/ (4 files)
                     ├── __init__.py
                     ├── json_utils.py
@@ -434,6 +402,7 @@ Smart-Farming/ (98763 files)
                 ├── context.py
                 ├── main.py
                 ├── pipeline.py
+                ├── worker.py
             ├── backend.egg-info/ (5 files)
                 ├── PKG-INFO
                 ├── SOURCES.txt
@@ -455,13 +424,10 @@ Smart-Farming/ (98763 files)
         ├── requirements.txt
         ├── seed_users.py
         ├── uv.lock
-    ├── data/ (0 files)
-        ├── processed/ (0 files)
-        ├── uploads/ (0 files)
-    ├── frontend/ (65 files)
+    ├── frontend/ (66 files)
         ├── public/ (1 files)
             ├── aphids_tomato.jpeg
-        ├── src/ (52 files)
+        ├── src/ (53 files)
             ├── api/ (8 files)
                 ├── admin.ts
                 ├── auth.ts
@@ -486,7 +452,7 @@ Smart-Farming/ (98763 files)
                 ├── gu.ts
                 ├── hi.ts
                 ├── index.ts
-            ├── pages/ (17 files)
+            ├── pages/ (18 files)
                 ├── AboutPage.tsx
                 ├── AdminFeedbackPage.tsx
                 ├── AdminMetricsPage.tsx
@@ -503,6 +469,7 @@ Smart-Farming/ (98763 files)
                 ├── RegisterPage.tsx
                 ├── ScanPage.tsx
                 ├── ServicesPage.tsx
+                ├── SettingsPage.tsx
                 ├── WeatherPage.tsx
             ├── styles/ (13 files)
                 ├── AboutPage.css
