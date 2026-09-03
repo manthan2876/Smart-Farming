@@ -10,6 +10,7 @@ import PredictionResultPage from "./pages/PredictionResultPage";
 import ProcessingPage from "./pages/ProcessingPage";
 import HistoryPage from "./pages/HistoryPage";
 import FarmSettingsPage from "./pages/FarmSettingsPage";
+import SettingsPage from "./pages/SettingsPage";
 import WeatherPage from "./pages/WeatherPage";
 import CropsPage from "./pages/CropsPage";
 import AdminMetricsPage from "./pages/AdminMetricsPage";
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/predictions/:id" element={<PredictionResultPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/farm/settings" element={<FarmSettingsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         <Route path="/weather" element={<WeatherPage />} />
 
         {/* Admin Only Routes */}

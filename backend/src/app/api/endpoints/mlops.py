@@ -10,7 +10,7 @@ import os
 import tempfile
 from pathlib import Path
 
-router = APIRouter(tags=["mlops"])
+router = APIRouter(prefix="/admin/mlops", tags=["mlops"])
 
 @router.get("/export")
 async def export_dataset(
@@ -39,11 +39,11 @@ async def export_dataset(
             metadata.append({
                 "id": c.id,
                 "prediction_id": c.prediction_id,
-                "expert_id": c.expert_id,
-                "image_file": img_path.name,
-                "corrected_disease": c.corrected_disease,
-                "severity_pct": c.corrected_severity_pct,
-                "notes": c.expert_notes,
+                "source": c.source,
+                "image_file": img_path.name if img_path.exists() else None,
+                "original_label": c.original_label,
+                "corrected_label": c.corrected_label,
+                "status": c.status,
                 "created_at": c.created_at.isoformat()
             })
             

@@ -5,7 +5,8 @@ import {
   LayoutDashboard, 
   Scan, 
   History, 
-  MapPin, 
+  MapPin,
+    Settings, 
   CloudSun, 
   Sprout, 
   ShieldAlert, 
@@ -107,6 +108,10 @@ export default function Sidebar() {
 
         <div className="nav-section">
           <span className="nav-section-title">Management</span>
+          <NavLink to="/settings" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <Settings size={20} />
+            <span>System Settings</span>
+          </NavLink>
           <NavLink to="/farm/settings" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
             <MapPin size={20} />
             <span>Farm Settings</span>

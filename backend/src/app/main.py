@@ -77,6 +77,7 @@ app.add_middleware(
 
 # Include all modular routers
 app.include_router(tts_router)
+app.include_router(mlops_router)
 app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(farm_router)
