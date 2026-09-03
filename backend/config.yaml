@@ -27,8 +27,8 @@ models:
   pest_classifier:
     path: models/pest_classifier/pest_classifier.pt
 thresholds:
-  crop_confidence: 0.5
-  disease_confidence: 0.5
+  crop_confidence: 0.7
+  disease_confidence: 0.7
   blur_var_threshold: 100.0
   min_brightness: 40.0
   max_brightness: 240.0

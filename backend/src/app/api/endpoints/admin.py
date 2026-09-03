@@ -57,11 +57,6 @@ async def purge_database(
     # Prediction has parent_id, so we can delete all
     session.execute(sa.delete(Prediction))
     session.execute(sa.delete(Image))
-    session.execute(sa.delete(Plot))
-    session.execute(sa.delete(Farm))
-    
-    # Delete all non-admin users, or just non-current users
-    session.execute(sa.delete(User).where(User.id != user_id))
     
     session.commit()
     return {"status": "success", "message": "Database wiped successfully."}
