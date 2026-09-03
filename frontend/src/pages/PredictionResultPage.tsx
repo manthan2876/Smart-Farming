@@ -2,10 +2,11 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { getPrediction } from "../api/predictions";
+import { getPrediction, requestExpertReview } from "../api/predictions";
 import { request } from "../api/client";
 import { motion } from "motion/react";
-import { Loader2, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Loader2, ShieldAlert, CheckCircle2, Volume2 } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import "../styles/ResultPage.css";
 import "../styles/DashboardPage.css"; // Ensure standard utilities exist
@@ -20,6 +21,8 @@ export default function PredictionResultPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [farmerNote, setFarmerNote] = useState("");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,6 +75,35 @@ export default function PredictionResultPage() {
     }
   });
 
+  
+  const playAudio = async (text: string) => {
+    if (audioUrl && isPlaying) return;
+    try {
+      setIsPlaying(true);
+      const res = await request("/tts", { method: "POST", body: JSON.stringify({ text }) }, token!);
+      if (res && res.audioContent) {
+        const audio = new Audio("data:audio/mp3;base64," + res.audioContent);
+        setAudioUrl(audio.src);
+        audio.play();
+        audio.onended = () => setIsPlaying(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setIsPlaying(false);
+    }
+  };
+
+    const handleRequestExpert = async () => {
+    try {
+      await requestExpertReview(id!, token!);
+      alert("Expert review requested successfully!");
+      refetch();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to request expert review.");
+    }
+  };
+
   const submitFeedback = async (correct: boolean) => {
     setIsCorrect(correct);
     try {
@@ -98,6 +130,16 @@ export default function PredictionResultPage() {
   const isProcessing = (primary.status as any)?.pipeline === "processing" || (primary.status as any)?.preprocessing === "processing";
 
   const renderPredictionBlock = (pred: any, isOld: boolean = false) => {
+    if (pred.error) {
+      return (
+        <div style={{ padding: "2rem", background: "#fef2f2", border: "1px solid #f87171", borderRadius: "12px", color: "#b91c1c", marginTop: "1rem" }}>
+          <h3><AlertCircle size={24} style={{ verticalAlign: 'middle', marginRight: '8px' }}/> ML Pipeline Error</h3>
+          <p>{pred.error}</p>
+          <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>The background task failed. Please try capturing another scan with better lighting.</p>
+        </div>
+      );
+    }
+
     const isAdvisoryMasked = (pred.status as any)?.mask_advisory === true || ((pred.status as any)?.expert_review === "pending" && !pred.recommendation?.immediate_action);
     const rawImageUrl = pred.image?.raw_path ? `http://localhost:8000/${pred.image.raw_path}` : null;
     const processedImageUrl = pred.image?.processed_path ? `http://localhost:8000/${pred.image.processed_path}` : null;
@@ -190,9 +232,19 @@ export default function PredictionResultPage() {
             </div>
           ) : pred.expert_review_data && pred.expert_review_data.farmer_guidance ? (
             <div className="advisory-panel" style={{ marginTop: "2rem" }}>
-              <h3 style={{ color: "#0369a1", display: "flex", alignItems: "center", gap: "0.5rem", margin: "0 0 1rem 0" }}>
-                <CheckCircle2 size={24} /> Specialist Verified Advisory Plan
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h3 style={{ color: "#0369a1", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+                  <CheckCircle2 size={24} /> Specialist Verified Advisory Plan
+                </h3>
+                <button 
+                  onClick={() => playAudio(pred.expert_review_data.farmer_guidance)}
+                  disabled={isPlaying}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#e0f2fe', border: '1px solid #0ea5e9', color: '#0369a1', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isPlaying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                >
+                  {isPlaying ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                  {isPlaying ? "Playing Audio..." : "Listen to Advisory"}
+                </button>
+              </div>
               <div style={{ background: "#f0fdf4", border: "1px solid #86efac", padding: "1.5rem", borderRadius: "12px" }}>
                 <h4 style={{ color: "#15803d", margin: "0 0 1rem 0" }}>Agronomist Guidance</h4>
                 <p style={{ margin: 0, color: "#166534", fontSize: "1rem", whiteSpace: "pre-wrap", lineHeight: "1.6" }}>
@@ -205,7 +257,29 @@ export default function PredictionResultPage() {
             </div>
           ) : pred.recommendation && Object.keys(pred.recommendation).length > 0 ? (
             <div className="advisory-panel" style={{ marginTop: "2rem" }}>
-              <h3>LLM Advisory Plan</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h3 style={{ margin: 0 }}>LLM Advisory Plan</h3>
+                <button 
+                  onClick={() => playAudio(
+                    [
+                      pred.recommendation?.immediate_action,
+                      pred.recommendation?.action,
+                      pred.recommendation?.fertilizer,
+                      pred.recommendation?.treatment,
+                      pred.recommendation?.pesticide,
+                      pred.recommendation?.prevention,
+                      pred.recommendation?.prevention_tips,
+                      pred.recommendation?.monitoring,
+                      pred.recommendation?.irrigation
+                    ].filter(Boolean).join(". ")
+                  )}
+                  disabled={isPlaying}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ecfdf5', border: '1px solid #10b981', color: '#047857', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isPlaying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                >
+                  {isPlaying ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                  {isPlaying ? "Playing Audio..." : "Listen to Advisory"}
+                </button>
+              </div>
               <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
                 {(pred.recommendation.immediate_action || pred.recommendation.action || pred.recommendation.fertilizer) && (
                   <div style={{ background: "#fdf2f2", padding: "1.25rem", borderRadius: "12px", border: "1px solid #fca5a5" }}>
@@ -265,6 +339,28 @@ export default function PredictionResultPage() {
             <p style={{ margin: 0 }}>The system could not diagnose this condition with sufficient confidence. Your crop scan has been routed to an agricultural specialist to verify the issue and ensure safe recommendations. You will be notified once verified.</p>
           </div>
         )}
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: '#334155' }}>Diagnostic Status</h3>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: primary.status?.pipeline === 'completed' ? '#dcfce7' : '#fef9c3', color: primary.status?.pipeline === 'completed' ? '#166534' : '#854d0e' }}>
+                Pipeline: {primary.status?.pipeline || "Unknown"}
+              </span>
+              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: primary.status?.expert_review === 'completed' ? '#dbeafe' : '#f1f5f9', color: primary.status?.expert_review === 'completed' ? '#1e40af' : '#475569' }}>
+                Expert Review: {primary.status?.expert_review || "Not Requested"}
+              </span>
+            </div>
+          </div>
+          {primary.status?.expert_review === "not_requested" && (
+            <button 
+              onClick={handleRequestExpert} 
+              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)' }}
+            >
+              Request Expert Review
+            </button>
+          )}
+        </div>
+
 
         {primary.historical_images && primary.historical_images.length > 0 && (
           <div style={{ marginBottom: "2rem", padding: "1.5rem", background: "#f8fafc", borderRadius: "12px", border: "1px solid #cbd5e1" }}>

@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { getFarm } from '../api/farm';
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Upload, Camera, MapPin, Globe, AlertCircle, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
+import imageCompression from 'browser-image-compression';
+import { get, set, update } from 'idb-keyval';
 import "../styles/ScanPage.css";
 
 export default function ScanPage() {
@@ -29,16 +31,28 @@ export default function ScanPage() {
   const plots = farmData?.plots || [];
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
-      if (selected.size > 10 * 1024 * 1024) {
-        setError("File size exceeds 10MB limit.");
+      if (selected.size > 24 * 1024 * 1024) {
+        setError("File size exceeds 24MB limit.");
         return;
       }
-      setFile(selected);
-      setPreviewUrl(URL.createObjectURL(selected));
-      setError(null);
+      
+      try {
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1080,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(selected, options);
+        setFile(compressedFile);
+        setPreviewUrl(URL.createObjectURL(compressedFile));
+        setError(null);
+      } catch (error) {
+        console.error("Image compression error:", error);
+        setError("Failed to compress image.");
+      }
     }
   };
 
@@ -52,9 +66,18 @@ const handleSubmit = async (e: React.FormEvent) => {
     setLoading(true);
     setError(null);
 
+    if (!navigator.onLine) {
+      const offlineData = { id: Date.now(), file, location, plotId, lat, lon, language };
+      await update('offline_scans', (val: any) => val ? [...val, offlineData] : [offlineData]);
+      alert("You are offline. Scan saved locally and will sync when you regain connection.");
+      setLoading(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("location", location);
+    if (plotId) formData.append("plot_id", plotId.toString());
     formData.append("lat", lat);
     formData.append("lon", lon);
     formData.append("language", language);
@@ -74,13 +97,50 @@ const handleSubmit = async (e: React.FormEvent) => {
       }
 
       const result = await response.json();
-      // Match the backend key 'prediction_id' instead of 'id'
       navigate(`/predictions/${result.prediction_id}/processing`);
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred during analysis.");
+      if (err.message === "Failed to fetch") {
+        const offlineData = { id: Date.now(), file, location, plotId, lat, lon, language };
+        await update('offline_scans', (val: any) => val ? [...val, offlineData] : [offlineData]);
+        alert("Network error. Scan saved locally and will sync when you regain connection.");
+      } else {
+        setError(err.message || "An unexpected error occurred during analysis.");
+      }
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleOnline = async () => {
+      const scans = await get('offline_scans') || [];
+      if (scans.length > 0) {
+        alert(`Syncing ${scans.length} offline scans...`);
+        for (const scan of scans) {
+          const formData = new FormData();
+          formData.append("file", scan.file);
+          formData.append("location", scan.location);
+          if (scan.plotId) formData.append("plot_id", scan.plotId.toString());
+          formData.append("lat", scan.lat);
+          formData.append("lon", scan.lon);
+          formData.append("language", scan.language);
+          try {
+            await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/predict`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData,
+            });
+          } catch (e) {
+            console.error("Failed to sync offline scan", e);
+          }
+        }
+        await set('offline_scans', []);
+        alert("Offline scans synchronized successfully!");
+        navigate("/history");
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [token, navigate]);
   
   return (
     <div className="scan-page">

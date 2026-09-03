@@ -12,18 +12,19 @@ class PredictionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     prediction_id: int | None = None
-    request_id: str
-    user: dict[str, Any]
-    image: dict[str, Any]
-    crop: dict[str, Any]
-    disease: dict[str, Any]
-    severity: dict[str, Any]
-    pests: list[dict[str, Any]]
-    pest_classification: dict[str, Any]
-    weather: dict[str, Any]
-    recommendation: dict[str, Any]
-    notes: list[str]
-    status: dict[str, Any]
+    request_id: str | None = None
+    user: dict[str, Any] | None = None
+    image: dict[str, Any] | None = None
+    crop: dict[str, Any] | None = None
+    disease: dict[str, Any] | None = None
+    severity: dict[str, Any] | None = None
+    pests: list[dict[str, Any]] | None = None
+    pest_classification: dict[str, Any] | None = None
+    weather: dict[str, Any] | None = None
+    recommendation: dict[str, Any] | None = None
+    notes: list[str] | None = None
+    status: dict[str, Any] | None = None
+    error: str | None = None
     expert_review_data: dict[str, Any] | None = None
     historical_images: list[dict[str, str]] | None = None
     follow_up: dict[str, Any] | None = None

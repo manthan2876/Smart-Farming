@@ -5,7 +5,9 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, BackgroundTasks
+from fastapi import APIRouter
+from app.core.limiter import limiter
+from fastapi import Depends, File, Form, HTTPException, UploadFile, status, BackgroundTasks, Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -54,44 +56,27 @@ def run_background_pipeline(
         from app.api.endpoints.predict import _public_result
         import time
         
-        def _update_partial(ctx):
-            p = db.query(Prediction).get(prediction_id)
-            if p:
-                partial = _public_result(ctx)
-                if "image" in partial and isinstance(partial["image"], dict):
-                    partial["image"]["raw_path"] = relative_image_path
-                if "status" not in partial:
-                    partial["status"] = {}
-                partial["status"]["pipeline"] = "processing"
-                p.result = partial
-                db.commit()
-
-        # Step 1
-        context = _PREPROCESSOR.process(context)
-        _update_partial(context) # Artificial delay for UI visualization
+        # Execute pipeline in memory without saving partial results to the database
+        # (Preprocessing was already successfully completed synchronously)
         
         if context["status"]["preprocessing"] == "completed":
             # Step 2: Crop
             context = predict_crop(context, _CONFIG)
             context["status"]["crop_identification"] = "completed"
-            _update_partial(context)
 
             # Step 3: Disease
             context = route_to_disease_model(context, _CONFIG)
             context = predict_disease(context, _CONFIG)
             context = estimate_severity(context)
             context["status"]["disease_classification"] = "completed"
-            _update_partial(context)
 
             # Step 4: Pest & Weather
             context = predict_pest(context, _CONFIG)
             context = fetch_weather(context, _CONFIG)
             context["status"]["pest_detection"] = "completed"
-            _update_partial(context)
 
             # Step 5: Advisory
             context = generate_recommendation(context, _CONFIG)
-            _update_partial(context)
 
         result = context
         preprocessing_status = result.get("status", {}).get("preprocessing")
@@ -105,11 +90,11 @@ def run_background_pipeline(
             public_result = _public_result(result)
             
             # Determine status via comprehensive rules
-            d_conf = public_result.get("disease", {}).get("confidence", 0.0)
-            c_conf = public_result.get("crop", {}).get("confidence", 0.0)
-            sev_pct = public_result.get("severity", {}).get("percent", 0.0)
+            d_conf = public_result.get("disease", {}).get("confidence", 0.0) or 0.0
+            c_conf = public_result.get("crop", {}).get("confidence", 0.0) or 0.0
+            sev_pct = public_result.get("severity", {}).get("percent", 0.0) or 0.0
             pests = public_result.get("pests", [])
-            img_qual = public_result.get("image", {}).get("quality_score", 1.0)
+            img_qual = public_result.get("image", {}).get("quality_score", 1.0) or 1.0
             all_probs = public_result.get("disease", {}).get("all_probs", {})
             advisory = public_result.get("recommendation", {})
             
@@ -118,45 +103,6 @@ def run_background_pipeline(
             res_status["expert_review"] = "not_requested"
             res_status["pipeline"] = "completed"
             
-            requires_expert = False
-            review_reasons = []
-            mask_advisory = False
-            
-            # Rule 1: Confidence
-            if d_conf < 0.70:
-                requires_expert = True
-                mask_advisory = True
-                review_reasons.append(f"Low disease confidence ({d_conf})")
-            if c_conf > 0.0 and c_conf < 0.75:
-                requires_expert = True
-                mask_advisory = True
-                review_reasons.append(f"Borderline crop identification ({c_conf})")
-                
-            # Rule 3: Advisory Issues
-            if not advisory or "error" in advisory:
-                requires_expert = True
-                mask_advisory = True
-                review_reasons.append("Incomplete or unsafe LLM advisory generated")
-                
-            # Rule 4: Image Quality & Mixed Pathologies
-            if img_qual < 0.6:
-                requires_expert = True
-                mask_advisory = True
-                review_reasons.append("Marginal image quality")
-                
-            if all_probs:
-                high_probs = [v for k, v in all_probs.items() if v > 0.3]
-                if len(high_probs) >= 2:
-                    requires_expert = True
-                    mask_advisory = True
-                    review_reasons.append("Mixed pathologies detected (multiple >0.3)")
-                    
-            if requires_expert:
-                new_status = "pending_expert_review"
-                res_status["expert_review"] = "pending"
-                res_status["expert_reason"] = "; ".join(review_reasons)
-                res_status["mask_advisory"] = mask_advisory
-                
             public_result["status"] = res_status
             
         # Update Database Record
@@ -209,7 +155,9 @@ def _public_result(context: dict[str, Any]) -> dict[str, Any]:
         422: {"model": ErrorResponse},
     },
 )
+@limiter.limit('20/minute')
 async def predict(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     location: str = Form(default="Unknown"),
@@ -257,6 +205,17 @@ async def predict(
             language=language,
         )
         
+        # Fast synchronous image quality check
+        from app.pipeline import _PREPROCESSOR
+        context = _PREPROCESSOR.process(context)
+        if context["status"]["preprocessing"] != "completed":
+            if upload_path.exists():
+                upload_path.unlink()
+            raise HTTPException(
+                status_code=400,
+                detail="Image is too blurry or has poor lighting. Please retake the photo."
+            )
+            
         # Create placeholder prediction record
         placeholder_result = {
             "request_id": str(uuid.uuid4()),
@@ -349,7 +308,9 @@ async def prediction_detail(
     return result
 
 @router.post("/predictions/{prediction_id}/rescan", response_model=PredictionResponse)
+@limiter.limit('20/minute')
 async def rescan_prediction(
+    request: Request,
     prediction_id: int,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -408,6 +369,17 @@ async def rescan_prediction(
             language=language,
         )
         
+        # Fast synchronous image quality check
+        from app.pipeline import _PREPROCESSOR
+        context = _PREPROCESSOR.process(context)
+        if context["status"]["preprocessing"] != "completed":
+            if upload_path.exists():
+                upload_path.unlink()
+            raise HTTPException(
+                status_code=400,
+                detail="Image is too blurry or has poor lighting. Please retake the photo."
+            )
+            
         # Create placeholder prediction record
         placeholder_result = {
             "request_id": str(uuid.uuid4()),
@@ -438,3 +410,46 @@ async def rescan_prediction(
         return placeholder_result
     finally:
         await file.close()
+
+@router.get("/job/{job_id}", response_model=dict)
+@limiter.limit("20/minute")
+async def get_job_status(request: Request, job_id: str):
+    job = request.app.state.arq_pool.job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    status = await job.status()
+    import arq.jobs
+    if status == arq.jobs.JobStatus.complete:
+        return {"status": "complete"}
+    elif status == arq.jobs.JobStatus.not_found:
+        raise HTTPException(status_code=404, detail="Job not found")
+    else:
+        return {"status": "processing"}
+
+@router.post("/predictions/{prediction_id}/request-expert")
+@limiter.limit('5/minute')
+async def request_expert_review(
+    request: Request,
+    prediction_id: int,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    from app.models import Prediction
+    pred = session.query(Prediction).filter(Prediction.id == prediction_id, Prediction.user_id == user_id).first()
+    if not pred:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+        
+    res = dict(pred.result)
+    status_block = res.get("status", {})
+    if status_block.get("expert_review") in ["pending", "completed"]:
+        raise HTTPException(status_code=400, detail="Expert review already requested or completed")
+        
+    status_block["expert_review"] = "pending"
+    status_block["expert_reason"] = "Requested manually by farmer"
+    res["status"] = status_block
+    
+    pred.result = res
+    pred.status = "pending_expert_review"
+    session.commit()
+    
+    return {"status": "Expert review requested successfully"}

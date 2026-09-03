@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter
+from app.core.limiter import limiter
+from fastapi import Depends, HTTPException, status, Response, Request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.api.deps import hash_password, verify_password, create_token_pair, decode_token
@@ -83,8 +85,9 @@ async def register(
 
 
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit("5/minute")
 async def login(
-    payload: LoginRequest, response: Response, session: Session = Depends(get_session)
+    request: Request, payload: LoginRequest, response: Response, session: Session = Depends(get_session)
 ) -> AuthResponse:
     try:
         user = find_user_by_identifier(session, payload.identifier)

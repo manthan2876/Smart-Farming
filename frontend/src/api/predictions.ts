@@ -53,3 +53,9 @@ export async function rescan(id: number | string, file: File, token: string, plo
   body.append("file", file);
   return request<Prediction>(`/predictions/${id}/rescan`, { method: "POST", body }, token);
 }
+
+export async function requestExpertReview(id: string | number, token: string) {
+  return request(`/predictions/${id}/request-expert`, {
+    method: "POST"
+  }, token);
+}

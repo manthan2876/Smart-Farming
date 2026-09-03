@@ -13,6 +13,7 @@
     "@vitejs/plugin-react": "latest",
     "browser-image-compression": "^2.0.2",
     "es-toolkit": "^1.52.0",
+    "idb-keyval": "^6.3.0",
     "lucide-react": "latest",
     "motion": "^13.1.1",
     "react": "latest",

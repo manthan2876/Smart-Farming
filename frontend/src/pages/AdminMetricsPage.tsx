@@ -10,6 +10,27 @@ import { Loader2 } from "lucide-react";
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AdminMetricsPage() {
+
+  const handleExportMLOps = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/admin/mlops/export", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "dataset_export.zip";
+        a.click();
+      } else {
+        alert("Export failed");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const { token } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ["admin_metrics"],

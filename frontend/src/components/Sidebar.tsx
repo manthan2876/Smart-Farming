@@ -47,12 +47,45 @@ export default function Sidebar() {
 
   return (
     <aside className="app-sidebar">
-      <div className="sidebar-header">
-        <div className="logo-icon">🌿</div>
-        <div className="logo-text">
-          <h2>Smart Farming</h2>
-          <span className="user-role-badge">{user?.role || "Farmer"}</span>
+      <div className="sidebar-header" style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="logo-icon">🌿</div>
+          <div className="logo-text">
+            <h2>Smart Farming</h2>
+            <span className="user-role-badge">{user?.role || "Farmer"}</span>
+          </div>
         </div>
+        
+        <div className="notification-bell" style={{ position: 'relative', cursor: 'pointer', color: 'var(--muted)' }} onClick={() => setShowNotifications(!showNotifications)}>
+          <Bell size={24} />
+          {unreadCount > 0 && (
+            <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: 'white', borderRadius: '50%', width: 16, height: 16, fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+              {unreadCount}
+            </span>
+          )}
+        </div>
+
+        {showNotifications && (
+          <div className="notifications-dropdown" style={{ position: 'absolute', top: '100%', right: 0, width: '280px', background: 'white', border: '1px solid var(--line)', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50, maxHeight: '400px', overflowY: 'auto' }}>
+            <div style={{ padding: '1rem', borderBottom: '1px solid var(--line)', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Notifications</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--green)', cursor: 'pointer' }} onClick={() => { alerts.filter(a => !a.is_read).forEach(a => markRead(a.id)); setShowNotifications(false); }}>Mark all read</span>
+            </div>
+            {alerts.length === 0 ? (
+              <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>No new alerts</div>
+            ) : (
+              alerts.map((alert: any) => (
+                <div key={alert.id} style={{ padding: '1rem', borderBottom: '1px solid var(--line)', background: alert.is_read ? 'white' : '#f0fdf4' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.25rem', color: 'var(--ink)' }}>{alert.title}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>{alert.body}</div>
+                  {!alert.is_read && (
+                    <button onClick={() => markRead(alert.id)} style={{ fontSize: '0.75rem', background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', padding: 0 }}>Mark as read</button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       <nav className="sidebar-nav">
