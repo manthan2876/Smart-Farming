@@ -90,7 +90,9 @@ from pydantic import BaseModel
 import json
 from pathlib import Path
 
-CONFIG_PATH = Path("data/config.json")
+import yaml
+
+CONFIG_PATH = Path("config.yaml")
 
 class ConfigPayload(BaseModel):
     crop_routing_threshold: float
@@ -99,8 +101,12 @@ class ConfigPayload(BaseModel):
 def get_config():
     if not CONFIG_PATH.exists():
         return {"crop_routing_threshold": 0.75, "expert_escalation_cutoff": 0.70}
-    with CONFIG_PATH.open("r") as f:
-        return json.load(f)
+    with CONFIG_PATH.open("r", encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+        return {
+            "crop_routing_threshold": data.get("thresholds", {}).get("crop_confidence", 0.75),
+            "expert_escalation_cutoff": data.get("thresholds", {}).get("disease_confidence", 0.70)
+        }
 
 @router.get("/config")
 async def read_config(is_admin: bool = Depends(require_admin_role)):
@@ -108,11 +114,22 @@ async def read_config(is_admin: bool = Depends(require_admin_role)):
 
 @router.put("/config")
 async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require_admin_role)):
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    config = payload.model_dump()
-    with CONFIG_PATH.open("w") as f:
-        json.dump(config, f, indent=2)
-    return config
+    if not CONFIG_PATH.exists():
+        raise HTTPException(status_code=404, detail="config.yaml not found")
+        
+    with CONFIG_PATH.open("r", encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+        
+    if "thresholds" not in data:
+        data["thresholds"] = {}
+        
+    data["thresholds"]["crop_confidence"] = payload.crop_routing_threshold
+    data["thresholds"]["disease_confidence"] = payload.expert_escalation_cutoff
+    
+    with CONFIG_PATH.open("w", encoding='utf-8') as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        
+    return get_config()
 
 @router.delete("/blobs")
 async def purge_blobs(is_admin: bool = Depends(require_admin_role), session: Session = Depends(get_session)):
