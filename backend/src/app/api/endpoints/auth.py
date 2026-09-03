@@ -75,7 +75,7 @@ async def register(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=True,
+        secure=False,
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
@@ -104,7 +104,7 @@ async def login(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=True,
+        secure=False,
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
@@ -126,8 +126,14 @@ async def refresh(request: Request, response: Response) -> dict[str, str | int]:
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=True,
+        secure=False,
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
     return tokens
+
+
+@router.post("/logout", response_model=dict[str, str])
+async def logout(response: Response) -> dict[str, str]:
+    response.delete_cookie("refresh_token", httponly=True, secure=False, samesite="lax")
+    return {"status": "success"}

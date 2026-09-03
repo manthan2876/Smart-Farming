@@ -7,14 +7,16 @@ import "../styles/LandingPage.css"; // Reuse navbar
 export default function AboutPage() {
   return (
     <div className="about-page">
+      {/* Top Navbar */}
       <nav className="landing-navbar">
         <div className="brand">
           <span className="brand-name">Smart Farming</span>
         </div>
         <div className="nav-actions">
+          <Link to="/">Home</Link>
           <Link to="/about">About</Link>
           <Link to="/services">Services</Link>
-          <Link to="/crops">Technology</Link>
+          <Link to="/crops">Supported Crops</Link>
           <Link to="/auth/login" className="btn-primary">Sign In</Link>
         </div>
       </nav>

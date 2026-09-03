@@ -2,12 +2,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
-import { MapPin, Save, CheckCircle2, Sprout } from "lucide-react";
+import { MapPin, Save, CheckCircle2, Sprout, AlertTriangle, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import "../styles/FarmSettingsPage.css";
 
 export default function FarmSettingsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const queryClient = useQueryClient();
 
   const [farmName, setFarmName] = useState("");
@@ -17,6 +17,10 @@ export default function FarmSettingsPage() {
   const [lon, setLon] = useState<number>(0);
   const [cropHistory, setCropHistory] = useState("");
   const [successMessage, setSuccessMessage] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   const { data: farmData, isLoading } = useQuery({
     queryKey: ["farmSettings"],
@@ -48,6 +52,24 @@ export default function FarmSettingsPage() {
       setTimeout(() => setSuccessMessage(false), 4000);
     },
   });
+
+
+  const handleDeleteData = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    setIsDeleting(true);
+    try {
+      await request("/admin/purge", { method: "DELETE" }, token!);
+      alert("Database has been wiped successfully.");
+      setShowDeleteModal(false);
+      setDeleteConfirmText("");
+      queryClient.clear();
+      window.location.reload();
+    } catch (err: any) {
+      alert("Failed to delete database: " + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,6 +180,63 @@ export default function FarmSettingsPage() {
           <Save size={18} /> {mutation.isPending ? "Saving..." : "Save Farm Configuration"}
         </button>
       </motion.form>
+
+      {user?.role === "admin" && (
+        <motion.div 
+          className="admin-danger-zone card"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{ marginTop: "2rem", border: "1px solid var(--orange)", background: "#fffdfa" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--orange)", marginBottom: "1rem" }}>
+            <AlertTriangle size={20} />
+            <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Admin Danger Zone</h2>
+          </div>
+          <p style={{ fontSize: "0.9rem", color: "var(--muted)", marginBottom: "1.5rem" }}>
+            As an administrator, you have the ability to purge all data from the database. This action is irreversible and will delete all predictions, feedback, farm records, and historical scans.
+          </p>
+          <button 
+            type="button" 
+            className="btn btn-primary" 
+            style={{ background: "#b44c3c" }}
+            onClick={() => setShowDeleteModal(true)}
+          >
+            <Trash2 size={16} /> Delete Whole Database
+          </button>
+        </motion.div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal-backdrop" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="modal-content card" style={{ maxWidth: "400px", width: "90%", padding: "2rem" }}>
+            <h3 style={{ color: "#b44c3c", marginTop: 0 }}>Confirm Database Purge</h3>
+            <p style={{ fontSize: "0.9rem", color: "var(--muted)" }}>
+              This will completely wipe all operational data. To confirm, please type <strong>DELETE</strong> below.
+            </p>
+            <input 
+              type="text" 
+              className="form-control" 
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              style={{ marginBottom: "1rem" }}
+            />
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+              <button className="btn" onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}>Cancel</button>
+              <button 
+                className="btn btn-primary" 
+                style={{ background: "#b44c3c", opacity: deleteConfirmText !== "DELETE" ? 0.5 : 1 }}
+                disabled={deleteConfirmText !== "DELETE" || isDeleting}
+                onClick={handleDeleteData}
+              >
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

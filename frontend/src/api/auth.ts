@@ -47,3 +47,9 @@ export async function updateProfile(payload: Partial<Profile>, token: string) {
     token,
   );
 }
+
+export async function logout(): Promise<{status: string}> {
+  return request<{status: string}>("/auth/logout", {
+    method: "POST",
+  });
+}

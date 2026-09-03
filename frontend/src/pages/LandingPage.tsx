@@ -12,9 +12,10 @@ export default function LandingPage() {
           <span className="brand-name">Smart Farming</span>
         </div>
         <div className="nav-actions">
+          <Link to="/">Home</Link>
           <Link to="/about">About</Link>
           <Link to="/services">Services</Link>
-          <Link to="/crops">Technology</Link>
+          <Link to="/crops">Supported Crops</Link>
           <Link to="/auth/login" className="btn-primary">Sign In</Link>
         </div>
       </nav>
@@ -46,7 +47,7 @@ export default function LandingPage() {
             </p>
             <div className="hero-buttons">
               <Link to="/auth/register" className="wix-btn wix-btn-neon">Start A Demo</Link>
-              <Link to="/auth/login" className="wix-btn wix-btn-outline">Learn More</Link>
+              <Link to="/services" className="wix-btn wix-btn-outline">Learn More</Link>
             </div>
           </div>
         </div>
@@ -54,11 +55,11 @@ export default function LandingPage() {
         <div className="hero-right">
           <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop" alt="Farmer in field" />
           <div className="hero-stats-overlay">
-            <div className="stat-item">
+            <div className="stat-item-landing">
               <h4><span>[01]</span> 32% Higher Yields</h4>
               <p>From every treated acre</p>
             </div>
-            <div className="stat-item">
+            <div className="stat-item-landing">
               <h4><span>[02]</span> 45% Less Water Use</h4>
               <p>Per ton of crop</p>
             </div>

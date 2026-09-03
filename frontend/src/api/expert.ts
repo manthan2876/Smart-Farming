@@ -39,10 +39,13 @@ export async function getExpertReview(reviewId: number, token: string) {
 export async function submitExpertReview(
   reviewId: number,
   payload: {
-    action: "Approve" | "Correct Diagnosis" | "Request New Photo";
+    action: "Approve" | "Override / Correct Findings" | "Request Rescan";
     corrected_disease?: string;
+    corrected_severity?: string;
+    pest_verified?: boolean;
     farmer_guidance?: string;
     internal_note?: string;
+    add_to_retraining?: boolean;
   },
   token: string
 ) {

@@ -18,7 +18,7 @@ export async function request<T>(
     if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
-    return fetch(`${API_URL}${path}`, { ...options, headers });
+    return fetch(`${API_URL}${path}`, { credentials: 'include', ...options, headers });
   };
 
   let response = await execute(token);

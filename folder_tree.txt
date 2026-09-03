@@ -1,5 +1,5 @@
-Smart-Farming/ (98760 files)
-    ├── Datasets/ (98459 files)
+Smart-Farming/ (98763 files)
+    ├── Datasets/ (98458 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
                 ├── Cotton/ (288 files)
@@ -151,7 +151,7 @@ Smart-Farming/ (98760 files)
                     ├── Mosaic Virus/ (14 files)
                     ├── Septoria/ (45 files)
                     ├── Yellow Curl Virus/ (21 files)
-        ├── final_combined_datasets/ (34553 files)
+        ├── final_combined_datasets/ (34552 files)
             ├── CLCE/ (1373 files)
                 ├── ALS/ (173 files)
                 ├── BB/ (218 files)
@@ -284,15 +284,15 @@ Smart-Farming/ (98760 files)
         ├── smart_farming_roadmap_v2.md
         ├── smart_farming_roadmap_v2.pdf
         ├── ui-redesign-plan-cursor.md
-    ├── backend/ (142 files)
+    ├── backend/ (145 files)
         ├── backend.egg-info/ (5 files)
             ├── PKG-INFO
             ├── SOURCES.txt
             ├── dependency_links.txt
             ├── requires.txt
             ├── top_level.txt
-        ├── data/ (45 files)
-            ├── processed/ (21 files)
+        ├── data/ (47 files)
+            ├── processed/ (22 files)
                 ├── 042b30782140498998e3a636a74866fd.jpg
                 ├── 06262c114c1d4b72bb38518e3853c802.jpg
                 ├── 0c82517c083447ca87f519c310f1a930.jpg
@@ -314,7 +314,8 @@ Smart-Farming/ (98760 files)
                 ├── c22ef544328041159b88e3ca6d4e9207.jpg
                 ├── f52d99916b8e4d5894f266b17d3609a6.jpeg
                 ├── fa96823382904946a02ef5d3518fca61.jpg
-            ├── uploads/ (24 files)
+                ├── fcae3399c41e40829dec9e75c8c0c1df.jpeg
+            ├── uploads/ (25 files)
                 ├── 042b30782140498998e3a636a74866fd.jpg
                 ├── 06262c114c1d4b72bb38518e3853c802.jpg
                 ├── 0c82517c083447ca87f519c310f1a930.jpg
@@ -339,6 +340,7 @@ Smart-Farming/ (98760 files)
                 ├── c22ef544328041159b88e3ca6d4e9207.jpg
                 ├── f52d99916b8e4d5894f266b17d3609a6.jpeg
                 ├── fa96823382904946a02ef5d3518fca61.jpg
+                ├── fcae3399c41e40829dec9e75c8c0c1df.jpeg
         ├── src/ (79 files)
             ├── app/ (74 files)
                 ├── api/ (15 files)
@@ -451,14 +453,15 @@ Smart-Farming/ (98760 files)
         ├── package-lock.json
         ├── pyproject.toml
         ├── requirements.txt
+        ├── seed_users.py
         ├── uv.lock
     ├── data/ (0 files)
         ├── processed/ (0 files)
         ├── uploads/ (0 files)
-    ├── frontend/ (64 files)
+    ├── frontend/ (65 files)
         ├── public/ (1 files)
             ├── aphids_tomato.jpeg
-        ├── src/ (51 files)
+        ├── src/ (52 files)
             ├── api/ (8 files)
                 ├── admin.ts
                 ├── auth.ts
@@ -501,11 +504,12 @@ Smart-Farming/ (98760 files)
                 ├── ScanPage.tsx
                 ├── ServicesPage.tsx
                 ├── WeatherPage.tsx
-            ├── styles/ (12 files)
+            ├── styles/ (13 files)
                 ├── AboutPage.css
                 ├── AdminPages.css
                 ├── AuthPages.css
                 ├── DashboardPage.css
+                ├── ExpertReviewPage.css
                 ├── FarmSettingsPage.css
                 ├── HistoryPage.css
                 ├── LandingPage.css

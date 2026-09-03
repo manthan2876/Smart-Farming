@@ -133,7 +133,7 @@
   gap: 2rem;
   background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
 }
-.stat-item {
+.stat-item-landing {
   background: rgba(0, 0, 0, 0.6);
   padding: 1.5rem;
   border-radius: 8px;
@@ -142,7 +142,7 @@
   border: 1px solid rgba(255,255,255,0.1);
   flex: 1;
 }
-.stat-item h4 {
+.stat-item-landing h4 {
   color: #fff;
   font-size: 1.25rem;
   margin: 0 0 0.5rem 0;
@@ -151,12 +151,12 @@
   align-items: baseline;
   text-transform: none;
 }
-.stat-item h4 span {
+.stat-item-landing h4 span {
   font-family: monospace;
   font-size: 1rem;
   color: #e1fc84;
 }
-.stat-item p { font-size: 0.9rem; margin: 0; opacity: 0.9; }
+.stat-item-landing p { font-size: 0.9rem; margin: 0; opacity: 0.9; }
 
 /* Impact Section */
 .impact-section {
@@ -166,12 +166,13 @@
 }
 .impact-title {
   padding: 4rem;
-  font-size: 0.85rem;
+  font-size: 4rem;
   text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  line-height: 1;
   border-right: 2px solid #000;
-  font-family: monospace;
+  display: flex;
+  align-items: center;
 }
 .impact-content { padding: 4rem; }
 .impact-content h2 {

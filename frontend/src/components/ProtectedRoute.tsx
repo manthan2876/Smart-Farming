@@ -4,9 +4,10 @@ import { useAuth } from "../context/AuthContext";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   adminOnly?: boolean;
+  strictAdminOnly?: boolean;
 }
 
-export default function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, adminOnly = false, strictAdminOnly = false }: ProtectedRouteProps) {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   // Show a loading state while checking token/session status
@@ -25,6 +26,10 @@ export default function ProtectedRoute({ children, adminOnly = false }: Protecte
   }
 
   // If route requires admin rights and user is not an admin, redirect to dashboard
+  if (strictAdminOnly && user?.role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   if (adminOnly && user?.role !== "admin" && user?.role !== "expert") {
     return <Navigate to="/dashboard" replace />;
   }

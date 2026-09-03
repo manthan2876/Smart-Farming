@@ -47,7 +47,7 @@ export default function App() {
         <Route path="/weather" element={<WeatherPage />} />
 
         {/* Admin Only Routes */}
-        <Route path="/admin/metrics" element={<ProtectedRoute adminOnly><AdminMetricsPage /></ProtectedRoute>} />
+        <Route path="/admin/metrics" element={<ProtectedRoute strictAdminOnly><AdminMetricsPage /></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute adminOnly><AdminFeedbackPage /></ProtectedRoute>} />
         <Route path="/admin/expert" element={<ProtectedRoute adminOnly><ExpertQueuePage /></ProtectedRoute>} />
         <Route path="/admin/expert/:id" element={<ProtectedRoute adminOnly><ExpertReviewPage /></ProtectedRoute>} />

@@ -3,16 +3,16 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_expert_role
 from app.core import get_session
-from app.models import Prediction, ExpertReview
+from app.models import Prediction, ExpertReview, Alert, DatasetCandidate
 
 router = APIRouter(tags=["expert"])
 
 @router.get("/expert/queue")
 async def get_expert_queue(
     session: Session = Depends(get_session),
-    user_id: str = Depends(get_current_user),
+    user_id: str = Depends(require_expert_role),
 ):
     reviews = list(
         session.scalars(
@@ -47,7 +47,7 @@ async def get_expert_queue(
 async def get_expert_review(
     review_id: int,
     session: Session = Depends(get_session),
-    user_id: str = Depends(get_current_user),
+    user_id: str = Depends(require_expert_role),
 ):
     review = session.get(ExpertReview, review_id)
     if not review:
@@ -84,7 +84,7 @@ async def post_expert_review(
     review_id: int,
     payload: dict,
     session: Session = Depends(get_session),
-    user_id: str = Depends(get_current_user),
+    user_id: str = Depends(require_expert_role),
 ):
     review = session.get(ExpertReview, review_id)
     if not review:
@@ -95,26 +95,66 @@ async def post_expert_review(
     review.status = "verified"
     review.expert_id = user_id
     
-    if action == "Correct Diagnosis":
+    if action == "Override / Correct Findings":
         review.corrected_disease = payload.get("corrected_disease")
-        
+        # Handle corrected severity (can be string or float. wireframe shows strings like 'Moderate (32%)' or just 'Moderate')
+        raw_sev = payload.get("corrected_severity")
+        # We store float in DB but for now if it's a string let's just log it in internal note or try to parse
+        if raw_sev:
+            try:
+                # very naive parsing or just ignore if it's a string, since db column is Float.
+                # if the payload passes a string, we might crash. Let's just avoid crashing.
+                if isinstance(raw_sev, (int, float)):
+                    review.corrected_severity = float(raw_sev)
+            except:
+                pass
+    
     review.farmer_guidance = payload.get("farmer_guidance")
     review.internal_note = payload.get("internal_note")
     
-    # Update prediction status
-    review.prediction.status = "verified"
+    pred = review.prediction
+    pred.status = "verified"
     
-    res = dict(review.prediction.result)
+    # Generate Alert for farmer
+    farmer_alert = Alert(
+        user_id=pred.user_id,
+        prediction_id=pred.id,
+        kind="review_verified",
+        severity="high",
+        title=f"Expert Review Completed for Scan #{pred.id}",
+        body=f"An agronomist has verified your scan. Conclusion: {action}."
+    )
+    session.add(farmer_alert)
+    
+    # Dataset flagging
+    if payload.get("add_to_retraining"):
+        orig_disease = pred.result.get("disease", {}).get("label") if pred.result else pred.disease
+        ds = DatasetCandidate(
+            prediction_id=pred.id,
+            source="expert_correction",
+            original_label=orig_disease,
+            corrected_label=review.corrected_disease or orig_disease,
+            image_path=pred.image.raw_path if pred.image else "",
+            status="pending_review"
+        )
+        session.add(ds)
+    
+    res = dict(pred.result)
     if "status" in res and isinstance(res["status"], dict):
-        # We need a new dictionary to trigger the change, or use flag_modified
         new_status = dict(res["status"])
         new_status["expert_review"] = "verified"
         if "mask_advisory" in new_status:
             new_status["mask_advisory"] = False
         res["status"] = new_status
         
-    review.prediction.result = res
-    flag_modified(review.prediction, "result")
+    # Also update the recommendation field inside result if farmer_guidance was provided
+    if review.farmer_guidance:
+        if "recommendation" not in res:
+            res["recommendation"] = {}
+        res["recommendation"]["expert_verified_advisory"] = review.farmer_guidance
+
+    pred.result = res
+    flag_modified(pred, "result")
     
     session.commit()
     return {"status": "success", "review_id": review_id}

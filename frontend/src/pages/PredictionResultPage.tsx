@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { getPrediction } from "../api/predictions";
 import { request } from "../api/client";
 import { motion } from "motion/react";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Loader2, ShieldAlert, CheckCircle2 } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import "../styles/ResultPage.css";
 import "../styles/DashboardPage.css"; // Ensure standard utilities exist
@@ -187,6 +187,21 @@ export default function PredictionResultPage() {
               <ShieldAlert size={32} style={{ margin: "0 auto 1rem auto", opacity: 0.5 }} />
               <h4 style={{ margin: "0 0 0.5rem 0" }}>Advisory Masked (Review Required)</h4>
               <p style={{ margin: 0, maxWidth: "500px", marginInline: "auto" }}>To ensure farm safety, the AI treatment recommendations have been securely held by the rule engine until an expert verifies the severity and diagnosis.</p>
+            </div>
+          ) : pred.expert_review_data && pred.expert_review_data.farmer_guidance ? (
+            <div className="advisory-panel" style={{ marginTop: "2rem" }}>
+              <h3 style={{ color: "#0369a1", display: "flex", alignItems: "center", gap: "0.5rem", margin: "0 0 1rem 0" }}>
+                <CheckCircle2 size={24} /> Specialist Verified Advisory Plan
+              </h3>
+              <div style={{ background: "#f0fdf4", border: "1px solid #86efac", padding: "1.5rem", borderRadius: "12px" }}>
+                <h4 style={{ color: "#15803d", margin: "0 0 1rem 0" }}>Agronomist Guidance</h4>
+                <p style={{ margin: 0, color: "#166534", fontSize: "1rem", whiteSpace: "pre-wrap", lineHeight: "1.6" }}>
+                  {pred.expert_review_data.farmer_guidance}
+                </p>
+              </div>
+              <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#fef2f2", borderLeft: "4px solid #ef4444", borderRadius: "0 8px 8px 0", fontSize: "0.85rem", color: "#991b1b" }}>
+                <strong>Important:</strong> Always follow local agricultural guidelines and strictly adhere to chemical label instructions.
+              </div>
             </div>
           ) : pred.recommendation && Object.keys(pred.recommendation).length > 0 ? (
             <div className="advisory-panel" style={{ marginTop: "2rem" }}>

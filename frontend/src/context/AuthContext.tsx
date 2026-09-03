@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { login, profile, register, AuthResponse } from "../api/auth";
+import { login, profile, register, logout, AuthResponse } from "../api/auth";
 import { Profile } from "../api/types";
 
 interface AuthContextType {
@@ -9,7 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (identifier: string, pass: string) => Promise<void>;
   signUp: (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -70,7 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user);
   };
 
-  const signOut = () => {
+  const signOut = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.error("Logout API failed", e);
+    }
     localStorage.removeItem("smart_farm_token");
     setToken(null);
     setUser(null);

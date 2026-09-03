@@ -22,6 +22,7 @@ export default function Sidebar() {
   const { user, token, signOut } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === "admin" || user?.role === "expert";
+  const isSuperAdmin = user?.role === "admin";
 
   const { data: alerts = [], refetch: refetchAlerts } = useQuery({
     queryKey: ["alerts"],
@@ -81,19 +82,18 @@ export default function Sidebar() {
             <CloudSun size={20} />
             <span>Weather Advisory</span>
           </NavLink>
-          <NavLink to="/crops" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-            <Sprout size={20} />
-            <span>Supported Crops</span>
-          </NavLink>
+
         </div>
 
         {isAdmin && (
           <div className="nav-section">
             <span className="nav-section-title">Administration</span>
-            <NavLink to="/admin/metrics" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-              <ShieldAlert size={20} />
-              <span>System Metrics</span>
-            </NavLink>
+            {isSuperAdmin && (
+              <NavLink to="/admin/metrics" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                <ShieldAlert size={20} />
+                <span>System Metrics</span>
+              </NavLink>
+            )}
             <NavLink to="/admin/feedback" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
               <FileText size={20} />
               <span>Expert Feedback</span>

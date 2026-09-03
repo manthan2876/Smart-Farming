@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import create_engine, text
 
 from app.core import Base, database_url
+import app.models
 
 def initialize_database() -> None:
     url = database_url()
