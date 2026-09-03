@@ -191,6 +191,20 @@ const handleSubmit = async (e: React.FormEvent) => {
             <h3>Diagnostic Telemetry</h3>
             
             <div className="form-group">
+              <label>Select Plot / Field (Optional)</label>
+              <select 
+                value={plotId || ""} 
+                onChange={(e) => setPlotId(e.target.value ? Number(e.target.value) : undefined)} 
+                className="form-control"
+              >
+                <option value="">-- No Plot (General Scan) --</option>
+                {plots.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.name} {p.crop ? `(${p.crop})` : ""}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
               <label><MapPin size={16} /> Location Name</label>
               <input 
                 type="text" 

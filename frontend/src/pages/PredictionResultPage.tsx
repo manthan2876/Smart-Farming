@@ -6,7 +6,7 @@ import { getPrediction, requestExpertReview } from "../api/predictions";
 import { request } from "../api/client";
 import { motion } from "motion/react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, ShieldAlert, CheckCircle2, Volume2 } from "lucide-react";
+import { Loader2, ShieldAlert, CheckCircle2, Volume2, AlertCircle } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import "../styles/ResultPage.css";
 import "../styles/DashboardPage.css"; // Ensure standard utilities exist
@@ -80,7 +80,7 @@ export default function PredictionResultPage() {
     if (audioUrl && isPlaying) return;
     try {
       setIsPlaying(true);
-      const res = await request("/tts", { method: "POST", body: JSON.stringify({ text }) }, token!);
+      const res: any = await request("/tts", { method: "POST", body: JSON.stringify({ text }) }, token!);
       if (res && res.audioContent) {
         const audio = new Audio("data:audio/mp3;base64," + res.audioContent);
         setAudioUrl(audio.src);
@@ -343,15 +343,15 @@ export default function PredictionResultPage() {
           <div>
             <h3 style={{ margin: '0 0 0.5rem 0', color: '#334155' }}>Diagnostic Status</h3>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: primary.status?.pipeline === 'completed' ? '#dcfce7' : '#fef9c3', color: primary.status?.pipeline === 'completed' ? '#166534' : '#854d0e' }}>
-                Pipeline: {primary.status?.pipeline || "Unknown"}
+              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: (primary.status as any)?.pipeline === 'completed' ? '#dcfce7' : '#fef9c3', color: (primary.status as any)?.pipeline === 'completed' ? '#166534' : '#854d0e' }}>
+                Pipeline: {(primary.status as any)?.pipeline || "Unknown"}
               </span>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: primary.status?.expert_review === 'completed' ? '#dbeafe' : '#f1f5f9', color: primary.status?.expert_review === 'completed' ? '#1e40af' : '#475569' }}>
-                Expert Review: {primary.status?.expert_review || "Not Requested"}
+              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: (primary.status as any)?.expert_review === 'completed' ? '#dbeafe' : '#f1f5f9', color: (primary.status as any)?.expert_review === 'completed' ? '#1e40af' : '#475569' }}>
+                Expert Review: {(primary.status as any)?.expert_review || "Not Requested"}
               </span>
             </div>
           </div>
-          {primary.status?.expert_review === "not_requested" && (
+          {(primary.status as any)?.expert_review === "not_requested" && (
             <button 
               onClick={handleRequestExpert} 
               style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)' }}

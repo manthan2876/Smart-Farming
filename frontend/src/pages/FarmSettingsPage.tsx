@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
+import { createPlot, deletePlot } from "../api/farm";
 import { MapPin, Save, CheckCircle2, Sprout, AlertTriangle, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import "../styles/FarmSettingsPage.css";
@@ -38,6 +39,34 @@ export default function FarmSettingsPage() {
       setCropHistory(Array.isArray(farmData.crop_history) ? farmData.crop_history.join(", ") : farmData.crop_history || "");
     }
   }, [farmData]);
+
+  const [newPlotName, setNewPlotName] = useState("");
+  const [newPlotCrop, setNewPlotCrop] = useState("");
+  const [newPlotArea, setNewPlotArea] = useState<number | "">("");
+
+  const createPlotMutation = useMutation({
+    mutationFn: async (plotData: any) => createPlot(plotData, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farmSettings"] });
+      setNewPlotName("");
+      setNewPlotCrop("");
+      setNewPlotArea("");
+    }
+  });
+
+  const deletePlotMutation = useMutation({
+    mutationFn: async (plotId: number) => deletePlot(plotId, token!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["farmSettings"] })
+  });
+
+  const handleCreatePlot = (e: React.FormEvent) => {
+    e.preventDefault();
+    createPlotMutation.mutate({
+      name: newPlotName,
+      crop: newPlotCrop || null,
+      area_acres: newPlotArea ? Number(newPlotArea) : null
+    });
+  };
 
   const mutation = useMutation({
     mutationFn: async (updatedPayload: any) => {
@@ -180,6 +209,68 @@ export default function FarmSettingsPage() {
           <Save size={18} /> {mutation.isPending ? "Saving..." : "Save Farm Configuration"}
         </button>
       </motion.form>
+
+      
+      <motion.div 
+        className="plots-container card"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        style={{ marginTop: "2rem" }}
+      >
+        <h2>Manage Farm Plots</h2>
+        <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>Organize your farm into distinct plots or fields to track disease progression accurately.</p>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+          {farmData?.plots?.map((plot: any) => (
+            <div key={plot.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem", border: "1px solid var(--line)", borderRadius: "8px", background: "#f8fafc" }}>
+              <div>
+                <strong style={{ fontSize: "1.1rem", display: "block", color: "#0f172a" }}>{plot.name}</strong>
+                <span style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                  Crop: {plot.crop || "Unknown"} &bull; Area: {plot.area_acres ? `${plot.area_acres} acres` : "Unknown"}
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  if (confirm('Are you sure you want to delete this plot?')) {
+                    deletePlotMutation.mutate(plot.id);
+                  }
+                }}
+                disabled={deletePlotMutation.isPending}
+                style={{ background: "#fdf2f2", color: "#ef4444", border: "none", padding: "0.5rem", borderRadius: "6px", cursor: "pointer" }}
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          ))}
+          {(!farmData?.plots || farmData.plots.length === 0) && (
+            <div style={{ textAlign: "center", padding: "2rem", color: "#94a3b8", background: "#f1f5f9", borderRadius: "8px" }}>
+              No plots configured yet.
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleCreatePlot} style={{ background: "#f0fdf4", border: "1px dashed #86efac", padding: "1.5rem", borderRadius: "8px" }}>
+          <h3 style={{ margin: "0 0 1rem 0", color: "#166534" }}>Add New Plot</h3>
+          <div className="form-row">
+            <div className="form-group" style={{ marginBottom: "1rem" }}>
+              <label>Plot Name / ID</label>
+              <input type="text" className="form-control" value={newPlotName} onChange={e => setNewPlotName(e.target.value)} placeholder="e.g. North Field" required />
+            </div>
+            <div className="form-group" style={{ marginBottom: "1rem" }}>
+              <label>Current Crop</label>
+              <input type="text" className="form-control" value={newPlotCrop} onChange={e => setNewPlotCrop(e.target.value)} placeholder="e.g. Cotton" />
+            </div>
+            <div className="form-group" style={{ marginBottom: "1rem" }}>
+              <label>Area (Acres)</label>
+              <input type="number" step="any" className="form-control" value={newPlotArea} onChange={e => setNewPlotArea(e.target.value ? Number(e.target.value) : "")} placeholder="Optional" />
+            </div>
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={createPlotMutation.isPending || !newPlotName} style={{ background: "#16a34a" }}>
+            {createPlotMutation.isPending ? "Adding..." : "+ Add Plot"}
+          </button>
+        </form>
+      </motion.div>
 
       {user?.role === "admin" && (
         <motion.div 
