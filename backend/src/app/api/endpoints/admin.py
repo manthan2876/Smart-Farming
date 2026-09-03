@@ -133,27 +133,31 @@ async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require
 
 @router.delete("/blobs")
 async def purge_blobs(is_admin: bool = Depends(require_admin_role), session: Session = Depends(get_session)):
-    import os
     from app.models.image import Image
+    from pathlib import Path
     
     # Get all DB image paths
     db_images = session.query(Image).all()
     valid_paths = set()
     for img in db_images:
         if img.raw_path:
-            valid_paths.add(img.raw_path)
+            valid_paths.add(img.raw_path.replace("\\", "/"))
         if img.processed_path:
-            valid_paths.add(img.processed_path)
+            valid_paths.add(img.processed_path.replace("\\", "/"))
             
-    # Walk data/images and delete anything not in valid_paths
     deleted_count = 0
-    images_dir = Path("data/images")
-    if images_dir.exists():
-        for file in images_dir.glob("*"):
-            if file.is_file():
-                rel_path = f"data/images/{file.name}"
-                if rel_path not in valid_paths:
-                    file.unlink()
-                    deleted_count += 1
-                    
+    # Walk both data/uploads and data/processed
+    directories_to_clean = ["data/uploads", "data/processed"]
+    
+    for dir_path in directories_to_clean:
+        folder = Path(dir_path)
+        if folder.exists():
+            for file in folder.glob("*"):
+                if file.is_file():
+                    # The DB stores them as 'data/uploads/filename.jpg'
+                    rel_path = f"{dir_path}/{file.name}"
+                    if rel_path not in valid_paths:
+                        file.unlink()
+                        deleted_count += 1
+                        
     return {"status": "success", "deleted_files": deleted_count}
