@@ -85,3 +85,58 @@ async def get_feedback(
             "created_at": str(f.created_at)
         })
     return results
+
+from pydantic import BaseModel
+import json
+from pathlib import Path
+
+CONFIG_PATH = Path("data/config.json")
+
+class ConfigPayload(BaseModel):
+    crop_routing_threshold: float
+    expert_escalation_cutoff: float
+
+def get_config():
+    if not CONFIG_PATH.exists():
+        return {"crop_routing_threshold": 0.75, "expert_escalation_cutoff": 0.70}
+    with CONFIG_PATH.open("r") as f:
+        return json.load(f)
+
+@router.get("/config")
+async def read_config(is_admin: bool = Depends(require_admin_role)):
+    return get_config()
+
+@router.put("/config")
+async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require_admin_role)):
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    config = payload.model_dump()
+    with CONFIG_PATH.open("w") as f:
+        json.dump(config, f, indent=2)
+    return config
+
+@router.delete("/blobs")
+async def purge_blobs(is_admin: bool = Depends(require_admin_role), session: Session = Depends(get_session)):
+    import os
+    from app.models.image import Image
+    
+    # Get all DB image paths
+    db_images = session.query(Image).all()
+    valid_paths = set()
+    for img in db_images:
+        if img.raw_path:
+            valid_paths.add(img.raw_path)
+        if img.processed_path:
+            valid_paths.add(img.processed_path)
+            
+    # Walk data/images and delete anything not in valid_paths
+    deleted_count = 0
+    images_dir = Path("data/images")
+    if images_dir.exists():
+        for file in images_dir.glob("*"):
+            if file.is_file():
+                rel_path = f"data/images/{file.name}"
+                if rel_path not in valid_paths:
+                    file.unlink()
+                    deleted_count += 1
+                    
+    return {"status": "success", "deleted_files": deleted_count}
