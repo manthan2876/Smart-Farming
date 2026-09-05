@@ -11,7 +11,7 @@ def initialize_database() -> None:
         engine = create_engine(url, connect_args={"check_same_thread": False})
     else:
         engine = create_engine(
-            url, pool_size=3, max_overflow=0, pool_recycle=1200, pool_pre_ping=True
+            url, pool_size=15, max_overflow=20, pool_recycle=1200, pool_pre_ping=True
         )
     Base.metadata.create_all(engine)
     if not url.startswith("sqlite"):

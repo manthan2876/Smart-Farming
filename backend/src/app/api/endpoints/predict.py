@@ -60,6 +60,17 @@ def run_background_pipeline(
         # (Preprocessing was already successfully completed synchronously)
         
         if context["status"]["preprocessing"] == "completed":
+            # Initialize redis client for pub/sub status streaming
+            import redis, json
+            redis_client = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+            
+            def push_status(stage: str):
+                try:
+                    redis_client.publish(f"prediction_status:{prediction_id}", json.dumps({"stage": stage}))
+                except Exception:
+                    pass
+            
+            push_status("crop_identification")
             # Step 2: Crop
             context = predict_crop(context, _CONFIG)
             context["status"]["crop_identification"] = "completed"
@@ -86,6 +97,9 @@ def run_background_pipeline(
         else:
             if "image" in result and isinstance(result["image"], dict):
                 result["image"]["raw_path"] = relative_image_path
+            
+            if "status" in result:
+                result["status"]["pipeline"] = "completed"
             
             public_result = _public_result(result)
             
@@ -123,6 +137,7 @@ def run_background_pipeline(
                     pred.expert_review = ExpertReview(status="pending")
                 
             db.commit()
+            push_status("completed")
     except Exception as e:
         _BG_LOGGER.error(f"Background ML Pipeline failed: {e}")
         db.rollback()
@@ -131,6 +146,7 @@ def run_background_pipeline(
             pred.status = "failed"
             pred.result = {"error": str(e)}
             db.commit()
+            push_status("completed")
     finally:
         db.close()
 
@@ -179,21 +195,32 @@ async def predict(
         suffix = ".jpg" if file.content_type == "image/jpeg" else ".png"
     
     _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    filename = f"{uuid.uuid4().hex}{suffix}"
-    upload_path = _UPLOAD_DIR / filename
-    relative_image_path = f"data/uploads/{filename}"
+    
 
-    size = 0
     try:
+        image_bytes = await file.read()
+        if len(image_bytes) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Image exceeds the 10 MB upload limit.",
+            )
+            
+        import hashlib
+        hash_val = hashlib.sha256(image_bytes).hexdigest()
+        filename = f"{hash_val}{suffix}"
+        upload_path = _UPLOAD_DIR / filename
+        relative_image_path = f"data/uploads/{filename}"
+        
+        # Check cache
+        from app.models import Image, Prediction
+        existing_img = session.query(Image).filter(Image.raw_path == relative_image_path).first()
+        if existing_img and existing_img.prediction:
+            if existing_img.prediction.plot_id == plot_id:
+                # Return instantly
+                return {"job_id": None, "prediction_id": existing_img.prediction.id, "status": {"pipeline": "completed"}, "cached": True}
+                
         with upload_path.open("wb") as destination:
-            while chunk := await file.read(1024 * 1024):
-                size += len(chunk)
-                if size > _MAX_UPLOAD_BYTES:
-                    raise HTTPException(
-                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                        detail="Image exceeds the 10 MB upload limit.",
-                    )
-                destination.write(chunk)
+            destination.write(image_bytes)
         
         # Create context
         context = create_context(
@@ -259,6 +286,11 @@ async def prediction_detail(
         raise HTTPException(status_code=404, detail="Prediction not found.")
     result = dict(prediction.result)
     result["prediction_id"] = prediction.id
+    if "status" not in result:
+        result["status"] = {}
+    if prediction.status in ("completed", "failed", "pending_expert_review"):
+        result["status"]["pipeline"] = "completed"
+
     
     # Traverse parent chain for historical images
     hist = []
@@ -453,3 +485,46 @@ async def request_expert_review(
     session.commit()
     
     return {"status": "Expert review requested successfully"}
+
+from fastapi import WebSocket, WebSocketDisconnect
+import asyncio
+
+@router.websocket("/ws/predictions/{prediction_id}")
+async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
+    await websocket.accept()
+    import redis.asyncio as aioredis
+    import json
+    
+    redis_client = aioredis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+    pubsub = redis_client.pubsub()
+    channel = f"prediction_status:{prediction_id}"
+    await pubsub.subscribe(channel)
+    
+    from app.core.session import _session_factory
+    from app.models import Prediction
+    db = _session_factory()()
+    
+    try:
+        # Also send the current status from DB immediately just in case it's already done or we missed an event
+        existing = db.query(Prediction).filter(Prediction.id == prediction_id).first()
+        if existing and existing.status == "completed":
+            await websocket.send_json({"stage": "completed"})
+            return
+            
+        while True:
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            if message:
+                data = json.loads(message["data"])
+                await websocket.send_json(data)
+                if data.get("stage") == "completed":
+                    break
+            # heartbeat or yield
+            await asyncio.sleep(0.1)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        _LOGGER.error(f"WebSocket error: {e}")
+    finally:
+        db.close()
+        await pubsub.unsubscribe(channel)
+        await redis_client.aclose()

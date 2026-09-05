@@ -45,7 +45,7 @@ def _session_factory() -> sessionmaker[Session]:
         engine = create_engine(url, connect_args={"check_same_thread": False})
     else:
         engine = create_engine(
-            url, pool_size=3, max_overflow=0, pool_recycle=1200, pool_pre_ping=True
+            url, pool_size=15, max_overflow=20, pool_recycle=1200, pool_pre_ping=True
         )
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 

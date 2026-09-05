@@ -11,7 +11,7 @@ arq_pool = None
 
 async def init_arq():
     global arq_pool
-    arq_pool = await create_pool(RedisSettings(host="localhost", port=6379))
+    arq_pool = await create_pool(RedisSettings(host="127.0.0.1", port=6379))
     return arq_pool
 
 async def close_arq():

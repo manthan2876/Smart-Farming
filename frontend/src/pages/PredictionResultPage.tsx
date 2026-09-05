@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
@@ -6,7 +6,7 @@ import { getPrediction, requestExpertReview } from "../api/predictions";
 import { request } from "../api/client";
 import { motion } from "motion/react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, ShieldAlert, CheckCircle2, Volume2, AlertCircle } from "lucide-react";
+import { Loader2, ShieldAlert, CheckCircle2, Volume2, AlertCircle, Pause } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import "../styles/ResultPage.css";
 import "../styles/DashboardPage.css"; // Ensure standard utilities exist
@@ -23,6 +23,8 @@ export default function PredictionResultPage() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [farmerNote, setFarmerNote] = useState("");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,20 +78,39 @@ export default function PredictionResultPage() {
   });
 
   
-  const playAudio = async (text: string) => {
-    if (audioUrl && isPlaying) return;
+  const toggleAudio = async (text: string) => {
+    // If we already have the audio object, just toggle play/pause
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+      return;
+    }
+    
+    // Otherwise, fetch it for the first time
     try {
-      setIsPlaying(true);
+      setIsLoadingAudio(true);
       const res: any = await request("/tts", { method: "POST", body: JSON.stringify({ text }) }, token!);
       if (res && res.audioContent) {
         const audio = new Audio("data:audio/mp3;base64," + res.audioContent);
-        setAudioUrl(audio.src);
-        audio.play();
+        audioRef.current = audio;
+        
         audio.onended = () => setIsPlaying(false);
+        audio.onpause = () => setIsPlaying(false);
+        audio.onplay = () => setIsPlaying(true);
+        
+        audio.play();
+        setIsPlaying(true);
       }
     } catch (err) {
       console.error(err);
       setIsPlaying(false);
+    } finally {
+      setIsLoadingAudio(false);
     }
   };
 
@@ -237,12 +258,12 @@ export default function PredictionResultPage() {
                   <CheckCircle2 size={24} /> Specialist Verified Advisory Plan
                 </h3>
                 <button 
-                  onClick={() => playAudio(pred.expert_review_data.farmer_guidance)}
-                  disabled={isPlaying}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#e0f2fe', border: '1px solid #0ea5e9', color: '#0369a1', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isPlaying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-                >
-                  {isPlaying ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
-                  {isPlaying ? "Playing Audio..." : "Listen to Advisory"}
+                  onClick={() => toggleAudio(pred.expert_review_data.farmer_guidance)}
+                    disabled={isLoadingAudio}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#e0f2fe', border: '1px solid #0ea5e9', color: '#0369a1', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isLoadingAudio ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                  >
+                    {isLoadingAudio ? <Loader2 size={18} className="animate-spin" /> : (isPlaying ? <Pause size={18} /> : <Volume2 size={18} />)}
+                    {isLoadingAudio ? "Loading..." : (isPlaying ? "Pause Audio" : "Listen to Advisory")}
                 </button>
               </div>
               <div style={{ background: "#f0fdf4", border: "1px solid #86efac", padding: "1.5rem", borderRadius: "12px" }}>
@@ -260,7 +281,7 @@ export default function PredictionResultPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h3 style={{ margin: 0 }}>LLM Advisory Plan</h3>
                 <button 
-                  onClick={() => playAudio(
+                  onClick={() => toggleAudio(
                     [
                       pred.recommendation?.immediate_action,
                       pred.recommendation?.action,
@@ -273,11 +294,11 @@ export default function PredictionResultPage() {
                       pred.recommendation?.irrigation
                     ].filter(Boolean).join(". ")
                   )}
-                  disabled={isPlaying}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ecfdf5', border: '1px solid #10b981', color: '#047857', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isPlaying ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                  disabled={isLoadingAudio}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ecfdf5', border: '1px solid #10b981', color: '#047857', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isLoadingAudio ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
                 >
-                  {isPlaying ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
-                  {isPlaying ? "Playing Audio..." : "Listen to Advisory"}
+                  {isLoadingAudio ? <Loader2 size={18} className="animate-spin" /> : (isPlaying ? <Pause size={18} /> : <Volume2 size={18} />)}
+                  {isLoadingAudio ? "Loading..." : (isPlaying ? "Pause Audio" : "Listen to Advisory")}
                 </button>
               </div>
               <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>

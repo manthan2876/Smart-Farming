@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPrediction } from "../api/predictions";
 import { motion } from "motion/react";
 import { Loader2, Check, Wheat, Leaf, TreeDeciduous, Sprout, Clover, Bug, Activity, Sparkles, Wand2 } from "lucide-react";
@@ -12,18 +12,71 @@ export default function ProcessingPage() {
   const predictionId = Number(id);
   const { token } = useAuth();
 
+  const queryClient = useQueryClient();
   const { data: prediction, error } = useQuery({
     queryKey: ["prediction", predictionId],
     queryFn: () => getPrediction(String(predictionId), token || ''),
     enabled: !isNaN(predictionId),
-    refetchInterval: (query) => {
-      const p = query.state.data;
-      if (!p) return 800;
-      const latest = p.follow_up || p;
-      if ((latest.status as any)?.pipeline === "processing" || (latest.status as any)?.preprocessing === "processing") return 800;
-      return false;
-    }
+    refetchInterval: false, // Replaced by WebSocket
   });
+
+  // WebSocket Integration
+  useEffect(() => {
+    if (isNaN(predictionId)) return;
+    
+    // Resolve host dynamically, replacing http with ws
+    const host = window.location.hostname || "localhost";
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${host}:8000/ws/predictions/${predictionId}`;
+    
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const stage = data.stage;
+        
+        // Update React Query cache optimistically based on WS stage
+        queryClient.setQueryData(["prediction", predictionId], (oldData: any) => {
+          if (!oldData) return oldData;
+          const newData = { ...oldData };
+          if (!newData.status) newData.status = {};
+          
+          if (stage === "crop_identification") newData.status.crop_identification = "completed";
+          if (stage === "disease_classification") newData.status.disease_classification = "completed";
+          if (stage === "pest_detection") newData.status.pest_detection = "completed";
+          if (stage === "severity_calculation") newData.status.severity_calculation = "completed";
+          if (stage === "llm_advisory") newData.status.recommendation = "completed";
+          
+          if (stage === "completed") {
+             newData.status.pipeline = "completed";
+             // Trigger a final fetch to get actual labels/results from DB
+             queryClient.invalidateQueries({ queryKey: ["prediction", predictionId] });
+          }
+          return newData;
+        });
+      } catch (e) {
+        console.error("WS parse error", e);
+      }
+    };
+    
+    let isClosing = false;
+    ws.onopen = () => {
+      if (isClosing) {
+        ws.close();
+      }
+    };
+    
+    return () => {
+      isClosing = true;
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+      // If readyState is CONNECTING (0), we don't call close() immediately to avoid the 
+      // "WebSocket is closed before the connection is established" Chrome console error.
+      // Instead, the onopen handler will catch the isClosing flag and close it gracefully.
+    };
+  }, [predictionId, queryClient]);
 
   const [activeCropIdx, setActiveCropIdx] = useState(0);
 
