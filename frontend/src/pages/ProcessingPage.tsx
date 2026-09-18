@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPrediction } from "../api/predictions";
 import { motion } from "motion/react";
 import { Loader2, Check, Wheat, Leaf, TreeDeciduous, Sprout, Clover, Bug, Activity, Sparkles, Wand2 } from "lucide-react";
+import { Button, Card } from "../components/ui";
 
 export default function ProcessingPage() {
   const { id } = useParams();
@@ -114,91 +115,44 @@ export default function ProcessingPage() {
 
   const CROP_ICONS = [<Wheat size={20}/>, <Leaf size={20}/>, <TreeDeciduous size={20}/>, <Sprout size={20}/>, <Clover size={20}/>];
 
+  const renderStage = (stageNumber: number, title: string, isUnlocked: boolean, isComplete: boolean, icon: React.ReactNode, detail: React.ReactNode) => (
+    <div className={`flex items-start gap-4 transition-opacity sm:gap-6 ${isUnlocked ? "opacity-100" : "opacity-40"}`}>
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${isComplete ? "bg-farmer-600 text-white" : isUnlocked ? "bg-expert-100 text-expert-700" : "bg-canvas text-muted"}`}>
+        {isComplete ? <Check size={22} /> : icon || stageNumber}
+      </div>
+      <div className="min-w-0 pt-1">
+        <h4 className="font-semibold text-ink">{stageNumber}. {title}</h4>
+        <div className="mt-1 text-sm text-muted">{detail}</div>
+      </div>
+    </div>
+  );
+
   if (error) {
     return (
-      <div style={{ padding: "4rem", textAlign: "center", color: "#b44c3c" }}>
-        <h2>Error Loading Status</h2>
-        <p>Something went wrong. Please check your network connection.</p>
-        <button onClick={() => navigate("/dashboard")} style={{ padding: "10px 20px", background: "#e4eee4", color: "#10b981", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", marginTop: "1rem" }}>Back to Dashboard</button>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center text-danger">
+        <h2 className="font-display text-2xl">Error Loading Status</h2>
+        <p className="mt-2 text-sm text-muted">Something went wrong. Please check your network connection.</p>
+        <Button variant="secondary" className="mt-5" onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-      <div style={{ padding: "3rem", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden" }}>
-        <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-          <Loader2 size={48} className="animate-spin" style={{ margin: "0 auto", color: "#10b981" }} />
-          <h2 style={{ marginTop: "1.5rem", color: "#1e293b" }}>Running AI Pipeline</h2>
-          <p style={{ color: "#64748b" }}>Analyzing your crop and generating diagnostics in real-time...</p>
+    <div className="mx-auto max-w-3xl py-4 sm:py-8">
+      <Card padding="lg">
+        <div className="text-center">
+          <Loader2 size={48} className="mx-auto animate-spin text-farmer-600" />
+          <h2 className="mt-6 font-display text-2xl text-ink">Running AI Pipeline</h2>
+          <p className="mt-2 text-sm text-muted">Analyzing your crop and generating diagnostics in real-time...</p>
         </div>
-        
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-          {/* Stage 1: Preprocessing */}
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div style={{ background: "#10b981", color: "#fff", width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Check size={24} />
-            </div>
-            <div>
-              <h4 style={{ margin: 0, color: "#1e293b", fontSize: "1.1rem" }}>1. Image Preprocessing</h4>
-              <p style={{ margin: "0.25rem 0 0 0", fontSize: "0.9rem", color: "#64748b" }}>Verified leaf presence and clarity.</p>
-            </div>
-          </div>
-
-          {/* Stage 2: Crop ID */}
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", opacity: 1 }}>
-            <div style={{ background: isCropDone ? "#10b981" : "#e0f2fe", color: isCropDone ? "#fff" : "#0284c7", width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {isCropDone ? <Check size={24} /> : CROP_ICONS[activeCropIdx]}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h4 style={{ margin: 0, color: "#1e293b", fontSize: "1.1rem" }}>2. Crop Identification</h4>
-              {!isCropDone ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "0.5rem" }}>
-                  <span style={{ fontSize: "0.9rem", color: "#64748b" }}>Scanning species...</span>
-                </div>
-              ) : (
-                <p style={{ margin: "0.25rem 0 0 0", fontSize: "1rem", color: "#10b981", fontWeight: 600 }}>Detected: {cropLabel}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Stage 3: Disease */}
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", opacity: isCropDone ? 1 : 0.4 }}>
-            <div style={{ background: isDiseaseDone ? "#10b981" : (isCropDone ? "#e0f2fe" : "#e2e8f0"), color: isDiseaseDone ? "#fff" : "#0284c7", width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-               {isDiseaseDone ? <Check size={24} /> : (isCropDone ? <Loader2 size={24} className="animate-spin" /> : "3")}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h4 style={{ margin: 0, color: "#1e293b", fontSize: "1.1rem" }}>3. Disease Classification</h4>
-              {isCropDone && !isDiseaseDone && <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.5rem" }}><div className="skeleton" style={{ width: "100px", height: "10px" }}/> <span style={{ fontSize: "0.9rem", color: "#64748b", whiteSpace: "nowrap" }}>Analyzing pathology...</span></div>}
-              {isDiseaseDone && <p style={{ margin: "0.25rem 0 0 0", fontSize: "1rem", color: "#db7446", fontWeight: 600 }}>Identified: {diseaseLabel || "Unknown"}</p>}
-            </div>
-          </div>
-
-          {/* Stage 4: Pest */}
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", opacity: isDiseaseDone ? 1 : 0.4 }}>
-            <div style={{ background: isPestDone ? "#10b981" : (isDiseaseDone ? "#e0f2fe" : "#e2e8f0"), color: isPestDone ? "#fff" : "#0284c7", width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-               {isPestDone ? <Check size={24} /> : (isDiseaseDone ? <Loader2 size={24} className="animate-spin" /> : "4")}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h4 style={{ margin: 0, color: "#1e293b", fontSize: "1.1rem" }}>4. Pest Detection</h4>
-              {isDiseaseDone && !isPestDone && <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.5rem" }}><div className="skeleton" style={{ width: "100px", height: "10px" }}/> <span style={{ fontSize: "0.9rem", color: "#64748b", whiteSpace: "nowrap" }}>Scanning for insects...</span></div>}
-              {isPestDone && <p style={{ margin: "0.25rem 0 0 0", fontSize: "1rem", color: "#db7446", fontWeight: 600 }}>Result: {pestLabel}</p>}
-            </div>
-          </div>
-
-          {/* Stage 5: Advisory */}
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", opacity: isPestDone ? 1 : 0.4 }}>
-            <div style={{ background: isAdvisoryDone ? "#10b981" : (isPestDone ? "#e0f2fe" : "#e2e8f0"), color: isAdvisoryDone ? "#fff" : "#0284c7", width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-               {isAdvisoryDone ? <Check size={24} /> : (isPestDone ? <Sparkles size={24} className="animate-pulse" /> : "5")}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h4 style={{ margin: 0, color: "#1e293b", fontSize: "1.1rem" }}>5. Advisory Generation</h4>
-              {isPestDone && !isAdvisoryDone && <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.5rem", color: "#8b5cf6" }}><Sparkles size={20} className="animate-pulse" /> <span style={{ fontSize: "0.9rem", fontStyle: "italic", whiteSpace: "nowrap" }}>Synthesizing expert recommendations...</span></div>}
-              {isAdvisoryDone && <p style={{ margin: "0.25rem 0 0 0", fontSize: "1rem", color: "#10b981", fontWeight: 600 }}>Advisory Ready.</p>}
-            </div>
-          </div>
+        <div className="mt-10 space-y-8">
+          {renderStage(1, "Image Preprocessing", true, true, null, "Verified leaf presence and clarity.")}
+          {renderStage(2, "Crop Identification", true, isCropDone, isCropDone ? null : CROP_ICONS[activeCropIdx], isCropDone ? <span className="font-semibold text-farmer-700">Detected: {cropLabel}</span> : "Scanning species...")}
+          {renderStage(3, "Disease Classification", isCropDone, isDiseaseDone, isCropDone ? <Loader2 size={22} className="animate-spin" /> : null, isDiseaseDone ? <span className="font-semibold text-admin-500">Identified: {diseaseLabel || "Unknown"}</span> : isCropDone ? <span className="inline-flex items-center gap-2"><span className="h-2 w-24 animate-pulse rounded-full bg-line" />Analyzing pathology...</span> : "Waiting for crop identification...")}
+          {renderStage(4, "Pest Detection", isDiseaseDone, isPestDone, isDiseaseDone ? <Loader2 size={22} className="animate-spin" /> : null, isPestDone ? <span className="font-semibold text-admin-500">Result: {pestLabel}</span> : isDiseaseDone ? <span className="inline-flex items-center gap-2"><span className="h-2 w-24 animate-pulse rounded-full bg-line" />Scanning for insects...</span> : "Waiting for disease classification...")}
+          {renderStage(5, "Advisory Generation", isPestDone, isAdvisoryDone, isPestDone ? <Sparkles size={22} className="animate-pulse" /> : null, isAdvisoryDone ? <span className="font-semibold text-farmer-700">Advisory Ready.</span> : isPestDone ? <span className="inline-flex items-center gap-2 text-expert-700"><Sparkles size={18} className="animate-pulse" />Synthesizing expert recommendations...</span> : "Waiting for pest detection..." )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

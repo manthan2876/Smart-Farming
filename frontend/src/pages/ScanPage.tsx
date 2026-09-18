@@ -7,7 +7,7 @@ import { Upload, Camera, MapPin, Globe, AlertCircle, Loader2 } from "lucide-reac
 import { motion } from "motion/react";
 import imageCompression from 'browser-image-compression';
 import { get, set, update } from 'idb-keyval';
-import "../styles/ScanPage.css";
+import { Button, Card, Input } from "../components/ui";
 
 export default function ScanPage() {
   const { token, user } = useAuth();
@@ -143,119 +143,99 @@ const handleSubmit = async (e: React.FormEvent) => {
   }, [token, navigate]);
   
   return (
-    <div className="scan-page">
-      <div className="page-header">
-        <h1>AI Crop Diagnostic Scanner</h1>
-        <p>Upload a clear photograph of an affected crop leaf to run OpenCV quality checks, pest detection, and LLM analysis.</p>
+    <div className="space-y-6 pb-12">
+      <div>
+        <h1 className="font-display text-3xl text-ink sm:text-4xl">AI Crop Diagnostic Scanner</h1>
+        <p className="mt-3 max-w-3xl leading-7 text-muted">Upload a clear photograph of an affected crop leaf to run OpenCV quality checks, pest detection, and LLM analysis.</p>
       </div>
 
       <motion.form 
         onSubmit={handleSubmit} 
-        className="scan-form-container"
+        className="space-y-5"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
       >
         {error && (
-          <div className="alert alert-error">
+          <div className="flex items-center gap-3 rounded-sm border border-red-100 bg-red-50 p-4 text-sm text-danger">
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="scan-grid">
+        <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
           {/* File Upload Box */}
-          <div className="upload-section">
-            <label className={`dropzone ${previewUrl ? "has-preview" : ""}`}>
+          <Card padding="md">
+            <label className={`flex min-h-[25rem] cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-farmer-700 bg-farmer-50 text-center transition hover:border-farmer-500 hover:bg-farmer-100 ${previewUrl ? "p-0" : "p-8"}`}>
               {previewUrl ? (
-                <div className="preview-container">
-                  <img src={previewUrl} alt="Leaf Preview" className="leaf-preview-img" />
-                  <div className="replace-overlay">
+                <div className="group relative h-full min-h-[25rem] w-full">
+                  <img src={previewUrl} alt="Leaf Preview" className="h-full min-h-[25rem] w-full object-contain" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-ink/55 text-white opacity-0 transition group-hover:opacity-100">
                     <Camera size={24} />
-                    <span>Click or drop to replace image</span>
+                    <span className="mt-2 text-sm font-semibold">Click or drop to replace image</span>
                   </div>
                 </div>
               ) : (
-                <div className="dropzone-prompt">
-                  <Upload size={48} className="upload-icon" />
-                  <h3>Upload Leaf Image</h3>
-                  <p>Supports .jpg, .jpeg, .png, .webp (max 10MB)</p>
-                  <span className="btn btn-outline btn-sm">Browse Files</span>
+                <div>
+                  <Upload size={48} className="mx-auto text-farmer-700" />
+                  <h3 className="mt-5 font-display text-xl text-ink">Upload Leaf Image</h3>
+                  <p className="mt-2 text-sm text-muted">Supports .jpg, .jpeg, .png, .webp (max 10MB)</p>
+                  <span className="mt-5 inline-flex rounded-sm border border-farmer-700 px-4 py-2 text-sm font-semibold text-farmer-800">Browse Files</span>
                 </div>
               )}
               <input type="file" accept="image/*" onChange={handleFileChange} hidden />
             </label>
-          </div>
+          </Card>
 
           {/* Telemetry Parameters */}
-          <div className="parameters-section">
-            <h3>Diagnostic Telemetry</h3>
+          <Card className="!border-farmer-900 !bg-farmer-900 text-white" padding="lg">
+            <h3 className="font-display text-2xl text-farmer-200">Diagnostic Telemetry</h3>
             
-            <div className="form-group">
-              <label>Select Plot / Field (Optional)</label>
+            <div className="mt-7 space-y-5">
+              <label className="block space-y-2" htmlFor="scan-plot">
+                <span className="block text-sm font-semibold text-white/75">Select Plot / Field (Optional)</span>
               <select 
+                id="scan-plot"
                 value={plotId || ""} 
                 onChange={(e) => setPlotId(e.target.value ? Number(e.target.value) : undefined)} 
-                className="form-control"
+                className="min-h-11 w-full rounded-sm border border-white/20 bg-white/10 px-3 text-sm text-white focus:border-farmer-300 focus:outline-none focus:ring-4 focus:ring-farmer-300/20"
               >
                 <option value="">-- No Plot (General Scan) --</option>
                 {plots.map((p: any) => (
                   <option key={p.id} value={p.id}>{p.name} {p.crop ? `(${p.crop})` : ""}</option>
                 ))}
               </select>
-            </div>
+              </label>
 
-            <div className="form-group">
-              <label><MapPin size={16} /> Location Name</label>
-              <input 
+            <Input label="Location Name" leadingIcon={<MapPin size={16} />} 
                 type="text" 
                 value={location} 
                 onChange={(e) => setLocation(e.target.value)} 
-                className="form-control"
+                className="border-white/20 bg-white/10 text-white placeholder:text-white/50 focus:border-farmer-300 focus:ring-farmer-300/20"
                 required
               />
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Input label="Latitude" type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
+              <Input label="Longitude" type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Latitude</label>
-                <input 
-                  type="number" 
-                  step="any" 
-                  value={lat} 
-                  onChange={(e) => setLat(e.target.value)} 
-                  className="form-control"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Longitude</label>
-                <input 
-                  type="number" 
-                  step="any" 
-                  value={lon} 
-                  onChange={(e) => setLon(e.target.value)} 
-                  className="form-control"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label><Globe size={16} /> Recommendation Language</label>
+            <label className="block space-y-2" htmlFor="scan-language">
+              <span className="flex items-center gap-2 text-sm font-semibold text-white/75"><Globe size={16} /> Recommendation Language</span>
               <select 
+                id="scan-language"
                 value={language} 
                 onChange={(e) => setLanguage(e.target.value)} 
-                className="form-control"
+                className="min-h-11 w-full rounded-sm border border-white/20 bg-white/10 px-3 text-sm text-white focus:border-farmer-300 focus:outline-none focus:ring-4 focus:ring-farmer-300/20"
               >
                 <option value="English">English</option>
                 <option value="Hindi">Hindi (à¤¹à¤¿à¤‚à¤¦à¥€)</option>
                 <option value="Gujarati">Gujarati (àª—à«àªœàª°àª¾àª¤à«€)</option>
               </select>
-            </div>
+            </label>
 
-            <button 
+            <Button 
               type="submit" 
-              className="btn btn-primary btn-full btn-glow" 
+              className="mt-2 w-full bg-farmer-300 text-ink hover:bg-farmer-200" 
               disabled={loading || !file}
             >
               {loading ? (
@@ -266,8 +246,9 @@ const handleSubmit = async (e: React.FormEvent) => {
               ) : (
                 <>Run Diagnostic Analysis</>
               )}
-            </button>
-          </div>
+            </Button>
+            </div>
+          </Card>
         </div>
       </motion.form>
     </div>

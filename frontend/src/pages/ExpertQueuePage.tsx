@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getExpertQueue } from "../api/expert";
 import { motion } from "motion/react";
-import "../styles/DashboardPage.css"; // Reuse card styles
+import { Badge, Card, Table } from "../components/ui";
 
 export default function ExpertQueuePage() {
   const { token } = useAuth();
@@ -16,68 +16,61 @@ export default function ExpertQueuePage() {
   });
 
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-welcome-banner">
-        <div className="welcome-text">
-          <h1>Expert Triage Queue</h1>
-          <p>Review and verify uncertain diagnoses escalated by the AI system.</p>
+    <div className="space-y-6 pb-12">
+      <div className="flex flex-col gap-5 rounded-lg bg-expert-700 p-7 text-white shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10">
+        <div>
+          <h1 className="font-display text-3xl text-white sm:text-4xl">Expert Triage Queue</h1>
+          <p className="mt-3 text-white/70">Review and verify uncertain diagnoses escalated by the AI system.</p>
         </div>
-        <AlertCircle size={48} color="#e1fc84" />
+        <AlertCircle className="text-expert-100" size={48} />
       </div>
 
       <motion.div
-        className="dashboard-card recent-scans-section"
+        className="rounded-md border border-line bg-surface p-5 shadow-soft sm:p-6"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="card-header">
-          <h3>Pending Reviews ({queue.length})</h3>
+        <div>
+          <h3 className="font-display text-xl text-ink">Pending Reviews ({queue.length})</h3>
         </div>
 
         {isLoading ? (
-          <p>Loading queue...</p>
+          <p className="mt-5 text-sm text-muted">Loading queue...</p>
         ) : error ? (
-          <p className="text-error">Failed to load queue.</p>
+          <p className="mt-5 text-sm text-danger">Failed to load queue.</p>
         ) : queue.length === 0 ? (
-          <div className="empty-state">
-            <CheckCircle size={40} color="#10b981" />
-            <p>The queue is completely empty. Great job!</p>
+          <div className="mt-5 flex flex-col items-center rounded-sm bg-farmer-50 p-8 text-center text-sm text-muted">
+            <CheckCircle className="text-farmer-700" size={40} />
+            <p className="mt-3">The queue is completely empty. Great job!</p>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="data-table">
+          <Table className="mt-5">
               <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Crop</th>
-                  <th>AI Diagnosis</th>
-                  <th>Confidence</th>
-                  <th>Severity</th>
-                  <th>Action</th>
+                <tr className="bg-canvas text-xs uppercase tracking-wide text-muted">
+                  {['Date', 'Crop', 'AI Diagnosis', 'Confidence', 'Severity', 'Action'].map((heading) => <th key={heading} className="px-5 py-4 font-semibold">{heading}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {queue.map((item) => (
-                  <tr key={item.review_id}>
-                    <td>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "N/A"}</td>
-                    <td><span className="crop-badge">{item.crop || "Unknown"}</span></td>
-                    <td><strong>{item.disease || "Unknown"}</strong></td>
-                    <td>{(item.disease_conf * 100).toFixed(1)}%</td>
-                    <td>
-                      <span className={`severity-indicator ${item.severity_pct > 60 ? 'severe' : item.severity_pct > 25 ? 'moderate' : 'low'}`}>
+                  <tr className="border-t border-line text-sm text-ink" key={item.review_id}>
+                    <td className="px-5 py-4 text-muted">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "N/A"}</td>
+                    <td className="px-5 py-4"><Badge>{item.crop || "Unknown"}</Badge></td>
+                    <td className="px-5 py-4 font-semibold">{item.disease || "Unknown"}</td>
+                    <td className="px-5 py-4">{(item.disease_conf * 100).toFixed(1)}%</td>
+                    <td className="px-5 py-4">
+                      <Badge tone={item.severity_pct > 60 ? "danger" : item.severity_pct > 25 ? "warning" : "success"}>
                         {item.severity_pct > 60 ? 'Severe' : item.severity_pct > 25 ? 'Moderate' : 'Low'}
-                      </span>
+                      </Badge>
                     </td>
                     <td>
-                      <Link to={`/admin/expert/${item.review_id}`} className="btn btn-outline" style={{padding: '0.5rem 1rem', fontSize: '0.8rem'}}>
+                      <Link to={`/admin/expert/${item.review_id}`} className="inline-flex items-center gap-1 font-semibold text-expert-700 hover:text-expert-500">
                         Review <ArrowRight size={14} />
                       </Link>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+          </Table>
         )}
       </motion.div>
     </div>

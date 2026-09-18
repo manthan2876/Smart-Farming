@@ -10,14 +10,17 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.3",
+    "@types/leaflet": "^1.9.22",
     "@vitejs/plugin-react": "latest",
     "browser-image-compression": "^2.0.2",
     "es-toolkit": "^1.52.0",
     "idb-keyval": "^6.3.0",
+    "leaflet": "^1.9.4",
     "lucide-react": "latest",
     "motion": "^13.1.1",
     "react": "latest",
     "react-dom": "latest",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1",
     "vite": "latest"
@@ -25,6 +28,9 @@
   "devDependencies": {
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
     "typescript": "latest"
   }
 }

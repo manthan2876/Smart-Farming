@@ -11,7 +11,9 @@ import {
   Sprout, 
   ShieldAlert, 
   FileText, 
-  LogOut 
+  LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 
 
@@ -19,7 +21,12 @@ import { useQuery } from "@tanstack/react-query";
 import { request } from "../api/client";
 import { useState } from "react";
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, token, signOut } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === "admin" || user?.role === "expert";
@@ -47,115 +54,134 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="app-sidebar">
-      <div className="sidebar-header" style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div className="logo-icon">🌿</div>
-          <div className="logo-text">
-            <h2>Smart Farming</h2>
-            <span className="user-role-badge">{user?.role || "Farmer"}</span>
+    <>
+      {showNotifications && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-ink/20 backdrop-blur-[1px]"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowNotifications(false);
+            }
+          }}
+          aria-label="Close notifications"
+        />
+      )}
+      {isOpen && <button type="button" className="fixed inset-0 z-40 bg-ink/30 lg:hidden" onClick={onClose} aria-label="Close navigation" />}
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col overflow-visible border-r border-line bg-surface transition-transform duration-200 lg:z-30 lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="relative flex items-center justify-between border-b border-line px-5 py-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-farmer-700 text-xl text-white shadow-soft">SF</div>
+            <div className="min-w-0">
+              <h2 className="truncate font-display text-lg text-ink">Smart Farming</h2>
+              <span className="mt-1 inline-flex rounded-full bg-farmer-100 px-2 py-0.5 text-[0.68rem] font-bold uppercase tracking-wide text-farmer-800">{user?.role || "Farmer"}</span>
+            </div>
           </div>
-        </div>
-        
-        <div className="notification-bell" style={{ position: 'relative', cursor: 'pointer', color: 'var(--muted)' }} onClick={() => setShowNotifications(!showNotifications)}>
-          <Bell size={24} />
+          <div className="flex items-center gap-1">
+            <button type="button" className="relative rounded-sm p-2 text-muted hover:bg-canvas hover:text-ink" onClick={() => setShowNotifications(!showNotifications)} aria-label="Open notifications" aria-expanded={showNotifications}>
+              <Bell size={19} />
+              {unreadCount > 0 && <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[0.6rem] font-bold text-white">{unreadCount}</span>}
+            </button>
+            <button type="button" className="rounded-sm p-2 text-muted hover:bg-canvas hover:text-ink lg:hidden" onClick={onClose} aria-label="Close navigation"><X size={19} /></button>
+          </div>
           {unreadCount > 0 && (
-            <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: 'white', borderRadius: '50%', width: 16, height: 16, fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-              {unreadCount}
-            </span>
+            <span className="sr-only">{unreadCount} unread notifications</span>
           )}
-        </div>
 
         {showNotifications && (
-          <div className="notifications-dropdown" style={{ position: 'absolute', top: '100%', right: 0, width: '280px', background: 'white', border: '1px solid var(--line)', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50, maxHeight: '400px', overflowY: 'auto' }}>
-            <div style={{ padding: '1rem', borderBottom: '1px solid var(--line)', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
+          <div
+            className="fixed left-3 top-16 z-[60] max-h-[24rem] w-[calc(100vw-2rem)] overflow-y-auto rounded-md border border-line bg-surface shadow-lift pointer-events-auto lg:left-[18rem] lg:w-[22rem]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-line p-4 font-semibold">
               <span>Notifications</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--green)', cursor: 'pointer' }} onClick={() => { alerts.filter(a => !a.is_read).forEach(a => markRead(a.id)); setShowNotifications(false); }}>Mark all read</span>
+              <button type="button" className="text-xs font-semibold text-farmer-700 hover:text-farmer-900" onClick={() => { alerts.filter(a => !a.is_read).forEach(a => markRead(a.id)); setShowNotifications(false); }}>Mark all read</button>
             </div>
             {alerts.length === 0 ? (
-              <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>No new alerts</div>
+              <div className="p-4 text-center text-sm text-muted">No new alerts</div>
             ) : (
               alerts.map((alert: any) => (
-                <div key={alert.id} style={{ padding: '1rem', borderBottom: '1px solid var(--line)', background: alert.is_read ? 'white' : '#f0fdf4' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.25rem', color: 'var(--ink)' }}>{alert.title}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>{alert.body}</div>
+                <div key={alert.id} className={`border-b border-line p-4 last:border-0 ${alert.is_read ? "bg-surface" : "bg-farmer-50"}`}>
+                  <div className="mb-1 break-words text-sm font-bold text-ink">{alert.title}</div>
+                  <div className="mb-2 break-words text-xs leading-5 text-muted">{alert.body}</div>
                   {!alert.is_read && (
-                    <button onClick={() => markRead(alert.id)} style={{ fontSize: '0.75rem', background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', padding: 0 }}>Mark as read</button>
+                    <button onClick={() => markRead(alert.id)} className="p-0 text-xs font-semibold text-farmer-700 hover:text-farmer-900">Mark as read</button>
                   )}
                 </div>
               ))
             )}
           </div>
         )}
-      </div>
-
-      <nav className="sidebar-nav">
-        <div className="nav-section">
-          <span className="nav-section-title">Core</span>
-          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </NavLink>
-          <NavLink to="/scan" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-            <Scan size={20} />
-            <span>AI Diagnostic Scan</span>
-          </NavLink>
-          <NavLink to="/history" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-            <History size={20} />
-            <span>Scan History</span>
-          </NavLink>
         </div>
 
-        <div className="nav-section">
-          <span className="nav-section-title">Management</span>
-          <NavLink to="/settings" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-            <Settings size={20} />
+        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-6">
+          <div className="space-y-1">
+            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Core</span>
+          <NavLink onClick={onClose} to="/dashboard" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+            <LayoutDashboard size={18} />
+            <span>Dashboard</span>
+          </NavLink>
+          <NavLink onClick={onClose} to="/scan" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+            <Scan size={18} />
+            <span>AI Diagnostic Scan</span>
+          </NavLink>
+          <NavLink onClick={onClose} to="/history" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+            <History size={18} />
+            <span>Scan History</span>
+          </NavLink>
+          </div>
+
+          <div className="space-y-1">
+            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Management</span>
+          <NavLink onClick={onClose} to="/settings" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+            <Settings size={18} />
             <span>System Settings</span>
           </NavLink>
-          <NavLink to="/farm/settings" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-            <MapPin size={20} />
+          <NavLink onClick={onClose} to="/farm/settings" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+            <MapPin size={18} />
             <span>Farm Settings</span>
           </NavLink>
-          <NavLink to="/weather" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-            <CloudSun size={20} />
+          <NavLink onClick={onClose} to="/weather" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+            <CloudSun size={18} />
             <span>Weather Advisory</span>
           </NavLink>
 
-        </div>
+          </div>
 
         {isAdmin && (
-          <div className="nav-section">
-            <span className="nav-section-title">Administration</span>
+          <div className="space-y-1">
+            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Administration</span>
             {isSuperAdmin && (
-              <NavLink to="/admin/metrics" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                <ShieldAlert size={20} />
+              <NavLink onClick={onClose} to="/admin/metrics" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-admin-100 text-admin-700" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+                <ShieldAlert size={18} />
                 <span>System Metrics</span>
               </NavLink>
             )}
-            <NavLink to="/admin/feedback" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-              <FileText size={20} />
+            <NavLink onClick={onClose} to="/admin/feedback" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-admin-100 text-admin-700" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+              <FileText size={18} />
               <span>Expert Feedback</span>
             </NavLink>
-            <NavLink to="/admin/expert" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-              <ShieldAlert size={20} />
+            <NavLink onClick={onClose} to="/admin/expert" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-admin-100 text-admin-700" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+              <ShieldAlert size={18} />
               <span>Expert Triage Queue</span>
             </NavLink>
           </div>
         )}
-      </nav>
+        </nav>
 
-      <div className="sidebar-footer">
-        <div className="user-profile-snippet">
-          <div className="avatar">{user?.name ? user.name.charAt(0).toUpperCase() : "F"}</div>
-          <div className="user-info">
-            <span className="user-name">{user?.name || "Farmer"}</span>
-            <span className="user-email">{user?.email || user?.phone || ""}</span>
+        <div className="flex items-center justify-between gap-3 border-t border-line bg-canvas/40 p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-farmer-700 text-sm font-bold text-white">{user?.name ? user.name.charAt(0).toUpperCase() : "F"}</div>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-ink">{user?.name || "Farmer"}</span>
+              <span className="block truncate text-xs text-muted">{user?.email || user?.phone || ""}</span>
+            </div>
           </div>
+          <button onClick={handleSignOut} className="rounded-sm p-2 text-muted hover:bg-red-50 hover:text-danger" title="Sign Out" aria-label="Sign out">
+            <LogOut size={18} />
+          </button>
         </div>
-        <button onClick={handleSignOut} className="btn-signout" title="Sign Out">
-          <LogOut size={18} />
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

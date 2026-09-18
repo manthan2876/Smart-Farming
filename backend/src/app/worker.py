@@ -1,6 +1,7 @@
 ﻿from arq.connections import RedisSettings
 
 from arq.cron import cron
+from app.services.weather.proactive import evaluate_weather_risks
 from app.core.session import _session_factory
 from pathlib import Path
 from app.models.image import Image
@@ -63,6 +64,7 @@ async def process_prediction_job(ctx, prediction_id: int, user_id: str, context:
 class WorkerSettings:
     functions = [process_prediction_job]
     cron_jobs = [
-        cron(purge_orphaned_blobs_cron, hour=3, minute=0, day=6)  # Run at 3:00 AM every Sunday (day=6 in arq means Sunday)
+        cron(purge_orphaned_blobs_cron, hour=3, minute=0, day=6),  # Run at 3:00 AM every Sunday
+        cron(evaluate_weather_risks, hour={6, 12, 18}, minute=0),  # Run 3x/day for proactive alerts
     ]
     redis_settings = RedisSettings(host="127.0.0.1", port=6379)

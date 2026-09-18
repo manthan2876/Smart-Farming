@@ -446,7 +446,11 @@ async def rescan_prediction(
 @router.get("/job/{job_id}", response_model=dict)
 @limiter.limit("20/minute")
 async def get_job_status(request: Request, job_id: str):
-    job = request.app.state.arq_pool.job(job_id)
+    arq_pool = getattr(request.app.state, "arq_pool", None)
+    if arq_pool is None:
+        raise HTTPException(status_code=503, detail="Background job service is unavailable. Start Redis and retry.")
+
+    job = arq_pool.job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     status = await job.status()

@@ -9,12 +9,12 @@ interface ToastProps {
 
 export default function Toast({ toast, onDismiss }: ToastProps) {
   return (
-    <div className="toast-container">
+    <div className="pointer-events-none fixed bottom-6 right-6 z-[1000] flex max-w-[calc(100vw-3rem)] flex-col gap-3">
       <AnimatePresence>
         {toast && (
           <motion.div
             key={toast.id}
-            className={`toast ${toast.type}`}
+            className={`pointer-events-auto flex max-w-sm items-center gap-3 rounded-sm border px-4 py-3 text-sm font-semibold shadow-lift ${toast.type === "success" ? "border-farmer-200 bg-farmer-50 text-farmer-800" : "border-red-200 bg-red-50 text-danger"}`}
             initial={{ opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
@@ -29,15 +29,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
             {onDismiss && (
               <button
                 onClick={onDismiss}
-                style={{
-                  background: "transparent",
-                  color: "inherit",
-                  marginLeft: 6,
-                  padding: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  opacity: 0.75,
-                }}
+                className="ml-auto flex p-0.5 opacity-75 hover:opacity-100"
                 aria-label="Dismiss"
               >
                 <X size={13} />

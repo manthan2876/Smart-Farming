@@ -14,7 +14,7 @@ import {
   Cloud
 } from "lucide-react";
 import { motion } from "motion/react";
-import "../styles/FarmSettingsPage.css"; 
+import { Button, Card, Input } from "../components/ui";
 
 export default function SettingsPage() {
   const { user, token } = useAuth();
@@ -142,149 +142,143 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="farm-settings-page">
-      <div className="page-header">
-        <h1><SettingsIcon size={28} style={{ verticalAlign: 'middle', marginRight: '10px' }} /> Settings</h1>
-        <p>Manage application defaults, model governance, and MLOps data pipelines.</p>
+    <div className="space-y-6 pb-12">
+      <div>
+        <h1 className="flex items-center gap-3 font-display text-3xl text-ink sm:text-4xl"><SettingsIcon size={28} className="text-farmer-700" /> Settings</h1>
+        <p className="mt-3 max-w-3xl leading-7 text-muted">Manage application defaults, model governance, and MLOps data pipelines.</p>
       </div>
 
-      <div className="card" style={{ padding: "2rem", marginBottom: "2rem" }}>
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Globe size={20} /> Language & Telemetry Preferences</h3>
-        <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>System-wide defaults for localized UI and measurement units.</p>
+      <Card>
+        <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Globe size={20} className="text-farmer-700" /> Language & Telemetry Preferences</h3>
+        <p className="mt-2 text-sm text-muted">System-wide defaults for localized UI and measurement units.</p>
         
-        <div className="form-row">
-          <div className="form-group">
-            <label>Interface Language</label>
-            <select className="form-control" value={lang} onChange={e => setLang(e.target.value)}>
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          <label className="block space-y-2" htmlFor="settings-language">
+            <span className="block text-sm font-semibold text-ink">Interface Language</span>
+            <select id="settings-language" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={lang} onChange={e => setLang(e.target.value)}>
               <option>English</option>
               <option>Gujarati</option>
               <option>Hindi</option>
             </select>
-          </div>
-          <div className="form-group">
-            <label>Units</label>
-            <select className="form-control" value={units} onChange={e => setUnits(e.target.value)}>
+          </label>
+          <label className="block space-y-2" htmlFor="settings-units">
+            <span className="block text-sm font-semibold text-ink">Units</span>
+            <select id="settings-units" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={units} onChange={e => setUnits(e.target.value)}>
               <option>Metric (ha, °C)</option>
               <option>Imperial (acres, °F)</option>
             </select>
-          </div>
+          </label>
         </div>
-      </div>
+      </Card>
 
       {isAdmin && (
         <>
-          <motion.div className="card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: "2rem", marginBottom: "2rem", borderTop: "4px solid #0ea5e9" }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Database size={20} color="#0ea5e9" /> MLOps Dataset Curation & Export Engine</h3>
-            <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>Package validated field diagnostics into versioned model training sets.</p>
+          <motion.div className="rounded-md border border-line border-t-4 border-t-expert-500 bg-surface p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Database size={20} className="text-expert-500" /> MLOps Dataset Curation & Export Engine</h3>
+            <p className="mt-2 text-sm text-muted">Package validated field diagnostics into versioned model training sets.</p>
             
-            <div style={{ background: "#f8fafc", padding: "1.5rem", borderRadius: "8px", marginBottom: "1.5rem" }}>
-              <strong>Ground Truth Inclusion:</strong>
-              <div style={{ display: "flex", gap: "2rem", marginTop: "0.5rem" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div className="mt-6 rounded-sm bg-canvas p-4">
+              <strong className="text-sm text-ink">Ground Truth Inclusion:</strong>
+              <div className="mt-3 flex flex-col gap-3 text-sm text-muted sm:flex-row sm:gap-6">
+                <label className="flex items-center gap-2">
                   <input type="checkbox" checked={exportFilters.expert} onChange={e => setExportFilters(p => ({...p, expert: e.target.checked}))} />
                   Expert Overridden Cases ({datasetSummary?.expert_overridden || 0})
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <label className="flex items-center gap-2">
                   <input type="checkbox" checked={exportFilters.farmer} onChange={e => setExportFilters(p => ({...p, farmer: e.target.checked}))} />
                   Confirmed Farmer Feedback ({datasetSummary?.farmer_confirmed || 0})
                 </label>
               </div>
             </div>
 
-            <div className="form-row" style={{ marginBottom: "1.5rem" }}>
-              <div className="form-group">
-                <label>Target Crop</label>
-                <select className="form-control" value={exportCrop} onChange={e => setExportCrop(e.target.value)}>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <label className="block space-y-2" htmlFor="export-crop"><span className="block text-sm font-semibold text-ink">Target Crop</span><select id="export-crop" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm" value={exportCrop} onChange={e => setExportCrop(e.target.value)}>
                   <option>All Crops (Tomato, Cotton, Potato)</option>
                   <option>Cotton</option>
                   <option>Tomato</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Archive Format</label>
-                <select className="form-control" value={exportFormat} onChange={e => setExportFormat(e.target.value)}>
+                </select></label>
+              <label className="block space-y-2" htmlFor="export-format"><span className="block text-sm font-semibold text-ink">Archive Format</span><select id="export-format" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm" value={exportFormat} onChange={e => setExportFormat(e.target.value)}>
                   <option>PyTorch Folder</option>
                   <option>COCO Bounding Boxes</option>
                   <option>JSON Manifest</option>
-                </select>
-              </div>
+                </select></label>
             </div>
 
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label>Image Target:</label>
-              <div style={{ display: "flex", gap: "2rem", marginTop: "0.5rem" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div className="mt-6">
+              <label className="text-sm font-semibold text-ink">Image Target:</label>
+              <div className="mt-3 flex flex-col gap-3 text-sm text-muted sm:flex-row sm:gap-6">
+                <label className="flex items-center gap-2">
                   <input type="radio" name="imgTarget" checked={exportImage === "preprocessed"} onChange={() => setExportImage("preprocessed")} />
                   OpenCV Preprocessed (224x224)
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <label className="flex items-center gap-2">
                   <input type="radio" name="imgTarget" checked={exportImage === "raw"} onChange={() => setExportImage("raw")} />
                   Raw Camera Originals
                 </label>
               </div>
             </div>
 
-            <div style={{ marginBottom: "2rem" }}>
-              <label>Dataset Split: Train {splitTrain}% / Val {splitVal}% / Test {100 - splitTrain - splitVal}%</label>
-              <input type="range" min="50" max="90" value={splitTrain} onChange={e => setSplitTrain(Number(e.target.value))} style={{ width: "100%", margin: "1rem 0" }} />
+            <div className="mt-6">
+              <label className="text-sm font-semibold text-ink">Dataset Split: Train {splitTrain}% / Val {splitVal}% / Test {100 - splitTrain - splitVal}%</label>
+              <input className="mt-4 w-full accent-farmer-700" type="range" min="50" max="90" value={splitTrain} onChange={e => setSplitTrain(Number(e.target.value))} />
             </div>
 
-            <div style={{ display: "flex", gap: "1rem" }}>
-              <button className="btn btn-primary" style={{ background: "#0ea5e9" }} onClick={handleExportMLOps} disabled={isExporting}>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Button className="bg-expert-700 hover:bg-expert-500" onClick={handleExportMLOps} disabled={isExporting}>
                 <DownloadCloud size={18} /> {isExporting ? "Packaging..." : "Export Dataset Archive (.zip)"}
-              </button>
-              <button className="btn" style={{ border: "1px solid #0ea5e9", color: "#0ea5e9" }} disabled={isExporting}>
+              </Button>
+              <Button variant="secondary" className="border-expert-500 text-expert-700" disabled={isExporting}>
                 <Cloud size={18} /> Sync to MinIO/S3
-              </button>
+              </Button>
             </div>
           </motion.div>
 
-          <motion.div className="card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: "2rem", marginBottom: "2rem" }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Sliders size={20} /> Diagnostic Decision Thresholds (config.yaml)</h3>
-            <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>Enables real-time modification of operational rules without redeploying backend application code.</p>
+          <motion.div className="rounded-md border border-line bg-surface p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Sliders size={20} className="text-farmer-700" /> Diagnostic Decision Thresholds (config.yaml)</h3>
+            <p className="mt-2 text-sm text-muted">Enables real-time modification of operational rules without redeploying backend application code.</p>
             
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label>Crop Routing Confidence Min: {routingThresh}%</label>
-              <input type="range" min="50" max="95" value={routingThresh} onChange={e => setRoutingThresh(Number(e.target.value))} style={{ width: "100%" }} />
+            <div className="mt-6">
+              <label className="text-sm font-semibold text-ink">Crop Routing Confidence Min: {routingThresh}%</label>
+              <input className="mt-3 w-full accent-farmer-700" type="range" min="50" max="95" value={routingThresh} onChange={e => setRoutingThresh(Number(e.target.value))} />
             </div>
             
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label>Expert Escalation Cutoff: {expertThresh}%</label>
-              <input type="range" min="50" max="95" value={expertThresh} onChange={e => setExpertThresh(Number(e.target.value))} style={{ width: "100%" }} />
+            <div className="mt-6">
+              <label className="text-sm font-semibold text-ink">Expert Escalation Cutoff: {expertThresh}%</label>
+              <input className="mt-3 w-full accent-farmer-700" type="range" min="50" max="95" value={expertThresh} onChange={e => setExpertThresh(Number(e.target.value))} />
             </div>
 
-            <button className="btn btn-primary" onClick={() => updateConfig.mutate()} disabled={updateConfig.isPending}>
+            <Button className="mt-7" onClick={() => updateConfig.mutate()} disabled={updateConfig.isPending}>
               {updateConfig.isPending ? "Saving..." : "Save Config Parameters"}
-            </button>
-            {configSaved && <span style={{ marginLeft: "1rem", color: "var(--green)" }}><CheckCircle2 size={16} style={{ verticalAlign: 'middle' }} /> Saved</span>}
+            </Button>
+            {configSaved && <span className="ml-4 inline-flex items-center gap-1 text-sm font-semibold text-farmer-700"><CheckCircle2 size={16} /> Saved</span>}
           </motion.div>
 
-          <motion.div className="admin-danger-zone card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: "2rem", border: "1px solid var(--orange)", background: "#fffdfa" }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: "var(--orange)" }}><AlertTriangle size={20} /> Administrative Danger Zone</h3>
+          <motion.div className="rounded-md border border-red-200 bg-red-50 p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h3 className="flex items-center gap-2 font-display text-xl text-danger"><AlertTriangle size={20} /> Administrative Danger Zone</h3>
             
-            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
-              <button type="button" className="btn btn-primary" style={{ background: "#b44c3c" }} onClick={() => setShowDeleteModal(true)}>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button type="button" variant="danger" onClick={() => setShowDeleteModal(true)}>
                 <Trash2 size={16} /> Clear Operational Predictions
-              </button>
-              <button type="button" className="btn" style={{ border: "1px solid #b44c3c", color: "#b44c3c" }} onClick={handlePurgeBlobs}>
+              </Button>
+              <Button type="button" variant="secondary" className="border-danger text-danger" onClick={handlePurgeBlobs}>
                 <Trash2 size={16} /> Purge Orphaned Leaf Blobs
-              </button>
+              </Button>
             </div>
           </motion.div>
         </>
       )}
 
       {showDeleteModal && (
-        <div className="modal-backdrop" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div className="modal-content card" style={{ maxWidth: "400px", width: "90%", padding: "2rem" }}>
-            <h3 style={{ color: "#b44c3c", marginTop: 0 }}>Confirm Purge</h3>
-            <p style={{ fontSize: "0.9rem", color: "var(--muted)" }}>Type <strong>DELETE</strong> below.</p>
-            <input type="text" className="form-control" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE" style={{ marginBottom: "1rem" }} />
-            <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
-              <button className="btn" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-              <button className="btn btn-primary" style={{ background: "#b44c3c" }} disabled={deleteConfirmText !== "DELETE" || isDeleting} onClick={handleDeleteData}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+          <div className="w-full max-w-md rounded-md bg-surface p-6 shadow-lift">
+            <h3 className="font-display text-xl text-danger">Confirm Purge</h3>
+            <p className="mt-2 text-sm text-muted">Type <strong>DELETE</strong> below.</p>
+            <Input id="delete-confirmation" className="mt-4" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE" />
+            <div className="mt-6 flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+              <Button variant="danger" disabled={deleteConfirmText !== "DELETE" || isDeleting} onClick={handleDeleteData}>
                 Confirm Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>

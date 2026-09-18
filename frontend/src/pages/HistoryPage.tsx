@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
 import { History, ArrowRight, Filter, Search } from "lucide-react";
 import { motion } from "motion/react";
-import "../styles/HistoryPage.css";
+import { Badge, Button, Card, Input, Table } from "../components/ui";
 
 interface PredictionRecord {
   prediction_id: number | string | null;
@@ -45,61 +45,54 @@ export default function HistoryPage() {
   ] as string[];
 
   return (
-    <div className="history-page">
-      <div className="page-header">
-        <h1>Diagnostic Scan History</h1>
-        <p>Review past crop health reports, confidence scores, and historical disease outbreaks.</p>
+    <div className="space-y-6 pb-12">
+      <div>
+        <h1 className="font-display text-3xl text-ink sm:text-4xl">Diagnostic Scan History</h1>
+        <p className="mt-3 max-w-3xl leading-7 text-muted">Review past crop health reports, confidence scores, and historical disease outbreaks.</p>
       </div>
 
       <motion.div 
-        className="history-content-container"
+        className="space-y-5"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="history-filters-bar">
-          <div className="search-box">
-            <Search size={18} />
-            <input 
-              type="text" 
-              placeholder="Search disease or crop..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="form-control"
-            />
+        <Card className="flex flex-col gap-4 sm:flex-row sm:items-end" padding="md">
+          <div className="flex-1">
+            <Input id="history-search" label="Search records" leadingIcon={<Search size={18} />} type="text" placeholder="Search disease or crop..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          <div className="filter-dropdown-group">
-            <Filter size={16} />
+          <label className="block space-y-2 sm:w-56" htmlFor="history-crop-filter">
+            <span className="flex items-center gap-2 text-sm font-semibold text-ink"><Filter size={16} /> Crop</span>
             <select 
+              id="history-crop-filter"
               value={filterCrop} 
               onChange={(e) => setFilterCrop(e.target.value)}
-              className="form-control"
+              className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100"
             >
               {uniqueCrops.map((crop, idx) => (
                 <option key={idx} value={crop}>{crop}</option>
               ))}
             </select>
-          </div>
-        </div>
+          </label>
+        </Card>
 
         {isLoading ? (
-          <div className="loading-state"><div className="spinner"></div><p>Loading scan records...</p></div>
+          <Card className="flex items-center justify-center gap-3 text-sm text-muted"><div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" /><p>Loading scan records...</p></Card>
         ) : filteredScans.length === 0 ? (
-          <div className="empty-state">
-            <History size={48} />
-            <h3>No scan history found</h3>
-            <p>You haven't run any diagnostic scans matching this filter yet.</p>
-            <Link to="/scan" className="btn btn-primary btn-sm">Run New Scan</Link>
-          </div>
+          <Card className="flex flex-col items-center text-center" padding="lg">
+            <History className="text-farmer-700" size={48} />
+            <h3 className="mt-5 font-display text-xl text-ink">No scan history found</h3>
+            <p className="mt-2 text-sm text-muted">You haven't run any diagnostic scans matching this filter yet.</p>
+            <Link to="/scan" className="mt-5"><Button size="sm">Run New Scan</Button></Link>
+          </Card>
         ) : (
-          <div className="scans-table-container">
-            <table className="data-table">
+          <Table>
               <thead>
-                <tr>
-                  <th>Crop</th>
-                  <th>Identified Condition</th>
-                  <th>Severity</th>
-                  <th>Date / Request</th>
-                  <th>Action</th>
+                <tr className="bg-canvas text-xs uppercase tracking-wide text-muted">
+                  <th className="px-5 py-4 font-semibold">Crop</th>
+                  <th className="px-5 py-4 font-semibold">Identified Condition</th>
+                  <th className="px-5 py-4 font-semibold">Severity</th>
+                  <th className="px-5 py-4 font-semibold">Date / Request</th>
+                  <th className="px-5 py-4 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,18 +109,16 @@ export default function HistoryPage() {
                   const recordId = scan.prediction_id;
 
                   return (
-                    <tr key={recordId || index}>
-                      <td><span className="crop-tag">{cropName}</span></td>
-                      <td className="font-semibold">{diseaseName}</td>
-                      <td>
-                        <span className={`severity-pill ${severityText.toLowerCase()}`}>
-                          {severityText}
-                        </span>
+                    <tr className="border-t border-line text-sm text-ink" key={recordId || index}>
+                      <td className="px-5 py-4"><Badge>{cropName}</Badge></td>
+                      <td className="px-5 py-4 font-semibold">{diseaseName}</td>
+                      <td className="px-5 py-4">
+                        <Badge tone={severityText.toLowerCase() === "severe" ? "danger" : severityText.toLowerCase() === "moderate" ? "warning" : "success"}>{severityText}</Badge>
                       </td>
-                      <td>{scan.request_id ? `ID: ${scan.request_id.slice(0, 8)}...` : "N/A"}</td>
-                      <td>
+                      <td className="px-5 py-4 text-muted">{scan.request_id ? `ID: ${scan.request_id.slice(0, 8)}...` : "N/A"}</td>
+                      <td className="px-5 py-4">
                         {recordId ? (
-                          <Link to={`/predictions/${recordId}`} className="btn-icon-link">
+                          <Link to={`/predictions/${recordId}`} className="inline-flex items-center gap-1 font-semibold text-farmer-700 hover:text-farmer-900">
                             View <ArrowRight size={14} />
                           </Link>
                         ) : (
@@ -138,8 +129,7 @@ export default function HistoryPage() {
                   );
                 })}
               </tbody>
-            </table>
-          </div>
+          </Table>
         )}
       </motion.div>
     </div>

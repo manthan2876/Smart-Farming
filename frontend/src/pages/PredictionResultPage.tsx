@@ -1,49 +1,47 @@
-﻿import { useState, useRef, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "motion/react";
+import imageCompression from "browser-image-compression";
+import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getPrediction, requestExpertReview } from "../api/predictions";
 import { request } from "../api/client";
-import { motion } from "motion/react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, ShieldAlert, CheckCircle2, Volume2, AlertCircle, Pause } from "lucide-react";
-import imageCompression from "browser-image-compression";
-import "../styles/ResultPage.css";
-import "../styles/DashboardPage.css"; // Ensure standard utilities exist
-
+import { Badge, Button, Card, Input } from "../components/ui";
 
 export default function PredictionResultPage() {
   const { id } = useParams<{ id: string }>();
   const { token } = useAuth();
   const navigate = useNavigate();
-  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [farmerNote, setFarmerNote] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selected = e.target.files[0];
-      try {
-        setIsUploading(true);
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1440,
-          useWebWorker: true,
-        };
-        const compressedFile = await imageCompression(selected, options);
-        setSelectedFile(compressedFile);
-      } catch (err) {
-        console.error("Compression error:", err);
-      } finally {
-        setIsUploading(false);
-      }
+  const { data: prediction, isLoading, isError, refetch } = useQuery({
+    queryKey: ["prediction", id],
+    queryFn: () => getPrediction(id as string, token!),
+    refetchInterval: (query) => {
+      const current = query.state.data;
+      if (!current) return false;
+      const latest = current.follow_up || current;
+      return (latest.status as any)?.pipeline === "processing" || (latest.status as any)?.preprocessing === "processing" ? 2000 : false;
+    },
+  });
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files?.[0];
+    if (!selected) return;
+    try {
+      setIsUploading(true);
+      setSelectedFile(await imageCompression(selected, { maxSizeMB: 1, maxWidthOrHeight: 1440, useWebWorker: true }));
+    } catch (error) {
+      console.error("Compression error:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -52,12 +50,11 @@ export default function PredictionResultPage() {
     setIsUploading(true);
     try {
       const { rescan } = await import("../api/predictions");
-      const newPred = await rescan(id, selectedFile, token);
-      
+      await rescan(id, selectedFile, token);
       await refetch();
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       alert("Failed to upload new photo.");
     } finally {
       setIsUploading(false);
@@ -65,389 +62,92 @@ export default function PredictionResultPage() {
     }
   };
 
-  const { data: prediction, isLoading, isError, refetch } = useQuery({
-    queryKey: ["prediction", id],
-    queryFn: () => getPrediction(id as string, token!),
-    refetchInterval: (query) => {
-      const p = query.state.data;
-      if (!p) return false;
-      const latest = p.follow_up || p;
-      if ((latest.status as any)?.pipeline === "processing" || (latest.status as any)?.preprocessing === "processing") return 2000;
-      return false;
-    }
-  });
-
-  
   const toggleAudio = async (text: string) => {
-    // If we already have the audio object, just toggle play/pause
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        await audioRef.current.play();
         setIsPlaying(true);
       }
       return;
     }
-    
-    // Otherwise, fetch it for the first time
     try {
       setIsLoadingAudio(true);
-      const res: any = await request("/tts", { method: "POST", body: JSON.stringify({ text }) }, token!);
-      if (res && res.audioContent) {
-        const audio = new Audio("data:audio/mp3;base64," + res.audioContent);
+      const response: any = await request("/tts", { method: "POST", body: JSON.stringify({ text }) }, token!);
+      if (response?.audioContent) {
+        const audio = new Audio(`data:audio/mp3;base64,${response.audioContent}`);
         audioRef.current = audio;
-        
         audio.onended = () => setIsPlaying(false);
         audio.onpause = () => setIsPlaying(false);
         audio.onplay = () => setIsPlaying(true);
-        
-        audio.play();
+        await audio.play();
         setIsPlaying(true);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       setIsPlaying(false);
     } finally {
       setIsLoadingAudio(false);
     }
   };
 
-    const handleRequestExpert = async () => {
+  const handleRequestExpert = async () => {
     try {
       await requestExpertReview(id!, token!);
       alert("Expert review requested successfully!");
       refetch();
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       alert("Failed to request expert review.");
     }
   };
 
   const submitFeedback = async (correct: boolean) => {
-    setIsCorrect(correct);
     try {
-      await request("/feedback", {
-        method: "POST",
-        body: JSON.stringify({
-          prediction_id: Number(id),
-          is_correct: correct,
-          farmer_note: farmerNote
-        })
-      }, token!);
+      await request("/feedback", { method: "POST", body: JSON.stringify({ prediction_id: Number(id), is_correct: correct, farmer_note: farmerNote }) }, token!);
       setFeedbackSubmitted(true);
-    } catch (e) {
-      console.error("Feedback submission failed", e);
+    } catch (error) {
+      console.error("Feedback submission failed", error);
     }
   };
 
-  if (isLoading) return <div className="result-page loading skeleton" style={{ height: '600px' }}></div>;
-  if (isError || !prediction) return <div className="result-page error">Failed to load prediction details.</div>;
+  if (isLoading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-farmer-700" size={36} /></div>;
+  if (isError || !prediction) return <Card className="text-danger">Failed to load prediction details.</Card>;
 
   const primary = prediction.follow_up || prediction;
-  const old = prediction.follow_up ? prediction : null;
-  const isPendingReview = (primary.status as any)?.expert_review === "pending";
-  const isProcessing = (primary.status as any)?.pipeline === "processing" || (primary.status as any)?.preprocessing === "processing";
+  const original = prediction.follow_up ? prediction : null;
+  const status = primary.status as any;
+  const isPendingReview = status?.expert_review === "pending";
+  const isProcessing = status?.pipeline === "processing" || status?.preprocessing === "processing";
 
-  const renderPredictionBlock = (pred: any, isOld: boolean = false) => {
-    if (pred.error) {
-      return (
-        <div style={{ padding: "2rem", background: "#fef2f2", border: "1px solid #f87171", borderRadius: "12px", color: "#b91c1c", marginTop: "1rem" }}>
-          <h3><AlertCircle size={24} style={{ verticalAlign: 'middle', marginRight: '8px' }}/> ML Pipeline Error</h3>
-          <p>{pred.error}</p>
-          <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>The background task failed. Please try capturing another scan with better lighting.</p>
-        </div>
-      );
-    }
+  const AudioButton = ({ text }: { text: string }) => <Button variant="secondary" size="sm" onClick={() => toggleAudio(text)} disabled={isLoadingAudio}>
+    {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
+    {isLoadingAudio ? "Loading..." : isPlaying ? "Pause Audio" : "Listen to Advisory"}
+  </Button>;
 
-    const isAdvisoryMasked = (pred.status as any)?.mask_advisory === true || ((pred.status as any)?.expert_review === "pending" && !pred.recommendation?.immediate_action);
-    const rawImageUrl = pred.image?.raw_path ? `http://localhost:8000/${pred.image.raw_path}` : null;
-    const processedImageUrl = pred.image?.processed_path ? `http://localhost:8000/${pred.image.processed_path}` : null;
-    
-    return (
-      <div style={{ marginTop: isOld ? "1rem" : "0" }}>
-        {pred.expert_review_data && (
-          <div style={{ background: "#e0f2fe", border: "1px solid #bae6fd", padding: "1.5rem", borderRadius: "12px", marginBottom: "2rem", color: "#0369a1" }}>
-            <h3 style={{ margin: "0 0 0.5rem 0" }}>Verified by Agricultural Specialist</h3>
-            <p style={{ margin: "0 0 1rem 0" }}><strong>Decision:</strong> {pred.expert_review_data.decision}</p>
-            {pred.expert_review_data.corrected_disease && (
-              <p style={{ margin: "0 0 1rem 0" }}><strong>Corrected Diagnosis:</strong> {pred.expert_review_data.corrected_disease}</p>
-            )}
-            {pred.expert_review_data.farmer_guidance && (
-              <div>
-                <strong>Agronomic Guidance:</strong>
-                <p style={{ margin: "0.5rem 0 0 0", whiteSpace: "pre-wrap" }}>{pred.expert_review_data.farmer_guidance}</p>
-              </div>
-            )}
-            
-            {!isOld && pred.expert_review_data.decision === "Request New Photo" && !prediction.follow_up && (
-              <div style={{ marginTop: "1.5rem", padding: "1.5rem", background: "#fff", borderRadius: "8px", border: "1px dashed #7dd3fc" }}>
-                <h4 style={{ margin: "0 0 1rem 0" }}>Upload Follow-up Photo</h4>
-                <p style={{ margin: "0 0 1rem 0", fontSize: "0.9rem" }}>The specialist requested a clearer photo. Please upload a new image of the affected plant to rescan.</p>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                  <input 
-                    type="file" 
-                    accept="image/jpeg, image/png, image/webp"
-                    onChange={handleFileChange}
-                    style={{ flex: 1, padding: "0.5rem" }}
-                  />
-                  <button 
-                    className="btn btn-glow" 
-                    onClick={handleRescanSubmit}
-                    disabled={!selectedFile || isUploading}
-                    style={{ padding: "0.5rem 1.5rem" }}
-                  >
-                    {isUploading ? "Uploading..." : "Submit New Photo"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="result-grid">
-          <div className="image-panel">
-            <h3>Visual Analysis</h3>
-            <div className="image-comparison">
-              <div className="img-box">
-                <span>Original Upload</span>
-                {rawImageUrl && <img src={rawImageUrl} alt="Raw Leaf" />}
-              </div>
-              <div className="img-box">
-                <span className="gradcam-label">Grad-CAM / Heatmap</span>
-                {processedImageUrl && <img src={processedImageUrl} alt="Grad-CAM Processed" />}
-              </div>
-            </div>
-          </div>
-
-          <div className="info-panel">
-            <h3>Diagnostic Telemetry</h3>
-            <div className="diagnosis-block">
-              <h2>{(pred.status as any)?.expert_review === "pending" ? "Pending Verification" : (pred.disease?.label || "Unknown")}</h2>
-              <p>Confidence: {( (pred.disease?.confidence || 0) * 100 ).toFixed(1)}%</p>
-              <div className="confidence-bar-bg">
-                <div className="confidence-bar-fill" style={{ width: `${(pred.disease?.confidence || 0) * 100}%` }}></div>
-              </div>
-            </div>
-
-            <div className="diagnosis-block">
-              <h2>Severity: {pred.severity?.bucket || "N/A"}</h2>
-              <p>Affected Area: {pred.severity?.percent || 0}%</p>
-              <div className="confidence-bar-bg">
-                <div className="confidence-bar-fill" style={{ width: `${pred.severity?.percent || 0}%`, background: '#e1fc84' }}></div>
-              </div>
-            </div>
-            
-            <div style={{ marginTop: "1rem", fontFamily: "monospace", color: "#728079", fontSize: "0.85rem" }}>
-              <p><strong>CROP:</strong> {pred.crop?.label?.toUpperCase() || "N/A"}</p>
-              <p><strong>PESTS:</strong> {pred.pests && pred.pests.length > 0 ? pred.pests.map((p: any) => p.label).join(", ") : "None detected"}</p>
-            </div>
-          </div>
-
-          {isAdvisoryMasked ? (
-            <div style={{ marginTop: "2rem", padding: "2rem", background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "12px", textAlign: "center", color: "#64748b" }}>
-              <ShieldAlert size={32} style={{ margin: "0 auto 1rem auto", opacity: 0.5 }} />
-              <h4 style={{ margin: "0 0 0.5rem 0" }}>Advisory Masked (Review Required)</h4>
-              <p style={{ margin: 0, maxWidth: "500px", marginInline: "auto" }}>To ensure farm safety, the AI treatment recommendations have been securely held by the rule engine until an expert verifies the severity and diagnosis.</p>
-            </div>
-          ) : pred.expert_review_data && pred.expert_review_data.farmer_guidance ? (
-            <div className="advisory-panel" style={{ marginTop: "2rem" }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h3 style={{ color: "#0369a1", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
-                  <CheckCircle2 size={24} /> Specialist Verified Advisory Plan
-                </h3>
-                <button 
-                  onClick={() => toggleAudio(pred.expert_review_data.farmer_guidance)}
-                    disabled={isLoadingAudio}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#e0f2fe', border: '1px solid #0ea5e9', color: '#0369a1', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isLoadingAudio ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-                  >
-                    {isLoadingAudio ? <Loader2 size={18} className="animate-spin" /> : (isPlaying ? <Pause size={18} /> : <Volume2 size={18} />)}
-                    {isLoadingAudio ? "Loading..." : (isPlaying ? "Pause Audio" : "Listen to Advisory")}
-                </button>
-              </div>
-              <div style={{ background: "#f0fdf4", border: "1px solid #86efac", padding: "1.5rem", borderRadius: "12px" }}>
-                <h4 style={{ color: "#15803d", margin: "0 0 1rem 0" }}>Agronomist Guidance</h4>
-                <p style={{ margin: 0, color: "#166534", fontSize: "1rem", whiteSpace: "pre-wrap", lineHeight: "1.6" }}>
-                  {pred.expert_review_data.farmer_guidance}
-                </p>
-              </div>
-              <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#fef2f2", borderLeft: "4px solid #ef4444", borderRadius: "0 8px 8px 0", fontSize: "0.85rem", color: "#991b1b" }}>
-                <strong>Important:</strong> Always follow local agricultural guidelines and strictly adhere to chemical label instructions.
-              </div>
-            </div>
-          ) : pred.recommendation && Object.keys(pred.recommendation).length > 0 ? (
-            <div className="advisory-panel" style={{ marginTop: "2rem" }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h3 style={{ margin: 0 }}>LLM Advisory Plan</h3>
-                <button 
-                  onClick={() => toggleAudio(
-                    [
-                      pred.recommendation?.immediate_action,
-                      pred.recommendation?.action,
-                      pred.recommendation?.fertilizer,
-                      pred.recommendation?.treatment,
-                      pred.recommendation?.pesticide,
-                      pred.recommendation?.prevention,
-                      pred.recommendation?.prevention_tips,
-                      pred.recommendation?.monitoring,
-                      pred.recommendation?.irrigation
-                    ].filter(Boolean).join(". ")
-                  )}
-                  disabled={isLoadingAudio}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ecfdf5', border: '1px solid #10b981', color: '#047857', padding: '0.5rem 1rem', borderRadius: '8px', cursor: isLoadingAudio ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-                >
-                  {isLoadingAudio ? <Loader2 size={18} className="animate-spin" /> : (isPlaying ? <Pause size={18} /> : <Volume2 size={18} />)}
-                  {isLoadingAudio ? "Loading..." : (isPlaying ? "Pause Audio" : "Listen to Advisory")}
-                </button>
-              </div>
-              <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
-                {(pred.recommendation.immediate_action || pred.recommendation.action || pred.recommendation.fertilizer) && (
-                  <div style={{ background: "#fdf2f2", padding: "1.25rem", borderRadius: "12px", border: "1px solid #fca5a5" }}>
-                    <h4 style={{ color: "#b91c1c", margin: "0 0 0.5rem 0" }}>Immediate Action / Fertilizer</h4>
-                    <p style={{ margin: 0, color: "#7f1d1d", fontSize: "0.95rem" }}>{pred.recommendation.immediate_action || pred.recommendation.action || pred.recommendation.fertilizer}</p>
-                  </div>
-                )}
-                {(pred.recommendation.treatment || pred.recommendation.pesticide) && (
-                  <div style={{ background: "#f0fdf4", padding: "1.25rem", borderRadius: "12px", border: "1px solid #86efac" }}>
-                    <h4 style={{ color: "#15803d", margin: "0 0 0.5rem 0" }}>Treatment Plan / Pesticide</h4>
-                    <p style={{ margin: 0, color: "#166534", fontSize: "0.95rem" }}>{pred.recommendation.treatment || pred.recommendation.pesticide}</p>
-                  </div>
-                )}
-                {(pred.recommendation.prevention || pred.recommendation.prevention_tips) && (
-                  <div style={{ background: "#eff6ff", padding: "1.25rem", borderRadius: "12px", border: "1px solid #bfdbfe" }}>
-                    <h4 style={{ color: "#1d4ed8", margin: "0 0 0.5rem 0" }}>Prevention</h4>
-                    <p style={{ margin: 0, color: "#1e3a8a", fontSize: "0.95rem" }}>{pred.recommendation.prevention || pred.recommendation.prevention_tips}</p>
-                  </div>
-                )}
-                {(pred.recommendation.monitoring || pred.recommendation.irrigation) && (
-                  <div style={{ background: "#f8fafc", padding: "1.25rem", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-                    <h4 style={{ color: "#475569", margin: "0 0 0.5rem 0" }}>Monitoring / Irrigation</h4>
-                    <p style={{ margin: 0, color: "#334155", fontSize: "0.95rem" }}>{pred.recommendation.monitoring || pred.recommendation.irrigation}</p>
-                  </div>
-                )}
-              </div>
-              <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#fef2f2", borderLeft: "4px solid #ef4444", borderRadius: "0 8px 8px 0", fontSize: "0.85rem", color: "#991b1b" }}>
-                <strong>Important:</strong> {pred.recommendation.safety_disclaimer || "Always follow local agricultural guidelines and strictly adhere to chemical label instructions."}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
+  const Advisory = ({ predictionData }: { predictionData: any }) => {
+    const recommendation = predictionData.recommendation || {};
+    const expertGuidance = predictionData.expert_review_data?.farmer_guidance;
+    const masked = (predictionData.status as any)?.mask_advisory === true || ((predictionData.status as any)?.expert_review === "pending" && !recommendation.immediate_action);
+    if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">Advisory Masked (Review Required)</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">To ensure farm safety, AI treatment recommendations are held until an expert verifies the diagnosis.</p></Card>;
+    if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl"><CheckCircle2 size={22} /> Specialist Verified Advisory Plan</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5"><h4 className="font-semibold text-farmer-800">Agronomist Guidance</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
+    if (!Object.keys(recommendation).length) return null;
+    const advisoryText = [recommendation.immediate_action, recommendation.action, recommendation.fertilizer, recommendation.treatment, recommendation.pesticide, recommendation.prevention, recommendation.prevention_tips, recommendation.monitoring, recommendation.irrigation].filter(Boolean).join(". ");
+    const sections = [["Immediate Action / Fertilizer", recommendation.immediate_action || recommendation.action || recommendation.fertilizer, "border-red-200 bg-red-50 text-danger"], ["Treatment Plan / Pesticide", recommendation.treatment || recommendation.pesticide, "border-farmer-200 bg-farmer-50 text-farmer-800"], ["Prevention", recommendation.prevention || recommendation.prevention_tips, "border-expert-100 bg-expert-50 text-expert-700"], ["Monitoring / Irrigation", recommendation.monitoring || recommendation.irrigation, "border-line bg-canvas text-muted"]];
+    return <Card className="mt-6 bg-farmer-900 text-white" padding="lg"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-display text-2xl text-farmer-200">LLM Advisory Plan</h3><AudioButton text={advisoryText} /></div><div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div><p className="mt-5 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p></Card>;
   };
 
-  return (
-    <>
-      {isUploading && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(255,255,255,0.95)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <Loader2 size={64} className="animate-spin" color="#10b981" />
-          <h2 style={{ marginTop: "2rem", color: "#0F3D2E", fontSize: "2rem" }}>Re-running AI Pipeline...</h2>
-          <p style={{ color: "#666", fontSize: "1.2rem" }}>Analyzing your follow-up photo.</p>
-        </div>
-      )}
-      <motion.div className="result-page" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="page-header">
-          <Link to="/history" className="back-link">&larr; BACK TO HISTORY</Link>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h1>Scan #{primary.prediction_id || id} Diagnosis {old && <span style={{fontSize: "1.2rem", color: "var(--green)", marginLeft: "1rem"}}>(Follow-up)</span>}</h1>
-          </div>
-        </div>
+  const PredictionBlock = ({ predictionData }: { predictionData: any }) => {
+    if (predictionData.error) return <div className="rounded-md border border-red-200 bg-red-50 p-6 text-danger"><h3 className="flex items-center gap-2 font-display text-xl"><AlertCircle size={22} /> ML Pipeline Error</h3><p className="mt-3">{predictionData.error}</p><p className="mt-3 text-sm">Please capture another scan with better lighting.</p></div>;
+    const rawImage = predictionData.image?.raw_path ? `http://localhost:8000/${predictionData.image.raw_path}` : null;
+    const processedImage = predictionData.image?.processed_path ? `http://localhost:8000/${predictionData.image.processed_path}` : null;
+    const diseaseConfidence = (predictionData.disease?.confidence || 0) * 100;
+    const severityPercent = predictionData.severity?.percent || 0;
+    return <div className="space-y-6"><Card><h3 className="font-display text-xl text-ink">Visual Analysis</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[["Original Upload", rawImage, ""], ["Grad-CAM / Heatmap", processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">Image unavailable</div>}</div>)}</div></Card><Card><h3 className="font-display text-xl text-ink">Diagnostic Telemetry</h3><div className="mt-5 space-y-4"><div className="rounded-sm bg-canvas p-4"><h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? "Pending Verification" : predictionData.disease?.label || "Unknown"}</h2><p className="mt-1 text-sm text-muted">Confidence: {diseaseConfidence.toFixed(1)}%</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-farmer-700" style={{ width: `${diseaseConfidence}%` }} /></div></div><div className="rounded-sm bg-canvas p-4"><h2 className="font-display text-xl text-ink">Severity: {predictionData.severity?.bucket || "N/A"}</h2><p className="mt-1 text-sm text-muted">Affected Area: {severityPercent}%</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-admin-500" style={{ width: `${severityPercent}%` }} /></div></div><div className="text-xs uppercase tracking-wide text-muted"><p><strong>Crop:</strong> {predictionData.crop?.label || "N/A"}</p><p className="mt-1"><strong>Pests:</strong> {predictionData.pests?.length ? predictionData.pests.map((p: any) => p.label).join(", ") : "None detected"}</p></div></div></Card><Advisory predictionData={predictionData} /></div>;
+  };
 
-        {isPendingReview && (
-          <div style={{ background: "#fff3cd", border: "1px solid #ffeeba", padding: "1.5rem", borderRadius: "12px", marginBottom: "2rem", color: "#856404" }}>
-            <h3 style={{ margin: "0 0 0.5rem 0" }}>Additional Review Required</h3>
-            <p style={{ margin: 0 }}>The system could not diagnose this condition with sufficient confidence. Your crop scan has been routed to an agricultural specialist to verify the issue and ensure safe recommendations. You will be notified once verified.</p>
-          </div>
-        )}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#334155' }}>Diagnostic Status</h3>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: (primary.status as any)?.pipeline === 'completed' ? '#dcfce7' : '#fef9c3', color: (primary.status as any)?.pipeline === 'completed' ? '#166534' : '#854d0e' }}>
-                Pipeline: {(primary.status as any)?.pipeline || "Unknown"}
-              </span>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600, background: (primary.status as any)?.expert_review === 'completed' ? '#dbeafe' : '#f1f5f9', color: (primary.status as any)?.expert_review === 'completed' ? '#1e40af' : '#475569' }}>
-                Expert Review: {(primary.status as any)?.expert_review || "Not Requested"}
-              </span>
-            </div>
-          </div>
-          {(primary.status as any)?.expert_review === "not_requested" && (
-            <button 
-              onClick={handleRequestExpert} 
-              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)' }}
-            >
-              Request Expert Review
-            </button>
-          )}
-        </div>
-
-
-        {primary.historical_images && primary.historical_images.length > 0 && (
-          <div style={{ marginBottom: "2rem", padding: "1.5rem", background: "#f8fafc", borderRadius: "12px", border: "1px solid #cbd5e1" }}>
-            <h3 style={{ margin: "0 0 1rem 0", color: "#334155" }}>Disease Progression Timeline</h3>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", overflowX: "auto", paddingBottom: "0.5rem" }}>
-              {primary.historical_images.map((h: any, i: number) => (
-                <div key={i} style={{ display: "flex", alignItems: "center" }}>
-                  <div style={{ padding: "1rem", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", minWidth: "150px" }}>
-                    <div style={{ fontSize: "0.8rem", color: "#64748b" }}>{new Date(h.created_at).toLocaleDateString()}</div>
-                    <div style={{ fontWeight: "bold", color: "#0f172a", margin: "0.25rem 0" }}>{h.disease}</div>
-                    <div style={{ fontSize: "0.85rem", color: h.severity_pct > 60 ? "#ef4444" : "#10b981" }}>Sev: {h.severity_pct}%</div>
-                  </div>
-                  <div style={{ width: "30px", height: "2px", background: "#cbd5e1", margin: "0 0.5rem" }}></div>
-                </div>
-              ))}
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ padding: "1rem", background: "#e0f2fe", border: "2px solid #38bdf8", borderRadius: "8px", minWidth: "150px" }}>
-                  <div style={{ fontSize: "0.8rem", color: "#0369a1", fontWeight: "bold" }}>Latest Scan</div>
-                  <div style={{ fontWeight: "bold", color: "#0f172a", margin: "0.25rem 0" }}>{primary.disease?.label || "Unknown"}</div>
-                  <div style={{ fontSize: "0.85rem", color: (primary.severity?.percent || 0) > 60 ? "#ef4444" : "#10b981" }}>Sev: {primary.severity?.percent || 0}%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Render Primary (Newest) Prediction */}
-        {isProcessing ? <div style={{ padding: "4rem", textAlign: "center", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}><Loader2 size={48} className="animate-spin" style={{ margin: "0 auto", color: "#10b981" }} /><h2 style={{ marginTop: "1.5rem", color: "#0F3D2E" }}>Running AI Pipeline...</h2><p style={{ color: "#666" }}>Analyzing your crop image in the background. Please wait.</p></div> : renderPredictionBlock(primary, false)}
-
-        {/* Render Old (Original) Prediction as a collapsible section if it exists */}
-        {old && (
-          <div style={{ marginTop: "3rem", padding: "2rem", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
-            <details style={{ cursor: "pointer" }}>
-              <summary style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#475569" }}>View Original Prediction Details</summary>
-              <div style={{ marginTop: "2rem", cursor: "default" }}>
-                {renderPredictionBlock(old, true)}
-              </div>
-            </details>
-          </div>
-        )}
-
-        {!isPendingReview && (
-          <div style={{ marginTop: "3rem", padding: "2rem", background: "#fff", borderRadius: "16px", border: "1px solid var(--line)" }}>
-            <h3 style={{ marginTop: 0 }}>Farmer Field Feedback</h3>
-            {feedbackSubmitted ? (
-              <div style={{ padding: "1rem", background: "var(--green)", color: "#fff", borderRadius: "8px", fontWeight: 500 }}>
-                Thank you for verifying this diagnosis. Your feedback helps improve the AI for everyone!
-              </div>
-            ) : (
-              <div>
-                <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>Did this diagnosis match what you observed in the field? Help us improve the model by validating the result.</p>
-                <textarea 
-                  placeholder="Optional notes (e.g. 'Spots spread after rain' or 'Extension officer said it was blight')"
-                  value={farmerNote}
-                  onChange={e => setFarmerNote(e.target.value)}
-                  style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid var(--line)", minHeight: "80px", marginBottom: "1rem", fontFamily: "inherit" }}
-                />
-                <div style={{ display: "flex", gap: "1rem" }}>
-                  <button onClick={() => submitFeedback(true)} style={{ flex: 1, padding: "12px", background: "#e4eee4", color: "var(--green)", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>✅ Yes, Accurate</button>
-                  <button onClick={() => submitFeedback(false)} style={{ flex: 1, padding: "12px", background: "#fdf2f2", color: "#b44c3c", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>❌ No, Incorrect</button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </motion.div>
-    </>
-  );
+  const historicalImages = primary.historical_images || [];
+  return <>{isUploading && <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4"><Loader2 size={52} className="animate-spin text-farmer-700" /><h2 className="mt-6 font-display text-2xl text-ink">Re-running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your follow-up photo.</p></div>}<motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}><div><Link to="/history" className="text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700">&larr; Back to History</Link><h1 className="mt-4 font-display text-3xl text-ink sm:text-4xl">Scan #{primary.prediction_id || id} Diagnosis {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}</h1></div>{isPendingReview && <Card className="border-admin-100 bg-admin-50"><h3 className="font-display text-xl text-admin-700">Additional Review Required</h3><p className="mt-2 text-sm leading-6 text-admin-700">This scan was routed to an agricultural specialist to verify the issue and ensure safe recommendations.</p></Card>}<Card className="flex flex-col gap-4 bg-canvas sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-display text-xl text-ink">Diagnostic Status</h3><div className="mt-3 flex flex-wrap gap-2"><Badge tone={status?.pipeline === "completed" ? "success" : "warning"}>Pipeline: {status?.pipeline || "Unknown"}</Badge><Badge tone={status?.expert_review === "completed" ? "info" : "neutral"}>Expert Review: {status?.expert_review || "Not Requested"}</Badge></div></div>{status?.expert_review === "not_requested" && <Button variant="secondary" onClick={handleRequestExpert}>Request Expert Review</Button>}</Card>{historicalImages.length > 0 && <Card><h3 className="font-display text-xl text-ink">Disease Progression Timeline</h3><div className="mt-5 flex gap-3 overflow-x-auto pb-2">{historicalImages.map((item: any, index: number) => <div className="min-w-40 rounded-sm border border-line bg-canvas p-4" key={index}><div className="text-xs text-muted">{new Date(item.created_at).toLocaleDateString()}</div><div className="mt-2 font-semibold text-ink">{item.disease}</div><div className={`mt-1 text-xs font-semibold ${item.severity_pct > 60 ? "text-danger" : "text-farmer-700"}`}>Severity: {item.severity_pct}%</div></div>)}<div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4"><div className="text-xs font-bold text-expert-700">Latest Scan</div><div className="mt-2 font-semibold text-ink">{primary.disease?.label || "Unknown"}</div><div className="mt-1 text-xs font-semibold text-farmer-700">Severity: {primary.severity?.percent || 0}%</div></div></div></Card>}{isProcessing ? <Card className="flex flex-col items-center text-center" padding="lg"><Loader2 size={48} className="animate-spin text-farmer-700" /><h2 className="mt-5 font-display text-2xl text-ink">Running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your crop image in the background. Please wait.</p></Card> : <PredictionBlock predictionData={primary} />}{original && <Card><details><summary className="cursor-pointer font-display text-xl text-ink">View Original Prediction Details</summary><div className="mt-6"><PredictionBlock predictionData={original} /></div></details></Card>}{!isPendingReview && <Card><h3 className="font-display text-xl text-ink">Farmer Field Feedback</h3>{feedbackSubmitted ? <div className="mt-4 rounded-sm bg-farmer-700 p-4 text-sm font-semibold text-white">Thank you for verifying this diagnosis. Your feedback helps improve the AI for everyone!</div> : <><p className="mt-2 text-sm leading-6 text-muted">Did this diagnosis match what you observed in the field? Help us improve the model by validating the result.</p><textarea className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" placeholder="Optional notes" value={farmerNote} onChange={(event) => setFarmerNote(event.target.value)} /><div className="mt-4 flex flex-col gap-3 sm:flex-row"><Button className="flex-1" onClick={() => submitFeedback(true)}>Yes, Accurate</Button><Button variant="secondary" className="flex-1 border-danger text-danger" onClick={() => submitFeedback(false)}>No, Incorrect</Button></div></>}</Card>}</motion.div></>;
 }

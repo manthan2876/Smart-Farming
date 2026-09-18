@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from app.core import Base
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 class Plot(Base):
@@ -12,6 +12,7 @@ class Plot(Base):
     crop: Mapped[str | None] = mapped_column(String(100), nullable=True)
     area_acres: Mapped[float | None] = mapped_column(Float, nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="healthy")
+    geometry: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default = lambda : datetime.now(timezone.utc)
     )

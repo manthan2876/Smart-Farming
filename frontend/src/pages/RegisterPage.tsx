@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { UserPlus, Sprout } from "lucide-react";
 import { motion } from "motion/react";
-import "../styles/AuthPages.css";
+import { Button, Input } from "../components/ui";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -33,73 +33,56 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-split">
-        <div className="auth-left">
+    <div className="grid min-h-screen bg-canvas lg:grid-cols-2">
+        <div className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-16">
           <motion.div 
-            className="auth-card"
+            className="w-full max-w-2xl"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <div style={{ marginBottom: "1.5rem" }}>
-              <Sprout size={40} color="#0F3D2E" />
-            </div>
-            <h2 style={{ fontSize: "2rem" }}>Create Account</h2>
-            <p className="auth-subtitle">[JOIN THE ECOSYSTEM]</p>
+            <Sprout className="mb-6 text-farmer-700" size={40} />
+            <h2 className="font-display text-3xl text-ink sm:text-4xl">Create Account</h2>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-muted">[JOIN THE ECOSYSTEM]</p>
 
-            {error && <div className="alert alert-error">{error}</div>}
+            {error && <div className="mt-6 rounded-sm border border-red-100 bg-red-50 p-3 text-sm text-danger">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="auth-form">
-              <div className="form-group">
-                <label>Full Name</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <Input id="register-name" label="Full Name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Input id="register-email" label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input id="register-phone" label="Phone Number" type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div className="form-group">
-                  <label>Email Address</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>Phone Number</label>
-                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div className="form-group">
-                  <label>Language</label>
-                  <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+              <Input id="register-password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="block space-y-2" htmlFor="register-language">
+                  <span className="block text-sm font-semibold text-ink">Language</span>
+                  <select id="register-language" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={language} onChange={(e) => setLanguage(e.target.value)}>
                     <option value="English">English</option>
                     <option value="Hindi">Hindi</option>
                     <option value="Gujarati">Gujarati</option>
                   </select>
-                </div>
-                <div className="form-group">
-                  <label>Location</label>
-                  <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} required />
-                </div>
+                </label>
+                <Input id="register-location" label="Location" type="text" value={location} onChange={(e) => setLocation(e.target.value)} required />
               </div>
 
-              <button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="mt-2 w-full">
+                <UserPlus size={17} />
                 {loading ? "Creating..." : "Register & Continue"}
-              </button>
+              </Button>
             </form>
 
-            <div className="auth-links">
-              Already have an account? <Link to="/auth/login">Sign In</Link>
+            <div className="mt-8 text-center text-sm text-muted">
+              Already have an account? <Link className="font-bold text-farmer-700 underline" to="/auth/login">Sign In</Link>
             </div>
           </motion.div>
         </div>
-        <div className="auth-right" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1595841696650-622839b207ee?q=80&w=2069&auto=format&fit=crop')" }}>
-          <div className="auth-quote">
-            <h2>"Smarter agriculture built for the next generation of farming."</h2>
-            <p>[CROP INTELLIGENCE PLATFORM]</p>
+        <div className="relative hidden min-h-[26rem] items-end overflow-hidden bg-ink bg-[url('https://images.unsplash.com/photo-1595841696650-622839b207ee?q=80&w=2069&auto=format&fit=crop')] bg-cover bg-center p-10 lg:flex lg:p-16">
+          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-transparent" />
+          <div className="relative z-10 text-white">
+            <h2 className="max-w-xl font-display text-4xl leading-tight">"Smarter agriculture built for the next generation of farming."</h2>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-farmer-300">[CROP INTELLIGENCE PLATFORM]</p>
           </div>
         </div>
-      </div>
     </div>
   );
 }

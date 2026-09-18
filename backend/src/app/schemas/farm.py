@@ -9,6 +9,7 @@ class PlotResponse(BaseModel):
     crop: str | None
     area_acres: float | None
     status: str
+    geometry: dict[str, Any] | None = None
 
 class FarmResponse(BaseModel):
     id: int
@@ -33,3 +34,4 @@ class PlotRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     crop: str | None = Field(default=None, max_length=100)
     area_acres: float | None = Field(default=None, ge=0)
+    geometry: dict[str, Any] | None = Field(default=None)

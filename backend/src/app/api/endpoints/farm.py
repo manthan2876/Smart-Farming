@@ -88,7 +88,8 @@ async def create_plot(
             name=payload.name,
             crop=payload.crop,
             area_acres=payload.area_acres,
-            status="healthy"
+            status="healthy",
+            geometry=payload.geometry
         )
         session.add(new_plot)
         session.commit()
@@ -117,6 +118,8 @@ async def update_plot(
         plot.name = payload.name
         plot.crop = payload.crop
         plot.area_acres = payload.area_acres
+        if payload.geometry is not None:
+            plot.geometry = payload.geometry
         session.commit()
         session.refresh(plot)
         return plot

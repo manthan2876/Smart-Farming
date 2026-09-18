@@ -1,19 +1,17 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, ShieldAlert, CloudSun, MapPin, Activity, History } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getExpertReview, submitExpertReview } from "../api/expert";
 import { motion } from "motion/react";
-import "../styles/ExpertReviewPage.css";
+import { Badge, Button, Card, Input } from "../components/ui";
 
 export default function ExpertReviewPage() {
   const { id } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  // State
   const [action, setAction] = useState<"Approve" | "Override / Correct Findings" | "Request Rescan">("Approve");
   const [correctedDisease, setCorrectedDisease] = useState("");
   const [correctedSeverity, setCorrectedSeverity] = useState("");
@@ -24,209 +22,18 @@ export default function ExpertReviewPage() {
   const [addToRetraining, setAddToRetraining] = useState(false);
   const [heatmapOpacity, setHeatmapOpacity] = useState(65);
 
-  const { data: review, isLoading } = useQuery({
-    queryKey: ["expertReview", id],
-    queryFn: () => getExpertReview(Number(id), token!),
-    enabled: !!token && !!id,
-  });
-
+  const { data: review, isLoading } = useQuery({ queryKey: ["expertReview", id], queryFn: () => getExpertReview(Number(id), token!), enabled: !!token && !!id });
   const mutation = useMutation({
-    mutationFn: () => {
-      // Build farmer guidance from components
-      const guidance = `Immediate Action: ${immediateAction}\nTreatment: ${treatment}`;
-      
-      return submitExpertReview(Number(id), {
-        action: action as any,
-        corrected_disease: action === "Override / Correct Findings" ? correctedDisease : undefined,
-        corrected_severity: action === "Override / Correct Findings" ? correctedSeverity : undefined,
-        farmer_guidance: guidance,
-        internal_note: internalNote || undefined,
-        add_to_retraining: addToRetraining
-      } as any, token!);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expertQueue"] });
-      navigate("/admin/expert");
-    }
+    mutationFn: () => submitExpertReview(Number(id), { action: action as any, corrected_disease: action === "Override / Correct Findings" ? correctedDisease : undefined, corrected_severity: action === "Override / Correct Findings" ? correctedSeverity : undefined, farmer_guidance: `Immediate Action: ${immediateAction}\nTreatment: ${treatment}`, internal_note: internalNote || undefined, add_to_retraining: addToRetraining } as any, token!),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expertQueue"] }); navigate("/admin/expert"); },
   });
 
-  if (isLoading) return <div className="loading-state">Loading clinical review...</div>;
-  if (!review) return <div className="error-state">Review not found</div>;
+  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted">Loading clinical review...</div>;
+  if (!review) return <Card className="text-danger">Review not found</Card>;
 
   const triggerReason = review.disease_conf < 0.70 ? "Confidence < 70% Threshold" : "Rule Engine Safety Trigger";
-  const statusColor = review.status === "verified" ? "#10b981" : "#b44c3c";
   const dateStr = review.created_at ? new Date(review.created_at).toLocaleString() : new Date().toLocaleString();
+  const radioOptions = ["Approve", "Override / Correct Findings", "Request Rescan"] as const;
 
-  return (
-    <div className="expert-review-page">
-      {/* 1. Header & Case Telemetry Strip */}
-      <div className="er-header">
-        <div className="er-header-left">
-          <button onClick={() => navigate("/admin/expert")} className="btn-back-queue">
-            <ArrowLeft size={18} /> Back to Queue
-          </button>
-          <h2 className="er-title">
-            Case #{review.prediction_id}: {review.crop} ({review.disease})
-          </h2>
-          <div className="status-pill" style={{ color: statusColor, background: review.status === "verified" ? "#e4eee4" : "#fff0eb" }}>
-            <ShieldAlert size={14} /> 
-            {review.status === "verified" ? "Verified" : "Critical Triage"}
-          </div>
-        </div>
-        <div className="er-header-right">
-          <div className="er-trigger-flag">Trigger: {triggerReason}</div>
-          <div>{dateStr} | Plot A1</div>
-        </div>
-      </div>
-
-      <div className="er-grid">
-        <div className="er-left-col">
-          {/* 2. Zone A: Visual Evidence */}
-          <div className="er-zone">
-            <h3 className="er-zone-title">Visual & Model Evidence</h3>
-            <div className="er-visuals">
-              <div className="er-image-comparison">
-                <div className="er-img-box">
-                  <span className="er-img-label">RAW LEAF</span>
-                  <img src={`http://127.0.0.1:8000/${review.raw_path}`} alt="Raw" />
-                </div>
-                <div className="er-img-box" style={{ position: "relative" }}>
-                  <span className="er-img-label">GRAD-CAM HEATMAP</span>
-                  {/* Simulate heatmap layering via opacity on a duplicate or processed image */}
-                  <img src={`http://127.0.0.1:8000/${review.raw_path}`} alt="Heatmap base" />
-                  <div style={{
-                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                    background: "radial-gradient(circle, rgba(214,119,86,0.8) 0%, rgba(214,119,86,0) 70%)",
-                    opacity: heatmapOpacity / 100,
-                    mixBlendMode: "multiply"
-                  }}></div>
-                </div>
-              </div>
-              <div className="er-slider-container">
-                <label>Opacity Slider:</label>
-                <input 
-                  type="range" 
-                  min="0" max="100" 
-                  value={heatmapOpacity} 
-                  onChange={(e) => setHeatmapOpacity(Number(e.target.value))} 
-                />
-                <span>{heatmapOpacity}%</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Zone B: AI Inferences vs Context */}
-          <div className="er-zone">
-            <h3 className="er-zone-title">Model Telemetry & Agronomic Context</h3>
-            <div className="er-telemetry-grid">
-              <div className="telemetry-block">
-                <h4>AI Predictions</h4>
-                <ul className="telemetry-list">
-                  <li><Activity size={16} /> <strong>Crop:</strong> {review.crop} ({(100).toFixed(0)}%)</li>
-                  <li><Activity size={16} /> <strong>Disease:</strong> {review.disease} ({(review.disease_conf * 100).toFixed(0)}%)</li>
-                  <li><Activity size={16} /> <strong>Severity:</strong> {review.severity_pct.toFixed(0)}% affected</li>
-                  <li><Activity size={16} /> <strong>Pests:</strong> None detected</li>
-                </ul>
-              </div>
-              <div className="telemetry-block">
-                <h4>Context</h4>
-                <ul className="telemetry-list">
-                  <li><CloudSun size={16} /> <strong>Weather:</strong> 29°C, 74% Humidity</li>
-                  <li><MapPin size={16} /> <strong>Location:</strong> Anand, Gujarat</li>
-                  <li><History size={16} /> <strong>History:</strong> Healthy 5 days ago</li>
-                </ul>
-                <div className="er-farmer-note">
-                  "Spots spreading quickly after recent rain."
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Zone C: Decision Form */}
-        <div className="er-zone">
-          <h3 className="er-zone-title">Expert Decision & Guidance Form</h3>
-          
-          <div className="er-form-group">
-            <label>1. Diagnostic Verdict</label>
-            <div className="er-radio-group">
-              <label className={`er-radio-label ${action === 'Approve' ? 'active' : ''}`}>
-                <input type="radio" name="verdict" checked={action === 'Approve'} onChange={() => setAction('Approve')} />
-                Approve AI Diagnosis
-              </label>
-              <label className={`er-radio-label ${action === 'Override / Correct Findings' ? 'active' : ''}`}>
-                <input type="radio" name="verdict" checked={action === 'Override / Correct Findings'} onChange={() => setAction('Override / Correct Findings')} />
-                Override / Correct Findings
-              </label>
-              <label className={`er-radio-label ${action === 'Request Rescan' ? 'active' : ''}`}>
-                <input type="radio" name="verdict" checked={action === 'Request Rescan'} onChange={() => setAction('Request Rescan')} />
-                Request Rescan (Unusable Image)
-              </label>
-            </div>
-          </div>
-
-          {action === "Override / Correct Findings" && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} style={{ overflow: "hidden" }}>
-              <div className="er-form-group">
-                <label>Corrected Disease:</label>
-                <select className="er-input" value={correctedDisease} onChange={(e) => setCorrectedDisease(e.target.value)}>
-                  <option value="">Select Disease...</option>
-                  <option value="Early Blight">Early Blight</option>
-                  <option value="Late Blight">Late Blight</option>
-                  <option value="Fusarium Wilt">Fusarium Wilt</option>
-                  <option value="Nutrient Deficiency">Nutrient Deficiency</option>
-                </select>
-              </div>
-              <div className="er-form-group">
-                <label>Corrected Severity:</label>
-                <select className="er-input" value={correctedSeverity} onChange={(e) => setCorrectedSeverity(e.target.value)}>
-                  <option value="">Select Severity...</option>
-                  <option value="Healthy">Healthy (0%)</option>
-                  <option value="Mild">Mild (&lt;25%)</option>
-                  <option value="Moderate">Moderate (25-50%)</option>
-                  <option value="Severe">Severe (&gt;50%)</option>
-                </select>
-              </div>
-              <div className="er-form-group">
-                <label>Pest Confirmation:</label>
-                <label className="er-checkbox-label">
-                  <input type="checkbox" checked={pestVerified} onChange={(e) => setPestVerified(e.target.checked)} />
-                  Pest presence verified
-                </label>
-              </div>
-            </motion.div>
-          )}
-
-          <div className="er-form-group" style={{ marginTop: "2rem" }}>
-            <label>2. Farmer Guidance (Verified)</label>
-            <div style={{ marginBottom: "1rem" }}>
-              <label style={{ fontSize: "0.85rem", color: "#666" }}>Immediate Action:</label>
-              <input type="text" className="er-input" placeholder="e.g. Remove infected lower leaves" value={immediateAction} onChange={(e) => setImmediateAction(e.target.value)} />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.85rem", color: "#666" }}>Treatment & Dosage:</label>
-              <input type="text" className="er-input" placeholder="e.g. Apply copper oxychloride @ 2g/L" value={treatment} onChange={(e) => setTreatment(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="er-form-group" style={{ marginTop: "2rem" }}>
-            <label>3. Internal Audit (MLOps)</label>
-            <label className="er-checkbox-label" style={{ marginBottom: "1rem" }}>
-              <input type="checkbox" checked={addToRetraining} onChange={(e) => setAddToRetraining(e.target.checked)} />
-              Flag as High-Value Ground Truth for Retraining
-            </label>
-            <textarea className="er-input" rows={2} placeholder="Notes for model retraining team..." value={internalNote} onChange={(e) => setInternalNote(e.target.value)} />
-          </div>
-
-          <div className="er-form-actions">
-            <button className="er-btn er-btn-secondary" onClick={() => navigate("/admin/expert")}>Cancel</button>
-            <button className="er-btn er-btn-primary" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-              {mutation.isPending ? "Submitting..." : "Submit Review"}
-            </button>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
+  return <motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}><Card className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div className="flex flex-wrap items-center gap-4"><button onClick={() => navigate("/admin/expert")} className="inline-flex items-center gap-2 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft size={18} /> Back to Queue</button><h2 className="font-display text-xl text-ink">Case #{review.prediction_id}: {review.crop} ({review.disease})</h2><Badge tone={review.status === "verified" ? "success" : "danger"}><ShieldAlert size={14} /> {review.status === "verified" ? "Verified" : "Critical Triage"}</Badge></div><div className="flex flex-wrap gap-2 text-xs text-muted"><Badge>{triggerReason}</Badge><span>{dateStr} | Plot A1</span></div></Card><div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]"><div className="space-y-6"><Card><h3 className="border-b border-line pb-3 font-display text-xl text-ink">Visual & Model Evidence</h3><div className="mt-5 grid gap-4 sm:grid-cols-2"><div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink"><span className="absolute left-2 top-2 z-10 rounded-sm bg-ink/80 px-2 py-1 text-xs text-white">RAW LEAF</span><img className="h-full w-full object-contain" src={`http://127.0.0.1:8000/${review.raw_path}`} alt="Raw leaf" /></div><div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink"><span className="absolute left-2 top-2 z-10 rounded-sm bg-ink/80 px-2 py-1 text-xs text-white">GRAD-CAM HEATMAP</span><img className="h-full w-full object-contain" src={`http://127.0.0.1:8000/${review.raw_path}`} alt="Heatmap base" /><div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} /></div></div><label className="mt-5 flex items-center gap-3 text-sm text-muted">Opacity <input className="flex-1 accent-farmer-700" type="range" min="0" max="100" value={heatmapOpacity} onChange={(event) => setHeatmapOpacity(Number(event.target.value))} /><span className="w-10 text-right">{heatmapOpacity}%</span></label></Card><Card><h3 className="border-b border-line pb-3 font-display text-xl text-ink">Model Telemetry & Agronomic Context</h3><div className="mt-5 grid gap-6 sm:grid-cols-2"><div><h4 className="text-xs font-bold uppercase tracking-wide text-muted">AI Predictions</h4><ul className="mt-3 space-y-3 text-sm text-ink"><li><Activity size={16} className="mr-2 inline text-farmer-700" /><strong>Crop:</strong> {review.crop} (100%)</li><li><Activity size={16} className="mr-2 inline text-farmer-700" /><strong>Disease:</strong> {review.disease} ({(review.disease_conf * 100).toFixed(0)}%)</li><li><Activity size={16} className="mr-2 inline text-farmer-700" /><strong>Severity:</strong> {review.severity_pct.toFixed(0)}% affected</li><li><Activity size={16} className="mr-2 inline text-farmer-700" /><strong>Pests:</strong> None detected</li></ul></div><div><h4 className="text-xs font-bold uppercase tracking-wide text-muted">Context</h4><ul className="mt-3 space-y-3 text-sm text-ink"><li><CloudSun size={16} className="mr-2 inline text-expert-500" /><strong>Weather:</strong> 29°C, 74% Humidity</li><li><MapPin size={16} className="mr-2 inline text-expert-500" /><strong>Location:</strong> Anand, Gujarat</li><li><History size={16} className="mr-2 inline text-expert-500" /><strong>History:</strong> Healthy 5 days ago</li></ul><div className="mt-4 border-l-4 border-admin-500 bg-admin-50 p-3 text-sm italic text-admin-700">"Spots spreading quickly after recent rain."</div></div></div></Card></div><Card><h3 className="border-b border-line pb-3 font-display text-xl text-ink">Expert Decision & Guidance Form</h3><fieldset className="mt-6"><legend className="mb-3 text-sm font-semibold text-ink">1. Diagnostic Verdict</legend><div className="space-y-2">{radioOptions.map((option) => <label className={`flex cursor-pointer items-center gap-3 rounded-sm border p-3 text-sm transition ${action === option ? "border-farmer-500 bg-farmer-50 font-semibold" : "border-line hover:bg-canvas"}`} key={option}><input type="radio" name="verdict" checked={action === option} onChange={() => setAction(option)} />{option === "Request Rescan" ? "Request Rescan (Unusable Image)" : option === "Approve" ? "Approve AI Diagnosis" : option}</label>)}</div></fieldset>{action === "Override / Correct Findings" && <motion.div className="mt-6 space-y-5" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}><label className="block space-y-2 text-sm font-semibold text-ink">Corrected Disease<select className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 font-normal" value={correctedDisease} onChange={(event) => setCorrectedDisease(event.target.value)}><option value="">Select Disease...</option><option>Early Blight</option><option>Late Blight</option><option>Fusarium Wilt</option><option>Nutrient Deficiency</option></select></label><label className="block space-y-2 text-sm font-semibold text-ink">Corrected Severity<select className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 font-normal" value={correctedSeverity} onChange={(event) => setCorrectedSeverity(event.target.value)}><option value="">Select Severity...</option><option>Healthy (0%)</option><option>Mild (&lt;25%)</option><option>Moderate (25-50%)</option><option>Severe (&gt;50%)</option></select></label><label className="flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={pestVerified} onChange={(event) => setPestVerified(event.target.checked)} /> Pest presence verified</label></motion.div>}<div className="mt-7 space-y-4"><h4 className="text-sm font-semibold text-ink">2. Farmer Guidance (Verified)</h4><Input label="Immediate Action" placeholder="e.g. Remove infected lower leaves" value={immediateAction} onChange={(event) => setImmediateAction(event.target.value)} /><Input label="Treatment & Dosage" placeholder="e.g. Apply copper oxychloride @ 2g/L" value={treatment} onChange={(event) => setTreatment(event.target.value)} /></div><div className="mt-7 space-y-4"><h4 className="text-sm font-semibold text-ink">3. Internal Audit (MLOps)</h4><label className="flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={addToRetraining} onChange={(event) => setAddToRetraining(event.target.checked)} /> Flag as High-Value Ground Truth for Retraining</label><textarea className="min-h-24 w-full rounded-sm border border-line p-3 text-sm" placeholder="Notes for model retraining team..." value={internalNote} onChange={(event) => setInternalNote(event.target.value)} /></div><div className="mt-8 flex gap-3 border-t border-line pt-5"><Button variant="secondary" className="flex-1" onClick={() => navigate("/admin/expert")}>Cancel</Button><Button className="flex-1" onClick={() => mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending ? "Submitting..." : "Submit Review"}</Button></div></Card></div></motion.div>;
 }

@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line
 } from "recharts";
 import { Loader2 } from "lucide-react";
+import { Card, Button } from "../components/ui";
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -38,32 +39,28 @@ export default function AdminMetricsPage() {
     enabled: !!token
   });
 
-  if (isLoading) return <div style={{ display: "flex", justifyContent: "center", padding: "4rem" }}><Loader2 className="animate-spin" /></div>;
-  if (!data) return <div>Failed to load metrics.</div>;
+  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><Loader2 className="animate-spin text-admin-500" /></div>;
+  if (!data) return <div className="rounded-md border border-red-100 bg-red-50 p-6 text-danger">Failed to load metrics.</div>;
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1 style={{ marginBottom: "2rem", color: "var(--ink)" }}>System Metrics & ML Ops</h1>
+    <div className="space-y-6 pb-12">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl text-ink sm:text-4xl">System Metrics & ML Ops</h1>
+          <p className="mt-2 text-sm text-muted">Operational health and model validation signals.</p>
+        </div>
+        <Button variant="secondary" onClick={handleExportMLOps}>Export MLOps Dataset</Button>
+      </div>
       
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
-        <div style={{ background: "#fff", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--line)" }}>
-          <h3 style={{ margin: "0 0 0.5rem 0", color: "var(--muted)" }}>Total Users</h3>
-          <div style={{ fontSize: "2rem", fontWeight: "bold" }}>{data.total_users}</div>
-        </div>
-        <div style={{ background: "#fff", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--line)" }}>
-          <h3 style={{ margin: "0 0 0.5rem 0", color: "var(--muted)" }}>Total Scans</h3>
-          <div style={{ fontSize: "2rem", fontWeight: "bold" }}>{data.total_scans}</div>
-        </div>
-        <div style={{ background: "#fff", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--line)" }}>
-          <h3 style={{ margin: "0 0 0.5rem 0", color: "var(--muted)" }}>Model Accuracy (User Validation)</h3>
-          <div style={{ fontSize: "2rem", fontWeight: "bold", color: data.accuracy > 85 ? "var(--green)" : "#ef4444" }}>{data.accuracy.toFixed(1)}%</div>
-        </div>
+      <div className="grid gap-5 sm:grid-cols-3">
+        <Card><h3 className="text-xs font-bold uppercase tracking-wide text-muted">Total Users</h3><div className="mt-3 font-display text-3xl text-ink">{data.total_users}</div></Card>
+        <Card><h3 className="text-xs font-bold uppercase tracking-wide text-muted">Total Scans</h3><div className="mt-3 font-display text-3xl text-ink">{data.total_scans}</div></Card>
+        <Card><h3 className="text-xs font-bold uppercase tracking-wide text-muted">Model Accuracy</h3><div className={`mt-3 font-display text-3xl ${data.accuracy > 85 ? "text-farmer-700" : "text-danger"}`}>{data.accuracy.toFixed(1)}%</div></Card>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-        <div style={{ background: "#fff", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--line)" }}>
-          <h3>Disease Distribution</h3>
-          <div style={{ height: 300 }}>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card><h3 className="font-display text-xl text-ink">Disease Distribution</h3>
+          <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={data.disease_distribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
@@ -76,22 +73,21 @@ export default function AdminMetricsPage() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
 
-        <div style={{ background: "#fff", padding: "1.5rem", borderRadius: "12px", border: "1px solid var(--line)" }}>
-          <h3>AI Confidence Histogram</h3>
-          <div style={{ height: 300 }}>
+        <Card><h3 className="font-display text-xl text-ink">AI Confidence Histogram</h3>
+          <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.confidence_histogram}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="var(--green)" />
+                <Bar dataKey="count" fill="#52772d" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
