@@ -1,5 +1,9 @@
 const host = window.location.hostname || "localhost";
-const API_URL = import.meta.env.VITE_API_URL ?? `http://${host}:8000`;
+const configuredApiUrl = import.meta.env.VITE_API_URL ?? `http://${host}:8000`;
+const API_URL = configuredApiUrl.replace(
+  /^(https?:\/\/)(localhost|127\.0\.0\.1)(?=:)/,
+  `$1${host}`,
+);
 
 export function getApiUrl() {
   return API_URL;

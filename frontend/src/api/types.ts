@@ -5,6 +5,7 @@ export interface Plot {
   crop?: string;
   area_acres?: number;
   status: string;
+  geometry?: Record<string, unknown> | null;
 }
 
 ﻿export type Pest = { label?: string; confidence?: number };
@@ -71,6 +72,7 @@ export type Farm = {
   latitude?: number;
   longitude?: number;
   crop_history: string[];
+  boundary?: Record<string, unknown> | null;
   plots: Plot[];
 };
 

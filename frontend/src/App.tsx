@@ -19,6 +19,7 @@ import ExpertQueuePage from "./pages/ExpertQueuePage";
 import ExpertReviewPage from "./pages/ExpertReviewPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
+import { AuthProvider } from "./context/AuthContext";
 
 function ExternalRedirect({ to }: { to: string }) {
   window.location.href = to;
@@ -27,7 +28,8 @@ function ExternalRedirect({ to }: { to: string }) {
 
 export default function App() {
   return (
-    <Routes>
+    <AuthProvider>
+      <Routes>
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
@@ -57,6 +59,7 @@ export default function App() {
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </AuthProvider>
   );
 }

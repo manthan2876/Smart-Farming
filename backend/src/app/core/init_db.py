@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 
 from app.core import Base, database_url
 import app.models
@@ -14,9 +14,12 @@ def initialize_database() -> None:
             url, pool_size=15, max_overflow=20, pool_recycle=1200, pool_pre_ping=True
         )
     Base.metadata.create_all(engine)
-    if not url.startswith("sqlite"):
-        try:
-            with engine.begin() as connection:
+    try:
+        with engine.begin() as connection:
+            existing_columns = {column["name"] for column in inspect(engine).get_columns("farms")}
+            if "boundary" not in existing_columns:
+                connection.execute(text("ALTER TABLE farms ADD COLUMN boundary JSON"))
+            if not url.startswith("sqlite"):
                 connection.execute(
                     text("ALTER TABLE farms ADD COLUMN IF NOT EXISTS name VARCHAR(200)")
                 )
@@ -41,8 +44,8 @@ def initialize_database() -> None:
                 connection.execute(
                     text("ALTER TABLE predictions ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES predictions(id)")
                 )
-        except Exception as exc:
-            print(f"[InitDB] Note on migrations: {exc}")
+    except Exception as exc:
+        print(f"[InitDB] Note on migrations: {exc}")
     print("Smart Farming database tables are ready.")
 
 

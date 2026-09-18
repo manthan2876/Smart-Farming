@@ -3,11 +3,247 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
 import { createPlot, deletePlot } from "../api/farm";
-import { MapPin, Save, CheckCircle2, Sprout, AlertTriangle, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite } from "lucide-react";
-import { MapContainer, TileLayer, Polygon, CircleMarker, Polyline, useMapEvents, useMap } from "react-leaflet";
-import type { LatLng } from "leaflet";
+import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite } from "lucide-react";
+import { APIProvider, Circle, Map as GoogleMap, Marker, Polygon, useMap } from "@vis.gl/react-google-maps";
 import { motion } from "motion/react";
 import { Button, Card, Input } from "../components/ui";
+
+type PlotPoint = [number, number];
+
+function GoogleMapController({
+  flyToRef,
+}: {
+  flyToRef: React.MutableRefObject<((latlng: PlotPoint, zoom?: number) => void) | null>;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    flyToRef.current = (latlng, zoom = 17) => {
+      map?.panTo({ lat: latlng[0], lng: latlng[1] });
+      if (map) map.setZoom(zoom);
+    };
+
+    return () => {
+      flyToRef.current = null;
+    };
+  }, [flyToRef, map]);
+
+  return null;
+}
+
+function toGooglePath(points: PlotPoint[]) {
+  return points.map(([latitude, longitude]) => ({ lat: latitude, lng: longitude }));
+}
+
+function getEventLatLng(event: any) {
+  const latLng = event?.detail?.latLng ?? event?.latLng;
+  if (!latLng) return null;
+  if (typeof latLng.lat === "function") return [latLng.lat(), latLng.lng()] as PlotPoint;
+  if (typeof latLng.lat === "number") return [latLng.lat, latLng.lng] as PlotPoint;
+  return null;
+}
+
+const boundaryPointIcon = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#15803d" stroke="#ffffff" stroke-width="2"/></svg>',
+);
+
+const plotBoundaryColors = [
+  { stroke: "#2563eb", fill: "#60a5fa" },
+  { stroke: "#dc2626", fill: "#f87171" },
+  { stroke: "#9333ea", fill: "#c084fc" },
+  { stroke: "#ea580c", fill: "#fb923c" },
+  { stroke: "#0891b2", fill: "#67e8f9" },
+  { stroke: "#ca8a04", fill: "#facc15" },
+];
+
+function fromGeoJsonGeometry(geometry: any): PlotPoint[] {
+  const coordinates = geometry?.type === "Polygon" ? geometry.coordinates?.[0] : null;
+  if (!Array.isArray(coordinates)) return [];
+
+  return coordinates
+    .map(([longitude, latitude]: [number, number]) => [latitude, longitude] as PlotPoint)
+    .filter(([latitude, longitude]) => Number.isFinite(latitude) && Number.isFinite(longitude));
+}
+
+function toGeoJsonPolygon(points: PlotPoint[]) {
+  const closedPoints = points.length > 2 && (points[0][0] !== points.at(-1)?.[0] || points[0][1] !== points.at(-1)?.[1])
+    ? [...points, points[0]]
+    : points;
+  return closedPoints.length > 2
+    ? { type: "Polygon", coordinates: [closedPoints.map(([latitude, longitude]) => [longitude, latitude])] }
+    : null;
+}
+
+function pointInsidePolygon(point: PlotPoint, polygon: PlotPoint[]) {
+  const [latitude, longitude] = point;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [currentLat, currentLon] = polygon[i];
+    const [previousLat, previousLon] = polygon[j];
+    const intersects = ((currentLon > longitude) !== (previousLon > longitude))
+      && (latitude < (previousLat - currentLat) * (longitude - currentLon) / (previousLon - currentLon) + currentLat);
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function pointOnPolygonBoundary(point: PlotPoint, polygon: PlotPoint[]) {
+  const ring = polygon.length > 1 && polygon[0][0] === polygon.at(-1)?.[0] && polygon[0][1] === polygon.at(-1)?.[1]
+    ? polygon.slice(0, -1)
+    : polygon;
+  const tolerance = 1e-8;
+  return ring.some((current, index) => {
+    const next = ring[(index + 1) % ring.length];
+    const cross = (point[0] - current[0]) * (next[1] - current[1]) - (point[1] - current[1]) * (next[0] - current[0]);
+    if (Math.abs(cross) > tolerance) return false;
+    return point[0] >= Math.min(current[0], next[0]) - tolerance
+      && point[0] <= Math.max(current[0], next[0]) + tolerance
+      && point[1] >= Math.min(current[1], next[1]) - tolerance
+      && point[1] <= Math.max(current[1], next[1]) + tolerance;
+  });
+}
+
+function pointInsideOrOnPolygon(point: PlotPoint, polygon: PlotPoint[]) {
+  return pointInsidePolygon(point, polygon) || pointOnPolygonBoundary(point, polygon);
+}
+
+function nearestEdgeProjection(point: PlotPoint, polygon: PlotPoint[]) {
+  const ring = polygon.length > 1 && polygon[0][0] === polygon.at(-1)?.[0] && polygon[0][1] === polygon.at(-1)?.[1]
+    ? polygon.slice(0, -1)
+    : polygon;
+  let closestPoint = ring[0];
+  let closestIndex = 0;
+  let closestDistance = Number.POSITIVE_INFINITY;
+
+  ring.forEach((current, index) => {
+    const next = ring[(index + 1) % ring.length];
+    const latitudeLength = next[0] - current[0];
+    const longitudeLength = next[1] - current[1];
+    const segmentLengthSquared = latitudeLength ** 2 + longitudeLength ** 2 || 1;
+    const projection = Math.max(0, Math.min(1, (
+      (point[0] - current[0]) * latitudeLength +
+      (point[1] - current[1]) * longitudeLength
+    ) / segmentLengthSquared));
+    const projected: PlotPoint = [
+      current[0] + projection * latitudeLength,
+      current[1] + projection * longitudeLength,
+    ];
+    const distance = Math.hypot(point[0] - projected[0], point[1] - projected[1]);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestPoint = projected;
+      closestIndex = index;
+    }
+  });
+
+  return { point: closestPoint, edgeIndex: closestIndex };
+}
+
+function BoundaryMap({
+  center,
+  mapLayer,
+  flyToRef,
+  farmBoundary,
+  drawingPoints,
+  currentLocation,
+  drawingActive,
+  plotDrawingActive,
+  onVertexDragEnd,
+  plots = [],
+  showPlots = false,
+  onMapClick,
+  onBoundaryClick,
+  onVertexDoubleClick,
+}: {
+  center: PlotPoint;
+  mapLayer: "satellite" | "street";
+  flyToRef: React.MutableRefObject<((latlng: PlotPoint, zoom?: number) => void) | null>;
+  farmBoundary: PlotPoint[];
+  drawingPoints: PlotPoint[];
+  currentLocation: PlotPoint | null;
+  drawingActive: boolean;
+  plotDrawingActive: boolean;
+  onVertexDragEnd: (index: number, point: PlotPoint) => void;
+  plots?: any[];
+  showPlots?: boolean;
+  onMapClick: (point: PlotPoint) => void;
+  onBoundaryClick: (point: PlotPoint) => void;
+  onVertexDoubleClick: (index: number) => void;
+}) {
+  return (
+    <GoogleMap
+      defaultCenter={{ lat: center[0], lng: center[1] }}
+      defaultZoom={15}
+      mapTypeId={mapLayer === "satellite" ? "satellite" : "roadmap"}
+      gestureHandling={drawingActive ? "none" : "greedy"}
+      disableDoubleClickZoom
+      className="h-full w-full"
+      onClick={(event) => {
+        const point = getEventLatLng(event);
+        if (point) onMapClick(point);
+      }}
+    >
+      <GoogleMapController flyToRef={flyToRef} />
+      {farmBoundary.length >= 3 && (
+        <Polygon
+          paths={toGooglePath(farmBoundary)}
+          onClick={(event) => {
+            const point = getEventLatLng(event);
+            if (point) onBoundaryClick(point);
+          }}
+          options={{
+            strokeColor: plotDrawingActive ? "#f59e0b" : "#0f766e",
+            strokeWeight: plotDrawingActive ? 4 : 3,
+            fillColor: plotDrawingActive ? "#facc15" : "#14b8a6",
+            fillOpacity: plotDrawingActive ? 0.28 : 0.12,
+            clickable: !plotDrawingActive,
+          }}
+        />
+      )}
+      {showPlots && plots.map((plot: any, index: number) => {
+        const points = fromGeoJsonGeometry(plot.geometry);
+        const color = plotBoundaryColors[index % plotBoundaryColors.length];
+        return points.length >= 3 ? (
+          <Polygon
+            key={plot.id}
+            paths={toGooglePath(points)}
+            options={{ strokeColor: color.stroke, strokeWeight: 3, fillColor: color.fill, fillOpacity: 0.38, clickable: false }}
+          />
+        ) : null;
+      })}
+      {drawingPoints.length >= 3 && (
+        <Polygon
+          paths={toGooglePath(drawingPoints)}
+          onClick={(event) => {
+            const point = getEventLatLng(event);
+            if (point) onBoundaryClick(point);
+          }}
+          options={{ strokeColor: "#16a34a", strokeWeight: 3, fillColor: "#16a34a", fillOpacity: 0.25, clickable: true }}
+        />
+      )}
+      {drawingPoints.map((point, index) => (
+        <Marker
+          key={`drawing-${index}`}
+          position={{ lat: point[0], lng: point[1] }}
+          icon={boundaryPointIcon}
+          draggable={drawingActive}
+          onDblClick={() => onVertexDoubleClick(index)}
+          onDragEnd={(event) => {
+            const point = getEventLatLng(event);
+            if (point) onVertexDragEnd(index, point);
+          }}
+        />
+      ))}
+      {currentLocation && (
+        <Circle
+          center={{ lat: currentLocation[0], lng: currentLocation[1] }}
+          radius={12}
+          options={{ strokeColor: "#2563eb", strokeWeight: 2, fillColor: "#2563eb", fillOpacity: 0.75 }}
+        />
+      )}
+    </GoogleMap>
+  );
+}
 
 export default function FarmSettingsPage() {
   const { token, user } = useAuth();
@@ -39,122 +275,24 @@ export default function FarmSettingsPage() {
       setLat(farmData.latitude || 21.7645);
       setLon(farmData.longitude || 72.1519);
       setCropHistory(Array.isArray(farmData.crop_history) ? farmData.crop_history.join(", ") : farmData.crop_history || "");
+      setFarmBoundary(fromGeoJsonGeometry(farmData.boundary));
     }
   }, [farmData]);
 
   const [newPlotName, setNewPlotName] = useState("");
   const [newPlotCrop, setNewPlotCrop] = useState("");
-    const [newPlotArea, setNewPlotArea] = useState<number | "">("");
-  const [newPlotGeometry, setNewPlotGeometry] = useState<[number, number][]>([]);
+  const [newPlotArea, setNewPlotArea] = useState<number | "">("");
+  const [farmBoundary, setFarmBoundary] = useState<PlotPoint[]>([]);
+  const [newPlotGeometry, setNewPlotGeometry] = useState<PlotPoint[]>([]);
+  const [isDrawingFarm, setIsDrawingFarm] = useState(false);
+  const [isDrawingPlot, setIsDrawingPlot] = useState(false);
+  const [boundaryDialog, setBoundaryDialog] = useState<"farm" | "plot" | null>(null);
+  const [showBoundaryOverview, setShowBoundaryOverview] = useState(false);
+  const [isEditingBoundary, setIsEditingBoundary] = useState(false);
   const [mapLayer, setMapLayer] = useState<'satellite' | 'street'>('satellite');
   const [isLocating, setIsLocating] = useState(false);
-
-  // Tile layer URLs
-  const SATELLITE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-  const SATELLITE_ATTR = "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community";
-  const STREET_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-  const STREET_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-
-  // ─── Map Controller: fixes tile sizing + exposes flyTo ref ─────────────────
-  function MapController({ flyToRef }: { flyToRef: React.MutableRefObject<((latlng: [number, number], zoom?: number) => void) | null> }) {
-    const map = useMap();
-
-    useEffect(() => {
-      // Must run after the DOM has painted — requestAnimationFrame guarantees this
-      const frame = requestAnimationFrame(() => {
-        map.invalidateSize({ animate: false });
-      });
-      return () => cancelAnimationFrame(frame);
-    }, [map]);
-
-    // Expose flyTo so the "Locate Me" button outside MapContainer can fly the map
-    flyToRef.current = (latlng, zoom = 17) =>
-      map.flyTo(latlng, zoom, { animate: true, duration: 1.2 });
-
-    return null;
-  }
-
-  function InteractivePlotDrawer({
-    points,
-    setPoints,
-  }: {
-    points: [number, number][];
-    setPoints: React.Dispatch<React.SetStateAction<[number, number][]>>;
-  }) {
-    // Click on map background → add a new vertex
-    useMapEvents({
-      click(e) {
-        // Ignore clicks that bubble from markers/polylines
-        if ((e.originalEvent.target as HTMLElement).closest?.(".leaflet-interactive")) return;
-        setPoints(prev => [...prev, [e.latlng.lat, e.latlng.lng]]);
-      },
-    });
-
-    const deletePoint = (idx: number) => {
-      setPoints(prev => prev.filter((_, i) => i !== idx));
-    };
-
-    // Click on a segment between point[i] and point[i+1] → insert midpoint between them
-    const insertMidpoint = (i: number, latlng: LatLng) => {
-      setPoints(prev => {
-        const next = [...prev];
-        next.splice(i + 1, 0, [latlng.lat, latlng.lng]);
-        return next;
-      });
-    };
-
-    return (
-      <>
-        {/* Filled polygon when we have 3+ points */}
-        {points.length >= 3 && (
-          <Polygon positions={points} color="#16a34a" weight={2} fillOpacity={0.25} />
-        )}
-
-        {/* Editable segment lines — clicking inserts a mid-point */}
-        {points.map((pt, i) => {
-          const next = points[(i + 1) % points.length];
-          if (i === points.length - 1 && points.length < 3) return null; // don't close if < 3 pts
-          return (
-            <Polyline
-              key={`seg-${i}`}
-              positions={[pt, next]}
-              color="#16a34a"
-              weight={4}
-              opacity={0.6}
-              eventHandlers={{
-                click(e) {
-                  e.originalEvent.stopPropagation();
-                  insertMidpoint(i, e.latlng);
-                },
-              }}
-            />
-          );
-        })}
-
-        {/* Vertex markers — double-click deletes, regular click is noop */}
-        {points.map((pt, i) => (
-          <CircleMarker
-            key={`pt-${i}`}
-            center={pt}
-            radius={7}
-            color="#fff"
-            weight={2}
-            fillColor="#16a34a"
-            fillOpacity={1}
-            eventHandlers={{
-              dblclick(e) {
-                e.originalEvent.stopPropagation();
-                deletePoint(i);
-              },
-            }}
-          />
-        ))}
-      </>
-    );
-  }
-
-  // Ref to store the Leaflet flyTo function — set by MapController inside the map
-  const flyToRef = useRef<((latlng: [number, number], zoom?: number) => void) | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<PlotPoint | null>(null);
+  const plotFlyToRef = useRef<((latlng: PlotPoint, zoom?: number) => void) | null>(null);
 
   // GPS Locate Me handler
   const handleLocate = () => {
@@ -165,8 +303,11 @@ export default function FarmSettingsPage() {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const latlng: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        flyToRef.current?.(latlng, 17);
+        const latlng: PlotPoint = [pos.coords.latitude, pos.coords.longitude];
+        setLat(latlng[0]);
+        setLon(latlng[1]);
+        setCurrentLocation(latlng);
+        plotFlyToRef.current?.(latlng, 17);
         setIsLocating(false);
       },
       (err) => {
@@ -186,6 +327,7 @@ export default function FarmSettingsPage() {
       setNewPlotCrop("");
       setNewPlotArea("");
       setNewPlotGeometry([]);
+      closeBoundaryDialog();
     }
   });
 
@@ -194,13 +336,84 @@ export default function FarmSettingsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["farmSettings"] })
   });
 
+  const addBoundaryPoint = (point: PlotPoint) => {
+    const safePoint = isDrawingPlot && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
+      ? nearestEdgeProjection(point, farmBoundary).point
+      : point;
+
+    if (isDrawingFarm) {
+      setFarmBoundary((points) => [...points, safePoint]);
+    } else if (isDrawingPlot) {
+      if (farmBoundary.length < 3) return;
+      setNewPlotGeometry((points) => [...points, safePoint]);
+    }
+  };
+
+  const insertBoundaryPoint = (point: PlotPoint, boundary: "farm" | "plot") => {
+    const points = boundary === "farm" ? farmBoundary : newPlotGeometry;
+    if (points.length < 2) return;
+    const safePoint = boundary === "plot" && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
+      ? nearestEdgeProjection(point, farmBoundary).point
+      : point;
+
+    const next = [...points];
+    const edgeIndex = nearestEdgeProjection(safePoint, next).edgeIndex;
+    next.splice(edgeIndex + 1, 0, safePoint);
+    if (boundary === "farm") setFarmBoundary(next);
+    else setNewPlotGeometry(next);
+  };
+
+  const deleteBoundaryPoint = (index: number, boundary: "farm" | "plot") => {
+    if (boundary === "farm") setFarmBoundary((points) => points.filter((_, pointIndex) => pointIndex !== index));
+    else setNewPlotGeometry((points) => points.filter((_, pointIndex) => pointIndex !== index));
+  };
+
+  const moveBoundaryPoint = (index: number, point: PlotPoint, boundary: "farm" | "plot") => {
+    const safePoint = boundary === "plot" && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
+      ? nearestEdgeProjection(point, farmBoundary).point
+      : point;
+    if (boundary === "farm") setFarmBoundary((points) => points.map((current, pointIndex) => pointIndex === index ? safePoint : current));
+    else setNewPlotGeometry((points) => points.map((current, pointIndex) => pointIndex === index ? safePoint : current));
+  };
+
+  const openBoundaryDialog = (boundary: "farm" | "plot") => {
+    if (boundary === "plot" && farmBoundary.length < 3) {
+      alert("Save a farm boundary before creating a plot boundary.");
+      return;
+    }
+    setBoundaryDialog(boundary);
+    setIsEditingBoundary(false);
+    setIsDrawingFarm(boundary === "farm");
+    setIsDrawingPlot(boundary === "plot");
+  };
+
+  const closeBoundaryDialog = () => {
+    setBoundaryDialog(null);
+    setIsEditingBoundary(false);
+    setIsDrawingFarm(false);
+    setIsDrawingPlot(false);
+  };
+
   const handleCreatePlot = (e: React.FormEvent) => {
     e.preventDefault();
+    savePlot();
+  };
+
+  const savePlot = () => {
+    if (farmBoundary.length < 3) {
+      alert("Draw and save the farm boundary before adding a plot.");
+      return;
+    }
+    if (newPlotGeometry.length < 3 || newPlotGeometry.some((point) => !pointInsideOrOnPolygon(point, farmBoundary))) {
+      alert("Draw at least three plot points inside the farm boundary.");
+      return;
+    }
+
     createPlotMutation.mutate({
       name: newPlotName,
       crop: newPlotCrop || null,
       area_acres: newPlotArea ? Number(newPlotArea) : null,
-      geometry: newPlotGeometry.length > 2 ? { type: "Polygon", coordinates: [newPlotGeometry] } : null
+      geometry: toGeoJsonPolygon(newPlotGeometry),
     });
   };
 
@@ -215,8 +428,25 @@ export default function FarmSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["farmSettings"] });
       setSuccessMessage(true);
       setTimeout(() => setSuccessMessage(false), 4000);
+      if (boundaryDialog === "farm") closeBoundaryDialog();
     },
   });
+
+  const saveFarmBoundary = () => {
+    if (farmBoundary.length < 3) {
+      alert("Add at least three farm boundary points before saving.");
+      return;
+    }
+    mutation.mutate({
+      name: farmName,
+      location,
+      area_acres: Number(area),
+      latitude: Number(lat),
+      longitude: Number(lon),
+      crop_history: cropHistory.split(",").map((s) => s.trim()).filter(Boolean),
+      boundary: toGeoJsonPolygon(farmBoundary),
+    });
+  };
 
 
   const handleDeleteData = async () => {
@@ -245,13 +475,15 @@ export default function FarmSettingsPage() {
       latitude: Number(lat),
       longitude: Number(lon),
       crop_history: cropHistory.split(",").map((s) => s.trim()).filter(Boolean),
+      boundary: toGeoJsonPolygon(farmBoundary),
     });
   };
 
   if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" /></div>;
 
   return (
-    <div className="space-y-6 pb-12">
+    <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}>
+      <div className="space-y-6 pb-12">
       <div>
         <h1 className="font-display text-3xl text-ink sm:text-4xl">Farm Configuration & Plot Settings</h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">Manage your GPS coordinates, total acreage, and historic crop rotation cycles.</p>
@@ -283,6 +515,21 @@ export default function FarmSettingsPage() {
         </div>
 
         <Input label="Crop History (Comma separated)" type="text" value={cropHistory} onChange={(e) => setCropHistory(e.target.value)} placeholder="e.g. Cotton, Groundnut, Wheat" />
+
+        <div className="rounded-sm border border-farmer-200 bg-farmer-50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-display text-xl text-farmer-800">Farm Boundary</h3>
+              <p className="mt-1 text-xs text-muted">Use the shared boundary map below to create the outer farm boundary before drawing plots.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => openBoundaryDialog("farm")} className="rounded-sm border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink">
+                {farmBoundary.length >= 3 ? "Edit farm boundary" : "Create farm boundary"}
+              </button>
+              {farmBoundary.length > 0 && <button type="button" onClick={() => setFarmBoundary([])} className="rounded-sm border border-red-200 px-3 py-2 text-xs font-semibold text-danger">Clear boundary</button>}
+            </div>
+          </div>
+        </div>
 
         <Button type="submit" disabled={mutation.isPending}>
           <Save size={18} /> {mutation.isPending ? "Saving..." : "Save Farm Configuration"}
@@ -337,13 +584,18 @@ export default function FarmSettingsPage() {
             <Input label="Area (Acres)" type="number" step="any" value={newPlotArea} onChange={e => setNewPlotArea(e.target.value ? Number(e.target.value) : "")} placeholder="Optional" />
           </div>
           <div className="mt-6">
-            {/* Map toolbar */}
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <label className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <MapIcon size={16} /> Draw Plot Boundaries
+                <MapIcon size={16} /> Plot Boundary
               </label>
               <div className="flex flex-wrap items-center gap-2">
-                {/* GPS Locate Button */}
+                <button
+                  type="button"
+                  onClick={() => openBoundaryDialog("plot")}
+                  className="rounded-sm border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink"
+                >
+                  {newPlotGeometry.length >= 3 ? "Edit plot boundary" : "Create plot boundary"}
+                </button>
                 <button
                   type="button"
                   onClick={handleLocate}
@@ -370,7 +622,6 @@ export default function FarmSettingsPage() {
                     <MapIcon size={13} /> Street
                   </button>
                 </div>
-                {/* Clear Drawing */}
                 {newPlotGeometry.length > 0 && (
                   <button type="button" onClick={() => setNewPlotGeometry([])} className="inline-flex items-center gap-1 rounded-sm border border-red-200 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-red-50">
                     <RotateCcw size={13} /> Clear
@@ -379,50 +630,126 @@ export default function FarmSettingsPage() {
               </div>
             </div>
 
-            {/* Map container — must be a plain block div so Leaflet reads clientWidth/clientHeight correctly */}
-            <div className="h-96 w-full overflow-hidden rounded-sm border border-line">
-              <MapContainer
-                center={[lat || 21.0, lon || 72.0]}
-                zoom={15}
-                className="h-full w-full"
-                doubleClickZoom={false}
-              >
-                <TileLayer
-                  key={mapLayer}
-                  url={mapLayer === 'satellite' ? SATELLITE_URL : STREET_URL}
-                  attribution={mapLayer === 'satellite' ? SATELLITE_ATTR : STREET_ATTR}
-                  maxZoom={mapLayer === 'satellite' ? 19 : 19}
-                />
-                <MapController flyToRef={flyToRef} />
-                {/* Saved plot boundaries in grey */}
-                {farmData?.plots?.map((plot: any) =>
-                  plot.geometry?.coordinates ? (
-                    <Polygon key={plot.id} positions={plot.geometry.coordinates[0]} color="#f8fafc" weight={2} fillOpacity={0.1} />
-                  ) : null
-                )}
-                {/* Interactive drawing layer */}
-                <InteractivePlotDrawer
-                  points={newPlotGeometry}
-                  setPoints={setNewPlotGeometry}
-                />
-              </MapContainer>
-            </div>
-            <p className="mt-2 text-xs leading-5 text-muted">
-              <strong>Click</strong> empty map to add vertex &nbsp;·&nbsp;
-              <strong>Click a line</strong> to insert vertex &nbsp;·&nbsp;
-              <strong>Double-click a point</strong> to delete it
-            </p>
+            <p className="mt-2 text-xs leading-5 text-muted">The plot boundary is created inside the saved farm boundary. The editor opens only when requested.</p>
           </div>
-          <Button type="submit" className="mt-5 bg-farmer-600 hover:bg-farmer-700" disabled={createPlotMutation.isPending || !newPlotName}>
+          <Button type="submit" className="mt-5 bg-farmer-600 hover:bg-farmer-700" disabled={createPlotMutation.isPending || !newPlotName || farmBoundary.length < 3 || newPlotGeometry.length < 3}>
             {createPlotMutation.isPending ? "Adding..." : "+ Add Plot"}
           </Button>
         </form>
       </motion.div>
 
-      
+      <div className="flex justify-end border-t border-line pt-5">
+        <Button type="button" onClick={() => setShowBoundaryOverview(true)}>
+          <MapIcon size={18} /> See boundaries
+        </Button>
+      </div>
+
+      {boundaryDialog && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-label={`${boundaryDialog === "farm" ? "Farm" : "Plot"} boundary editor`}>
+          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
+              <div>
+                <h2 className="font-display text-2xl text-ink">{boundaryDialog === "farm" ? "Farm Boundary" : "Plot Boundary"}</h2>
+                <p className="mt-1 text-xs text-muted">{isEditingBoundary ? "Edit mode: click to add, drag to move, double-click to delete, or click a line to insert." : "Map mode: pan and zoom normally. Click Edit boundary to change points."}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setIsEditingBoundary((editing) => !editing)} className={`rounded-sm px-3 py-2 text-xs font-semibold ${isEditingBoundary ? "bg-farmer-700 text-white" : "border border-line bg-surface text-ink"}`}>
+                  {isEditingBoundary ? "Stop editing" : "Edit boundary"}
+                </button>
+                <button type="button" onClick={handleLocate} disabled={isLocating} className="inline-flex items-center gap-1.5 rounded-sm border border-expert-100 bg-expert-50 px-3 py-2 text-xs font-semibold text-expert-700 disabled:opacity-60">
+                  <Navigation2 size={14} className={isLocating ? "animate-spin" : ""} /> {isLocating ? "Locating..." : "My Location"}
+                </button>
+                <button type="button" onClick={() => setMapLayer((layer) => layer === "satellite" ? "street" : "satellite")} className="inline-flex items-center gap-1.5 rounded-sm border border-line px-3 py-2 text-xs font-semibold text-ink">
+                  {mapLayer === "satellite" ? <MapIcon size={14} /> : <Satellite size={14} />} {mapLayer === "satellite" ? "Street" : "Satellite"}
+                </button>
+              </div>
+            </div>
+            <div className="min-h-[22rem] flex-1 p-4">
+              <div className="h-[min(62vh,34rem)] w-full overflow-hidden rounded-sm border border-line">
+                <BoundaryMap
+                  center={[lat || 21.0, lon || 72.0]}
+                  mapLayer={mapLayer}
+                  flyToRef={plotFlyToRef}
+                  farmBoundary={farmBoundary}
+                  drawingPoints={boundaryDialog === "farm" ? farmBoundary : newPlotGeometry}
+                  currentLocation={currentLocation}
+                  drawingActive={isEditingBoundary}
+                  plotDrawingActive={boundaryDialog === "plot"}
+                  plots={farmData?.plots}
+                  showPlots={boundaryDialog === "plot"}
+                  onMapClick={(point) => { if (isEditingBoundary) addBoundaryPoint(point); }}
+                  onBoundaryClick={(point) => {
+                    if (!isEditingBoundary) return;
+                    insertBoundaryPoint(point, boundaryDialog);
+                  }}
+                  onVertexDoubleClick={(index) => { if (isEditingBoundary) deleteBoundaryPoint(index, boundaryDialog); }}
+                  onVertexDragEnd={(index, point) => { if (isEditingBoundary) moveBoundaryPoint(index, point, boundaryDialog); }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-line p-4">
+              <button type="button" onClick={closeBoundaryDialog} className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink">Cancel</button>
+              {boundaryDialog === "farm" ? (
+                <Button type="button" onClick={saveFarmBoundary} disabled={mutation.isPending || farmBoundary.length < 3}>
+                  {mutation.isPending ? "Saving..." : "Save farm boundary"}
+                </Button>
+              ) : (
+                <Button type="button" onClick={() => savePlot()} disabled={createPlotMutation.isPending || newPlotGeometry.length < 3 || !newPlotName}>
+                  {createPlotMutation.isPending ? "Saving..." : "Save plot boundary"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBoundaryOverview && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-label="Farm and plot boundaries">
+          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
+            <div className="flex items-center justify-between gap-3 border-b border-line p-4">
+              <div>
+                <h2 className="font-display text-2xl text-ink">Farm and Plot Boundaries</h2>
+                <p className="mt-1 text-xs text-muted">Read-only overview of the saved farm boundary and all plot boundaries.</p>
+              </div>
+              <button type="button" onClick={() => setShowBoundaryOverview(false)} className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink">
+                Close
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="h-[min(70vh,40rem)] w-full overflow-hidden rounded-sm border border-line">
+                <BoundaryMap
+                  center={[lat || 21.0, lon || 72.0]}
+                  mapLayer={mapLayer}
+                  flyToRef={plotFlyToRef}
+                  farmBoundary={farmBoundary}
+                  drawingPoints={[]}
+                  currentLocation={null}
+                  drawingActive={false}
+                  plotDrawingActive={false}
+                  plots={farmData?.plots}
+                  showPlots
+                  onMapClick={() => undefined}
+                  onBoundaryClick={() => undefined}
+                  onVertexDoubleClick={() => undefined}
+                  onVertexDragEnd={() => undefined}
+                />
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-muted">
+                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-teal-700 bg-teal-300/40" /> Farm boundary</span>
+                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-blue-600 bg-blue-400/60" /> Plot 1</span>
+                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-red-600 bg-red-400/60" /> Plot 2</span>
+                <span className="text-muted">Additional plots use different colors.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       
 
-    </div>
+      
+
+      </div>
+    </APIProvider>
   );
 }

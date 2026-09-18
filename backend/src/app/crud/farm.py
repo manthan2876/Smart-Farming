@@ -17,6 +17,7 @@ def save_farm(session: Session, user: User, data: dict[str, Any]) -> Farm:
     user.farm.latitude = data.get("latitude")
     user.farm.longitude = data.get("longitude")
     user.farm.crop_history = data.get("crop_history", [])
+    user.farm.boundary = data.get("boundary")
     session.add(user.farm)
     session.commit()
     session.refresh(user.farm)

@@ -19,6 +19,7 @@ class FarmResponse(BaseModel):
     latitude: float | None
     longitude: float | None
     crop_history: list[str]
+    boundary: dict[str, Any] | None = None
     plots: list[PlotResponse] = []
 
 
@@ -29,6 +30,7 @@ class FarmRequest(BaseModel):
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     crop_history: list[str] = Field(default_factory=list, max_length=50)
+    boundary: dict[str, Any] | None = None
 
 class PlotRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)

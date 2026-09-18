@@ -31,9 +31,11 @@ from contextlib import asynccontextmanager
 from app.core.scheduler import start_scheduler, shutdown_scheduler
 from app.services.weather_cron import start_weather_cron
 from app.core.arq import init_arq, close_arq
+from app.core.init_db import initialize_database
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    initialize_database()
     start_scheduler()
     app.state.arq_pool = await init_arq()
     start_weather_cron()

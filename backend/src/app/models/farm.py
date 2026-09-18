@@ -13,6 +13,7 @@ class Farm(Base):
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     crop_history: Mapped[list[str]] = mapped_column(JSON, default=list)
+    boundary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="farm")
     plots: Mapped[list["Plot"]] = relationship(

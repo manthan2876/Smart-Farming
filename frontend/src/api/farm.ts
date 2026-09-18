@@ -16,7 +16,7 @@ export async function saveFarm(farm: Omit<Farm, "id">, token: string) {
   );
 }
 
-export async function createPlot(plot: { name: string, crop: string | null, area_acres: number | null }, token: string) {
+export async function createPlot(plot: { name: string, crop: string | null, area_acres: number | null, geometry?: Record<string, unknown> | null }, token: string) {
   return request("/farm/plots", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -24,7 +24,7 @@ export async function createPlot(plot: { name: string, crop: string | null, area
   }, token);
 }
 
-export async function updatePlot(id: number, plot: { name: string, crop: string | null, area_acres: number | null }, token: string) {
+export async function updatePlot(id: number, plot: { name: string, crop: string | null, area_acres: number | null, geometry?: Record<string, unknown> | null }, token: string) {
   return request(`/farm/plots/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
