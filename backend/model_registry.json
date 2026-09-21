@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0",
+  "last_updated": "2026-09-21T00:00:00+00:00",
+  "models": {
+    "crop_identifier": {
+      "active_version": "v1.0",
+      "versions": {
+        "v1.0": {
+          "arch": "efficientnet_b0",
+          "checkpoint": "models/crop_identifier_v1.pth",
+          "labels": "models/crop_identifier_labels.json",
+          "num_classes": 5,
+          "classes": ["Cotton", "Groundnut", "Pepper_Bell", "Potato", "Tomato"],
+          "val_acc": null,
+          "test_acc": null,
+          "trained_at": null,
+          "notes": "Initial production model",
+          "status": "active"
+        }
+      }
+    },
+    "cotton_disease": {
+      "active_version": "v1.0",
+      "versions": {
+        "v1.0": {
+          "arch": "efficientnet_b2",
+          "checkpoint": "models/disease_Cotton.pth",
+          "labels": "models/disease_Cotton_labels.json",
+          "num_classes": null,
+          "val_acc": null,
+          "test_acc": null,
+          "trained_at": null,
+          "notes": "Initial production model",
+          "status": "active"
+        }
+      }
+    },
+    "groundnut_disease": {
+      "active_version": "v1.0",
+      "versions": {
+        "v1.0": {
+          "arch": "efficientnet_b2",
+          "checkpoint": "models/disease_Groundnut.pth",
+          "labels": "models/disease_Groundnut_labels.json",
+          "num_classes": null,
+          "val_acc": null,
+          "test_acc": null,
+          "trained_at": null,
+          "notes": "Initial production model",
+          "status": "active"
+        }
+      }
+    },
+    "pepper_bell_disease": {
+      "active_version": "v1.0",
+      "versions": {
+        "v1.0": {
+          "arch": "efficientnet_b2",
+          "checkpoint": "models/disease_Pepper_Bell.pth",
+          "labels": "models/disease_Pepper_Bell_labels.json",
+          "num_classes": null,
+          "val_acc": null,
+          "test_acc": null,
+          "trained_at": null,
+          "notes": "Initial production model",
+          "status": "active"
+        }
+      }
+    },
+    "potato_disease": {
+      "active_version": "v1.0",
+      "versions": {
+        "v1.0": {
+          "arch": "efficientnet_b2",
+          "checkpoint": "models/disease_Potato.pth",
+          "labels": "models/disease_Potato_labels.json",
+          "num_classes": null,
+          "val_acc": null,
+          "test_acc": null,
+          "trained_at": null,
+          "notes": "Initial production model",
+          "status": "active"
+        }
+      }
+    },
+    "tomato_disease": {
+      "active_version": "v1.0",
+      "versions": {
+        "v1.0": {
+          "arch": "efficientnet_b2",
+          "checkpoint": "models/disease_Tomato.pth",
+          "labels": "models/disease_Tomato_labels.json",
+          "num_classes": null,
+          "val_acc": null,
+          "test_acc": null,
+          "trained_at": null,
+          "notes": "Initial production model",
+          "status": "active"
+        }
+      }
+    },
+    "pest_classifier": {
+      "active_version": "v1.0",
+      "versions": {
+        "v1.0": {
+          "arch": "yolo",
+          "checkpoint": "models/pest_classifier/pest_classifier.pt",
+          "labels": null,
+          "num_classes": null,
+          "val_acc": null,
+          "test_acc": null,
+          "trained_at": null,
+          "notes": "YOLO pest classifier",
+          "status": "active"
+        }
+      }
+    }
+  }
+}

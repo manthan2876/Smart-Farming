@@ -39,6 +39,13 @@ export default function AdminMetricsPage() {
     enabled: !!token,
   });
 
+  const { data: modelHealth } = useQuery({
+    queryKey: ["model_health"],
+    queryFn: () => request<any>("/admin/models/health", {}, token!),
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+
   const handleExportMLOps = async () => {
     if (exportTrain + exportVal + exportTest !== 100) {
       alert("Split percentages must total 100");
@@ -206,6 +213,59 @@ export default function AdminMetricsPage() {
           </div>
         </Card>
       </div>
+
+      {/* ── Model Health Panel ── */}
+      {modelHealth && (
+        <Card>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-xl text-ink">Model Registry Health</h3>
+              <p className="mt-1 text-sm text-muted">
+                {modelHealth.overall_status === "healthy"
+                  ? "✓ All models loaded"
+                  : "⚠ Some models are missing from disk"}
+              </p>
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              modelHealth.overall_status === "healthy"
+                ? "bg-green-100 text-green-700"
+                : "bg-amber-100 text-amber-700"
+            }`}>
+              {modelHealth.overall_status}
+            </span>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs font-semibold uppercase tracking-wide text-muted">
+                  <th className="pb-2 pr-4">Model</th>
+                  <th className="pb-2 pr-4">Version</th>
+                  <th className="pb-2 pr-4">Status</th>
+                  <th className="pb-2 pr-4">Val Acc</th>
+                  <th className="pb-2">Test Acc</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(modelHealth.models as Record<string, any>).map(([key, m]) => (
+                  <tr key={key} className="border-b last:border-0">
+                    <td className="py-2 pr-4 font-medium text-ink">{key.replace(/_/g, " ")}</td>
+                    <td className="py-2 pr-4 text-muted">{m.active_version ?? "—"}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        m.status === "ok" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                      }`}>
+                        {m.status === "ok" ? "✓ OK" : "✗ Missing"}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 text-muted">{m.val_acc != null ? `${(m.val_acc * 100).toFixed(1)}%` : "—"}</td>
+                    <td className="py-2 text-muted">{m.test_acc != null ? `${(m.test_acc * 100).toFixed(1)}%` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* ── Dataset Export Panel ── */}
       <Card>
