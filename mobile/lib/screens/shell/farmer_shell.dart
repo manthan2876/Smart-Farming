@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../models/prediction.dart';
 import '../../providers/locale_provider.dart';
+import '../../i18n/domain_translations.dart';
 import '../../services/api_service.dart';
 import '../../services/sync_service.dart';
 import '../../theme/app_theme.dart';
@@ -114,7 +115,8 @@ class _FarmerShellState extends State<FarmerShell> {
 
   Future<void> _loadWeather() async {
     try {
-      final weather = await _api.getWeather();
+      final lang = context.mounted ? context.localeCode : DomainTranslations.normalizeLang(_userProfile['language']?.toString());
+      final weather = await _api.getWeather(language: lang);
       if (mounted) setState(() => _weather = weather);
     } catch (_) {}
   }

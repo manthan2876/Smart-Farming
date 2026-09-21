@@ -171,19 +171,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_isRegister) ...[
                     TextField(
                       controller: _nameCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person_outline),
+                      decoration: InputDecoration(
+                        labelText: context.tr('fullNameLabel'),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.person_outline),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _locationCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Farm Location (e.g. Anand, Gujarat)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.location_on_outlined),
+                      decoration: InputDecoration(
+                        labelText: context.tr('farmLocationLabel'),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.location_on_outlined),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -220,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
                         : Text(
-                            _isRegister ? 'Register' : context.tr('signInBtn'),
+                            _isRegister ? context.tr('registerBtn') : context.tr('signInBtn'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                   ),
@@ -232,8 +232,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     }),
                     child: Text(
                       _isRegister
-                          ? 'Already have an account? Sign In'
-                          : "Don't have an account? Register as Farmer",
+                          ? context.tr('alreadyHaveAccount')
+                          : context.tr('dontHaveAccount'),
                       style: const TextStyle(color: AppColors.primary),
                     ),
                   ),

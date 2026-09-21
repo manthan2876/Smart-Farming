@@ -162,6 +162,26 @@ class AppTranslations {
     'requestExpertReview': {'en': 'Request Human Agronomist Review', 'hi': 'मानव कृषि विशेषज्ञ जांच का अनुरोध करें', 'gu': 'માનવ કૃષિ નિષ્ણાત તપાસ માટે વિનંતી કરો'},
     'expertRequested': {'en': 'Specialist review requested', 'hi': 'विशेषज्ञ समीक्षा का अनुरोध भेजा गया', 'gu': 'નિષ્ણાત સમીક્ષા વિનંતી મોકલાઈ'},
     'translatingAdvisory': {'en': 'Translating advisory into your language...', 'hi': 'सलाह का अनुवाद हो रहा है...', 'gu': 'ભલામણનું ભાષાંતર થઈ રહ્યું છે...'},
+    'listenAdvisory': {'en': 'Listen to Advisory', 'hi': 'सलाह सुनें', 'gu': 'સલાહ સાંભળો'},
+
+    // ── Additional UI strings ───────────────────────────────────────────────
+    'signOut': {'en': 'Sign Out', 'hi': 'लॉग आउट', 'gu': 'સાઇન આઉટ'},
+    'syncedStatus': {'en': 'Cloud Synced', 'hi': 'क्लाउड सिंक', 'gu': 'ક્લાઉડ સિંક'},
+    'syncStatus': {'en': 'Sync', 'hi': 'सिंक', 'gu': 'સિંક'},
+    'addPlotTitle': {'en': 'Add Farm Plot', 'hi': 'नया प्लॉट जोड़ें', 'gu': 'નવો પ્લોટ ઉમેરો'},
+    'addPlotBtn': {'en': 'Add Plot', 'hi': 'प्लॉट जोड़ें', 'gu': 'પ્લોટ ઉમેરો'},
+    'plotNameLabel': {'en': 'Plot Name (e.g. North Acre)', 'hi': 'प्लॉट का नाम (उदा. उत्तरी एकड़)', 'gu': 'પ્લોટનું નામ (દા.ત. ઉત્તર એકર)'},
+    'primaryCropLabel': {'en': 'Primary Crop', 'hi': 'मुख्य फसल', 'gu': 'મુખ્ય પાક'},
+    'areaAcresLabel': {'en': 'Area (Acres)', 'hi': 'क्षेत्रफल (एकड़)', 'gu': 'વિસ્તાર (એકર)'},
+    'failedCreatePlot': {'en': 'Failed to create plot', 'hi': 'प्लॉट बनाने में विफल', 'gu': 'પ્લોટ ઉમેરવામાં નિષ્ફળ'},
+    'activeStatus': {'en': 'Active', 'hi': 'सक्रिय', 'gu': 'સક્રિય'},
+    'markAsRead': {'en': 'Mark as Read', 'hi': 'पढ़ा हुआ चिह्नित करें', 'gu': 'વાંચેલું તરીકે ચિહ્નિત કરો'},
+    'fullNameLabel': {'en': 'Full Name', 'hi': 'पूरा नाम', 'gu': 'પૂરું નામ'},
+    'farmLocationLabel': {'en': 'Farm Location (e.g. Anand, Gujarat)', 'hi': 'खेत का स्थान (उदा. आणंद, गुजरात)', 'gu': 'ખેતરનું સ્થળ (દા.ત. આણંદ, ગુજરાત)'},
+    'registerBtn': {'en': 'Register', 'hi': 'पंजीकरण करें', 'gu': 'નોંધણી કરો'},
+    'alreadyHaveAccount': {'en': 'Already have an account? Sign In', 'hi': 'क्या पहले से खाता है? लॉगिन करें', 'gu': 'પહેલેથી ખાતું છે? લૉગિન કરો'},
+    'dontHaveAccount': {'en': "Don't have an account? Register as Farmer", 'hi': 'खाता नहीं है? किसान के रूप में पंजीकरण करें', 'gu': 'ખાતું નથી? ખેડૂત તરીકે નોંધણી કરો'},
+    'weatherAdvisoryOptimal': {'en': 'Weather conditions are favorable for current field operations. Maintain standard monitoring and watering cycles.', 'hi': 'खेत कार्यों के लिए मौसम अनुकूल है। मानक निगरानी और सिंचाई चक्र बनाए रखें।', 'gu': 'ખેત કામગીરી માટે હવામાન અનુકૂળ છે. નિયમિત દેખરેખ અને પિયત ચક્ર જાળવી રાખો.'},
   };
 
   static String get(String key, String lang) {

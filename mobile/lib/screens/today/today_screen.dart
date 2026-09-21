@@ -205,7 +205,7 @@ class TodayScreen extends StatelessWidget {
                 IconButton(
                   onPressed: onLogout,
                   icon: const Icon(Icons.logout, color: Colors.grey),
-                  tooltip: 'Sign Out',
+                  tooltip: context.tr('signOut'),
                 ),
               ],
             ),
@@ -260,8 +260,8 @@ class TodayScreen extends StatelessWidget {
             _stat(temp, cond),
             _stat(hum, context.tr('humidity')),
             _stat(
-              pendingCount > 0 ? '$pendingCount' : 'Sync',
-              pendingCount > 0 ? context.tr('syncingBadge') : 'Cloud sync',
+              pendingCount > 0 ? '$pendingCount' : context.tr('syncStatus'),
+              pendingCount > 0 ? context.tr('syncingBadge') : context.tr('syncedStatus'),
             ),
           ],
         ),

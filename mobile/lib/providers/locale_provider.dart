@@ -51,6 +51,7 @@ class LocaleProvider extends ChangeNotifier {
     return DomainTranslations.translateSeverityBucket(bucket, _currentLanguage);
   }
   String weather(String? condition) => DomainTranslations.translateWeather(condition, _currentLanguage);
+  String alertTitle(String? title) => DomainTranslations.translateAlertTitle(title, _currentLanguage);
 }
 
 /// InheritedWidget wrapper so any widget can easily read LocaleProvider
@@ -74,6 +75,7 @@ class LocaleScope extends InheritedNotifier<LocaleProvider> {
 extension LocaleContextX on BuildContext {
   LocaleProvider get loc => LocaleScope.of(this);
   String tr(String key) => LocaleScope.of(this).tr(key);
+  String get localeCode => LocaleScope.of(this).languageCode;
 }
 
 /// Reusable Language Selector Sheet

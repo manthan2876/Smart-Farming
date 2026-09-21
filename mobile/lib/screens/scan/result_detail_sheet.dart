@@ -69,20 +69,26 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
   Future<void> _checkAndTranslate() async {
     final lang = context.loc.languageCode;
     if (lang == 'en') return;
+    if (_pred.id <= 0) return;
     if (_pred.translations != null && _pred.translations![lang] != null) return;
     if (_translating) return;
 
     setState(() => _translating = true);
     try {
       final res = await widget.api.translatePrediction(_pred.id, lang);
-      final translations = (res['translations'] as Map?)?.cast<String, dynamic>();
-      if (translations != null && mounted) {
+      final rawTranslations = (res['translations'] as Map?)?.cast<String, dynamic>();
+      final rec = res['recommendation'];
+      final Map<String, dynamic> merged = rawTranslations != null
+          ? Map<String, dynamic>.from(rawTranslations)
+          : (rec != null ? {lang: rec} : {});
+
+      if (merged.isNotEmpty && mounted) {
         setState(() {
-          _pred = _pred.copyWithTranslations(translations);
+          _pred = _pred.copyWithTranslations(merged);
         });
       }
     } catch (_) {
-      // Fallback cleanly to English if network fails
+      // Fallback cleanly
     } finally {
       if (mounted) setState(() => _translating = false);
     }
@@ -202,20 +208,30 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              IconButton(
-                onPressed: _togglePlayPause,
-                icon: Icon(
-                  _playbackState == AudioPlaybackState.playing
-                      ? Icons.pause_circle_filled
-                      : (_playbackState == AudioPlaybackState.paused
-                          ? Icons.play_circle_filled
-                          : Icons.volume_up_outlined),
-                  color: _playbackState == AudioPlaybackState.paused ? AppColors.warning : AppColors.primary,
-                  size: 26,
-                ),
-                tooltip: _playbackState == AudioPlaybackState.playing
-                    ? context.tr('pauseAudio')
-                    : (_playbackState == AudioPlaybackState.paused ? context.tr('resumeAudio') : context.tr('listenComplete')),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => showLanguageSelectionSheet(context),
+                    icon: const Icon(Icons.language, color: AppColors.primary, size: 24),
+                    tooltip: context.tr('selectLanguage'),
+                  ),
+                  IconButton(
+                    onPressed: _togglePlayPause,
+                    icon: Icon(
+                      _playbackState == AudioPlaybackState.playing
+                          ? Icons.pause_circle_filled
+                          : (_playbackState == AudioPlaybackState.paused
+                              ? Icons.play_circle_filled
+                              : Icons.volume_up_outlined),
+                      color: _playbackState == AudioPlaybackState.paused ? AppColors.warning : AppColors.primary,
+                      size: 26,
+                    ),
+                    tooltip: _playbackState == AudioPlaybackState.playing
+                        ? context.tr('pauseAudio')
+                        : (_playbackState == AudioPlaybackState.paused ? context.tr('resumeAudio') : context.tr('listenComplete')),
+                  ),
+                ],
               ),
             ],
           ),

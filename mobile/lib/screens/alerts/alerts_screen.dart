@@ -80,7 +80,7 @@ class AlertsScreen extends StatelessWidget {
                       ),
                     ),
                     title: Text(
-                      alert['title']?.toString() ?? 'Alert',
+                      context.loc.alertTitle(alert['title']?.toString()),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: isRead ? Colors.black87 : AppColors.textPrimary,
@@ -101,7 +101,7 @@ class AlertsScreen extends StatelessWidget {
                                 await onRefresh();
                               }
                             },
-                            child: Text('Mark as Read', style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                            child: Text(context.tr('markAsRead'), style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
                           ),
                       ],
                     ),

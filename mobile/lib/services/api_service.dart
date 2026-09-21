@@ -194,9 +194,10 @@ class ApiService {
     return body;
   }
 
-  Future<Map<String, dynamic>> getWeather({double lat = 22.2587, double lon = 71.1924}) async {
+  Future<Map<String, dynamic>> getWeather({double lat = 22.2587, double lon = 71.1924, String? language}) async {
+    final langParam = language != null && language.isNotEmpty ? '&language=${Uri.encodeComponent(language)}' : '';
     final response = await http.get(
-      Uri.parse('$baseUrl/weather?lat=$lat&lon=$lon'),
+      Uri.parse('$baseUrl/weather?lat=$lat&lon=$lon$langParam'),
       headers: _headers,
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;

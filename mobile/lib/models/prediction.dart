@@ -1,3 +1,5 @@
+import '../i18n/domain_translations.dart';
+
 class Prediction {
   const Prediction({
     required this.id,
@@ -65,64 +67,83 @@ class Prediction {
     return buffer.toString().trim();
   }
 
+  Map<String, dynamic>? _getLangMap(String languageCode) {
+    if (translations == null) return null;
+    final norm = DomainTranslations.normalizeLang(languageCode);
+    final entry = translations![languageCode] ??
+        translations![norm] ??
+        (norm == 'hi' ? (translations!['Hindi'] ?? translations!['hi_IN']) : null) ??
+        (norm == 'gu' ? (translations!['Gujarati'] ?? translations!['gu_IN']) : null);
+    if (entry is Map) return entry.cast<String, dynamic>();
+    if (entry is String && entry.trim().isNotEmpty) return {'summary': entry.trim()};
+    return null;
+  }
+
   /// Returns localized recommendation text for the given language code ('en', 'hi', 'gu').
   String localizedRecommendation(String languageCode) {
-    if (languageCode != 'en' && translations != null && translations![languageCode] != null) {
-      final t = translations![languageCode] as Map?;
-      if (t != null) {
-        final sections = <String>[];
-        final imm = t['immediate_action']?.toString();
-        final treat = t['treatment']?.toString();
-        final prev = t['prevention']?.toString();
-        final mon = t['monitoring']?.toString();
-        if (imm != null && imm.trim().isNotEmpty) sections.add(imm.trim());
-        if (treat != null && treat.trim().isNotEmpty) sections.add(treat.trim());
-        if (prev != null && prev.trim().isNotEmpty) sections.add(prev.trim());
-        if (mon != null && mon.trim().isNotEmpty) sections.add(mon.trim());
-        if (sections.isNotEmpty) return sections.join('\n\n');
-        final summary = t['summary']?.toString();
-        if (summary != null && summary.trim().isNotEmpty) return summary.trim();
-      }
+    if (languageCode == 'en') return recommendation;
+    final t = _getLangMap(languageCode);
+    if (t != null) {
+      final sections = <String>[];
+      final imm = t['immediate_action']?.toString();
+      final treat = t['treatment']?.toString();
+      final prev = t['prevention']?.toString();
+      final mon = t['monitoring']?.toString();
+      if (imm != null && imm.trim().isNotEmpty) sections.add(imm.trim());
+      if (treat != null && treat.trim().isNotEmpty) sections.add(treat.trim());
+      if (prev != null && prev.trim().isNotEmpty) sections.add(prev.trim());
+      if (mon != null && mon.trim().isNotEmpty) sections.add(mon.trim());
+      if (sections.isNotEmpty) return sections.join('\n\n');
+      final summary = t['summary']?.toString();
+      if (summary != null && summary.trim().isNotEmpty) return summary.trim();
     }
     return recommendation;
   }
 
   /// Returns localized immediate action for the given language code.
   String? localizedImmediateAction(String languageCode) {
-    if (languageCode != 'en' && translations != null && translations![languageCode] != null) {
-      final t = translations![languageCode] as Map?;
-      final val = t?['immediate_action']?.toString();
+    if (languageCode == 'en') return immediateAction;
+    final t = _getLangMap(languageCode);
+    if (t != null) {
+      final val = t['immediate_action']?.toString();
       if (val != null && val.trim().isNotEmpty) return val.trim();
+      return null;
     }
     return immediateAction;
   }
 
   /// Returns localized treatment for the given language code.
   String? localizedTreatment(String languageCode) {
-    if (languageCode != 'en' && translations != null && translations![languageCode] != null) {
-      final t = translations![languageCode] as Map?;
-      final val = t?['treatment']?.toString();
+    if (languageCode == 'en') return treatment;
+    final t = _getLangMap(languageCode);
+    if (t != null) {
+      final val = t['treatment']?.toString();
       if (val != null && val.trim().isNotEmpty) return val.trim();
+      return null;
     }
     return treatment;
   }
 
   /// Returns localized prevention for the given language code.
   String? localizedPrevention(String languageCode) {
-    if (languageCode != 'en' && translations != null && translations![languageCode] != null) {
-      final t = translations![languageCode] as Map?;
-      final val = t?['prevention']?.toString();
+    if (languageCode == 'en') return prevention;
+    final t = _getLangMap(languageCode);
+    if (t != null) {
+      final val = t['prevention']?.toString();
       if (val != null && val.trim().isNotEmpty) return val.trim();
+      return null;
     }
     return prevention;
   }
 
   /// Returns localized monitoring for the given language code.
   String? localizedMonitoring(String languageCode) {
-    if (languageCode != 'en' && translations != null && translations![languageCode] != null) {
-      final t = translations![languageCode] as Map?;
-      final val = t?['monitoring']?.toString();
+    if (languageCode == 'en') return monitoring;
+    final t = _getLangMap(languageCode);
+    if (t != null) {
+      final val = t['monitoring']?.toString();
       if (val != null && val.trim().isNotEmpty) return val.trim();
+      return null;
     }
     return monitoring;
   }
@@ -136,15 +157,16 @@ class Prediction {
     final prev = localizedPrevention(languageCode);
     final mon = localizedMonitoring(languageCode);
 
+    final norm = DomainTranslations.normalizeLang(languageCode);
     final buffer = StringBuffer();
-    if (languageCode == 'hi') {
+    if (norm == 'hi') {
       buffer.write('$cName की जांच रिपोर्ट। स्थिति: $dName। ');
       buffer.write('गंभीरता $severity प्रतिशत है। ');
       if (imm != null && imm.isNotEmpty) buffer.write('त्वरित कार्रवाई: $imm. ');
       if (treat != null && treat.isNotEmpty) buffer.write('उपचार सलाह: $treat. ');
       if (prev != null && prev.isNotEmpty) buffer.write('बचाव रणनीति: $prev. ');
       if (mon != null && mon.isNotEmpty) buffer.write('निगरानी योजना: $mon. ');
-    } else if (languageCode == 'gu') {
+    } else if (norm == 'gu') {
       buffer.write('$cName નો તપાસ અહેવાલ. સ્થિતિ: $dName. ');
       buffer.write('તીવ્રતા $severity ટકા છે. ');
       if (imm != null && imm.isNotEmpty) buffer.write('તાત્કાલિક પગલાં: $imm. ');
@@ -169,7 +191,13 @@ class Prediction {
   /// Returns a copy of Prediction with updated translations
   Prediction copyWithTranslations(Map<String, dynamic> newTranslations) {
     final merged = Map<String, dynamic>.from(translations ?? {});
-    merged.addAll(newTranslations);
+    newTranslations.forEach((key, value) {
+      if (value is Map && merged[key] is Map) {
+        merged[key] = Map<String, dynamic>.from(merged[key] as Map)..addAll(value.cast<String, dynamic>());
+      } else {
+        merged[key] = value;
+      }
+    });
     return Prediction(
       id: id,
       crop: crop,
@@ -199,7 +227,8 @@ class Prediction {
     final severity = (json['severity'] as Map?)?.cast<String, dynamic>() ?? {};
     final recommendation = (json['recommendation'] as Map?)?.cast<String, dynamic>() ?? {};
     final image = (json['image'] as Map?)?.cast<String, dynamic>() ?? {};
-    final rawTranslations = (json['translations'] as Map?)?.cast<String, dynamic>();
+    final rawTranslations = (json['translations'] as Map?)?.cast<String, dynamic>() ??
+        (json['result'] is Map ? (json['result']['translations'] as Map?)?.cast<String, dynamic>() : null);
     final pestsList = (json['pests'] as List?)
             ?.map((p) => (p as Map)['label']?.toString() ?? '')
             .where((label) => label.isNotEmpty)

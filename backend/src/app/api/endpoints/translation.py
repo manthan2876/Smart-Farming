@@ -57,6 +57,7 @@ async def translate_prediction_recommendation(
             "language": target_code,
             "cached": True,
             "recommendation": translations[target_code],
+            "translations": translations,
         }
 
     # Translate on-demand

@@ -29,13 +29,13 @@ class _FarmScreenState extends State<FarmScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Farm Plot'),
+        title: Text(context.tr('addPlotTitle')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Plot Name (e.g. North Acre)')),
-            TextField(controller: cropCtrl, decoration: const InputDecoration(labelText: 'Primary Crop')),
-            TextField(controller: areaCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Area (Acres)')),
+            TextField(controller: nameCtrl, decoration: InputDecoration(labelText: context.tr('plotNameLabel'))),
+            TextField(controller: cropCtrl, decoration: InputDecoration(labelText: context.tr('primaryCropLabel'))),
+            TextField(controller: areaCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: context.tr('areaAcresLabel'))),
           ],
         ),
         actions: [
@@ -54,7 +54,7 @@ class _FarmScreenState extends State<FarmScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to create plot: $e')),
+                    SnackBar(content: Text('${context.tr('failedCreatePlot')}: $e')),
                   );
                 }
               }
@@ -105,7 +105,7 @@ class _FarmScreenState extends State<FarmScreen> {
               TextButton.icon(
                 onPressed: _showAddPlotDialog,
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Plot'),
+                label: Text(context.tr('addPlotBtn')),
               ),
             ],
           ),
@@ -146,7 +146,7 @@ class _FarmScreenState extends State<FarmScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      p['status']?.toString() ?? 'Active',
+                      context.tr('activeStatus'),
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
                     ),
                   ),

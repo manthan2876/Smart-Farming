@@ -51,7 +51,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
     _locationCtrl = TextEditingController(text: widget.user['location']?.toString() ?? 'Anand, Gujarat');
     _latCtrl = TextEditingController(text: widget.user['latitude']?.toString() ?? '21.7645');
     _lonCtrl = TextEditingController(text: widget.user['longitude']?.toString() ?? '72.1519');
-    _language = widget.user['language']?.toString();
+    _language = null;
   }
 
   @override
