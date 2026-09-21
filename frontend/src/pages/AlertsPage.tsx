@@ -6,9 +6,10 @@ import { useAuth } from "../context/AuthContext";
 import { fetchAlerts, markAlertRead, markAllAlertsRead, AlertItem } from "../api/alerts";
 import { motion } from "motion/react";
 import { Badge, Button, Card } from "../components/ui";
+import { translateAlertTitle, translateSeverityBucket } from "../i18n/domain";
 
 export default function AlertsPage() {
-  const { token, t } = useAuth();
+  const { token, language, t } = useAuth();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"all" | "unread" | "weather" | "expert">("all");
 
@@ -47,15 +48,15 @@ export default function AlertsPage() {
       <header className="flex flex-col gap-5 rounded-lg bg-farmer-900 p-7 text-white shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl text-farmer-200 sm:text-4xl">Farm Alerts & Advisories</h1>
+            <h1 className="font-display text-3xl text-farmer-200 sm:text-4xl">{t("farmAlertsTitle")}</h1>
             {unreadCount > 0 && (
               <span className="rounded-full bg-danger px-3 py-0.5 text-xs font-bold text-white">
-                {unreadCount} New
+                {unreadCount} {t("new")}
               </span>
             )}
           </div>
           <p className="mt-3 max-w-2xl leading-7 text-white/70">
-            Real-time proactive notifications regarding micro-climate weather risks, disease outbreaks, and expert clinical evaluations.
+            {t("farmAlertsSubtitle")}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -77,7 +78,7 @@ export default function AlertsPage() {
             filter === "all" ? "bg-farmer-700 text-white" : "text-muted hover:bg-canvas hover:text-ink"
           }`}
         >
-          All Alerts ({alerts.length})
+          {t("allAlerts")} ({alerts.length})
         </button>
         <button
           onClick={() => setFilter("unread")}
@@ -85,7 +86,7 @@ export default function AlertsPage() {
             filter === "unread" ? "bg-farmer-700 text-white" : "text-muted hover:bg-canvas hover:text-ink"
           }`}
         >
-          Unread ({unreadCount})
+          {t("unread")} ({unreadCount})
         </button>
         <button
           onClick={() => setFilter("weather")}
@@ -93,7 +94,7 @@ export default function AlertsPage() {
             filter === "weather" ? "bg-farmer-700 text-white" : "text-muted hover:bg-canvas hover:text-ink"
           }`}
         >
-          Weather Advisories
+          {t("weatherAdvisoriesFilter")}
         </button>
         <button
           onClick={() => setFilter("expert")}
@@ -101,7 +102,7 @@ export default function AlertsPage() {
             filter === "expert" ? "bg-farmer-700 text-white" : "text-muted hover:bg-canvas hover:text-ink"
           }`}
         >
-          Expert Overrides
+          {t("expertOverridesFilter")}
         </button>
       </div>
 
@@ -114,15 +115,15 @@ export default function AlertsPage() {
         {isLoading ? (
           <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" />
-            <span className="ml-3">Loading farm alerts...</span>
+            <span className="ml-3">{t("loadingAlerts")}</span>
           </div>
         ) : error ? (
-          <Card className="text-danger">Failed to load alerts feed.</Card>
+          <Card className="text-danger">{t("failedAlerts")}</Card>
         ) : filteredAlerts.length === 0 ? (
           <div className="flex flex-col items-center rounded-md border border-line bg-surface p-12 text-center shadow-soft">
             <CheckCircle2 size={48} className="text-farmer-700" />
-            <h3 className="mt-4 font-display text-xl text-ink">No alerts found</h3>
-            <p className="mt-2 text-sm text-muted">You are up to date! There are currently no warnings matching your filter.</p>
+            <h3 className="mt-4 font-display text-xl text-ink">{t("noAlertsFound")}</h3>
+            <p className="mt-2 text-sm text-muted">{t("noAlertsFilterDesc")}</p>
           </div>
         ) : (
           filteredAlerts.map((alert) => {
@@ -158,10 +159,10 @@ export default function AlertsPage() {
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="font-display text-lg text-ink">{alert.title}</h4>
+                      <h4 className="font-display text-lg text-ink">{translateAlertTitle(alert.title, language)}</h4>
                       {!alert.is_read && (
                         <span className="rounded-sm bg-danger px-1.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-white">
-                          New
+                          {t("new")}
                         </span>
                       )}
                       {alert.severity && (
@@ -174,13 +175,13 @@ export default function AlertsPage() {
                               : "neutral"
                           }
                         >
-                          {alert.severity.toUpperCase()}
+                          {translateSeverityBucket(alert.severity, language).toUpperCase()}
                         </Badge>
                       )}
                     </div>
                     <p className="mt-2 text-sm leading-6 text-muted">{alert.body}</p>
                     <span className="mt-2 block text-xs text-muted">
-                      {alert.created_at ? new Date(alert.created_at).toLocaleString() : "Recently"}
+                      {alert.created_at ? new Date(alert.created_at).toLocaleString() : t("recently")}
                     </span>
                   </div>
                 </div>
@@ -191,7 +192,7 @@ export default function AlertsPage() {
                       to={`/predictions/${alert.prediction_id}`}
                       className="inline-flex items-center gap-1 rounded-sm border border-line bg-surface px-3 py-2 text-xs font-semibold text-farmer-800 hover:bg-canvas"
                     >
-                      View Scan <ArrowRight size={14} />
+                      {t("viewScan")} <ArrowRight size={14} />
                     </Link>
                   )}
                   {!alert.is_read && (
