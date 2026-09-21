@@ -7,6 +7,7 @@ import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, 
 import { APIProvider, Circle, Map as GoogleMap, Marker, Polygon, useMap } from "@vis.gl/react-google-maps";
 import { motion } from "motion/react";
 import { Button, Card, Input } from "../components/ui";
+import { translateCrop } from "../i18n/domain";
 
 type PlotPoint = [number, number];
 
@@ -246,7 +247,7 @@ function BoundaryMap({
 }
 
 export default function FarmSettingsPage() {
-  const { token, user } = useAuth();
+  const { token, user, language, t } = useAuth();
   const queryClient = useQueryClient();
 
   const [farmName, setFarmName] = useState("");
@@ -485,8 +486,8 @@ export default function FarmSettingsPage() {
     <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}>
       <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl text-ink sm:text-4xl">Farm Configuration & Plot Settings</h1>
-        <p className="mt-3 max-w-3xl leading-7 text-muted">Manage your GPS coordinates, total acreage, and historic crop rotation cycles.</p>
+        <h1 className="font-display text-3xl text-ink sm:text-4xl">{t("farmConfigTitle")}</h1>
+        <p className="mt-3 max-w-3xl leading-7 text-muted">{t("farmConfigSubtitle")}</p>
       </div>
 
       <motion.form 
@@ -498,41 +499,41 @@ export default function FarmSettingsPage() {
         {successMessage && (
           <div className="mb-5 flex items-center gap-3 rounded-sm border border-farmer-200 bg-farmer-50 p-3 text-sm font-semibold text-farmer-800">
             <CheckCircle2 size={18} />
-            <span>Farm settings updated successfully!</span>
+            <span>{t("farmUpdatedSuccess")}</span>
           </div>
         )}
 
         <div className="space-y-5">
-        <Input label="Farm Name / Identifier" leadingIcon={<Sprout size={16} />} type="text" value={farmName} onChange={(e) => setFarmName(e.target.value)} required />
+        <Input label={t("farmName")} leadingIcon={<Sprout size={16} />} type="text" value={farmName} onChange={(e) => setFarmName(e.target.value)} required />
 
-        <Input label="Location / Region" leadingIcon={<MapPin size={16} />} type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Bhavnagar, Gujarat" required />
+        <Input label={t("locationRegion")} leadingIcon={<MapPin size={16} />} type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Bhavnagar, Gujarat" required />
 
-        <Input label="Total Farm Area (Acres)" type="number" step="any" value={area} onChange={(e) => setArea(Number(e.target.value))} required />
+        <Input label={t("totalFarmArea")} type="number" step="any" value={area} onChange={(e) => setArea(Number(e.target.value))} required />
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Input label="GPS Latitude" leadingIcon={<MapPin size={16} />} type="number" step="any" value={lat} onChange={(e) => setLat(Number(e.target.value))} required />
-          <Input label="GPS Longitude" leadingIcon={<MapPin size={16} />} type="number" step="any" value={lon} onChange={(e) => setLon(Number(e.target.value))} required />
+          <Input label={t("gpsLatitude")} leadingIcon={<MapPin size={16} />} type="number" step="any" value={lat} onChange={(e) => setLat(Number(e.target.value))} required />
+          <Input label={t("gpsLongitude")} leadingIcon={<MapPin size={16} />} type="number" step="any" value={lon} onChange={(e) => setLon(Number(e.target.value))} required />
         </div>
 
-        <Input label="Crop History (Comma separated)" type="text" value={cropHistory} onChange={(e) => setCropHistory(e.target.value)} placeholder="e.g. Cotton, Groundnut, Wheat" />
+        <Input label={t("cropHistory")} type="text" value={cropHistory} onChange={(e) => setCropHistory(e.target.value)} placeholder="e.g. Cotton, Groundnut, Wheat" />
 
         <div className="rounded-sm border border-farmer-200 bg-farmer-50 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-display text-xl text-farmer-800">Farm Boundary</h3>
-              <p className="mt-1 text-xs text-muted">Use the shared boundary map below to create the outer farm boundary before drawing plots.</p>
+              <h3 className="font-display text-xl text-farmer-800">{t("farmBoundary")}</h3>
+              <p className="mt-1 text-xs text-muted">{t("farmBoundaryDesc")}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => openBoundaryDialog("farm")} className="rounded-sm border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink">
-                {farmBoundary.length >= 3 ? "Edit farm boundary" : "Create farm boundary"}
+                {farmBoundary.length >= 3 ? t("editBoundary") : t("createBoundary")}
               </button>
-              {farmBoundary.length > 0 && <button type="button" onClick={() => setFarmBoundary([])} className="rounded-sm border border-red-200 px-3 py-2 text-xs font-semibold text-danger">Clear boundary</button>}
+              {farmBoundary.length > 0 && <button type="button" onClick={() => setFarmBoundary([])} className="rounded-sm border border-red-200 px-3 py-2 text-xs font-semibold text-danger">{t("clearBoundary")}</button>}
             </div>
           </div>
         </div>
 
         <Button type="submit" disabled={mutation.isPending}>
-          <Save size={18} /> {mutation.isPending ? "Saving..." : "Save Farm Configuration"}
+          <Save size={18} /> {mutation.isPending ? t("saving") : t("saveFarmConfig")}
         </Button>
         </div>
       </motion.form>
@@ -544,8 +545,8 @@ export default function FarmSettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <h2 className="font-display text-2xl text-ink">Manage Farm Plots</h2>
-        <p className="mt-2 text-sm leading-6 text-muted">Organize your farm into distinct plots or fields to track disease progression accurately.</p>
+        <h2 className="font-display text-2xl text-ink">{t("managePlots")}</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">{t("managePlotsSubtitle")}</p>
         
         <div className="mt-6 space-y-3">
           {farmData?.plots?.map((plot: any) => (
@@ -553,7 +554,7 @@ export default function FarmSettingsPage() {
               <div>
                 <strong className="block text-base font-semibold text-ink">{plot.name}</strong>
                 <span className="mt-1 block text-xs text-muted">
-                  Crop: {plot.crop || "Unknown"} &bull; Area: {plot.area_acres ? `${plot.area_acres} acres` : "Unknown"}
+                  {t("crop")}: {translateCrop(plot.crop, language)} &bull; {t("areaLabel")}: {plot.area_acres ? `${plot.area_acres} ${t("areaUnit")}` : "Unknown"}
                 </span>
               </div>
               <button 
@@ -571,22 +572,22 @@ export default function FarmSettingsPage() {
           ))}
           {(!farmData?.plots || farmData.plots.length === 0) && (
             <div className="rounded-sm bg-canvas p-8 text-center text-sm text-muted">
-              No plots configured yet.
+              {t("noPlotsConfigured")}
             </div>
           )}
         </div>
 
         <form onSubmit={handleCreatePlot} className="mt-8 rounded-sm border border-dashed border-farmer-300 bg-farmer-50 p-5">
-          <h3 className="font-display text-xl text-farmer-800">Add New Plot</h3>
+          <h3 className="font-display text-xl text-farmer-800">{t("addNewPlot")}</h3>
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
-            <Input label="Plot Name / ID" type="text" value={newPlotName} onChange={e => setNewPlotName(e.target.value)} placeholder="e.g. North Field" required />
-            <Input label="Current Crop" type="text" value={newPlotCrop} onChange={e => setNewPlotCrop(e.target.value)} placeholder="e.g. Cotton" />
-            <Input label="Area (Acres)" type="number" step="any" value={newPlotArea} onChange={e => setNewPlotArea(e.target.value ? Number(e.target.value) : "")} placeholder="Optional" />
+            <Input label={t("plotName")} type="text" value={newPlotName} onChange={e => setNewPlotName(e.target.value)} placeholder="e.g. North Field" required />
+            <Input label={t("currentCrop")} type="text" value={newPlotCrop} onChange={e => setNewPlotCrop(e.target.value)} placeholder="e.g. Cotton" />
+            <Input label={t("plotArea")} type="number" step="any" value={newPlotArea} onChange={e => setNewPlotArea(e.target.value ? Number(e.target.value) : "")} placeholder="Optional" />
           </div>
           <div className="mt-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <label className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <MapIcon size={16} /> Plot Boundary
+                <MapIcon size={16} /> {t("plotBoundary")}
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -594,7 +595,7 @@ export default function FarmSettingsPage() {
                   onClick={() => openBoundaryDialog("plot")}
                   className="rounded-sm border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink"
                 >
-                  {newPlotGeometry.length >= 3 ? "Edit plot boundary" : "Create plot boundary"}
+                  {newPlotGeometry.length >= 3 ? t("editPlotBoundary") : t("createPlotBoundary")}
                 </button>
                 <button
                   type="button"
@@ -603,7 +604,7 @@ export default function FarmSettingsPage() {
                   className="inline-flex items-center gap-1.5 rounded-sm border border-expert-100 bg-expert-50 px-3 py-1.5 text-xs font-semibold text-expert-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Navigation2 size={14} className={isLocating ? 'animate-spin' : ''} />
-                  {isLocating ? 'Locating...' : 'My Location'}
+                  {isLocating ? t("locating") : t("myLocation")}
                 </button>
                 {/* Layer Toggle */}
                 <div className="flex overflow-hidden rounded-sm border border-line">
@@ -612,35 +613,35 @@ export default function FarmSettingsPage() {
                     onClick={() => setMapLayer('satellite')}
                     className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold ${mapLayer === 'satellite' ? 'bg-ink text-white' : 'bg-canvas text-muted'}`}
                   >
-                    <Satellite size={13} /> Satellite
+                    <Satellite size={13} /> {t("satellite")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setMapLayer('street')}
                     className={`inline-flex items-center gap-1 border-l border-line px-3 py-1.5 text-xs font-semibold ${mapLayer === 'street' ? 'bg-ink text-white' : 'bg-canvas text-muted'}`}
                   >
-                    <MapIcon size={13} /> Street
+                    <MapIcon size={13} /> {t("street")}
                   </button>
                 </div>
                 {newPlotGeometry.length > 0 && (
                   <button type="button" onClick={() => setNewPlotGeometry([])} className="inline-flex items-center gap-1 rounded-sm border border-red-200 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-red-50">
-                    <RotateCcw size={13} /> Clear
+                    <RotateCcw size={13} /> {t("clear")}
                   </button>
                 )}
               </div>
             </div>
 
-            <p className="mt-2 text-xs leading-5 text-muted">The plot boundary is created inside the saved farm boundary. The editor opens only when requested.</p>
+            <p className="mt-2 text-xs leading-5 text-muted">{t("plotBoundaryDesc")}</p>
           </div>
           <Button type="submit" className="mt-5 bg-farmer-600 hover:bg-farmer-700" disabled={createPlotMutation.isPending || !newPlotName || farmBoundary.length < 3 || newPlotGeometry.length < 3}>
-            {createPlotMutation.isPending ? "Adding..." : "+ Add Plot"}
+            {createPlotMutation.isPending ? t("adding") : t("addPlotBtn")}
           </Button>
         </form>
       </motion.div>
 
       <div className="flex justify-end border-t border-line pt-5">
         <Button type="button" onClick={() => setShowBoundaryOverview(true)}>
-          <MapIcon size={18} /> See boundaries
+          <MapIcon size={18} /> {t("seeBoundaries")}
         </Button>
       </div>
 
@@ -649,18 +650,18 @@ export default function FarmSettingsPage() {
           <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
               <div>
-                <h2 className="font-display text-2xl text-ink">{boundaryDialog === "farm" ? "Farm Boundary" : "Plot Boundary"}</h2>
+                <h2 className="font-display text-2xl text-ink">{boundaryDialog === "farm" ? t("farmBoundary") : t("plotBoundary")}</h2>
                 <p className="mt-1 text-xs text-muted">{isEditingBoundary ? "Edit mode: click to add, drag to move, double-click to delete, or click a line to insert." : "Map mode: pan and zoom normally. Click Edit boundary to change points."}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => setIsEditingBoundary((editing) => !editing)} className={`rounded-sm px-3 py-2 text-xs font-semibold ${isEditingBoundary ? "bg-farmer-700 text-white" : "border border-line bg-surface text-ink"}`}>
-                  {isEditingBoundary ? "Stop editing" : "Edit boundary"}
+                  {isEditingBoundary ? t("stopEditing") : t("editBoundaryBtn")}
                 </button>
                 <button type="button" onClick={handleLocate} disabled={isLocating} className="inline-flex items-center gap-1.5 rounded-sm border border-expert-100 bg-expert-50 px-3 py-2 text-xs font-semibold text-expert-700 disabled:opacity-60">
-                  <Navigation2 size={14} className={isLocating ? "animate-spin" : ""} /> {isLocating ? "Locating..." : "My Location"}
+                  <Navigation2 size={14} className={isLocating ? "animate-spin" : ""} /> {isLocating ? t("locating") : t("myLocation")}
                 </button>
                 <button type="button" onClick={() => setMapLayer((layer) => layer === "satellite" ? "street" : "satellite")} className="inline-flex items-center gap-1.5 rounded-sm border border-line px-3 py-2 text-xs font-semibold text-ink">
-                  {mapLayer === "satellite" ? <MapIcon size={14} /> : <Satellite size={14} />} {mapLayer === "satellite" ? "Street" : "Satellite"}
+                  {mapLayer === "satellite" ? <MapIcon size={14} /> : <Satellite size={14} />} {mapLayer === "satellite" ? t("street") : t("satellite")}
                 </button>
               </div>
             </div>
@@ -688,14 +689,14 @@ export default function FarmSettingsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t border-line p-4">
-              <button type="button" onClick={closeBoundaryDialog} className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink">Cancel</button>
+              <button type="button" onClick={closeBoundaryDialog} className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink">{t("cancel")}</button>
               {boundaryDialog === "farm" ? (
                 <Button type="button" onClick={saveFarmBoundary} disabled={mutation.isPending || farmBoundary.length < 3}>
-                  {mutation.isPending ? "Saving..." : "Save farm boundary"}
+                  {mutation.isPending ? t("saving") : t("saveFarmBoundary")}
                 </Button>
               ) : (
                 <Button type="button" onClick={() => savePlot()} disabled={createPlotMutation.isPending || newPlotGeometry.length < 3 || !newPlotName}>
-                  {createPlotMutation.isPending ? "Saving..." : "Save plot boundary"}
+                  {createPlotMutation.isPending ? t("saving") : t("savePlotBoundary")}
                 </Button>
               )}
             </div>
@@ -708,11 +709,11 @@ export default function FarmSettingsPage() {
           <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
             <div className="flex items-center justify-between gap-3 border-b border-line p-4">
               <div>
-                <h2 className="font-display text-2xl text-ink">Farm and Plot Boundaries</h2>
-                <p className="mt-1 text-xs text-muted">Read-only overview of the saved farm boundary and all plot boundaries.</p>
+                <h2 className="font-display text-2xl text-ink">{t("farmAndPlotBoundaries")}</h2>
+                <p className="mt-1 text-xs text-muted">{t("boundaryOverviewDesc")}</p>
               </div>
               <button type="button" onClick={() => setShowBoundaryOverview(false)} className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink">
-                Close
+                {t("close")}
               </button>
             </div>
             <div className="p-4">
