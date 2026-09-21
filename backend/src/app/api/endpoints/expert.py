@@ -132,14 +132,20 @@ async def post_expert_review(
     # Dataset flagging
     if payload.get("add_to_retraining"):
         orig_disease = pred.result.get("disease", {}).get("label") if pred.result else pred.disease
+        corrected = review.corrected_disease or orig_disease
         if not session.query(DatasetCandidate).filter(DatasetCandidate.prediction_id == pred.id).first():
+            provenance = (
+                f"Expert {user_id} reviewed prediction #{pred.id} with action '{action}'."
+                + (f" Corrected label: {corrected}." if corrected != orig_disease else "")
+            )
             session.add(DatasetCandidate(
                 prediction_id=pred.id,
                 source="expert_correction",
                 original_label=orig_disease,
-                corrected_label=review.corrected_disease or orig_disease,
+                corrected_label=corrected,
                 image_path=pred.image.raw_path if pred.image else "",
-                status="pending_review"
+                status="pending_review",
+                provenance_note=provenance,
             ))
     
     res = dict(pred.result)

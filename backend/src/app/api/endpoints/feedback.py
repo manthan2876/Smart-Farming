@@ -64,28 +64,58 @@ async def review_feedback(
     feedback = session.get(Feedback, feedback_id)
     if not feedback:
         raise HTTPException(status_code=404, detail="Feedback not found")
-    
+
+    # Persist all review fields including corrected label
     feedback.review_status = payload.status
     feedback.review_decision = payload.status
     feedback.reviewer_id = user_id
     feedback.reviewer_note = payload.reviewer_note
+    feedback.corrected_label = payload.corrected_label
     feedback.reviewed_at = datetime.now(timezone.utc)
 
     if payload.status == "approved" and not feedback.is_correct:
         prediction = feedback.prediction
+        # Determine labels: use reviewer's correction if provided, else keep original
+        orig_disease = (
+            prediction.result.get("disease", {}).get("label") if prediction.result else None
+        ) or prediction.disease
+        corrected = payload.corrected_label or orig_disease
+        image_path = prediction.image.raw_path if prediction.image else prediction.raw_path or ""
+
         existing_candidate = session.scalar(
             select(DatasetCandidate).where(DatasetCandidate.prediction_id == prediction.id)
         )
         if existing_candidate is None:
+            provenance = (
+                f"Farmer marked incorrect. "
+                f"Reviewer ({user_id}) approved correction on feedback #{feedback_id}."
+                + (f" Corrected label: {corrected}." if corrected != orig_disease else "")
+            )
             session.add(DatasetCandidate(
                 prediction_id=prediction.id,
                 source="farmer_feedback_review",
-                original_label=prediction.disease,
-                corrected_label=payload.corrected_label,
-                image_path=prediction.image.raw_path if prediction.image else prediction.raw_path,
+                original_label=orig_disease,
+                corrected_label=corrected,
+                image_path=image_path,
                 status="pending_review",
+                provenance_note=provenance,
+                source_feedback_id=feedback_id,
             ))
+        else:
+            # Update existing candidate's correction if reviewer provided a better label
+            if payload.corrected_label and existing_candidate.corrected_label != payload.corrected_label:
+                existing_candidate.corrected_label = payload.corrected_label
+                existing_candidate.provenance_note = (
+                    (existing_candidate.provenance_note or "") +
+                    f" | Reviewer {user_id} updated correction to: {payload.corrected_label}."
+                )
 
     session.commit()
-    
-    return {"status": "success", "feedback_id": feedback.id, "review_status": feedback.review_status}
+
+    return {
+        "status": "success",
+        "feedback_id": feedback.id,
+        "review_status": feedback.review_status,
+        "corrected_label": feedback.corrected_label,
+    }
+
