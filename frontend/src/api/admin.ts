@@ -1,4 +1,4 @@
-﻿import { request } from "./client";
+﻿import { request, requestBlob } from "./client";
 import { AdminMetrics, FeedbackLog } from "./types";
 
 export const adminMetrics = async (token: string): Promise<AdminMetrics> => {
@@ -19,3 +19,17 @@ export const reviewFeedback = async (
     body: JSON.stringify({ status })
   }, token);
 };
+
+export type DatasetExportRequest = {
+  filters: { expert: boolean; farmer: boolean; crop?: string; status?: string };
+  split: { train: number; val: number; test: number };
+  format: "PyTorch Folder" | "JSON Manifest";
+  imageTarget: "raw" | "preprocessed";
+};
+
+export const exportDataset = (token: string, payload: DatasetExportRequest) =>
+  requestBlob("/admin/dataset/export", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }, token);

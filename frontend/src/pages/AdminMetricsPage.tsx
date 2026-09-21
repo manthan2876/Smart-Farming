@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { request } from "../api/client";
+import { exportDataset } from "../api/admin";
 import { useAuth } from "../context/AuthContext";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -14,21 +15,21 @@ export default function AdminMetricsPage() {
 
   const handleExportMLOps = async () => {
     try {
-      const res = await fetch("http://localhost:8000/admin/mlops/export", {
-        headers: { Authorization: `Bearer ${token}` }
+      const blob = await exportDataset(token!, {
+        filters: { expert: true, farmer: true },
+        split: { train: 70, val: 15, test: 15 },
+        format: "PyTorch Folder",
+        imageTarget: "preprocessed",
       });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "dataset_export.zip";
-        a.click();
-      } else {
-        alert("Export failed");
-      }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "dataset_export.zip";
+      a.click();
+      window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error(e);
+      alert("Export failed");
     }
   };
 

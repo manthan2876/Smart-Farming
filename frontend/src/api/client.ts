@@ -9,6 +9,10 @@ export function getApiUrl() {
   return API_URL;
 }
 
+export function getAssetUrl(path: string) {
+  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 // Ensure subsequent requests pick up the latest token if refreshed elsewhere
 let refreshPromise: Promise<string | null> | null = null;
 
@@ -67,4 +71,18 @@ export async function request<T>(
     );
     
   return response.json() as Promise<T>;
+}
+
+export async function requestBlob(
+  path: string,
+  options: RequestInit = {},
+  token?: string | null,
+): Promise<Blob> {
+  const headers = new Headers(options.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(`${API_URL}${path}`, { credentials: "include", ...options, headers });
+  if (!response.ok) {
+    throw new Error((await response.json().catch(() => null))?.detail ?? `Request failed (${response.status})`);
+  }
+  return response.blob();
 }

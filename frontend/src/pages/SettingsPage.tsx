@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { request } from "../api/client";
+import { exportDataset } from "../api/admin";
 import { 
   AlertTriangle, 
   Trash2, 
@@ -113,26 +114,19 @@ export default function SettingsPage() {
         format: exportFormat,
         imageTarget: exportImage
       };
-      const res = await fetch("http://localhost:8000/admin/dataset/export", {
-        method: "POST",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
+      const blob = await exportDataset(token!, {
+        filters: { expert: exportFilters.expert, farmer: exportFilters.farmer, crop: exportCrop },
+        split: payload.split,
+        format: exportFormat === "JSON Manifest" ? "JSON Manifest" : "PyTorch Folder",
+        imageTarget: exportImage as "raw" | "preprocessed",
       });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "dataset_export.zip";
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-      } else {
-        alert("Export failed.");
-      }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dataset_export.zip";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
       alert("Export error.");
