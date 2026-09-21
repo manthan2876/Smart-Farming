@@ -5,6 +5,7 @@ import json
 import shutil
 import tempfile
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,7 +16,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin_role
 from app.core import get_session
 from app.core.paths import resolve_storage_path
-from app.models import DatasetCandidate
+from app.models import DatasetCandidate, Prediction
+from app.pipeline import SCHEMA_VERSION
 
 
 class DatasetExportFilters(BaseModel):
@@ -70,12 +72,44 @@ async def get_dataset_summary(
     is_admin: str = Depends(require_admin_role),
     session: Session = Depends(get_session),
 ):
+    total = session.query(DatasetCandidate).count()
+    expert_count = (
+        session.query(DatasetCandidate)
+        .filter(DatasetCandidate.source == "expert_correction")
+        .count()
+    )
+    farmer_count = (
+        session.query(DatasetCandidate)
+        .filter(DatasetCandidate.source.in_(["farmer_confirmation", "farmer_feedback_review"]))
+        .count()
+    )
+    pending = (
+        session.query(DatasetCandidate)
+        .filter(DatasetCandidate.status == "pending_review")
+        .count()
+    )
+    added = (
+        session.query(DatasetCandidate)
+        .filter(DatasetCandidate.status == "added_to_dataset")
+        .count()
+    )
+
+    # Crop distribution of candidates
+    from sqlalchemy import func
+    crop_rows = (
+        session.query(Prediction.crop, func.count(DatasetCandidate.id))
+        .join(Prediction, DatasetCandidate.prediction_id == Prediction.id)
+        .group_by(Prediction.crop)
+        .all()
+    )
+    crop_distribution = [{"crop": r[0] or "Unknown", "count": r[1]} for r in crop_rows]
+
     return {
-        "total": session.query(DatasetCandidate).count(),
-        "expert_overridden": session.query(DatasetCandidate).filter(DatasetCandidate.source == "expert_correction").count(),
-        "farmer_confirmed": session.query(DatasetCandidate).filter(
-            DatasetCandidate.source.in_(["farmer_confirmation", "farmer_feedback_review"])
-        ).count(),
+        "total": total,
+        "expert_overridden": expert_count,
+        "farmer_confirmed": farmer_count,
+        "by_status": {"pending_review": pending, "added_to_dataset": added},
+        "by_crop": crop_distribution,
     }
 
 
@@ -94,21 +128,32 @@ async def export_dataset_post(
     if not sources:
         raise HTTPException(status_code=422, detail="Select at least one dataset source")
 
-    candidates = session.query(DatasetCandidate).all()
-    selected = []
-    for candidate in candidates:
-        if candidate.source not in sources:
-            continue
-        if payload.filters.status and candidate.status != payload.filters.status:
-            continue
-        crop_filter = (payload.filters.crop or "").lower()
-        if crop_filter and not crop_filter.startswith("all crops"):
-            if not candidate.prediction or (candidate.prediction.crop or "").lower() != crop_filter:
-                continue
-        selected.append(candidate)
+    # Build base query with join to Prediction for crop filter
+    query = (
+        session.query(DatasetCandidate)
+        .join(Prediction, DatasetCandidate.prediction_id == Prediction.id)
+    )
+
+    # Filter by source
+    query = query.filter(DatasetCandidate.source.in_(sources))
+
+    # Filter by status
+    if payload.filters.status:
+        query = query.filter(DatasetCandidate.status == payload.filters.status)
+
+    # Filter by crop — proper case-insensitive join filter
+    crop_filter = (payload.filters.crop or "").strip().lower()
+    if crop_filter and not crop_filter.startswith("all"):
+        from sqlalchemy import func as sqlfunc
+        query = query.filter(sqlfunc.lower(Prediction.crop) == crop_filter)
+
+    selected = query.all()
 
     if not selected:
         raise HTTPException(status_code=404, detail="No dataset candidates match the selected filters")
+
+    # Compute split summary for provenance
+    split_counts = {"train": 0, "val": 0, "test": 0}
 
     tmp_dir = Path(tempfile.mkdtemp(prefix="smartfarming-mlops-"))
     zip_path = tmp_dir / "dataset_export.zip"
@@ -127,9 +172,16 @@ async def export_dataset_post(
                     raise HTTPException(status_code=422, detail="Candidate image path is outside configured storage") from exc
 
                 split = _split_for(candidate.id, payload.split)
+                split_counts[split] += 1
+
                 image_file = None
                 if image_path.is_file():
-                    image_file = f"images/{split}/{candidate.id}_{image_path.name}"
+                    # PyTorch ImageFolder expects images/<split>/<class_label>/filename.ext
+                    label_dir = (candidate.corrected_label or candidate.original_label or "unknown").replace(" ", "_").replace("/", "_")
+                    if payload.format == "PyTorch Folder":
+                        image_file = f"images/{split}/{label_dir}/{candidate.id}_{image_path.name}"
+                    else:
+                        image_file = f"images/{split}/{candidate.id}_{image_path.name}"
                     archive.write(image_path, arcname=image_file)
 
                 metadata.append({
@@ -142,17 +194,46 @@ async def export_dataset_post(
                     "original_label": candidate.original_label,
                     "corrected_label": candidate.corrected_label,
                     "status": candidate.status,
+                    "provenance_note": candidate.provenance_note,
+                    "crop": prediction.crop if prediction else None,
                     "model_used": prediction.model_used if prediction else None,
                     "created_at": candidate.created_at.isoformat(),
                 })
 
+            # metadata.json with full provenance block
+            provenance = {
+                "schema_version": SCHEMA_VERSION,
+                "exported_at": datetime.now(timezone.utc).isoformat(),
+                "total_candidates": len(selected),
+                "split_summary": split_counts,
+                "export_config": payload.model_dump(),
+                "format": payload.format,
+            }
+            full_metadata = {"provenance": provenance, "candidates": metadata}
             metadata_path = tmp_dir / "metadata.json"
-            metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+            metadata_path.write_text(json.dumps(full_metadata, indent=2), encoding="utf-8")
             archive.write(metadata_path, arcname="metadata.json")
 
-            config_path = tmp_dir / "export_config.json"
-            config_path.write_text(json.dumps(payload.model_dump(), indent=2), encoding="utf-8")
-            archive.write(config_path, arcname="export_config.json")
+            # README for reproducibility
+            readme_content = (
+                f"# Smart Farming Dataset Export\n\n"
+                f"Exported: {provenance['exported_at']}\n"
+                f"Total candidates: {len(selected)}\n"
+                f"Format: {payload.format}\n"
+                f"Image target: {payload.imageTarget}\n\n"
+                f"## Split\n"
+                f"- Train: {split_counts['train']} images ({payload.split.train}%)\n"
+                f"- Val: {split_counts['val']} images ({payload.split.val}%)\n"
+                f"- Test: {split_counts['test']} images ({payload.split.test}%)\n\n"
+                f"## Structure\n"
+                f"For PyTorch Folder format: `images/<split>/<class_label>/<filename>`\n"
+                f"Load with `torchvision.datasets.ImageFolder`.\n\n"
+                f"See `metadata.json` for full provenance and candidate details.\n"
+            )
+            readme_path = tmp_dir / "README.md"
+            readme_path.write_text(readme_content, encoding="utf-8")
+            archive.write(readme_path, arcname="README.md")
+
     except HTTPException:
         shutil.rmtree(tmp_dir, ignore_errors=True)
         raise
