@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from urllib.parse import urlparse
 
 from arq import create_pool
@@ -12,14 +12,14 @@ arq_pool = None
 async def init_arq():
     global arq_pool
     parsed = urlparse(settings.REDIS_URL)
-    settings = RedisSettings(
+    redis_settings = RedisSettings(
         host=parsed.hostname or "127.0.0.1",
         port=parsed.port or 6379,
         password=parsed.password,
         database=int(parsed.path.lstrip("/") or 0),
     )
     try:
-        arq_pool = await create_pool(settings)
+        arq_pool = await create_pool(redis_settings)
     except Exception:
         arq_pool = None
         if settings.REQUIRE_REDIS:
