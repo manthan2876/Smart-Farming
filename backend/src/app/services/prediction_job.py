@@ -2,19 +2,22 @@ from __future__ import annotations
 
 import json
 import logging
+import time
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import redis
 
+from app import pipeline as _pipeline
 from app.context import create_context
 from app.core.config import settings
 from app.core.paths import resolve_storage_path
 from app.core.session import _session_factory
 from app.crud.expert_review import ensure_expert_review
-from app.models import ExpertReview, Prediction
+from app.models import Prediction
 from app.pipeline import (
-    _CONFIG,
-    _PREPROCESSOR,
+    SCHEMA_VERSION,
+    build_provenance,
     estimate_severity,
     fetch_weather,
     generate_recommendation,
@@ -49,8 +52,15 @@ def _redis_client() -> redis.Redis:
     )
 
 
-from datetime import datetime, timezone
-import time
+def _as_float(value) -> float | None:
+    """Coerce numpy / Decimal scalars to a plain float so DB drivers never choke on them."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
 
 def run_prediction_job(
     prediction_id: int,
@@ -69,8 +79,19 @@ def run_prediction_job(
     job_start_time = time.perf_counter()
     current_stage = "initialization"
     current_stage_t0 = time.perf_counter()
+    context: dict | None = None
 
-    def push_status(stage: str, status: str = "completed", message: str = "", duration_ms: int | None = None) -> None:
+    # Read at call time (not import time) so app.pipeline.reload_config() takes effect.
+    config = _pipeline._CONFIG
+    preprocessor = _pipeline._PREPROCESSOR
+
+    def push_status(
+        stage: str,
+        status: str = "completed",
+        message: str = "",
+        duration_ms: int | None = None,
+        data: dict | None = None,
+    ) -> None:
         payload = {
             "stage": stage,
             "status": status,
@@ -79,13 +100,23 @@ def run_prediction_job(
         }
         if duration_ms is not None:
             payload["duration_ms"] = duration_ms
+        if data:
+            payload["data"] = data
         try:
+            # _json_safe: stage payloads come straight from the ML context and may contain
+            # numpy scalars/arrays, which plain json.dumps rejects.
             redis_client.publish(
                 f"prediction_status:{prediction_id}",
-                json.dumps(payload),
+                json.dumps(_json_safe(payload)),
             )
         except Exception:
-            logger.debug("Unable to publish prediction status", exc_info=True)
+            # WARNING (not debug) so a dropped live event is visible in the worker log.
+            logger.warning(
+                "Unable to publish status for prediction %s stage '%s'",
+                prediction_id,
+                stage,
+                exc_info=True,
+            )
 
     try:
         prediction = db.query(Prediction).filter(Prediction.id == prediction_id).first()
@@ -106,6 +137,10 @@ def run_prediction_job(
             lon=lon,
             language=language,
         )
+        # Make sure every intermediate snapshot saved to the DB (and returned by
+        # GET /predictions/{id}) reports the pipeline as running, not "missing".
+        context.setdefault("status", {})["pipeline"] = "processing"
+        context.setdefault("stages", {})
         prediction.status = "processing"
         db.commit()
 
@@ -114,10 +149,6 @@ def run_prediction_job(
             current_stage = stage_name
             current_stage_t0 = time.perf_counter()
             now_iso = datetime.now(timezone.utc).isoformat()
-            if "status" not in context:
-                context["status"] = {}
-            if "stages" not in context:
-                context["stages"] = {}
             context["status"][stage_name] = "processing"
             context["stages"][stage_name] = {
                 "status": "processing",
@@ -129,40 +160,90 @@ def run_prediction_job(
             push_status(stage_name, "processing", message)
             return current_stage_t0
 
-        def stage_finish(stage_name: str, t0: float, message: str = "", extra_events: list[str] | None = None) -> int:
+        def stage_finish(
+            stage_name: str,
+            t0: float,
+            message: str = "",
+            extra_events: list[str] | None = None,
+            data: dict | None = None,
+            persist: bool = True,
+        ) -> int:
             duration_ms = round((time.perf_counter() - t0) * 1000)
             now_iso = datetime.now(timezone.utc).isoformat()
-            context["status"][stage_name] = "completed"
-            if stage_name not in context["stages"]:
-                context["stages"][stage_name] = {}
+
+            # A stage may have set its own terminal status ("skipped", "failed", "degraded"...).
+            # Only promote the default "processing" marker, exactly like pipeline.run_pipeline.
+            if context["status"].get(stage_name, "processing") == "processing":
+                context["status"][stage_name] = "completed"
+            final_status = context["status"][stage_name]
+
+            context["stages"].setdefault(stage_name, {})
             context["stages"][stage_name].update({
-                "status": "completed",
+                "status": final_status,
                 "message": message,
                 "completed_at": now_iso,
                 "duration_ms": duration_ms,
             })
-            push_status(stage_name, "completed", message, duration_ms)
+
+            # Persist intermediate progress so REST polling reflects it too.
+            # (Skipped for the final "persistence" stage: the caller writes the complete
+            # result itself, and persisting here would overwrite it with a bare snapshot.)
+            if persist:
+                try:
+                    prediction.result = _public_result(context)
+                    if data:
+                        if data.get("crop"):
+                            prediction.crop = data["crop"].get("label")
+                            prediction.crop_conf = _as_float(data["crop"].get("confidence"))
+                        if data.get("disease"):
+                            prediction.disease = data["disease"].get("label")
+                            prediction.disease_conf = _as_float(data["disease"].get("confidence"))
+                            prediction.model_used = data["disease"].get("model_used")
+                        if data.get("severity"):
+                            prediction.severity_pct = _as_float(data["severity"].get("percent"))
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                    logger.warning(
+                        "Failed to persist progress for prediction %s stage '%s'",
+                        prediction_id,
+                        stage_name,
+                        exc_info=True,
+                    )
+
+            current_data = {
+                "crop": context.get("crop"),
+                "disease": context.get("disease"),
+                "pests": context.get("pests"),
+                "severity": context.get("severity"),
+            }
+            if data:
+                current_data.update(data)
+
+            # Always "completed" on the wire: a stage that degrades gracefully ("skipped", etc.)
+            # is still finished from the client's point of view. A real failure raises instead.
+            push_status(stage_name, "completed", message, duration_ms, data=current_data)
             if extra_events:
                 for extra_stage in extra_events:
-                    push_status(extra_stage, "completed", message, duration_ms)
+                    push_status(extra_stage, "completed", message, duration_ms, data=current_data)
             return duration_ms
 
         # 1. Preprocessing
         t0 = stage_start("preprocessing", "Validating image quality and clarity...")
-        context = _PREPROCESSOR.process(context)
+        context = preprocessor.process(context)
         prep_status = context.get("status", {}).get("preprocessing")
         if prep_status != "completed":
             if prep_status == "failed_blur":
                 blur_score = context.get("image", {}).get("blur_score", 0.0)
                 err = (
                     f"Image is too blurry (sharpness score: {blur_score:.1f}, "
-                    f"required: >= {_PREPROCESSOR.blur_threshold:.1f}). Please hold the camera steady and refocus on the leaf."
+                    f"required: >= {preprocessor.blur_threshold:.1f}). Please hold the camera steady and refocus on the leaf."
                 )
             elif prep_status == "failed_lighting":
                 brightness = context.get("image", {}).get("brightness_score", 0.0)
                 err = (
                     f"Image lighting is outside acceptable range (brightness: {brightness:.1f}, "
-                    f"expected between {_PREPROCESSOR.min_brightness:.1f} and {_PREPROCESSOR.max_brightness:.1f}). "
+                    f"expected between {preprocessor.min_brightness:.1f} and {preprocessor.max_brightness:.1f}). "
                     f"Please retake the photo in balanced lighting."
                 )
             elif prep_status == "failed_no_leaf":
@@ -174,53 +255,95 @@ def run_prediction_job(
 
         # 2. Crop Identification
         t0 = stage_start("crop_identification", "Identifying crop species...")
-        context = predict_crop(context, _CONFIG)
+        context = predict_crop(context, config)
         crop_label = context.get("crop", {}).get("label") or "Unknown"
         crop_conf = context.get("crop", {}).get("confidence") or 0.0
-        stage_finish("crop_identification", t0, f"Detected {crop_label} ({crop_conf * 100:.1f}%)")
+        stage_finish(
+            "crop_identification",
+            t0,
+            f"Detected {crop_label} ({crop_conf * 100:.1f}%)",
+            data={"crop": context.get("crop")},
+        )
 
         # 3. Decision Routing
         t0 = stage_start("decision_routing", "Selecting crop-specific disease model...")
-        context = route_to_disease_model(context, _CONFIG)
+        context = route_to_disease_model(context, config)
         disease_model_name = context.get("disease", {}).get("model_used") or "default"
-        stage_finish("decision_routing", t0, f"Routed to model: {disease_model_name}")
+        stage_finish(
+            "decision_routing",
+            t0,
+            f"Routed to model: {disease_model_name}",
+            data={"disease": context.get("disease")},
+        )
 
         # 4. Disease Classification
         t0 = stage_start("disease_classification", "Classifying crop disease...")
-        context = predict_disease(context, _CONFIG)
+        context = predict_disease(context, config)
         disease_label = context.get("disease", {}).get("label") or "Unknown"
         disease_conf = context.get("disease", {}).get("confidence") or 0.0
-        stage_finish("disease_classification", t0, f"Classified as {disease_label} ({disease_conf * 100:.1f}%)")
+        stage_finish(
+            "disease_classification",
+            t0,
+            f"Classified as {disease_label} ({disease_conf * 100:.1f}%)",
+            data={"disease": context.get("disease")},
+        )
 
         # 5. Severity Calculation
         t0 = stage_start("severity", "Calculating leaf damage percentage and severity bucket...")
         context = estimate_severity(context)
         severity_pct = context.get("severity", {}).get("percent") or 0.0
         severity_bucket = context.get("severity", {}).get("bucket") or "Unknown"
-        stage_finish("severity", t0, f"Severity: {severity_bucket} ({severity_pct}%)", extra_events=["severity_calculation"])
+        stage_finish(
+            "severity",
+            t0,
+            f"Severity: {severity_bucket} ({severity_pct}%)",
+            extra_events=["severity_calculation"],
+            data={"severity": context.get("severity")},
+        )
 
         # 6. Pest Detection
         t0 = stage_start("pest_detection", "Scanning for known agricultural pests...")
-        context = predict_pest(context, _CONFIG)
+        context = predict_pest(context, config)
         pests = context.get("pests", [])
         pest_summary = ", ".join([p.get("label", "Pest") for p in pests]) if pests else "No pests detected"
-        stage_finish("pest_detection", t0, pest_summary)
+        stage_finish(
+            "pest_detection",
+            t0,
+            pest_summary,
+            data={"pests": pests, "pest_classification": context.get("pest_classification")},
+        )
 
         # 7. Weather
         t0 = stage_start("weather", "Fetching current weather conditions...")
-        context = fetch_weather(context, _CONFIG)
+        context = fetch_weather(context, config)
         weather_status = context.get("weather", {}).get("status", "unknown")
-        stage_finish("weather", t0, f"Weather status: {weather_status}")
+        stage_finish(
+            "weather",
+            t0,
+            f"Weather status: {weather_status}",
+            data={"weather": context.get("weather")},
+        )
 
         # 8. Recommendation
         t0 = stage_start("recommendation", "Synthesizing agronomic advisory...")
-        context = generate_recommendation(context, _CONFIG)
-        stage_finish("recommendation", t0, "Advisory generated.", extra_events=["llm_advisory"])
+        context = generate_recommendation(context, config)
+        stage_finish(
+            "recommendation",
+            t0,
+            "Advisory generated.",
+            extra_events=["llm_advisory"],
+            data={"recommendation": context.get("recommendation")},
+        )
 
         # 9. Persistence & Expert Escalation Check
         t0 = stage_start("persistence", "Saving prediction results...")
         context["image"]["raw_path"] = relative_image_path
         total_duration_ms = round((time.perf_counter() - job_start_time) * 1000)
+
+        # Close out the persistence stage and the pipeline in the context *before* the final
+        # snapshot is taken, and without a DB write (persist=False): the complete result is
+        # assembled and saved once, below.
+        stage_finish("persistence", t0, "Prediction results saved.", persist=False)
         context["status"]["pipeline"] = "completed"
         context["stages"]["pipeline"] = {
             "status": "completed",
@@ -229,93 +352,76 @@ def run_prediction_job(
             "completed_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        thresholds = _CONFIG.get("thresholds", {})
+        thresholds = config.get("thresholds", {})
         disease_threshold = thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD)
         crop_threshold = thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD)
 
-        SCHEMA_VERSION = "2.0.0"
         public_result = _public_result(context)
-        public_result["user"] = {"id": user_id}
+        # Location/lat/lon/language are stored so a later rescan can reuse them.
+        public_result["user"] = {
+            **(public_result.get("user") or {}),
+            "id": user_id,
+            "location": location,
+            "lat": lat,
+            "lon": lon,
+            "language": language,
+        }
         public_result["prediction_id"] = prediction_id
         public_result["total_duration_ms"] = total_duration_ms
         public_result["schema_version"] = SCHEMA_VERSION
-        public_result["provenance"] = {
-            "schema_version": SCHEMA_VERSION,
-            "config": {
-                "version": "1.0.0",
-                "thresholds": {
-                    "crop_confidence": crop_threshold,
-                    "disease_confidence": disease_threshold,
-                },
-            },
-            "models": {
-                "crop": {
-                    "name": context.get("crop", {}).get("model_name", "EfficientNet-B0"),
-                    "version": context.get("crop", {}).get("model_version", "v1.0"),
-                    "model_file": context.get("crop", {}).get("model_file", "crop_identifier_v1.pth"),
-                },
-                "disease": {
-                    "name": context.get("disease", {}).get("model_name", "EfficientNet-B2"),
-                    "version": context.get("disease", {}).get("model_version", "v1.0"),
-                    "model_file": context.get("disease", {}).get("model_used") or "default",
-                },
-                "severity": {
-                    "name": "HSV Contour Heuristic",
-                    "version": "v1.0",
-                },
-                "pest": {
-                    "name": context.get("pest_classification", {}).get("model_name", "YOLO Pest Classifier"),
-                    "version": context.get("pest_classification", {}).get("version", "v1.0"),
-                    "model_file": context.get("pest_classification", {}).get("model_used") or "pest_classifier/weights/best.pt",
-                    "available": context.get("pest_classification", {}).get("available", context.get("status", {}).get("pest_detection") == "completed"),
-                },
-            },
-            "weather_provider": {
-                "provider": context.get("weather", {}).get("provider", "OpenWeatherMap"),
-                "status": context.get("weather", {}).get("status", "unknown"),
-                "is_degraded": context.get("weather", {}).get("is_degraded", False),
-                "timestamp": context.get("weather", {}).get("timestamp"),
-            },
-            "recommendation_provider": {
-                "provider": context.get("recommendation", {}).get("provider", "HuggingFace / nscale"),
-                "model": context.get("recommendation", {}).get("model", "Qwen/Qwen3-4B-Instruct-2507"),
-                "prompt_version": context.get("recommendation", {}).get("prompt_version", "v1.0"),
-                "is_fallback": context.get("recommendation", {}).get("is_fallback", False),
-                "fallback_reason": context.get("recommendation", {}).get("fallback_reason"),
-            },
-            "pipeline_duration_ms": total_duration_ms,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        public_result["provenance"] = build_provenance(context, total_duration_ms)
 
-        prediction.result = public_result
         prediction.raw_path = relative_image_path
         prediction.processed_path = public_result.get("image", {}).get("processed_path")
         prediction.crop = public_result.get("crop", {}).get("label")
-        prediction.crop_conf = public_result.get("crop", {}).get("confidence")
+        prediction.crop_conf = _as_float(public_result.get("crop", {}).get("confidence"))
         prediction.disease = public_result.get("disease", {}).get("label")
-        prediction.disease_conf = public_result.get("disease", {}).get("confidence")
+        prediction.disease_conf = _as_float(public_result.get("disease", {}).get("confidence"))
         prediction.model_used = public_result.get("disease", {}).get("model_used")
-        prediction.severity_pct = public_result.get("severity", {}).get("percent")
+        prediction.severity_pct = _as_float(public_result.get("severity", {}).get("percent"))
 
         disease_confidence = prediction.disease_conf or 0.0
         crop_confidence = prediction.crop_conf or 0.0
 
+        review_reason: str | None = None
         if disease_confidence < disease_threshold:
-            ensure_expert_review(db, prediction, "Disease confidence is below the configured threshold.")
-            public_result["status"]["expert_review"] = "pending"
+            review_reason = "Disease confidence is below the configured threshold."
         elif crop_confidence < crop_threshold:
-            ensure_expert_review(db, prediction, "Crop confidence is below the configured threshold.")
-            public_result["status"]["expert_review"] = "pending"
-        elif prediction.expert_review is not None and prediction.expert_review.status == "pending":
+            review_reason = "Crop confidence is below the configured threshold."
+        already_pending = (
+            prediction.expert_review is not None and prediction.expert_review.status == "pending"
+        )
+
+        # Decide the expert-review flag BEFORE assigning the result: ensure_expert_review()
+        # may commit, and JSON columns don't track in-place changes made after that.
+        public_result["status"]["expert_review"] = (
+            "pending" if (review_reason or already_pending) else "not_requested"
+        )
+        prediction.result = public_result
+
+        if review_reason:
+            ensure_expert_review(db, prediction, review_reason)
+            if prediction.status == "processing":
+                prediction.status = "pending_expert_review"
+        elif already_pending:
             prediction.status = "pending_expert_review"
-            public_result["status"]["expert_review"] = "pending"
         else:
             prediction.status = "ready"
-            public_result["status"]["expert_review"] = "not_requested"
 
-        stage_finish("persistence", t0, f"Persisted with status {prediction.status}")
         db.commit()
-        push_status("completed", "completed", "Diagnosis pipeline completed successfully.", total_duration_ms)
+        push_status(
+            "completed",
+            "completed",
+            "Diagnosis pipeline completed successfully.",
+            total_duration_ms,
+            # Full final snapshot: lets the client recover even if earlier live events were lost.
+            data={
+                "crop": public_result.get("crop"),
+                "disease": public_result.get("disease"),
+                "pests": public_result.get("pests"),
+                "severity": public_result.get("severity"),
+            },
+        )
 
     except Exception as exc:
         db.rollback()
@@ -324,31 +430,34 @@ def run_prediction_job(
         err_msg = str(exc)
         logger.error(f"Prediction {prediction_id} failed during stage '{current_stage}': {err_msg}", exc_info=True)
 
-        prediction = db.query(Prediction).filter(Prediction.id == prediction_id).first()
-        if prediction is not None:
-            prediction.status = "failed"
-            existing_stages = context.get("stages", {}) if "context" in locals() else {}
-            existing_status = context.get("status", {}) if "context" in locals() else {}
-            existing_status[current_stage] = "failed"
-            existing_status["pipeline"] = "failed"
-            existing_stages[current_stage] = {
-                "status": "failed",
-                "message": err_msg,
-                "completed_at": now_iso,
-                "duration_ms": fail_duration_ms,
-            }
-            prediction.result = {
-                "prediction_id": prediction_id,
-                "error": err_msg,
-                "failed_stage": current_stage,
-                "status": existing_status,
-                "stages": existing_stages,
-            }
-            db.commit()
+        try:
+            prediction = db.query(Prediction).filter(Prediction.id == prediction_id).first()
+            if prediction is not None:
+                prediction.status = "failed"
+                existing_stages = context.get("stages", {}) if context else {}
+                existing_status = context.get("status", {}) if context else {}
+                existing_status[current_stage] = "failed"
+                existing_status["pipeline"] = "failed"
+                existing_stages[current_stage] = {
+                    "status": "failed",
+                    "message": err_msg,
+                    "completed_at": now_iso,
+                    "duration_ms": fail_duration_ms,
+                }
+                prediction.result = {
+                    "prediction_id": prediction_id,
+                    "error": err_msg,
+                    "failed_stage": current_stage,
+                    "status": existing_status,
+                    "stages": existing_stages,
+                }
+                db.commit()
+        except Exception:
+            db.rollback()
+            logger.error("Could not record failure for prediction %s", prediction_id, exc_info=True)
 
         push_status("failed", "failed", err_msg, fail_duration_ms)
         raise
     finally:
         redis_client.close()
         db.close()
-
