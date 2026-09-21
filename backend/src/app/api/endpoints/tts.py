@@ -13,16 +13,38 @@ router = APIRouter(tags=["tts"])
 
 class TTSRequest(BaseModel):
     text: str
+    language: str | None = "English"
 
 AUDIO_CACHE_DIR = settings.AUDIO_ROOT
 ensure_storage_directories()
+
+_TTS_VOICES: dict[str, dict[str, str]] = {
+    "hi": {"languageCode": "hi-IN", "name": "hi-IN-Standard-A"},
+    "gu": {"languageCode": "gu-IN", "name": "gu-IN-Standard-A"},
+    "en": {"languageCode": "en-IN", "name": "en-IN-Standard-A"},
+}
+
+
+def _resolve_tts_voice(language: str | None) -> dict[str, str]:
+    if not language:
+        return _TTS_VOICES["en"]
+    clean = language.strip().lower()
+    if clean.startswith("hi"):
+        return _TTS_VOICES["hi"]
+    if clean.startswith("gu"):
+        return _TTS_VOICES["gu"]
+    return _TTS_VOICES["en"]
+
 
 @router.post("/tts")
 async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_user)):
     AUDIO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 1. Check cache
-    text_hash = hashlib.sha256(payload.text.encode('utf-8')).hexdigest()
+    voice_cfg = _resolve_tts_voice(payload.language)
+    lang_code = voice_cfg["languageCode"]
+
+    # 1. Check cache (partitioned by voice language + text)
+    text_hash = hashlib.sha256(f"{lang_code}:{payload.text}".encode("utf-8")).hexdigest()
     cache_file = AUDIO_CACHE_DIR / f"{text_hash}.mp3"
     
     if cache_file.exists():
@@ -43,7 +65,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
     
     data = {
         "input": {"text": payload.text},
-        "voice": {"languageCode": "en-US", "name": "en-US-Standard-A"},
+        "voice": voice_cfg,
         "audioConfig": {"audioEncoding": "MP3"}
     }
     

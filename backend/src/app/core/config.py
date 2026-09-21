@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     PROCESSED_ROOT: Path = DATA_ROOT / "processed"
     AUDIO_ROOT: Path = DATA_ROOT / "audio"
     GOOGLE_TTS_API_KEY: str = Field(default="")
+    GOOGLE_TRANSLATION_API_KEY: str = Field(default="")
 
     model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
 

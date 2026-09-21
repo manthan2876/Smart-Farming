@@ -356,6 +356,19 @@ def run_prediction_job(
         disease_threshold = thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD)
         crop_threshold = thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD)
 
+        # Dynamic translation of recommendation if requested language is not English
+        from app.services.translation.service import translate_recommendation_sync, normalize_language_code
+        target_code = normalize_language_code(language)
+        translations: dict[str, Any] = {}
+        if target_code != "en":
+            canonical_rec = context.get("recommendation", {})
+            if canonical_rec:
+                try:
+                    translated_rec = translate_recommendation_sync(canonical_rec, target_code)
+                    translations[target_code] = translated_rec
+                except Exception as trans_err:
+                    logger.warning("Auto-translation to %s failed: %s", target_code, trans_err)
+
         public_result = _public_result(context)
         # Location/lat/lon/language are stored so a later rescan can reuse them.
         public_result["user"] = {
@@ -370,6 +383,7 @@ def run_prediction_job(
         public_result["total_duration_ms"] = total_duration_ms
         public_result["schema_version"] = SCHEMA_VERSION
         public_result["provenance"] = build_provenance(context, total_duration_ms)
+        public_result["translations"] = translations
 
         prediction.raw_path = relative_image_path
         prediction.processed_path = public_result.get("image", {}).get("processed_path")

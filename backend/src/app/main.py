@@ -16,6 +16,7 @@ from app.api.endpoints.alerts import router as alerts_router
 from app.api.endpoints.tts import router as tts_router
 from app.api.endpoints.mlops import router as mlops_router
 from app.api.endpoints.model_registry import router as model_registry_router
+from app.api.endpoints.translation import router as translation_router
 from app.api import (
     auth_router,
     profile_router,
@@ -104,6 +105,7 @@ app.add_middleware(
 app.include_router(tts_router)
 app.include_router(mlops_router)
 app.include_router(model_registry_router)
+app.include_router(translation_router)
 app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(farm_router)
