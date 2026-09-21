@@ -23,13 +23,17 @@ class Prediction {
     final crop = (json['crop'] as Map?)?.cast<String, dynamic>() ?? {};
     final disease = (json['disease'] as Map?)?.cast<String, dynamic>() ?? {};
     final severity = (json['severity'] as Map?)?.cast<String, dynamic>() ?? {};
+    final recommendation = (json['recommendation'] as Map?)?.cast<String, dynamic>() ?? {};
+
     String recText = 'Follow local agricultural guidance.';
-    if (recommendation['pesticide'] != null && recommendation['pesticide'] != 'N/A') {
+    if (recommendation['immediate_action'] != null && recommendation['immediate_action'].toString().trim().isNotEmpty) {
+      recText = recommendation['immediate_action'].toString();
+    } else if (recommendation['treatment'] != null && recommendation['treatment'].toString().trim().isNotEmpty) {
+      recText = recommendation['treatment'].toString();
+    } else if (recommendation['pesticide'] != null && recommendation['pesticide'] != 'N/A') {
       recText = recommendation['pesticide'].toString();
-    } else if (recommendation['fertilizer'] != null && recommendation['fertilizer'] != 'N/A') {
-      recText = recommendation['fertilizer'].toString();
-    } else if (recommendation['prevention_tips'] != null) {
-      recText = recommendation['prevention_tips'].toString();
+    } else if (recommendation['prevention'] != null && recommendation['prevention'].toString().trim().isNotEmpty) {
+      recText = recommendation['prevention'].toString();
     }
 
     return Prediction(
