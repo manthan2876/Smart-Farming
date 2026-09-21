@@ -144,3 +144,4 @@ export function translateAlertTitle(title?: string | null, lang?: string): strin
   const key = title.trim().toLowerCase();
   return alertTitlesMap[key]?.[code] || title;
 }
+

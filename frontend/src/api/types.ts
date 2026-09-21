@@ -91,6 +91,8 @@ export type WeatherData = {
   condition?: string;
   city?: string;
   advisory?: string;
+  translated_advisory?: string;
+  translations?: Record<string, string>;
 };
 
 export type AdminMetrics = {

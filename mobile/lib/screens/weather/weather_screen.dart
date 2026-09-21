@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../providers/locale_provider.dart';
 import '../../theme/app_theme.dart';
 
-class WeatherScreen extends StatelessWidget {
+class WeatherScreen extends StatefulWidget {
   const WeatherScreen({
     super.key,
     required this.weather,
@@ -13,14 +14,71 @@ class WeatherScreen extends StatelessWidget {
   final Future<void> Function()? onRefresh;
 
   @override
+  State<WeatherScreen> createState() => _WeatherScreenState();
+}
+
+class _WeatherScreenState extends State<WeatherScreen> {
+  final FlutterTts _tts = FlutterTts();
+  bool _isPlaying = false;
+  bool _isPaused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts.setStartHandler(() {
+      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
+    });
+    _tts.setCompletionHandler(() {
+      if (mounted) setState(() { _isPlaying = false; _isPaused = false; });
+    });
+    _tts.setPauseHandler(() {
+      if (mounted) setState(() { _isPlaying = false; _isPaused = true; });
+    });
+    _tts.setContinueHandler(() {
+      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
+    });
+    _tts.setErrorHandler((_) {
+      if (mounted) setState(() { _isPlaying = false; _isPaused = false; });
+    });
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
+
+  Future<void> _toggleTts(String text, String langCode) async {
+    if (_isPlaying) {
+      await _tts.pause();
+      if (mounted) setState(() { _isPlaying = false; _isPaused = true; });
+    } else if (_isPaused) {
+      await _tts.speak(text);
+      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
+    } else {
+      final ttsLang = langCode == 'hi' ? 'hi-IN' : (langCode == 'gu' ? 'gu-IN' : 'en-US');
+      await _tts.setLanguage(ttsLang);
+      await _tts.setSpeechRate(0.48);
+      await _tts.speak(text);
+      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final weather = widget.weather;
     final temp = weather?['temperature_celsius'] != null ? '${weather!['temperature_celsius']}°C' : '--';
     final hum = weather?['humidity_percent'] != null ? '${weather!['humidity_percent']}%' : '--';
     final wind = weather?['wind_speed_mps'] != null ? '${weather!['wind_speed_mps']} km/h' : '--';
     final rawCond = weather?['condition']?.toString() ?? 'Clear Sky';
     final cond = context.loc.weather(rawCond);
-    final advisory = weather?['advisory']?.toString() ??
-        'Weather conditions are favorable for current field operations. Maintain standard monitoring and watering cycles.';
+
+    final langCode = context.localeCode;
+    final translations = weather?['translations'] as Map<String, dynamic>?;
+    final advisory = translations?[langCode]?.toString() ??
+        weather?['translated_advisory']?.toString() ??
+        weather?['advisory']?.toString() ??
+        context.tr('weatherAdvisoryOptimal');
 
     final content = ListView(
       padding: const EdgeInsets.all(22),
@@ -93,6 +151,11 @@ class WeatherScreen extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  IconButton(
+                    icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.volume_up, color: AppColors.primary),
+                    tooltip: _isPlaying ? context.tr('pauseAudio') : context.tr('listenAdvisory'),
+                    onPressed: () => _toggleTts(advisory, langCode),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -106,9 +169,9 @@ class WeatherScreen extends StatelessWidget {
       ],
     );
 
-    if (onRefresh != null) {
+    if (widget.onRefresh != null) {
       return RefreshIndicator(
-        onRefresh: onRefresh!,
+        onRefresh: widget.onRefresh!,
         color: AppColors.primary,
         child: content,
       );

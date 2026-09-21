@@ -43,8 +43,9 @@ export async function submitFeedback(
 export async function crops() {
   return request<{ crops: string[] }>("/crops");
 }
-export async function weather(lat: number, lon: number, token: string) {
-  return request<WeatherData>(`/weather?lat=${lat}&lon=${lon}`, {}, token);
+export async function weather(lat: number, lon: number, token: string, language?: string) {
+  const langParam = language ? `&language=${encodeURIComponent(language)}` : "";
+  return request<WeatherData>(`/weather?lat=${lat}&lon=${lon}${langParam}`, {}, token);
 }
 
 
