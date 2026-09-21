@@ -764,23 +764,23 @@ The role experiences still share much of the same shell and are not fully separa
 
 ### 4.3 Internationalization
 
-**Status: Scaffolded / partial**
+**Status: Implemented**
 
 **Current behavior:**
 
-- English, Hindi, and Gujarati dictionaries exist.
-- Some language metadata is sent with prediction requests.
+- Comprehensive multi-lingual support across English, Hindi (`hi`), and Gujarati (`gu`).
+- Curated agricultural domain lexicon for crops, diseases, pests, severity levels, and weather in mobile (`domain_translations.dart`) and web (`domain.ts`).
+- Full UI translation dictionaries and reactive locale switching with persistence (`SharedPreferences` and `localStorage`).
+- Google Cloud Translation API v2 integration for dynamic translation of free-form AI recommendations and expert notes with permanent PostgreSQL caching.
+- Multilingual TTS (Text-to-Speech) routing to native Google Cloud TTS Indian voice accents (`hi-IN-Standard-A`, `gu-IN-Standard-A`, `en-IN-Standard-A`).
 
-**Limitation:**
+**Main code:**
 
-Many pages still contain hard-coded English strings, and changing the language does not fully translate the running application.
-
-**What to improve:**
-
-- Move all visible UI text into translation keys.
-- Add runtime locale switching and persistence.
-- Translate server-provided recommendation labels and error messages where possible.
-- Test long translated strings on mobile and desktop layouts.
+- [backend/src/app/services/translation/service.py](../backend/src/app/services/translation/service.py)
+- [backend/src/app/api/endpoints/translation.py](../backend/src/app/api/endpoints/translation.py)
+- [mobile/lib/i18n/](../mobile/lib/i18n/)
+- [mobile/lib/providers/locale_provider.dart](../mobile/lib/providers/locale_provider.dart)
+- [frontend/src/i18n/](../frontend/src/i18n/)
 
 ### 4.4 Frontend data and API reliability
 
