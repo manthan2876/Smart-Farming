@@ -49,6 +49,9 @@ def _redis_client() -> redis.Redis:
     )
 
 
+from datetime import datetime, timezone
+import time
+
 def run_prediction_job(
     prediction_id: int,
     user_id: str,
@@ -63,12 +66,23 @@ def run_prediction_job(
 ) -> None:
     db = _session_factory()()
     redis_client = _redis_client()
+    job_start_time = time.perf_counter()
+    current_stage = "initialization"
+    current_stage_t0 = time.perf_counter()
 
-    def push_status(stage: str, status: str = "completed") -> None:
+    def push_status(stage: str, status: str = "completed", message: str = "", duration_ms: int | None = None) -> None:
+        payload = {
+            "stage": stage,
+            "status": status,
+            "message": message,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        if duration_ms is not None:
+            payload["duration_ms"] = duration_ms
         try:
             redis_client.publish(
                 f"prediction_status:{prediction_id}",
-                json.dumps({"stage": stage, "status": status}),
+                json.dumps(payload),
             )
         except Exception:
             logger.debug("Unable to publish prediction status", exc_info=True)
@@ -95,43 +109,112 @@ def run_prediction_job(
         prediction.status = "processing"
         db.commit()
 
-        push_status("preprocessing", "processing")
+        def stage_start(stage_name: str, message: str = "") -> float:
+            nonlocal current_stage, current_stage_t0
+            current_stage = stage_name
+            current_stage_t0 = time.perf_counter()
+            now_iso = datetime.now(timezone.utc).isoformat()
+            if "status" not in context:
+                context["status"] = {}
+            if "stages" not in context:
+                context["stages"] = {}
+            context["status"][stage_name] = "processing"
+            context["stages"][stage_name] = {
+                "status": "processing",
+                "message": message,
+                "started_at": now_iso,
+                "completed_at": None,
+                "duration_ms": None,
+            }
+            push_status(stage_name, "processing", message)
+            return current_stage_t0
+
+        def stage_finish(stage_name: str, t0: float, message: str = "", extra_events: list[str] | None = None) -> int:
+            duration_ms = round((time.perf_counter() - t0) * 1000)
+            now_iso = datetime.now(timezone.utc).isoformat()
+            context["status"][stage_name] = "completed"
+            if stage_name not in context["stages"]:
+                context["stages"][stage_name] = {}
+            context["stages"][stage_name].update({
+                "status": "completed",
+                "message": message,
+                "completed_at": now_iso,
+                "duration_ms": duration_ms,
+            })
+            push_status(stage_name, "completed", message, duration_ms)
+            if extra_events:
+                for extra_stage in extra_events:
+                    push_status(extra_stage, "completed", message, duration_ms)
+            return duration_ms
+
+        # 1. Preprocessing
+        t0 = stage_start("preprocessing", "Validating image quality and clarity...")
         context = _PREPROCESSOR.process(context)
         if context["status"]["preprocessing"] != "completed":
             raise ValueError("Image quality check failed; please upload a clearer leaf image.")
-        push_status("preprocessing")
+        stage_finish("preprocessing", t0, "Image preprocessed and quality validated.")
 
-        push_status("crop_identification", "processing")
+        # 2. Crop Identification
+        t0 = stage_start("crop_identification", "Identifying crop species...")
         context = predict_crop(context, _CONFIG)
-        context["status"]["crop_identification"] = "completed"
-        push_status("crop_identification")
+        crop_label = context.get("crop", {}).get("label") or "Unknown"
+        crop_conf = context.get("crop", {}).get("confidence") or 0.0
+        stage_finish("crop_identification", t0, f"Detected {crop_label} ({crop_conf * 100:.1f}%)")
 
-        push_status("disease_classification", "processing")
+        # 3. Decision Routing
+        t0 = stage_start("decision_routing", "Selecting crop-specific disease model...")
         context = route_to_disease_model(context, _CONFIG)
+        disease_model_name = context.get("disease", {}).get("model_used") or "default"
+        stage_finish("decision_routing", t0, f"Routed to model: {disease_model_name}")
+
+        # 4. Disease Classification
+        t0 = stage_start("disease_classification", "Classifying crop disease...")
         context = predict_disease(context, _CONFIG)
+        disease_label = context.get("disease", {}).get("label") or "Unknown"
+        disease_conf = context.get("disease", {}).get("confidence") or 0.0
+        stage_finish("disease_classification", t0, f"Classified as {disease_label} ({disease_conf * 100:.1f}%)")
+
+        # 5. Severity Calculation
+        t0 = stage_start("severity", "Calculating leaf damage percentage and severity bucket...")
         context = estimate_severity(context)
-        context["status"]["disease_classification"] = "completed"
-        push_status("disease_classification")
-        push_status("severity")
+        severity_pct = context.get("severity", {}).get("percent") or 0.0
+        severity_bucket = context.get("severity", {}).get("bucket") or "Unknown"
+        stage_finish("severity", t0, f"Severity: {severity_bucket} ({severity_pct}%)", extra_events=["severity_calculation"])
 
-        push_status("pest_detection", "processing")
+        # 6. Pest Detection
+        t0 = stage_start("pest_detection", "Scanning for known agricultural pests...")
         context = predict_pest(context, _CONFIG)
-        context["status"]["pest_detection"] = "completed"
-        push_status("pest_detection")
+        pests = context.get("pests", [])
+        pest_summary = ", ".join([p.get("label", "Pest") for p in pests]) if pests else "No pests detected"
+        stage_finish("pest_detection", t0, pest_summary)
 
-        push_status("weather", "processing")
+        # 7. Weather
+        t0 = stage_start("weather", "Fetching current weather conditions...")
         context = fetch_weather(context, _CONFIG)
-        push_status("weather")
+        weather_status = context.get("weather", {}).get("status", "unknown")
+        stage_finish("weather", t0, f"Weather status: {weather_status}")
 
-        push_status("recommendation", "processing")
+        # 8. Recommendation
+        t0 = stage_start("recommendation", "Synthesizing agronomic advisory...")
         context = generate_recommendation(context, _CONFIG)
-        push_status("recommendation")
+        stage_finish("recommendation", t0, "Advisory generated.", extra_events=["llm_advisory"])
 
+        # 9. Persistence & Expert Escalation Check
+        t0 = stage_start("persistence", "Saving prediction results...")
         context["image"]["raw_path"] = relative_image_path
+        total_duration_ms = round((time.perf_counter() - job_start_time) * 1000)
         context["status"]["pipeline"] = "completed"
+        context["stages"]["pipeline"] = {
+            "status": "completed",
+            "message": "Pipeline completed successfully.",
+            "duration_ms": total_duration_ms,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        }
+
         public_result = _public_result(context)
         public_result["user"] = {"id": user_id}
         public_result["prediction_id"] = prediction_id
+        public_result["total_duration_ms"] = total_duration_ms
 
         prediction.result = public_result
         prediction.raw_path = relative_image_path
@@ -142,11 +225,13 @@ def run_prediction_job(
         prediction.disease_conf = public_result.get("disease", {}).get("confidence")
         prediction.model_used = public_result.get("disease", {}).get("model_used")
         prediction.severity_pct = public_result.get("severity", {}).get("percent")
+
         disease_confidence = prediction.disease_conf or 0.0
         crop_confidence = prediction.crop_conf or 0.0
         thresholds = _CONFIG.get("thresholds", {})
         disease_threshold = thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD)
         crop_threshold = thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD)
+
         if disease_confidence < disease_threshold:
             ensure_expert_review(db, prediction, "Disease confidence is below the configured threshold.")
             public_result["status"]["expert_review"] = "pending"
@@ -159,17 +244,43 @@ def run_prediction_job(
         else:
             prediction.status = "ready"
             public_result["status"]["expert_review"] = "not_requested"
+
+        stage_finish("persistence", t0, f"Persisted with status {prediction.status}")
         db.commit()
-        push_status("completed")
+        push_status("completed", "completed", "Diagnosis pipeline completed successfully.", total_duration_ms)
+
     except Exception as exc:
         db.rollback()
+        fail_duration_ms = round((time.perf_counter() - current_stage_t0) * 1000)
+        now_iso = datetime.now(timezone.utc).isoformat()
+        err_msg = str(exc)
+        logger.error(f"Prediction {prediction_id} failed during stage '{current_stage}': {err_msg}", exc_info=True)
+
         prediction = db.query(Prediction).filter(Prediction.id == prediction_id).first()
         if prediction is not None:
             prediction.status = "failed"
-            prediction.result = {"prediction_id": prediction_id, "error": str(exc)}
+            existing_stages = context.get("stages", {}) if "context" in locals() else {}
+            existing_status = context.get("status", {}) if "context" in locals() else {}
+            existing_status[current_stage] = "failed"
+            existing_status["pipeline"] = "failed"
+            existing_stages[current_stage] = {
+                "status": "failed",
+                "message": err_msg,
+                "completed_at": now_iso,
+                "duration_ms": fail_duration_ms,
+            }
+            prediction.result = {
+                "prediction_id": prediction_id,
+                "error": err_msg,
+                "failed_stage": current_stage,
+                "status": existing_status,
+                "stages": existing_stages,
+            }
             db.commit()
-        push_status("failed", "failed")
+
+        push_status("failed", "failed", err_msg, fail_duration_ms)
         raise
     finally:
         redis_client.close()
         db.close()
+

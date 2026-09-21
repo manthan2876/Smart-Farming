@@ -38,18 +38,58 @@ _CONFIG: dict[str, Any] = _load_config()
 _PREPROCESSOR = OpenCVPreprocessorService(_CONFIG)
 
 
+import time
+from datetime import datetime, timezone
+
 def run_pipeline(context: dict) -> dict:
-    context = _PREPROCESSOR.process(context)
+    if "stages" not in context:
+        context["stages"] = {}
+    if "status" not in context:
+        context["status"] = {}
+
+    pipeline_start = time.perf_counter()
+
+    def _exec_stage(stage_name: str, fn, *args, **kwargs):
+        t0 = time.perf_counter()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        context["status"][stage_name] = "processing"
+        context["stages"][stage_name] = {
+            "status": "processing",
+            "started_at": now_iso,
+            "completed_at": None,
+            "duration_ms": None,
+        }
+        res = fn(*args, **kwargs)
+        duration_ms = round((time.perf_counter() - t0) * 1000)
+        context["status"][stage_name] = "completed"
+        context["stages"][stage_name].update({
+            "status": "completed",
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "duration_ms": duration_ms,
+        })
+        return res
+
+    context = _exec_stage("preprocessing", _PREPROCESSOR.process, context)
     if context["status"]["preprocessing"] != "completed":
+        context["status"]["pipeline"] = "failed"
         return context
 
-    context = predict_crop(context, _CONFIG)
-    context = route_to_disease_model(context, _CONFIG)
-    context = predict_disease(context, _CONFIG)
-    context = estimate_severity(context)
-    context = predict_pest(context, _CONFIG)
-    context = fetch_weather(context, _CONFIG)
-    context = generate_recommendation(context, _CONFIG)
+    context = _exec_stage("crop_identification", predict_crop, context, _CONFIG)
+    context = _exec_stage("decision_routing", route_to_disease_model, context, _CONFIG)
+    context = _exec_stage("disease_classification", predict_disease, context, _CONFIG)
+    context = _exec_stage("severity", estimate_severity, context)
+    context = _exec_stage("pest_detection", predict_pest, context, _CONFIG)
+    context = _exec_stage("weather", fetch_weather, context, _CONFIG)
+    context = _exec_stage("recommendation", generate_recommendation, context, _CONFIG)
+
+    total_duration_ms = round((time.perf_counter() - pipeline_start) * 1000)
+    context["status"]["pipeline"] = "completed"
+    context["stages"]["pipeline"] = {
+        "status": "completed",
+        "message": "Pipeline completed successfully.",
+        "duration_ms": total_duration_ms,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+    }
 
     return context
 

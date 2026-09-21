@@ -70,6 +70,7 @@ def create_context(
         },
         "recommendation": {},
         "notes": [],
+        "stages": {},
         "status": {
             "preprocessing": "pending",
             "crop_identification": "pending",
@@ -77,7 +78,9 @@ def create_context(
             "disease_classification": "pending",
             "severity": "pending",
             "pest_detection": "pending",
-            "weather": "pending",  # Added status tracking for weather
+            "weather": "pending",
             "recommendation": "pending",
+            "persistence": "pending",
+            "pipeline": "pending",
         },
     }

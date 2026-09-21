@@ -164,7 +164,22 @@ async def predict(
             "user": {"id": user_id},
             "image": {"raw_path": relative_image_path, "processed_path": None, "resolution": None, "channels": None, "quality_score": 1.0, "format": suffix},
             "crop": {}, "disease": {}, "severity": {}, "pests": [], "pest_classification": {}, "weather": {}, "recommendation": {}, "notes": [],
-            "status": {"preprocessing": "processing", "pipeline": "processing", "expert_review": "not_requested"}
+            "stages": {
+                "preprocessing": {"status": "completed", "message": "Initial quality check passed."},
+            },
+            "status": {
+                "preprocessing": "completed",
+                "crop_identification": "pending",
+                "decision_routing": "pending",
+                "disease_classification": "pending",
+                "severity": "pending",
+                "pest_detection": "pending",
+                "weather": "pending",
+                "recommendation": "pending",
+                "persistence": "pending",
+                "pipeline": "processing",
+                "expert_review": "not_requested",
+            }
         }
         
         new_pred = record_prediction(session, user_id, placeholder_result)
@@ -340,7 +355,22 @@ async def rescan_prediction(
             "user": {"id": user_id},
             "image": {"raw_path": relative_image_path, "processed_path": None, "resolution": None, "channels": None, "quality_score": 1.0, "format": suffix},
             "crop": {}, "disease": {}, "severity": {}, "pests": [], "pest_classification": {}, "weather": {}, "recommendation": {}, "notes": [],
-            "status": {"preprocessing": "processing", "pipeline": "processing", "expert_review": "not_requested"}
+            "stages": {
+                "preprocessing": {"status": "completed", "message": "Initial quality check passed."},
+            },
+            "status": {
+                "preprocessing": "completed",
+                "crop_identification": "pending",
+                "decision_routing": "pending",
+                "disease_classification": "pending",
+                "severity": "pending",
+                "pest_detection": "pending",
+                "weather": "pending",
+                "recommendation": "pending",
+                "persistence": "pending",
+                "pipeline": "processing",
+                "expert_review": "not_requested",
+            }
         }
         
         new_pred = record_prediction(session, user_id, placeholder_result)
@@ -439,18 +469,36 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
     db = _session_factory()()
     
     try:
-        # Also send the current status from DB immediately just in case it's already done or we missed an event
+        # Send the current progress snapshot from DB immediately in case connection was established mid-processing or after completion
         existing = db.query(Prediction).filter(Prediction.id == prediction_id).first()
-        if existing and existing.status == "completed":
-            await websocket.send_json({"stage": "completed"})
-            return
-            
+        if existing:
+            if existing.status in {"ready", "completed", "verified", "pending_expert_review"}:
+                await websocket.send_json({"stage": "completed", "status": "completed", "message": "Diagnosis pipeline completed successfully."})
+                return
+            elif existing.status == "failed":
+                err = "Processing failed"
+                if isinstance(existing.result, dict):
+                    err = existing.result.get("error", err)
+                await websocket.send_json({"stage": "failed", "status": "failed", "error": err, "message": err})
+                return
+            elif isinstance(existing.result, dict) and "stages" in existing.result:
+                for stage_name, stage_info in existing.result.get("stages", {}).items():
+                    if isinstance(stage_info, dict) and stage_info.get("status") == "completed":
+                        await websocket.send_json({
+                            "stage": stage_name,
+                            "status": "completed",
+                            "message": stage_info.get("message", ""),
+                            "duration_ms": stage_info.get("duration_ms"),
+                        })
+
         while True:
             message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
             if message:
                 data = json.loads(message["data"])
                 await websocket.send_json(data)
-                if data.get("stage") == "completed":
+                stage = data.get("stage")
+                status = data.get("status")
+                if stage == "completed" or stage == "failed" or status == "failed":
                     break
             # heartbeat or yield
             await asyncio.sleep(0.1)
