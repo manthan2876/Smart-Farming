@@ -1063,13 +1063,13 @@ The active `/predict` endpoint uses FastAPI `BackgroundTasks`, so prediction req
 - Align MLOps export frontend and backend contracts.
 - Replace relative/hard-coded storage and API paths with shared configuration.
 
-### Priority 2: Make results trustworthy and observable
+### Priority 2: Make results trustworthy and observable (Completed)
 
-- Emit and persist every pipeline stage.
-- Record model, configuration, weather, recommendation-provider, and result-schema versions.
-- Label degraded states and confidence clearly.
-- Add metrics for processing duration, failures, fallbacks, queue depth, and expert corrections.
-- Add tests around every current known gap.
+- [x] Emit and persist every pipeline stage.
+- [x] Record model, configuration, weather, recommendation-provider, and result-schema versions.
+- [x] Label degraded states and confidence clearly.
+- [x] Add metrics for processing duration, failures, fallbacks, queue depth, and expert corrections.
+- [x] Add tests around every current known gap.
 
 ### Priority 3: Complete the client experience
 
