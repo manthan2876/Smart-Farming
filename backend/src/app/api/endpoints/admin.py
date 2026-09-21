@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime, timezone
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -12,6 +13,84 @@ from app.core.config import settings
 from app.core.paths import ensure_storage_directories, storage_relative_path
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+def _compute_drift_metrics(session: Session) -> dict[str, Any]:
+    """Compute production drift signals for the admin metrics endpoint.
+
+    Returns:
+        avg_disease_confidence_7d  — rolling 7-day average disease confidence
+        avg_disease_confidence_30d — rolling 30-day average disease confidence
+        low_confidence_rate_7d     — % of predictions in last 7d below disease threshold
+        retraining_candidates      — pending DatasetCandidate count
+        expert_correction_rate     — % of expert reviews that resulted in a correction
+    """
+    from datetime import timedelta
+    from sqlalchemy import func as sqlfunc
+    from app.core.config import settings
+
+    now_utc = datetime.now(timezone.utc)
+    cutoff_7d  = now_utc - timedelta(days=7)
+    cutoff_30d = now_utc - timedelta(days=30)
+
+    # Import here to avoid circular imports at module level
+    from app.models import Prediction as Pred, DatasetCandidate, ExpertReview
+
+    threshold = settings.DISEASE_CONFIDENCE_THRESHOLD
+
+    # Average confidence over last 7 and 30 days
+    avg_7d = session.query(sqlfunc.avg(Pred.disease_conf)).filter(
+        Pred.created_at >= cutoff_7d,
+        Pred.disease_conf.isnot(None),
+    ).scalar()
+
+    avg_30d = session.query(sqlfunc.avg(Pred.disease_conf)).filter(
+        Pred.created_at >= cutoff_30d,
+        Pred.disease_conf.isnot(None),
+    ).scalar()
+
+    # Low confidence rate in last 7 days
+    total_7d = session.query(sqlfunc.count(Pred.id)).filter(
+        Pred.created_at >= cutoff_7d,
+        Pred.disease_conf.isnot(None),
+    ).scalar() or 0
+
+    low_7d = session.query(sqlfunc.count(Pred.id)).filter(
+        Pred.created_at >= cutoff_7d,
+        Pred.disease_conf < threshold,
+        Pred.disease_conf.isnot(None),
+    ).scalar() or 0
+
+    low_conf_rate = round((low_7d / total_7d * 100), 1) if total_7d else None
+
+    # Retraining candidates
+    retraining_candidates = session.query(sqlfunc.count(DatasetCandidate.id)).filter(
+        DatasetCandidate.status == "pending_review"
+    ).scalar() or 0
+
+    # Expert correction rate: reviews where decision includes "Override" or corrected_disease was set
+    total_reviews = session.query(sqlfunc.count(ExpertReview.id)).filter(
+        ExpertReview.status == "verified"
+    ).scalar() or 0
+
+    correction_reviews = session.query(sqlfunc.count(ExpertReview.id)).filter(
+        ExpertReview.status == "verified",
+        ExpertReview.corrected_disease.isnot(None),
+    ).scalar() or 0
+
+    expert_correction_rate = round((correction_reviews / total_reviews * 100), 1) if total_reviews else None
+
+    return {
+        "avg_disease_confidence_7d": round(float(avg_7d), 4) if avg_7d is not None else None,
+        "avg_disease_confidence_30d": round(float(avg_30d), 4) if avg_30d is not None else None,
+        "low_confidence_rate_7d": low_conf_rate,
+        "predictions_last_7d": total_7d,
+        "low_confidence_last_7d": low_7d,
+        "retraining_candidates": retraining_candidates,
+        "expert_correction_rate": expert_correction_rate,
+        "confidence_threshold": threshold,
+    }
+
 
 @router.get("/metrics")
 async def get_metrics(
@@ -103,7 +182,8 @@ async def get_metrics(
             {"name": "High (>75%)", "count": high_conf},
             {"name": "Medium (50-75%)", "count": med_conf},
             {"name": "Low (<50%)", "count": low_conf},
-        ]
+        ],
+        "drift": _compute_drift_metrics(session),
     }
 
 
