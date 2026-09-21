@@ -4,6 +4,7 @@ import logging
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.deps import get_current_user
 from app.core import get_session
@@ -64,16 +65,21 @@ async def translate_prediction_recommendation(
 
     try:
         translated_rec = await translate_recommendation(canonical_rec, target_code)
+        translations = dict(res.get("translations") or {})
         translations[target_code] = translated_rec
         res["translations"] = translations
         pred.result = res
+        flag_modified(pred, "result")
+        session.add(pred)
         session.commit()
+        session.refresh(pred)
 
         return {
             "prediction_id": prediction_id,
             "language": target_code,
             "cached": False,
             "recommendation": translated_rec,
+            "translations": translations,
         }
     except Exception as exc:
         logger.exception("On-demand translation failed for prediction #%d: %s", prediction_id, exc)

@@ -22,6 +22,8 @@ export default function PredictionResultPage() {
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [farmerNote, setFarmerNote] = useState("");
+  const [localTranslations, setLocalTranslations] = useState<Record<string, any>>({});
+  const inFlightLangRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: prediction, isLoading, isError, refetch } = useQuery({
@@ -38,15 +40,25 @@ export default function PredictionResultPage() {
   useEffect(() => {
     if (targetLang !== "en" && prediction && id && token) {
       const primary = prediction.follow_up || prediction;
-      if (!primary.translations?.[targetLang] && !isTranslating) {
+      const alreadyHasTranslation = primary.translations?.[targetLang] || localTranslations[targetLang];
+      if (!alreadyHasTranslation && inFlightLangRef.current !== targetLang) {
+        inFlightLangRef.current = targetLang;
         setIsTranslating(true);
-        request(`/predictions/${id}/translate?target_language=${targetLang}`, { method: "POST" }, token)
-          .then(() => refetch())
+        request<any>(`/predictions/${id}/translate?target_language=${targetLang}`, { method: "POST" }, token)
+          .then((res) => {
+            if (res?.recommendation) {
+              setLocalTranslations((prev) => ({ ...prev, [targetLang]: res.recommendation }));
+            }
+            return refetch();
+          })
           .catch((e) => console.error("Auto translation error:", e))
-          .finally(() => setIsTranslating(false));
+          .finally(() => {
+            inFlightLangRef.current = null;
+            setIsTranslating(false);
+          });
       }
     }
-  }, [targetLang, prediction, id, token, isTranslating, refetch]);
+  }, [targetLang, prediction, id, token, localTranslations, refetch]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0];
@@ -146,7 +158,7 @@ export default function PredictionResultPage() {
 
   const Advisory = ({ predictionData }: { predictionData: any }) => {
     const rawRec = predictionData.recommendation || {};
-    const translatedRec = targetLang !== "en" ? predictionData.translations?.[targetLang] : null;
+    const translatedRec = targetLang !== "en" ? (predictionData.translations?.[targetLang] || localTranslations[targetLang]) : null;
     const recommendation = translatedRec || rawRec;
     const expertGuidance = predictionData.expert_review_data?.farmer_guidance;
     const isFallback = rawRec.is_fallback === true;
