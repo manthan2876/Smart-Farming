@@ -17,27 +17,87 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def get_metrics(
     user_id: str = Depends(require_admin_role), session: Session = Depends(get_session)
 ) -> dict[str, Any]:
-    total_users = session.query(func.count(User.id)).scalar()
-    total_scans = session.query(func.count(Prediction.id)).scalar()
+    total_users = session.query(func.count(User.id)).scalar() or 0
+    total_scans = session.query(func.count(Prediction.id)).scalar() or 0
     
-    # Accuracy trend (simplification: total feedback)
-    correct_count = session.query(func.count(Feedback.id)).filter(Feedback.is_correct == True).scalar()
-    total_feedback = session.query(func.count(Feedback.id)).scalar()
-    accuracy = (correct_count / total_feedback * 100) if total_feedback else 100.0
+    # Feedback accuracy
+    correct_count = session.query(func.count(Feedback.id)).filter(Feedback.is_correct == True).scalar() or 0
+    total_feedback = session.query(func.count(Feedback.id)).scalar() or 0
+    accuracy = round((correct_count / total_feedback * 100), 1) if total_feedback else 100.0
+
+    # Failures and processing status
+    total_failed = session.query(func.count(Prediction.id)).filter(Prediction.status == "failed").scalar() or 0
+    total_processing = session.query(func.count(Prediction.id)).filter(Prediction.status == "processing").scalar() or 0
+    total_completed = session.query(func.count(Prediction.id)).filter(Prediction.status.in_(["ready", "completed", "verified", "pending_expert_review"])).scalar() or 0
+    failure_rate = round((total_failed / total_scans * 100), 1) if total_scans else 0.0
+
+    # Expert validation & corrections
+    expert_total = session.query(func.count(ExpertReview.id)).scalar() or 0
+    expert_overrides = session.query(func.count(ExpertReview.id)).filter(ExpertReview.decision == "override").scalar() or 0
+    expert_approved = session.query(func.count(ExpertReview.id)).filter(ExpertReview.decision == "approve").scalar() or 0
+    expert_pending = session.query(func.count(ExpertReview.id)).filter(ExpertReview.status == "pending").scalar() or 0
+    decided_reviews = expert_approved + expert_overrides
+    expert_validated_accuracy = round((expert_approved / decided_reviews * 100), 1) if decided_reviews > 0 else None
+
+    # Processing durations & fallbacks
+    predictions = session.query(Prediction.result, Prediction.status).all()
+    durations: list[int] = []
+    rec_fallbacks = 0
+    weather_fallbacks = 0
+
+    for res, st in predictions:
+        if isinstance(res, dict):
+            dur = res.get("total_duration_ms") or res.get("provenance", {}).get("pipeline_duration_ms")
+            if dur is not None and isinstance(dur, (int, float)):
+                durations.append(int(dur))
+            elif "stages" in res and isinstance(res["stages"], dict):
+                p_dur = res["stages"].get("pipeline", {}).get("duration_ms")
+                if p_dur is not None and isinstance(p_dur, (int, float)):
+                    durations.append(int(p_dur))
+            if res.get("recommendation", {}).get("is_fallback") is True:
+                rec_fallbacks += 1
+            if res.get("weather", {}).get("is_degraded") is True:
+                weather_fallbacks += 1
+
+    durations.sort()
+    avg_duration_ms = round(sum(durations) / len(durations)) if durations else 0
+    p95_duration_ms = durations[int(len(durations) * 0.95)] if durations else 0
 
     # Disease distribution
     diseases = session.query(Prediction.disease, func.count(Prediction.id)).group_by(Prediction.disease).all()
     disease_dist = [{"name": d[0] or "Unknown", "value": d[1]} for d in diseases if d[0]]
 
     # Confidence brackets
-    high_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf >= 0.75).scalar()
-    med_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf >= 0.50, Prediction.disease_conf < 0.75).scalar()
-    low_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf < 0.50).scalar()
+    high_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf >= 0.75).scalar() or 0
+    med_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf >= 0.50, Prediction.disease_conf < 0.75).scalar() or 0
+    low_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf < 0.50).scalar() or 0
 
     return {
         "total_users": total_users,
         "total_scans": total_scans,
+        "completed_scans": total_completed,
         "accuracy": accuracy,
+        "queue_depth": total_processing,
+        "failures": {
+            "total_failed": total_failed,
+            "failure_rate": failure_rate,
+        },
+        "processing_duration": {
+            "avg_ms": avg_duration_ms,
+            "p95_ms": p95_duration_ms,
+            "sample_count": len(durations),
+        },
+        "fallbacks": {
+            "recommendation_fallbacks": rec_fallbacks,
+            "weather_fallbacks": weather_fallbacks,
+        },
+        "expert_metrics": {
+            "total_reviews": expert_total,
+            "approved": expert_approved,
+            "overrides": expert_overrides,
+            "pending": expert_pending,
+            "validated_accuracy": expert_validated_accuracy,
+        },
         "disease_distribution": disease_dist,
         "confidence_histogram": [
             {"name": "High (>75%)", "count": high_conf},

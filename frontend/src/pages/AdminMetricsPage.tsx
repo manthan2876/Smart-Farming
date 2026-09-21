@@ -53,10 +53,57 @@ export default function AdminMetricsPage() {
         <Button variant="secondary" onClick={handleExportMLOps}>Export MLOps Dataset</Button>
       </div>
       
-      <div className="grid gap-5 sm:grid-cols-3">
-        <Card><h3 className="text-xs font-bold uppercase tracking-wide text-muted">Total Users</h3><div className="mt-3 font-display text-3xl text-ink">{data.total_users}</div></Card>
-        <Card><h3 className="text-xs font-bold uppercase tracking-wide text-muted">Total Scans</h3><div className="mt-3 font-display text-3xl text-ink">{data.total_scans}</div></Card>
-        <Card><h3 className="text-xs font-bold uppercase tracking-wide text-muted">Model Accuracy</h3><div className={`mt-3 font-display text-3xl ${data.accuracy > 85 ? "text-farmer-700" : "text-danger"}`}>{data.accuracy.toFixed(1)}%</div></Card>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Total Users & Workspaces</h3>
+          <div className="mt-3 font-display text-3xl text-ink">{data.total_users}</div>
+        </Card>
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Total Scans</h3>
+          <div className="mt-3 font-display text-3xl text-ink">{data.total_scans}</div>
+          <p className="mt-1 text-xs text-muted">{data.completed_scans || 0} completed</p>
+        </Card>
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Active Queue Depth</h3>
+          <div className={`mt-3 font-display text-3xl ${(data.queue_depth || 0) > 5 ? "text-amber-600" : "text-ink"}`}>{data.queue_depth || 0}</div>
+          <p className="mt-1 text-xs text-muted">Predictions currently in worker processing</p>
+        </Card>
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Pipeline Latency</h3>
+          <div className="mt-3 font-display text-3xl text-ink">{data.processing_duration?.avg_ms || 0}<span className="text-sm font-normal text-muted"> ms avg</span></div>
+          <p className="mt-1 text-xs text-muted">P95: {data.processing_duration?.p95_ms || 0} ms</p>
+        </Card>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Farmer Field Accuracy</h3>
+          <div className={`mt-3 font-display text-3xl ${data.accuracy > 85 ? "text-farmer-700" : "text-danger"}`}>
+            {typeof data.accuracy === "number" ? data.accuracy.toFixed(1) : data.accuracy}%
+          </div>
+          <p className="mt-1 text-xs text-muted">Farmer field validation signals</p>
+        </Card>
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Specialist Validated Accuracy</h3>
+          <div className="mt-3 font-display text-3xl text-expert-700">
+            {data.expert_metrics?.validated_accuracy !== null && data.expert_metrics?.validated_accuracy !== undefined ? `${data.expert_metrics.validated_accuracy}%` : "Pending Data"}
+          </div>
+          <p className="mt-1 text-xs text-muted">{data.expert_metrics?.overrides || 0} agronomist overrides</p>
+        </Card>
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Pipeline Failure Rate</h3>
+          <div className={`mt-3 font-display text-3xl ${(data.failures?.failure_rate || 0) > 5 ? "text-danger" : "text-farmer-700"}`}>
+            {data.failures?.failure_rate !== undefined ? `${data.failures.failure_rate.toFixed(1)}%` : "0.0%"}
+          </div>
+          <p className="mt-1 text-xs text-muted">{data.failures?.total_failed || 0} failed scans</p>
+        </Card>
+        <Card>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Degraded / Fallback Signals</h3>
+          <div className="mt-3 font-display text-3xl text-amber-600">
+            {(data.fallbacks?.recommendation_fallbacks || 0) + (data.fallbacks?.weather_fallbacks || 0)}
+          </div>
+          <p className="mt-1 text-xs text-muted">{data.fallbacks?.recommendation_fallbacks || 0} AI fallbacks, {data.fallbacks?.weather_fallbacks || 0} weather offline</p>
+        </Card>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
