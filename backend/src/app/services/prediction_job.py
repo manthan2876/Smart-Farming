@@ -150,8 +150,26 @@ def run_prediction_job(
         # 1. Preprocessing
         t0 = stage_start("preprocessing", "Validating image quality and clarity...")
         context = _PREPROCESSOR.process(context)
-        if context["status"]["preprocessing"] != "completed":
-            raise ValueError("Image quality check failed; please upload a clearer leaf image.")
+        prep_status = context.get("status", {}).get("preprocessing")
+        if prep_status != "completed":
+            if prep_status == "failed_blur":
+                blur_score = context.get("image", {}).get("blur_score", 0.0)
+                err = (
+                    f"Image is too blurry (sharpness score: {blur_score:.1f}, "
+                    f"required: >= {_PREPROCESSOR.blur_threshold:.1f}). Please hold the camera steady and refocus on the leaf."
+                )
+            elif prep_status == "failed_lighting":
+                brightness = context.get("image", {}).get("brightness_score", 0.0)
+                err = (
+                    f"Image lighting is outside acceptable range (brightness: {brightness:.1f}, "
+                    f"expected between {_PREPROCESSOR.min_brightness:.1f} and {_PREPROCESSOR.max_brightness:.1f}). "
+                    f"Please retake the photo in balanced lighting."
+                )
+            elif prep_status == "failed_no_leaf":
+                err = "No crop leaf could be detected in the image. Please center the leaf in the frame with good contrast."
+            else:
+                err = "Image quality check failed; please upload a clearer leaf image."
+            raise ValueError(err)
         stage_finish("preprocessing", t0, "Image preprocessed and quality validated.")
 
         # 2. Crop Identification
