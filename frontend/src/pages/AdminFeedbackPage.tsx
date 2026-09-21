@@ -15,7 +15,7 @@ export default function AdminFeedbackPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ id, status }: { id: number, status: string }) => reviewFeedback(token!, id, status),
+    mutationFn: ({ id, status }: { id: number, status: "approved" | "rejected" }) => reviewFeedback(token!, id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminFeedbackList"] });
     }
@@ -40,6 +40,7 @@ export default function AdminFeedbackPage() {
                 <h4 className="font-display text-xl text-ink">Prediction #{String(fb.prediction_id ?? "").slice(0, 8)}</h4>
                 <p className="mt-1 text-xs text-muted">Date: {fb.created_at ? new Date(fb.created_at).toLocaleDateString() : "N/A"}</p>
                 <p className="mt-2 text-sm text-muted">Farmer Verdict: <Badge tone={fb.is_correct ? "success" : "danger"}>{fb.is_correct ? "CORRECT" : "INCORRECT"}</Badge></p>
+                <p className="mt-1 text-xs text-muted">Review: {fb.review_status || "pending"}</p>
               </div>
               <div className="border-l-2 border-farmer-300 pl-4 text-sm leading-6 text-muted">
                 <strong className="text-ink">Note:</strong> {fb.farmer_note || "No note provided by farmer."}

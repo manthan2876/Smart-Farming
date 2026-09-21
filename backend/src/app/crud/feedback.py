@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 from app.models import (
     Feedback,
     Prediction,
@@ -14,6 +15,12 @@ def add_feedback(
     is_correct: bool,
     farmer_note: str | None,
 ) -> Feedback:
+    existing_feedback = session.scalar(
+        select(Feedback).where(Feedback.prediction_id == prediction.id)
+    )
+    if existing_feedback is not None:
+        raise ValueError("Feedback has already been submitted for this prediction")
+
     feedback = Feedback(
         prediction_id=prediction.id,
         is_correct=is_correct,

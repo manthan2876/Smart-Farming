@@ -79,6 +79,11 @@ async def get_feedback(
             "disease": pred.disease if pred else None,
             "is_correct": f.is_correct,
             "farmer_note": f.farmer_note,
+            "review_status": f.review_status,
+            "review_decision": f.review_decision,
+            "reviewer_id": f.reviewer_id,
+            "reviewer_note": f.reviewer_note,
+            "reviewed_at": f.reviewed_at.isoformat() if f.reviewed_at else None,
             "created_at": str(f.created_at)
         })
     return results

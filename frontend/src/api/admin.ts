@@ -9,9 +9,13 @@ export const adminFeedback = async (token: string): Promise<FeedbackLog[]> => {
   return request<FeedbackLog[]>("/admin/feedback", {}, token);
 };
 
-export const reviewFeedback = async (token: string, feedbackId: number, expertStatus: string): Promise<void> => {
+export const reviewFeedback = async (
+  token: string,
+  feedbackId: number,
+  status: "approved" | "rejected",
+): Promise<void> => {
   await request(`/feedback/${feedbackId}/review`, {
     method: 'POST',
-    body: JSON.stringify({ expert_status: expertStatus })
+    body: JSON.stringify({ status })
   }, token);
 };

@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import create_engine, inspect, text
 
 from app.core import Base, database_url
+from app.core.config import settings
 import app.models
 
 def initialize_database() -> None:
@@ -46,6 +47,14 @@ def initialize_database() -> None:
                 )
     except Exception as exc:
         print(f"[InitDB] Note on migrations: {exc}")
+    try:
+        from alembic import command
+        from alembic.config import Config
+
+        alembic_config = Config(str(settings.BACKEND_ROOT / "alembic.ini"))
+        command.upgrade(alembic_config, "head")
+    except Exception as exc:
+        print(f"[InitDB] Alembic migration note: {exc}")
     print("Smart Farming database tables are ready.")
 
 
