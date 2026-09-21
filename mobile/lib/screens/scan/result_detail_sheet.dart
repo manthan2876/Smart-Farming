@@ -99,6 +99,7 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
       id: 'pred_${_pred.id}',
       text: text,
       langCode: langCode,
+      api: widget.api,
     );
   }
 
@@ -193,18 +194,30 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
                     icon: const Icon(Icons.language, color: AppColors.primary, size: 24),
                     tooltip: context.tr('selectLanguage'),
                   ),
-                  IconButton(
-                    onPressed: _togglePlayPause,
-                    icon: Icon(
-                      _ttsService.isItemPlaying('pred_${_pred.id}')
-                          ? Icons.stop_circle_outlined
-                          : Icons.volume_up_outlined,
-                      color: _ttsService.isItemPlaying('pred_${_pred.id}') ? AppColors.warning : AppColors.primary,
-                      size: 26,
-                    ),
-                    tooltip: _ttsService.isItemPlaying('pred_${_pred.id}')
-                        ? context.tr('pauseAudio')
-                        : context.tr('listenComplete'),
+                  Builder(
+                    builder: (_) {
+                      final isPlaying = _ttsService.isItemPlaying('pred_${_pred.id}');
+                      final isLoading = _ttsService.isItemLoading('pred_${_pred.id}');
+                      if (isLoading) {
+                        return const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          ),
+                        );
+                      }
+                      return IconButton(
+                        onPressed: _togglePlayPause,
+                        icon: Icon(
+                          isPlaying ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+                          color: isPlaying ? AppColors.warning : AppColors.primary,
+                          size: 26,
+                        ),
+                        tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('listenComplete'),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -261,6 +274,7 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
           Builder(
             builder: (_) {
               final isPlaying = _ttsService.isItemPlaying('pred_${_pred.id}');
+              final isLoading = _ttsService.isItemLoading('pred_${_pred.id}');
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
@@ -278,11 +292,17 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
                         backgroundColor: isPlaying ? AppColors.warning : AppColors.primary,
                         padding: const EdgeInsets.all(10),
                       ),
-                      icon: Icon(
-                        isPlaying ? Icons.stop : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 22,
-                      ),
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                            )
+                          : Icon(
+                              isPlaying ? Icons.stop : Icons.play_arrow,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                       tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('playAudio'),
                     ),
                     const SizedBox(width: 12),
@@ -291,9 +311,11 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isPlaying
-                                ? context.tr('playingFullAudio')
-                                : context.tr('listenComplete'),
+                            isLoading
+                                ? context.tr('loading')
+                                : (isPlaying
+                                    ? context.tr('playingFullAudio')
+                                    : context.tr('listenComplete')),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

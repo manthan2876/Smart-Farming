@@ -351,12 +351,16 @@ class ApiService {
   }
 
   Future<String?> generateTTS(String text, {String language = 'en'}) async {
+    final cleanText = text.trim();
+    if (cleanText.isEmpty) return null;
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/tts'),
-        headers: {'Content-Type': 'application/json', ..._headers},
-        body: jsonEncode({'text': text, 'language': language}),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/tts'),
+            headers: {'Content-Type': 'application/json', ..._headers},
+            body: jsonEncode({'text': cleanText, 'language': language}),
+          )
+          .timeout(const Duration(seconds: 15));
       if (response.statusCode >= 400) return null;
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       return body['audioContent']?.toString();

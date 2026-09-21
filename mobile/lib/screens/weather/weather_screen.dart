@@ -128,6 +128,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       id: 'weather_advisory',
       text: buffer.toString(),
       langCode: langCode,
+      api: widget.api,
     );
   }
 
@@ -150,6 +151,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
         context.tr('weatherAdvisoryOptimal');
 
     final isPlaying = _ttsService.isItemPlaying('weather_advisory');
+    final isAudioLoading = _ttsService.isItemLoading('weather_advisory');
 
     final content = ListView(
       padding: const EdgeInsets.all(22),
@@ -274,20 +276,30 @@ class _WeatherScreenState extends State<WeatherScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                       ),
                     ),
-                  IconButton(
-                    icon: Icon(
-                      isPlaying ? Icons.stop_circle_outlined : Icons.volume_up,
-                      color: isPlaying ? AppColors.warning : AppColors.primary,
+                  if (isAudioLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      icon: Icon(
+                        isPlaying ? Icons.stop_circle_outlined : Icons.volume_up,
+                        color: isPlaying ? AppColors.warning : AppColors.primary,
+                      ),
+                      tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('listenAdvisory'),
+                      onPressed: () => _toggleTts(
+                        temp: temp,
+                        cond: cond,
+                        hum: hum,
+                        advisory: advisory,
+                        langCode: langCode,
+                      ),
                     ),
-                    tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('listenAdvisory'),
-                    onPressed: () => _toggleTts(
-                      temp: temp,
-                      cond: cond,
-                      hum: hum,
-                      advisory: advisory,
-                      langCode: langCode,
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
