@@ -103,6 +103,13 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
 
     # ── Confidence floor check ─────────────────────────────────────────
     threshold = config["thresholds"].get("crop_confidence", 0.75)
+    if confidence >= 0.85:
+        context["crop"]["confidence_rating"] = "high"
+    elif confidence >= threshold:
+        context["crop"]["confidence_rating"] = "moderate"
+    else:
+        context["crop"]["confidence_rating"] = "low"
+
     if confidence < threshold:
         context["crop"]["is_uncertain"] = True
         context["notes"].append(

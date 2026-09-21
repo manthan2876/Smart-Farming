@@ -130,13 +130,25 @@ export default function PredictionResultPage() {
   const Advisory = ({ predictionData }: { predictionData: any }) => {
     const recommendation = predictionData.recommendation || {};
     const expertGuidance = predictionData.expert_review_data?.farmer_guidance;
+    const isFallback = recommendation.is_fallback === true;
     const masked = (predictionData.status as any)?.mask_advisory === true || ((predictionData.status as any)?.expert_review === "pending" && !recommendation.immediate_action);
     if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">Advisory Masked (Review Required)</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">To ensure farm safety, AI treatment recommendations are held until an expert verifies the diagnosis.</p></Card>;
     if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl"><CheckCircle2 size={22} /> Specialist Verified Advisory Plan</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5"><h4 className="font-semibold text-farmer-800">Agronomist Guidance</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
     if (!Object.keys(recommendation).length) return null;
     const advisoryText = [recommendation.immediate_action, recommendation.action, recommendation.fertilizer, recommendation.treatment, recommendation.pesticide, recommendation.prevention, recommendation.prevention_tips, recommendation.monitoring, recommendation.irrigation].filter(Boolean).join(". ");
     const sections = [["Immediate Action / Fertilizer", recommendation.immediate_action || recommendation.action || recommendation.fertilizer, "border-red-200 bg-red-50 text-danger"], ["Treatment Plan / Pesticide", recommendation.treatment || recommendation.pesticide, "border-farmer-200 bg-farmer-50 text-farmer-800"], ["Prevention", recommendation.prevention || recommendation.prevention_tips, "border-expert-100 bg-expert-50 text-expert-700"], ["Monitoring / Irrigation", recommendation.monitoring || recommendation.irrigation, "border-line bg-canvas text-muted"]];
-    return <Card className="mt-6 bg-farmer-900 text-white" padding="lg"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-display text-2xl text-farmer-200">LLM Advisory Plan</h3><AudioButton text={advisoryText} /></div><div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div><p className="mt-5 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p></Card>;
+    return <Card className="mt-6 bg-farmer-900 text-white" padding="lg">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h3 className="font-display text-2xl text-farmer-200">{isFallback ? "Standard Agronomic Advisory" : "AI Advisory Plan"}</h3>
+          {isFallback && <Badge tone="warning">Standard Rules (AI Fallback)</Badge>}
+        </div>
+        <AudioButton text={advisoryText} />
+      </div>
+      {isFallback && <div className="mt-4 rounded-sm border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-200 leading-5">Note: Live AI generation was unavailable. Safety-validated standard agricultural treatment rules are displayed above.</div>}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div>
+      <p className="mt-5 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
+    </Card>;
   };
 
   const PredictionBlock = ({ predictionData }: { predictionData: any }) => {
@@ -144,8 +156,47 @@ export default function PredictionResultPage() {
     const rawImage = predictionData.image?.raw_path ? getAssetUrl(predictionData.image.raw_path) : null;
     const processedImage = predictionData.image?.processed_path ? getAssetUrl(predictionData.image.processed_path) : null;
     const diseaseConfidence = (predictionData.disease?.confidence || 0) * 100;
+    const isLowConfidence = predictionData.disease?.is_uncertain === true || diseaseConfidence < 60;
+    const confRating = predictionData.disease?.confidence_rating || (diseaseConfidence >= 85 ? "high" : diseaseConfidence >= 60 ? "moderate" : "low");
     const severityPercent = predictionData.severity?.percent || 0;
-    return <div className="space-y-6"><Card><h3 className="font-display text-xl text-ink">Visual Analysis</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[["Original Upload", rawImage, ""], ["Grad-CAM / Heatmap", processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">Image unavailable</div>}</div>)}</div></Card><Card><h3 className="font-display text-xl text-ink">Diagnostic Telemetry</h3><div className="mt-5 space-y-4"><div className="rounded-sm bg-canvas p-4"><h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? "Pending Verification" : predictionData.disease?.label || "Unknown"}</h2><p className="mt-1 text-sm text-muted">Confidence: {diseaseConfidence.toFixed(1)}%</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-farmer-700" style={{ width: `${diseaseConfidence}%` }} /></div></div><div className="rounded-sm bg-canvas p-4"><h2 className="font-display text-xl text-ink">Severity: {predictionData.severity?.bucket || "N/A"}</h2><p className="mt-1 text-sm text-muted">Affected Area: {severityPercent}%</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-admin-500" style={{ width: `${severityPercent}%` }} /></div></div><div className="text-xs uppercase tracking-wide text-muted"><p><strong>Crop:</strong> {predictionData.crop?.label || "N/A"}</p><p className="mt-1"><strong>Pests:</strong> {predictionData.pests?.length ? predictionData.pests.map((p: any) => p.label).join(", ") : "None detected"}</p></div></div></Card><Advisory predictionData={predictionData} /></div>;
+    const pestOffline = predictionData.pest_classification?.available === false || predictionData.status?.pest_detection === "skipped";
+    const weatherDegraded = predictionData.weather?.is_degraded || predictionData.weather?.status === "failed" || !predictionData.weather?.temperature_celsius;
+
+    return <div className="space-y-6">
+      <Card><h3 className="font-display text-xl text-ink">Visual Analysis</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[["Original Upload", rawImage, ""], ["Grad-CAM / Heatmap", processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">Image unavailable</div>}</div>)}</div></Card>
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-display text-xl text-ink">Diagnostic Telemetry</h3>
+          <Badge tone={confRating === "high" ? "success" : confRating === "moderate" ? "info" : "warning"}>{confRating.toUpperCase()} CONFIDENCE</Badge>
+        </div>
+        <div className="mt-5 space-y-4">
+          <div className="rounded-sm bg-canvas p-4">
+            <h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? "Pending Verification" : predictionData.disease?.label || "Unknown"}</h2>
+            <p className="mt-1 text-sm text-muted">Model Confidence: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
+              <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700"}`} style={{ width: `${diseaseConfidence}%` }} />
+            </div>
+            {isLowConfidence && <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">Tentative diagnosis: Model confidence is low. Field inspection or requesting specialist verification is recommended.</div>}
+          </div>
+          <div className="rounded-sm bg-canvas p-4">
+            <h2 className="font-display text-xl text-ink">Severity: {predictionData.severity?.bucket || "N/A"}</h2>
+            <p className="mt-1 text-sm text-muted">Affected Area: {severityPercent}%</p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-admin-500" style={{ width: `${severityPercent}%` }} /></div>
+          </div>
+          <div className="text-xs uppercase tracking-wide text-muted space-y-1.5">
+            <p><strong>Crop:</strong> {predictionData.crop?.label || "N/A"} {predictionData.crop?.confidence && `(${(predictionData.crop.confidence * 100).toFixed(1)}%)`}</p>
+            <p><strong>Pests:</strong> {pestOffline ? <span className="italic text-amber-600">Offline / Detector Not Available</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => p.label).join(", ") : "None detected"}</p>
+            <p><strong>Weather Context:</strong> {weatherDegraded ? <span className="italic text-amber-600">Unavailable during scan</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% humidity (${predictionData.weather?.condition || "Clear"})`}</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-between border-t border-line pt-3 text-[11px] text-muted">
+            <span>Model: {predictionData.provenance?.models?.disease?.name || predictionData.disease?.model_used || "EfficientNet-B2"}</span>
+            {predictionData.total_duration_ms && <span>Processing Latency: {predictionData.total_duration_ms} ms</span>}
+            <span>Schema: v{predictionData.schema_version || "2.0"}</span>
+          </div>
+        </div>
+      </Card>
+      <Advisory predictionData={predictionData} />
+    </div>;
   };
 
   const historicalImages = primary.historical_images || [];

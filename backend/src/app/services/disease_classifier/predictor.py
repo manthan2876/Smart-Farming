@@ -121,6 +121,13 @@ def predict_disease(context: dict, config: dict[str, Any]) -> dict:
 
     # ── Low confidence note ────────────────────────────────────────────
     threshold = config["thresholds"].get("disease_confidence", 0.60)
+    if confidence >= 0.85:
+        context["disease"]["confidence_rating"] = "high"
+    elif confidence >= threshold:
+        context["disease"]["confidence_rating"] = "moderate"
+    else:
+        context["disease"]["confidence_rating"] = "low"
+
     if confidence < threshold:
         context["disease"]["is_uncertain"] = True
         context["notes"].append(

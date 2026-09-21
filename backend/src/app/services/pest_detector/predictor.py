@@ -28,13 +28,14 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
     project_root = Path(__file__).resolve().parents[5]
     model_path = (project_root / model_relative_path).resolve()
 
-    if not model_path.exists():
-        context["notes"].append(f"Pest classifier model not found at: {model_path}")
-        context["status"]["pest_detection"] = "skipped"
-        return context
-
-    if not model_path.is_file():
-        context["notes"].append(f"Pest classifier path is not a file: {model_path}")
+    if not model_path.exists() or not model_path.is_file():
+        context["pest_classification"] = {
+            "model_type": "classification",
+            "model_name": "YOLO Pest Classifier",
+            "available": False,
+            "status": "unavailable",
+        }
+        context["notes"].append(f"Pest classifier model unavailable at: {model_path}")
         context["status"]["pest_detection"] = "skipped"
         return context
 
