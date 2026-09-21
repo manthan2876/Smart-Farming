@@ -19,6 +19,8 @@ from app.crud import record_prediction, get_prediction
 from app.crud.expert_review import ensure_expert_review
 from app.core.config import settings
 from app.core.paths import ensure_storage_directories, storage_relative_path
+from app.services.prediction_job import _public_result
+from app.pipeline import run_pipeline
 
 router = APIRouter()
 
