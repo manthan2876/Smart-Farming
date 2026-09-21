@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import '../../providers/locale_provider.dart';
+import '../../services/api_service.dart';
+import '../../services/tts_service.dart';
 import '../../theme/app_theme.dart';
 
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({
     super.key,
     required this.weather,
+    this.api,
     this.onRefresh,
   });
 
   final Map<String, dynamic>? weather;
+  final ApiService? api;
   final Future<void> Function()? onRefresh;
 
   @override
@@ -18,50 +21,114 @@ class WeatherScreen extends StatefulWidget {
 }
 
 class _WeatherScreenState extends State<WeatherScreen> {
-  final FlutterTts _tts = FlutterTts();
-  bool _isPlaying = false;
-  bool _isPaused = false;
+  final TtsService _ttsService = TtsService.instance;
+  String? _dynamicTranslatedAdvisory;
+  String? _dynamicLangCode;
+  bool _translating = false;
 
   @override
   void initState() {
     super.initState();
-    _tts.setStartHandler(() {
-      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
-    });
-    _tts.setCompletionHandler(() {
-      if (mounted) setState(() { _isPlaying = false; _isPaused = false; });
-    });
-    _tts.setPauseHandler(() {
-      if (mounted) setState(() { _isPlaying = false; _isPaused = true; });
-    });
-    _tts.setContinueHandler(() {
-      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
-    });
-    _tts.setErrorHandler((_) {
-      if (mounted) setState(() { _isPlaying = false; _isPaused = false; });
-    });
+    _ttsService.addListener(_onTtsChange);
+  }
+
+  void _onTtsChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkDynamicTranslation();
+  }
+
+  @override
+  void didUpdateWidget(covariant WeatherScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.weather != widget.weather) {
+      _dynamicTranslatedAdvisory = null;
+      _checkDynamicTranslation();
+    }
+  }
+
+  Future<void> _checkDynamicTranslation() async {
+    final langCode = context.localeCode;
+    if (langCode == 'en') return;
+
+    final weather = widget.weather;
+    if (weather == null) return;
+
+    final translations = weather['translations'] as Map<String, dynamic>?;
+    if (translations != null && translations[langCode] != null) {
+      return; // Already present in backend response
+    }
+
+    if (_dynamicLangCode == langCode && _dynamicTranslatedAdvisory != null) {
+      return; // Already dynamically translated
+    }
+
+    if (_translating || widget.api == null) return;
+
+    final baseAdvisory = weather['advisory']?.toString();
+    if (baseAdvisory == null || baseAdvisory.trim().isEmpty) return;
+
+    setState(() => _translating = true);
+    try {
+      final translated = await widget.api!.translateWeatherAdvisory(baseAdvisory, langCode);
+      if (translated != null && translated.trim().isNotEmpty && mounted) {
+        setState(() {
+          _dynamicTranslatedAdvisory = translated;
+          _dynamicLangCode = langCode;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _translating = false);
+    }
   }
 
   @override
   void dispose() {
-    _tts.stop();
+    _ttsService.removeListener(_onTtsChange);
+    if (_ttsService.isItemPlaying('weather_advisory')) {
+      _ttsService.stop();
+    }
     super.dispose();
   }
 
-  Future<void> _toggleTts(String text, String langCode) async {
-    if (_isPlaying) {
-      await _tts.pause();
-      if (mounted) setState(() { _isPlaying = false; _isPaused = true; });
-    } else if (_isPaused) {
-      await _tts.speak(text);
-      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
+  Future<void> _toggleTts({
+    required String temp,
+    required String cond,
+    required String hum,
+    required String advisory,
+    required String langCode,
+  }) async {
+    final buffer = StringBuffer();
+    if (langCode == 'hi') {
+      buffer.write('मौसम रिपोर्ट: ');
+      if (temp != '--') buffer.write('तापमान $temp, ');
+      buffer.write('स्थिति $cond, ');
+      if (hum != '--') buffer.write('आर्द्रता $hum. ');
+      buffer.write('कृषि सलाह: $advisory');
+    } else if (langCode == 'gu') {
+      buffer.write('હવામાન અહેવાલ: ');
+      if (temp != '--') buffer.write('તાપમાન $temp, ');
+      buffer.write('સ્થિતિ $cond, ');
+      if (hum != '--') buffer.write('ભેજ $hum. ');
+      buffer.write('ખેતી સલાહ: $advisory');
     } else {
-      final ttsLang = langCode == 'hi' ? 'hi-IN' : (langCode == 'gu' ? 'gu-IN' : 'en-US');
-      await _tts.setLanguage(ttsLang);
-      await _tts.setSpeechRate(0.48);
-      await _tts.speak(text);
-      if (mounted) setState(() { _isPlaying = true; _isPaused = false; });
+      buffer.write('Weather report: ');
+      if (temp != '--') buffer.write('Temperature $temp, ');
+      buffer.write('Condition $cond, ');
+      if (hum != '--') buffer.write('Humidity $hum. ');
+      buffer.write('Agronomic advisory: $advisory');
     }
+
+    await _ttsService.toggle(
+      id: 'weather_advisory',
+      text: buffer.toString(),
+      langCode: langCode,
+    );
   }
 
   @override
@@ -75,10 +142,14 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
     final langCode = context.localeCode;
     final translations = weather?['translations'] as Map<String, dynamic>?;
+
     final advisory = translations?[langCode]?.toString() ??
+        (langCode == _dynamicLangCode ? _dynamicTranslatedAdvisory : null) ??
         weather?['translated_advisory']?.toString() ??
         weather?['advisory']?.toString() ??
         context.tr('weatherAdvisoryOptimal');
+
+    final isPlaying = _ttsService.isItemPlaying('weather_advisory');
 
     final content = ListView(
       padding: const EdgeInsets.all(22),
@@ -93,11 +164,54 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          context.tr('weatherTitle'),
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              context.tr('weatherTitle'),
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+            ),
+            if (widget.onRefresh != null)
+              IconButton(
+                onPressed: widget.onRefresh,
+                icon: const Icon(Icons.refresh, color: AppColors.primary),
+                tooltip: context.tr('refresh'),
+              ),
+          ],
         ),
         const SizedBox(height: 22),
+        if (weather == null) ...[
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    context.tr('loading'),
+                    style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary),
+                  ),
+                ),
+                if (widget.onRefresh != null)
+                  TextButton(
+                    onPressed: widget.onRefresh,
+                    child: Text(context.tr('refresh')),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -151,10 +265,28 @@ class _WeatherScreenState extends State<WeatherScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (_translating)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      ),
+                    ),
                   IconButton(
-                    icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.volume_up, color: AppColors.primary),
-                    tooltip: _isPlaying ? context.tr('pauseAudio') : context.tr('listenAdvisory'),
-                    onPressed: () => _toggleTts(advisory, langCode),
+                    icon: Icon(
+                      isPlaying ? Icons.stop_circle_outlined : Icons.volume_up,
+                      color: isPlaying ? AppColors.warning : AppColors.primary,
+                    ),
+                    tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('listenAdvisory'),
+                    onPressed: () => _toggleTts(
+                      temp: temp,
+                      cond: cond,
+                      hum: hum,
+                      advisory: advisory,
+                      langCode: langCode,
+                    ),
                   ),
                 ],
               ),

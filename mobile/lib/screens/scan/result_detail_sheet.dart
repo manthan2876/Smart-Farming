@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import '../../models/prediction.dart';
 import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/tts_service.dart';
 import '../../theme/app_theme.dart';
-
-enum AudioPlaybackState { stopped, playing, paused }
 
 class ResultDetailSheet extends StatefulWidget {
   const ResultDetailSheet({
@@ -26,9 +24,8 @@ class ResultDetailSheet extends StatefulWidget {
 }
 
 class _ResultDetailSheetState extends State<ResultDetailSheet> {
-  final FlutterTts _tts = FlutterTts();
+  final TtsService _ttsService = TtsService.instance;
   late Prediction _pred;
-  AudioPlaybackState _playbackState = AudioPlaybackState.stopped;
 
   bool _submittingFeedback = false;
   bool _feedbackDone = false;
@@ -39,31 +36,17 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
   void initState() {
     super.initState();
     _pred = widget.prediction;
-    _initTts();
+    _ttsService.addListener(_onTtsStateChange);
+  }
+
+  void _onTtsStateChange() {
+    if (mounted) setState(() {});
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _checkAndTranslate();
-  }
-
-  void _initTts() {
-    _tts.setStartHandler(() {
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.playing);
-    });
-    _tts.setCompletionHandler(() {
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.stopped);
-    });
-    _tts.setPauseHandler(() {
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.paused);
-    });
-    _tts.setContinueHandler(() {
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.playing);
-    });
-    _tts.setErrorHandler((msg) {
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.stopped);
-    });
   }
 
   Future<void> _checkAndTranslate() async {
@@ -96,7 +79,10 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
 
   @override
   void dispose() {
-    _tts.stop();
+    _ttsService.removeListener(_onTtsStateChange);
+    if (_ttsService.isItemPlaying('pred_${_pred.id}')) {
+      _ttsService.stop();
+    }
     _noteCtrl.dispose();
     super.dispose();
   }
@@ -109,24 +95,15 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
       localizedDiseaseName: context.loc.disease(_pred.disease),
     );
 
-    if (_playbackState == AudioPlaybackState.playing) {
-      await _tts.pause();
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.paused);
-    } else if (_playbackState == AudioPlaybackState.paused) {
-      await _tts.speak(text);
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.playing);
-    } else {
-      final ttsLang = langCode == 'hi' ? 'hi-IN' : (langCode == 'gu' ? 'gu-IN' : 'en-US');
-      await _tts.setLanguage(ttsLang);
-      await _tts.setSpeechRate(0.48);
-      await _tts.speak(text);
-      if (mounted) setState(() => _playbackState = AudioPlaybackState.playing);
-    }
+    await _ttsService.toggle(
+      id: 'pred_${_pred.id}',
+      text: text,
+      langCode: langCode,
+    );
   }
 
   Future<void> _stopAudio() async {
-    await _tts.stop();
-    if (mounted) setState(() => _playbackState = AudioPlaybackState.stopped);
+    await _ttsService.stop();
   }
 
   Future<void> _sendFeedback(bool correct) async {
@@ -219,17 +196,15 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
                   IconButton(
                     onPressed: _togglePlayPause,
                     icon: Icon(
-                      _playbackState == AudioPlaybackState.playing
-                          ? Icons.pause_circle_filled
-                          : (_playbackState == AudioPlaybackState.paused
-                              ? Icons.play_circle_filled
-                              : Icons.volume_up_outlined),
-                      color: _playbackState == AudioPlaybackState.paused ? AppColors.warning : AppColors.primary,
+                      _ttsService.isItemPlaying('pred_${_pred.id}')
+                          ? Icons.stop_circle_outlined
+                          : Icons.volume_up_outlined,
+                      color: _ttsService.isItemPlaying('pred_${_pred.id}') ? AppColors.warning : AppColors.primary,
                       size: 26,
                     ),
-                    tooltip: _playbackState == AudioPlaybackState.playing
+                    tooltip: _ttsService.isItemPlaying('pred_${_pred.id}')
                         ? context.tr('pauseAudio')
-                        : (_playbackState == AudioPlaybackState.paused ? context.tr('resumeAudio') : context.tr('listenComplete')),
+                        : context.tr('listenComplete'),
                   ),
                 ],
               ),
@@ -283,73 +258,66 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
           const SizedBox(height: 20),
 
           // Interactive Full Audio Player Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: _playbackState == AudioPlaybackState.playing
-                  ? AppColors.primaryLight
-                  : (_playbackState == AudioPlaybackState.paused ? AppColors.warningBg : const Color(0xfff4f1e8)),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _playbackState == AudioPlaybackState.playing
-                    ? AppColors.primaryBorder
-                    : (_playbackState == AudioPlaybackState.paused ? AppColors.warning : AppColors.cardBorder),
-              ),
-            ),
-            child: Row(
-              children: [
-                IconButton.filled(
-                  onPressed: _togglePlayPause,
-                  style: IconButton.styleFrom(
-                    backgroundColor: _playbackState == AudioPlaybackState.playing
-                        ? AppColors.primary
-                        : (_playbackState == AudioPlaybackState.paused ? AppColors.warning : AppColors.primary),
-                    padding: const EdgeInsets.all(10),
-                  ),
-                  icon: Icon(
-                    _playbackState == AudioPlaybackState.playing
-                        ? Icons.pause
-                        : Icons.play_arrow,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                  tooltip: _playbackState == AudioPlaybackState.playing
-                      ? context.tr('pauseAudio')
-                      : (_playbackState == AudioPlaybackState.paused ? context.tr('resumeAudio') : context.tr('playAudio')),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _playbackState == AudioPlaybackState.playing
-                            ? context.tr('playingFullAudio')
-                            : (_playbackState == AudioPlaybackState.paused
-                                ? context.tr('audioPaused')
-                                : context.tr('listenComplete')),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        context.tr('audioAdviceSubtitle'),
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+          Builder(
+            builder: (_) {
+              final isPlaying = _ttsService.isItemPlaying('pred_${_pred.id}');
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isPlaying ? AppColors.primaryLight : const Color(0xfff4f1e8),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isPlaying ? AppColors.primaryBorder : AppColors.cardBorder,
                   ),
                 ),
-                if (_playbackState != AudioPlaybackState.stopped)
-                  IconButton(
-                    onPressed: _stopAudio,
-                    icon: const Icon(Icons.stop_circle_outlined, color: Colors.grey),
-                    tooltip: context.tr('stopAudio'),
-                  ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    IconButton.filled(
+                      onPressed: _togglePlayPause,
+                      style: IconButton.styleFrom(
+                        backgroundColor: isPlaying ? AppColors.warning : AppColors.primary,
+                        padding: const EdgeInsets.all(10),
+                      ),
+                      icon: Icon(
+                        isPlaying ? Icons.stop : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('playAudio'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isPlaying
+                                ? context.tr('playingFullAudio')
+                                : context.tr('listenComplete'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            context.tr('audioAdviceSubtitle'),
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isPlaying)
+                      IconButton(
+                        onPressed: _stopAudio,
+                        icon: const Icon(Icons.stop_circle_outlined, color: Colors.grey),
+                        tooltip: context.tr('stopAudio'),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 20),
 

@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import '../../models/prediction.dart';
 import '../../providers/locale_provider.dart';
 import '../../i18n/domain_translations.dart';
 import '../../services/api_service.dart';
 import '../../services/sync_service.dart';
+import '../../services/tts_service.dart';
 import '../../theme/app_theme.dart';
 import '../alerts/alerts_screen.dart';
 import '../farm/farm_screen.dart';
@@ -35,7 +35,6 @@ class FarmerShell extends StatefulWidget {
 }
 
 class _FarmerShellState extends State<FarmerShell> {
-  final _tts = FlutterTts();
   late final ApiService _api = ApiService(accessToken: widget.token);
   late final SyncService _sync = SyncService(_api);
 
@@ -49,13 +48,30 @@ class _FarmerShellState extends State<FarmerShell> {
   Map<String, dynamic>? _farm;
   Map<String, dynamic>? _weather;
   List<Map<String, dynamic>> _alerts = [];
+  String? _lastLocale;
 
   @override
   void initState() {
     super.initState();
     _refreshQueue();
-    _loadAllData();
     _listenConnectivity();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadAllData();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentLocale = context.localeCode;
+    if (_lastLocale != null && _lastLocale != currentLocale) {
+      _lastLocale = currentLocale;
+      _loadWeather();
+    } else {
+      _lastLocale = currentLocale;
+    }
   }
 
   void _listenConnectivity() {
@@ -109,16 +125,32 @@ class _FarmerShellState extends State<FarmerShell> {
   Future<void> _loadFarm() async {
     try {
       final farm = await _api.getFarm();
-      if (mounted) setState(() => _farm = farm);
+      if (mounted) {
+        setState(() => _farm = farm);
+        if (_weather == null && farm['latitude'] != null) {
+          _loadWeather();
+        }
+      }
     } catch (_) {}
   }
 
   Future<void> _loadWeather() async {
     try {
-      final lang = context.mounted ? context.localeCode : DomainTranslations.normalizeLang(_userProfile['language']?.toString());
-      final weather = await _api.getWeather(language: lang);
+      final lang = context.mounted
+          ? context.localeCode
+          : DomainTranslations.normalizeLang(_userProfile['language']?.toString());
+      final lat = double.tryParse(_farm?['latitude']?.toString() ?? '') ??
+          double.tryParse(_userProfile['latitude']?.toString() ?? '') ??
+          22.2587;
+      final lon = double.tryParse(_farm?['longitude']?.toString() ?? '') ??
+          double.tryParse(_userProfile['longitude']?.toString() ?? '') ??
+          71.1924;
+
+      final weather = await _api.getWeather(lat: lat, lon: lon, language: lang);
       if (mounted) setState(() => _weather = weather);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[FarmerShell] Weather load error: $e');
+    }
   }
 
   Future<void> _loadAlerts() async {
@@ -184,14 +216,12 @@ class _FarmerShellState extends State<FarmerShell> {
   }
 
   Future<void> _speak(String text) async {
-    try {
-      final audioB64 = await _api.generateTTS(text);
-      if (audioB64 != null) {
-        // Fallback local TTS speaker with device engine
-      }
-      await _tts.setLanguage('en-US');
-      await _tts.speak(text);
-    } catch (_) {}
+    final lang = context.mounted ? context.localeCode : 'en';
+    await TtsService.instance.toggle(
+      id: 'shell_speak',
+      text: text,
+      langCode: lang,
+    );
   }
 
   void _showResultSheet(Prediction pred) {
@@ -235,6 +265,7 @@ class _FarmerShellState extends State<FarmerShell> {
               ),
               WeatherScreen(
                 weather: _weather,
+                api: _api,
                 onRefresh: _loadWeather,
               ),
               FarmScreen(

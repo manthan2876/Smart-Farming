@@ -196,15 +196,35 @@ class ApiService {
 
   Future<Map<String, dynamic>> getWeather({double lat = 22.2587, double lon = 71.1924, String? language}) async {
     final langParam = language != null && language.isNotEmpty ? '&language=${Uri.encodeComponent(language)}' : '';
-    final response = await http.get(
-      Uri.parse('$baseUrl/weather?lat=$lat&lon=$lon$langParam'),
-      headers: _headers,
-    );
+    final response = await http
+        .get(
+          Uri.parse('$baseUrl/weather?lat=$lat&lon=$lon$langParam'),
+          headers: _headers,
+        )
+        .timeout(const Duration(seconds: 15));
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 400) {
       throw Exception(body['detail'] ?? 'Failed to retrieve weather');
     }
     return body;
+  }
+
+  Future<String?> translateWeatherAdvisory(String text, String targetLanguage) async {
+    if (text.trim().isEmpty || targetLanguage == 'en') return text;
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/weather/translate'),
+            headers: {'Content-Type': 'application/json', ..._headers},
+            body: jsonEncode({'text': text, 'target_language': targetLanguage}),
+          )
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode >= 400) return null;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['translated_text']?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getAlerts() async {
