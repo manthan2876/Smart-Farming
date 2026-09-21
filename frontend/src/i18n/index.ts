@@ -21,3 +21,6 @@ export function t(key: TranslationKey, language: Language = "English"): string {
   const dict = dictionary(language);
   return dict[key] || en[key] || key;
 }
+
+export * from "./domain";
+
