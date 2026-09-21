@@ -12,6 +12,7 @@ class Prediction {
     this.immediateAction,
     this.treatment,
     this.prevention,
+    this.monitoring,
     this.status = 'completed',
     this.qualityScore,
     this.pests = const [],
@@ -31,11 +32,36 @@ class Prediction {
   final String? immediateAction;
   final String? treatment;
   final String? prevention;
+  final String? monitoring;
   final String status;
   final double? qualityScore;
   final List<String> pests;
   final String? createdAt;
   final List<String> notes;
+
+  /// Returns the complete comprehensive spoken recommendation combining all actionable paragraphs.
+  String get fullAudioRecommendation {
+    final buffer = StringBuffer();
+    buffer.write('Diagnosis for $crop. Detected condition: $disease. ');
+    buffer.write('Severity is $severity percent, with ${(confidence * 100).round()} percent confidence. ');
+
+    if (immediateAction != null && immediateAction!.trim().isNotEmpty) {
+      buffer.write('Immediate Action: ${immediateAction!.trim()} ');
+    }
+    if (treatment != null && treatment!.trim().isNotEmpty) {
+      buffer.write('Treatment Guidance: ${treatment!.trim()} ');
+    }
+    if (prevention != null && prevention!.trim().isNotEmpty) {
+      buffer.write('Prevention Strategy: ${prevention!.trim()} ');
+    }
+    if (monitoring != null && monitoring!.trim().isNotEmpty) {
+      buffer.write('Monitoring Plan: ${monitoring!.trim()} ');
+    }
+    if (immediateAction == null && treatment == null && prevention == null && recommendation.isNotEmpty) {
+      buffer.write(recommendation);
+    }
+    return buffer.toString().trim();
+  }
 
   factory Prediction.fromJson(Map<String, dynamic> json) {
     final crop = (json['crop'] as Map?)?.cast<String, dynamic>() ?? {};
@@ -52,17 +78,30 @@ class Prediction {
     final immediate = recommendation['immediate_action']?.toString();
     final treat = recommendation['treatment']?.toString();
     final prev = recommendation['prevention']?.toString();
+    final monitor = recommendation['monitoring']?.toString();
 
-    String recText = 'Follow local agricultural guidance.';
+    final sections = <String>[];
     if (immediate != null && immediate.trim().isNotEmpty) {
-      recText = immediate;
-    } else if (treat != null && treat.trim().isNotEmpty) {
-      recText = treat;
-    } else if (recommendation['pesticide'] != null && recommendation['pesticide'] != 'N/A') {
-      recText = recommendation['pesticide'].toString();
-    } else if (prev != null && prev.trim().isNotEmpty) {
-      recText = prev;
+      sections.add('Immediate Action: ${immediate.trim()}');
     }
+    if (treat != null && treat.trim().isNotEmpty) {
+      sections.add('Treatment: ${treat.trim()}');
+    }
+    if (prev != null && prev.trim().isNotEmpty) {
+      sections.add('Prevention: ${prev.trim()}');
+    }
+    if (monitor != null && monitor.trim().isNotEmpty) {
+      sections.add('Monitoring: ${monitor.trim()}');
+    }
+    if (recommendation['pesticide'] != null &&
+        recommendation['pesticide'].toString().trim().isNotEmpty &&
+        recommendation['pesticide'] != 'N/A') {
+      sections.add('Pesticide: ${recommendation['pesticide']}');
+    }
+
+    final recText = sections.isNotEmpty
+        ? sections.join('\n\n')
+        : (recommendation['summary']?.toString() ?? 'Follow local agricultural guidance.');
 
     final rawStatus = json['status'];
     String statusStr = 'completed';
@@ -82,6 +121,7 @@ class Prediction {
       immediateAction: immediate,
       treatment: treat,
       prevention: prev,
+      monitoring: monitor,
       imagePath: image['processed_path']?.toString() ?? image['raw_path']?.toString(),
       rawPath: image['raw_path']?.toString(),
       qualityScore: (image['quality_score'] as num?)?.toDouble(),

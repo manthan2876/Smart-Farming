@@ -318,14 +318,18 @@ class ApiService {
   }
 
   Future<String?> generateTTS(String text) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/tts'),
-      headers: {'Content-Type': 'application/json', ..._headers},
-      body: jsonEncode({'text': text}),
-    );
-    if (response.statusCode >= 400) return null;
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return body['audioContent']?.toString();
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/tts'),
+        headers: {'Content-Type': 'application/json', ..._headers},
+        body: jsonEncode({'text': text}),
+      );
+      if (response.statusCode >= 400) return null;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['audioContent']?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<Prediction>> history() async {

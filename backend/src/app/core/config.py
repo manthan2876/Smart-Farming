@@ -3,7 +3,10 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from dotenv import load_dotenv
+
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(BACKEND_ROOT / ".env")
 
 class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="dev-secret-key-change-me") 
@@ -21,7 +24,8 @@ class Settings(BaseSettings):
     UPLOAD_ROOT: Path = DATA_ROOT / "uploads"
     PROCESSED_ROOT: Path = DATA_ROOT / "processed"
     AUDIO_ROOT: Path = DATA_ROOT / "audio"
+    GOOGLE_TTS_API_KEY: str = Field(default="")
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
 
 settings = Settings()
