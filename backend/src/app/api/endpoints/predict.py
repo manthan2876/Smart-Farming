@@ -216,10 +216,18 @@ async def predict(
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     if file.content_type not in _ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Upload a JPEG, PNG, or WebP image.",
-        )
+        suffix = Path(file.filename or "upload.jpg").suffix.lower()
+        if suffix in {".jpg", ".jpeg"}:
+            file.content_type = "image/jpeg"
+        elif suffix == ".png":
+            file.content_type = "image/png"
+        elif suffix == ".webp":
+            file.content_type = "image/webp"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Upload a JPEG, PNG, or WebP image.",
+            )
 
     suffix = Path(file.filename or "upload.jpg").suffix.lower()
     if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
@@ -301,6 +309,7 @@ async def predict(
         await file.close()
 
 
+@router.get("/predict/{prediction_id}", response_model=PredictionResponse)
 @router.get("/predictions/{prediction_id}", response_model=PredictionResponse)
 async def prediction_detail(
     prediction_id: int,
@@ -388,10 +397,18 @@ async def rescan_prediction(
         raise HTTPException(status_code=404, detail="Prediction not found.")
 
     if file.content_type not in _ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Upload a JPEG, PNG, or WebP image.",
-        )
+        suffix = Path(file.filename or "upload.jpg").suffix.lower()
+        if suffix in {".jpg", ".jpeg"}:
+            file.content_type = "image/jpeg"
+        elif suffix == ".png":
+            file.content_type = "image/png"
+        elif suffix == ".webp":
+            file.content_type = "image/webp"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Upload a JPEG, PNG, or WebP image.",
+            )
 
     # 2. Save new image
     suffix = Path(file.filename or "upload.jpg").suffix.lower()

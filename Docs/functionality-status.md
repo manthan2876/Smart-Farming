@@ -1071,12 +1071,12 @@ The active `/predict` endpoint uses FastAPI `BackgroundTasks`, so prediction req
 - [x] Add metrics for processing duration, failures, fallbacks, queue depth, and expert corrections.
 - [x] Add tests around every current known gap.
 
-### Priority 3: Complete the client experience
+### Priority 3: Complete the client experience (Completed)
 
-- Finish web internationalization and persisted preferences.
-- Add dedicated alert and role-specific workflows.
-- Make mobile authentication, result parsing, offline synchronization, and API coverage match the web backend.
-- Remove hard-coded demo data and development URLs.
+- [x] Finish web internationalization and persisted preferences.
+- [x] Add dedicated alert and role-specific workflows.
+- [x] Make mobile authentication, result parsing, offline synchronization, and API coverage match the web backend.
+- [x] Remove hard-coded demo data and development URLs.
 
 ### Priority 4: Build the MLOps loop
 

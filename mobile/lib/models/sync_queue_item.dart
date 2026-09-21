@@ -1,11 +1,13 @@
 class SyncQueueItem {
   const SyncQueueItem({
-    required this.path,
+    this.path = '',
     required this.createdAt,
     this.status = 'pending_sync',
     this.location = 'North plot',
     this.language = 'English',
     this.requestId,
+    this.base64Data,
+    this.fileName = 'leaf.jpg',
   });
 
   final String path;
@@ -14,6 +16,8 @@ class SyncQueueItem {
   final String location;
   final String language;
   final String? requestId;
+  final String? base64Data;
+  final String fileName;
 
   Map<String, dynamic> toJson() => {
         'path': path,
@@ -22,10 +26,12 @@ class SyncQueueItem {
         'location': location,
         'language': language,
         if (requestId != null) 'request_id': requestId,
+        if (base64Data != null) 'base64_data': base64Data,
+        'file_name': fileName,
       };
 
   factory SyncQueueItem.fromJson(Map<String, dynamic> json) => SyncQueueItem(
-        path: json['path'].toString(),
+        path: json['path']?.toString() ?? '',
         createdAt: json['created'] != null
             ? DateTime.parse(json['created'].toString())
             : DateTime.now(),
@@ -33,5 +39,7 @@ class SyncQueueItem {
         location: json['location']?.toString() ?? 'North plot',
         language: json['language']?.toString() ?? 'English',
         requestId: json['request_id']?.toString(),
+        base64Data: json['base64_data']?.toString(),
+        fileName: json['file_name']?.toString() ?? 'leaf.jpg',
       );
 }

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/sync_queue_item.dart';
@@ -10,18 +10,20 @@ class SyncService {
   final ApiService api;
   static const _queueKey = 'pending_leaf_scans';
 
-  Future<void> enqueue(
-    File image, {
+  Future<void> enqueueBytes(
+    Uint8List bytes,
+    String fileName, {
     String location = 'North plot',
     String language = 'English',
   }) async {
     final preferences = await SharedPreferences.getInstance();
     final queue = preferences.getStringList(_queueKey) ?? [];
     final item = SyncQueueItem(
-      path: image.path,
       createdAt: DateTime.now(),
       location: location,
       language: language,
+      fileName: fileName,
+      base64Data: base64Encode(bytes),
     );
     queue.add(jsonEncode(item.toJson()));
     await preferences.setStringList(_queueKey, queue);
@@ -57,14 +59,15 @@ class SyncService {
         continue;
       }
 
-      final file = File(item.path);
-      if (!await file.exists()) {
-        continue; // Drop missing temporary files
+      if (item.base64Data == null || item.base64Data!.isEmpty) {
+        continue;
       }
 
       try {
-        await api.predict(
-          file,
+        final bytes = base64Decode(item.base64Data!);
+        await api.predictBytes(
+          bytes,
+          item.fileName,
           location: item.location,
           language: item.language,
         );
