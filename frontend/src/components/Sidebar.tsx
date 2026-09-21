@@ -141,6 +141,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <MapPin size={18} />
             <span>{t("farm")}</span>
           </NavLink>
+          <NavLink onClick={onClose} to="/alerts" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
+            <Bell size={18} />
+            <span>{t("alerts")}</span>
+            {unreadCount > 0 && (
+              <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
+          </NavLink>
           <NavLink onClick={onClose} to="/weather" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
             <CloudSun size={18} />
             <span>{t("weatherAdvisory")}</span>

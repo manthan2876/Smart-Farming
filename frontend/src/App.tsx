@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import AboutPage from "./pages/AboutPage";
 import ServicesPage from "./pages/ServicesPage";
@@ -17,11 +17,11 @@ import AdminMetricsPage from "./pages/AdminMetricsPage";
 import AdminFeedbackPage from "./pages/AdminFeedbackPage";
 import ExpertQueuePage from "./pages/ExpertQueuePage";
 import ExpertReviewPage from "./pages/ExpertReviewPage";
+import AlertsPage from "./pages/AlertsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
 import { AuthProvider } from "./context/AuthContext";
 import { getApiUrl } from "./api/client";
-  <Route path="/docs" element={<ExternalRedirect to={`${getApiUrl()}/docs`} />} />
 
 function ExternalRedirect({ to }: { to: string }) {
   window.location.href = to;
@@ -49,8 +49,9 @@ export default function App() {
         <Route path="/predictions/:id" element={<PredictionResultPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/farm/settings" element={<FarmSettingsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/weather" element={<WeatherPage />} />
+        <Route path="/alerts" element={<AlertsPage />} />
 
         {/* Admin Only Routes */}
         <Route path="/admin/metrics" element={<ProtectedRoute strictAdminOnly><AdminMetricsPage /></ProtectedRoute>} />
