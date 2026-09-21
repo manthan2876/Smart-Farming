@@ -45,6 +45,21 @@ def initialize_database() -> None:
                 connection.execute(
                     text("ALTER TABLE predictions ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES predictions(id)")
                 )
+                connection.execute(
+                    text("ALTER TABLE dataset_candidates ADD COLUMN IF NOT EXISTS provenance_note TEXT")
+                )
+                connection.execute(
+                    text("ALTER TABLE dataset_candidates ADD COLUMN IF NOT EXISTS source_feedback_id INTEGER")
+                )
+                connection.execute(
+                    text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS corrected_label VARCHAR(200)")
+                )
+                connection.execute(
+                    text("ALTER TABLE mlops_runs ADD COLUMN IF NOT EXISTS dataset_export_config JSON")
+                )
+                connection.execute(
+                    text("ALTER TABLE mlops_runs ADD COLUMN IF NOT EXISTS metrics JSON")
+                )
     except Exception as exc:
         print(f"[InitDB] Note on migrations: {exc}")
     try:

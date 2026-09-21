@@ -56,9 +56,14 @@ def _save_config(config: dict[str, Any]) -> None:
 def _resolve_model_path(relative_path: str | None) -> Path | None:
     if not relative_path:
         return None
-    # Paths are relative to the backend root (parent of config.yaml's directory)
     backend_root = _CONFIG_PATH.parent
-    return backend_root / relative_path
+    project_root = backend_root.parent
+    # Models are stored at workspace/project root (models/), check project_root first
+    for candidate_base in (project_root, backend_root):
+        candidate = candidate_base / relative_path
+        if candidate.exists():
+            return candidate
+    return project_root / relative_path
 
 
 @router.get("")
@@ -247,3 +252,4 @@ async def promote_model(
         "test_acc": payload.test_acc,
         "promoted_at": registry["models"][payload.model_key]["versions"][payload.version]["promoted_at"],
     }
+

@@ -194,3 +194,4 @@ The script uses a deliberate two-phase approach to prevent catastrophic forgetti
 - [ ] Store `best.pth` and `labels.json` in version control or a model store.
 - [ ] Register the model via the `/admin/models/promote` endpoint to update `model_registry.json`.
 - [ ] Run the test evaluation (`eval` mode) before promoting to production.
+

@@ -33,7 +33,7 @@ export default function AdminMetricsPage() {
     enabled: !!token
   });
 
-  const { data: datasetSummary } = useQuery({
+  const { data: datasetSummary, isError: datasetSummaryError } = useQuery({
     queryKey: ["dataset_summary"],
     queryFn: () => request<any>("/admin/dataset/summary", {}, token!),
     enabled: !!token,
@@ -273,7 +273,11 @@ export default function AdminMetricsPage() {
           <div>
             <h3 className="font-display text-xl text-ink">MLOps Dataset Export</h3>
             <p className="mt-1 text-sm text-muted">
-              {datasetSummary ? `${datasetSummary.total} total candidates · ${datasetSummary.by_status?.pending_review ?? 0} pending review` : "Loading…"}
+              {datasetSummary
+                ? `${datasetSummary.total} total candidates · ${datasetSummary.by_status?.pending_review ?? 0} pending review`
+                : datasetSummaryError
+                ? "Dataset candidate summary temporarily unavailable"
+                : "Loading summary…"}
             </p>
           </div>
         </div>

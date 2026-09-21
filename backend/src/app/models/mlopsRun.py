@@ -19,4 +19,4 @@ class MlopsRun(Base):
     )
     finished_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
-    )
+    )
