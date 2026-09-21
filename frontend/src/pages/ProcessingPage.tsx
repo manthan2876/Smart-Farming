@@ -6,6 +6,7 @@ import { getPrediction } from "../api/predictions";
 import { motion } from "motion/react";
 import { Loader2, Check, Wheat, Leaf, TreeDeciduous, Sprout, Clover, Bug, Activity, Sparkles, Wand2 } from "lucide-react";
 import { Button, Card } from "../components/ui";
+import { getWebSocketUrl } from "../api/client";
 
 export default function ProcessingPage() {
   const { id } = useParams();
@@ -26,9 +27,7 @@ export default function ProcessingPage() {
     if (isNaN(predictionId)) return;
     
     // Resolve host dynamically, replacing http with ws
-    const host = window.location.hostname || "localhost";
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${host}:8000/ws/predictions/${predictionId}`;
+    const wsUrl = getWebSocketUrl(`/ws/predictions/${predictionId}`);
     
     const ws = new WebSocket(wsUrl);
     

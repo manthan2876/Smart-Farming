@@ -8,6 +8,7 @@ import { motion } from "motion/react";
 import imageCompression from 'browser-image-compression';
 import { get, set, update } from 'idb-keyval';
 import { Button, Card, Input } from "../components/ui";
+import { request } from "../api/client";
 
 export default function ScanPage() {
   const { token, user } = useAuth();
@@ -83,20 +84,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     formData.append("language", language);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/predict`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || "Diagnostic pipeline failed.");
-      }
-
-      const result = await response.json();
+      const result = await request<any>("/predict", { method: "POST", body: formData }, token);
       navigate(`/predictions/${result.prediction_id}/processing`);
     } catch (err: any) {
       if (err.message === "Failed to fetch") {
@@ -124,11 +112,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           formData.append("lon", scan.lon);
           formData.append("language", scan.language);
           try {
-            await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/predict`, {
-              method: "POST",
-              headers: { Authorization: `Bearer ${token}` },
-              body: formData,
-            });
+            await request<any>("/predict", { method: "POST", body: formData }, token);
           } catch (e) {
             console.error("Failed to sync offline scan", e);
           }

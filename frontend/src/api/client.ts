@@ -12,6 +12,12 @@ export function getApiUrl() {
 export function getAssetUrl(path: string) {
   return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
+export function getWebSocketUrl(path: string) {
+  const url = new URL(API_URL);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  url.pathname = path.startsWith("/") ? path : `/${path}`;
+  return url.toString();
+}
 
 // Ensure subsequent requests pick up the latest token if refreshed elsewhere
 let refreshPromise: Promise<string | null> | null = null;

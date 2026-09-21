@@ -20,6 +20,8 @@ import ExpertReviewPage from "./pages/ExpertReviewPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
 import { AuthProvider } from "./context/AuthContext";
+import { getApiUrl } from "./api/client";
+  <Route path="/docs" element={<ExternalRedirect to={`${getApiUrl()}/docs`} />} />
 
 function ExternalRedirect({ to }: { to: string }) {
   window.location.href = to;
@@ -37,7 +39,7 @@ export default function App() {
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/register" element={<RegisterPage />} />
       <Route path="/crops" element={<CropsPage />} />
-      <Route path="/docs" element={<ExternalRedirect to="http://localhost:8000/docs" />} />
+      <Route path="/docs" element={<ExternalRedirect to={`${getApiUrl()}/docs`} />} />
 
       {/* Authenticated Routes wrapped inside AppShell */}
       <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>

@@ -1,3 +1,4 @@
+import { getAssetUrl, request } from "../api/client";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -6,7 +7,6 @@ import imageCompression from "browser-image-compression";
 import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getPrediction, requestExpertReview } from "../api/predictions";
-import { request } from "../api/client";
 import { Badge, Button, Card, Input } from "../components/ui";
 
 export default function PredictionResultPage() {
@@ -141,8 +141,8 @@ export default function PredictionResultPage() {
 
   const PredictionBlock = ({ predictionData }: { predictionData: any }) => {
     if (predictionData.error) return <div className="rounded-md border border-red-200 bg-red-50 p-6 text-danger"><h3 className="flex items-center gap-2 font-display text-xl"><AlertCircle size={22} /> ML Pipeline Error</h3><p className="mt-3">{predictionData.error}</p><p className="mt-3 text-sm">Please capture another scan with better lighting.</p></div>;
-    const rawImage = predictionData.image?.raw_path ? `http://localhost:8000/${predictionData.image.raw_path}` : null;
-    const processedImage = predictionData.image?.processed_path ? `http://localhost:8000/${predictionData.image.processed_path}` : null;
+    const rawImage = predictionData.image?.raw_path ? getAssetUrl(predictionData.image.raw_path) : null;
+    const processedImage = predictionData.image?.processed_path ? getAssetUrl(predictionData.image.processed_path) : null;
     const diseaseConfidence = (predictionData.disease?.confidence || 0) * 100;
     const severityPercent = predictionData.severity?.percent || 0;
     return <div className="space-y-6"><Card><h3 className="font-display text-xl text-ink">Visual Analysis</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[["Original Upload", rawImage, ""], ["Grad-CAM / Heatmap", processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">Image unavailable</div>}</div>)}</div></Card><Card><h3 className="font-display text-xl text-ink">Diagnostic Telemetry</h3><div className="mt-5 space-y-4"><div className="rounded-sm bg-canvas p-4"><h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? "Pending Verification" : predictionData.disease?.label || "Unknown"}</h2><p className="mt-1 text-sm text-muted">Confidence: {diseaseConfidence.toFixed(1)}%</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-farmer-700" style={{ width: `${diseaseConfidence}%` }} /></div></div><div className="rounded-sm bg-canvas p-4"><h2 className="font-display text-xl text-ink">Severity: {predictionData.severity?.bucket || "N/A"}</h2><p className="mt-1 text-sm text-muted">Affected Area: {severityPercent}%</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-admin-500" style={{ width: `${severityPercent}%` }} /></div></div><div className="text-xs uppercase tracking-wide text-muted"><p><strong>Crop:</strong> {predictionData.crop?.label || "N/A"}</p><p className="mt-1"><strong>Pests:</strong> {predictionData.pests?.length ? predictionData.pests.map((p: any) => p.label).join(", ") : "None detected"}</p></div></div></Card><Advisory predictionData={predictionData} /></div>;
