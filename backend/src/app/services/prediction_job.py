@@ -10,6 +10,7 @@ from app.context import create_context
 from app.core.config import settings
 from app.core.paths import resolve_storage_path
 from app.core.session import _session_factory
+from app.crud.expert_review import ensure_expert_review
 from app.models import ExpertReview, Prediction
 from app.pipeline import (
     _CONFIG,
@@ -141,9 +142,23 @@ def run_prediction_job(
         prediction.disease_conf = public_result.get("disease", {}).get("confidence")
         prediction.model_used = public_result.get("disease", {}).get("model_used")
         prediction.severity_pct = public_result.get("severity", {}).get("percent")
-        prediction.status = "ready"
-        if prediction.expert_review is not None:
-            prediction.expert_review.status = "not_requested"
+        disease_confidence = prediction.disease_conf or 0.0
+        crop_confidence = prediction.crop_conf or 0.0
+        thresholds = _CONFIG.get("thresholds", {})
+        disease_threshold = thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD)
+        crop_threshold = thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD)
+        if disease_confidence < disease_threshold:
+            ensure_expert_review(db, prediction, "Disease confidence is below the configured threshold.")
+            public_result["status"]["expert_review"] = "pending"
+        elif crop_confidence < crop_threshold:
+            ensure_expert_review(db, prediction, "Crop confidence is below the configured threshold.")
+            public_result["status"]["expert_review"] = "pending"
+        elif prediction.expert_review is not None and prediction.expert_review.status == "pending":
+            prediction.status = "pending_expert_review"
+            public_result["status"]["expert_review"] = "pending"
+        else:
+            prediction.status = "ready"
+            public_result["status"]["expert_review"] = "not_requested"
         db.commit()
         push_status("completed")
     except Exception as exc:

@@ -45,7 +45,7 @@ def record_prediction(
     pests = result.get("pests", [])
     
     status = "ready"
-    if d_conf < 0.70 or (sev_pct > 60 and pests):
+    if disease.get("label") and (d_conf < 0.70 or (sev_pct > 60 and pests)):
         status = "pending_expert_review"
         result["status"]["expert_review"] = "pending"
     

@@ -16,6 +16,7 @@ from app.core import get_session
 from app.schemas import PredictionResponse, ErrorResponse
 from app.context import create_context
 from app.crud import record_prediction, get_prediction
+from app.crud.expert_review import ensure_expert_review
 from app.core.config import settings
 from app.core.paths import ensure_storage_directories, storage_relative_path
 
@@ -401,20 +402,13 @@ async def request_expert_review(
     if not pred:
         raise HTTPException(status_code=404, detail="Prediction not found")
         
-    res = dict(pred.result)
-    status_block = res.get("status", {})
-    if status_block.get("expert_review") in ["pending", "completed"]:
+    if pred.expert_review and pred.expert_review.status in {"pending", "verified", "rejected"}:
         raise HTTPException(status_code=400, detail="Expert review already requested or completed")
-        
-    status_block["expert_review"] = "pending"
-    status_block["expert_reason"] = "Requested manually by farmer"
-    res["status"] = status_block
-    
-    pred.result = res
-    pred.status = "pending_expert_review"
+
+    ensure_expert_review(session, pred, "Requested manually by farmer.")
     session.commit()
     
-    return {"status": "Expert review requested successfully"}
+    return {"status": "Expert review requested successfully", "review_id": pred.expert_review.id}
 
 from fastapi import WebSocket, WebSocketDisconnect
 import asyncio

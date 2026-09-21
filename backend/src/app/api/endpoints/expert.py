@@ -113,31 +113,34 @@ async def post_expert_review(
     review.internal_note = payload.get("internal_note")
     
     pred = review.prediction
-    pred.status = "verified"
+    pred.status = "rescan_requested" if action == "Request Rescan" else "verified"
     
     # Generate Alert for farmer
-    farmer_alert = Alert(
-        user_id=pred.user_id,
-        prediction_id=pred.id,
-        kind="review_verified",
-        severity="high",
-        title=f"Expert Review Completed for Scan #{pred.id}",
-        body=f"An agronomist has verified your scan. Conclusion: {action}."
-    )
-    session.add(farmer_alert)
+    if not session.query(Alert).filter(
+        Alert.prediction_id == pred.id,
+        Alert.kind == "review_verified",
+    ).first():
+        session.add(Alert(
+            user_id=pred.user_id,
+            prediction_id=pred.id,
+            kind="review_verified",
+            severity="high",
+            title=f"Expert Review Completed for Scan #{pred.id}",
+            body=f"An agronomist has verified your scan. Conclusion: {action}."
+        ))
     
     # Dataset flagging
     if payload.get("add_to_retraining"):
         orig_disease = pred.result.get("disease", {}).get("label") if pred.result else pred.disease
-        ds = DatasetCandidate(
-            prediction_id=pred.id,
-            source="expert_correction",
-            original_label=orig_disease,
-            corrected_label=review.corrected_disease or orig_disease,
-            image_path=pred.image.raw_path if pred.image else "",
-            status="pending_review"
-        )
-        session.add(ds)
+        if not session.query(DatasetCandidate).filter(DatasetCandidate.prediction_id == pred.id).first():
+            session.add(DatasetCandidate(
+                prediction_id=pred.id,
+                source="expert_correction",
+                original_label=orig_disease,
+                corrected_label=review.corrected_disease or orig_disease,
+                image_path=pred.image.raw_path if pred.image else "",
+                status="pending_review"
+            ))
     
     res = dict(pred.result)
     if "status" in res and isinstance(res["status"], dict):
@@ -152,6 +155,16 @@ async def post_expert_review(
         if "recommendation" not in res:
             res["recommendation"] = {}
         res["recommendation"]["expert_verified_advisory"] = review.farmer_guidance
+
+    if review.corrected_disease:
+        res.setdefault("disease", {})["label"] = review.corrected_disease
+        pred.disease = review.corrected_disease
+    if review.corrected_severity is not None:
+        res.setdefault("severity", {})["percent"] = review.corrected_severity
+        pred.severity_pct = review.corrected_severity
+    result_status = dict(res.get("status") or {})
+    result_status["expert_review"] = "rescan_requested" if action == "Request Rescan" else "verified"
+    res["status"] = result_status
 
     pred.result = res
     flag_modified(pred, "result")
