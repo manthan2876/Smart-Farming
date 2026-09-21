@@ -122,3 +122,26 @@ export function translateWeather(weather?: string | null, lang?: string): string
   return weatherMap[key]?.[code] || weather;
 }
 
+// ── Alerts ───────────────────────────────────────────────────────────────
+const alertTitlesMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
+  "weather advisory": { en: "Weather Advisory", hi: "मौसम सलाह", gu: "હવામાન સલાહ" },
+  "heavy rain alert": { en: "Heavy Rain Alert", hi: "भारी बारिश की चेतावनी", gu: "ભારે વરસાદની ચેતવણી" },
+  "rain warning": { en: "Rain Warning", hi: "बारिश की चेतावनी", gu: "વરસાદની ચેતવણી" },
+  "high humidity alert": { en: "High Humidity Alert", hi: "उच्च आर्द्रता चेतावनी", gu: "વધુ ભેજની ચેતવણી" },
+  "extreme heat advisory": { en: "Extreme Heat Advisory", hi: "अत्यधिक गर्मी की सलाह", gu: "અતિશય ગરમીની સલાહ" },
+  "heat advisory": { en: "Heat Advisory", hi: "गर्मी की सलाह", gu: "ગરમીની સલાહ" },
+  "pest advisory": { en: "Pest Advisory", hi: "कीट सलाह", gu: "જીવાત સલાહ" },
+  "pest warning": { en: "Pest Warning", hi: "कीट चेतावनी", gu: "જીવાત ચેતવણી" },
+  "disease outbreak alert": { en: "Disease Outbreak Alert", hi: "रोग प्रकोप चेतावनी", gu: "રોગચાળાની ચેતવણી" },
+  "expert review complete": { en: "Expert Review Complete", hi: "विशेषज्ञ समीक्षा पूर्ण", gu: "નિષ્ણાત સમીક્ષા પૂર્ણ" },
+  "expert review completed": { en: "Expert Review Complete", hi: "विशेषज्ञ समीक्षा पूर्ण", gu: "નિષ્ણાત સમીક્ષા પૂર્ણ" },
+  "specialist review completed": { en: "Specialist Review Completed", hi: "विशेषज्ञ समीक्षा पूर्ण", gu: "નિષ્ણાત સમીક્ષા પૂર્ણ" },
+};
+
+export function translateAlertTitle(title?: string | null, lang?: string): string {
+  if (!title) return "Alert";
+  const code = normalizeLangCode(lang);
+  const key = title.trim().toLowerCase();
+  return alertTitlesMap[key]?.[code] || title;
+}
+
