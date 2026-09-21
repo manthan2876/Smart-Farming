@@ -47,6 +47,10 @@ export type Prediction = {
     processed_path?: string;
   }[];
   follow_up?: Prediction;
+  schema_version?: string;
+  provenance?: Record<string, any>;
+  total_duration_ms?: number;
+  stages?: Record<string, any>;
 };
 
 export type Profile = {

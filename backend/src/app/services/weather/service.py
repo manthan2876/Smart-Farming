@@ -21,12 +21,18 @@ def fetch_weather(context: dict, config: dict | None = None) -> dict:
 
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
 
+    from datetime import datetime, timezone
+    now_iso = datetime.now(timezone.utc).isoformat()
+
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         data = response.json()
 
         if response.status_code == 200:
             context["weather"] = {
+                "provider": "OpenWeatherMap",
+                "timestamp": now_iso,
+                "is_degraded": False,
                 "temperature_celsius": data["main"]["temp"],
                 "feels_like_celsius": data["main"]["feels_like"],
                 "temp_min": data["main"]["temp_min"],
@@ -43,13 +49,22 @@ def fetch_weather(context: dict, config: dict | None = None) -> dict:
             context["status"]["weather"] = "completed"
         else:
             context["weather"] = {
+                "provider": "OpenWeatherMap",
+                "timestamp": now_iso,
+                "is_degraded": True,
                 "status": "failed",
                 "message": data.get("message", "Unknown error"),
             }
             context["status"]["weather"] = "failed"
 
     except Exception as exc:
-        context["weather"] = {"status": "error", "message": str(exc)}
+        context["weather"] = {
+            "provider": "OpenWeatherMap",
+            "timestamp": now_iso,
+            "is_degraded": True,
+            "status": "error",
+            "message": str(exc),
+        }
         context["status"]["weather"] = "failed"
         context["notes"].append(f"Weather fetch error: {exc}")
 

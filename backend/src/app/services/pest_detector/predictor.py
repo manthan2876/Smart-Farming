@@ -142,7 +142,10 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
         # Populate context["pest_classification"] details
         context["pest_classification"] = {
             "model_type": "classification",
+            "model_name": "YOLOv8 Pest Classifier",
             "model_used": model_path.name,
+            "version": "v1.0",
+            "available": True,
             "top_k": len(predictions),
             "all_probs": all_probs_dict,
         }

@@ -115,14 +115,19 @@ def predict_disease(context: dict, config: dict[str, Any]) -> dict:
     context["disease"]["label"] = label
     context["disease"]["confidence"] = confidence
     context["disease"]["all_probs"] = all_probs
+    context["disease"]["model_name"] = "EfficientNet-B2"
+    context["disease"]["model_version"] = "v1.0"
     context["status"]["disease_classification"] = "completed"
 
     # ── Low confidence note ────────────────────────────────────────────
     threshold = config["thresholds"].get("disease_confidence", 0.60)
     if confidence < threshold:
+        context["disease"]["is_uncertain"] = True
         context["notes"].append(
             f"Disease confidence ({confidence:.2f}) is low — "
             "treat this prediction as tentative."
         )
+    else:
+        context["disease"]["is_uncertain"] = False
 
     return context

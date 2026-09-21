@@ -26,6 +26,12 @@ class PredictionResponse(BaseModel):
     notes: list[str] | None = None
     status: dict[str, Any] | None = None
     error: str | None = None
+    stages: dict[str, Any] | None = None
+    schema_version: str | None = None
+    provenance: dict[str, Any] | None = None
+    total_duration_ms: int | None = None
     expert_review_data: dict[str, Any] | None = None
     historical_images: list[dict[str, str]] | None = None
     follow_up: dict[str, Any] | None = None
+
+    model_config = ConfigDict(extra="allow")

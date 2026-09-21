@@ -195,10 +195,27 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
         # Deterministic Guardrails
         try:
             validated = LLMRecommendation(**recommendation_data)
-            context["recommendation"] = validated.model_dump()
+            rec_dict = validated.model_dump()
+            rec_dict.update({
+                "provider": "HuggingFace / nscale",
+                "model": MODEL_ID,
+                "prompt_version": "v1.0",
+                "is_fallback": False,
+                "fallback_reason": None,
+                "safety_disclaimer": "DISCLAIMER: Always follow local agricultural guidelines, product labels, and environmental regulations when applying chemical treatments."
+            })
+            context["recommendation"] = rec_dict
+            context["status"]["recommendation"] = "completed"
+            print("[OK] Hugging Face recommendation generated successfully.")
+            return context
         except ValidationError as ve:
             print(f"[ERROR] LLM Validation Error: {ve}")
             context["recommendation"] = {
+                "provider": "rule_based_fallback",
+                "model": "internal_safety_rules",
+                "prompt_version": "v1.0",
+                "is_fallback": True,
+                "fallback_reason": f"LLM output failed safety validation: {ve}",
                 "error": "LLM output failed safety validation",
                 "details": str(ve),
                 "immediate_action": "Isolate affected plants if possible.",
@@ -210,19 +227,6 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
             context["status"]["recommendation"] = "completed"
             return context
 
-        disclaimer = "DISCLAIMER: Always follow local agricultural guidelines, product labels, and environmental regulations when applying chemical treatments."
-        
-        recommendation = {
-            "immediate_action": validated.immediate_action,
-            "treatment": validated.treatment,
-            "prevention": validated.prevention,
-            "monitoring": validated.monitoring,
-            "safety_disclaimer": disclaimer
-        }
-        context["recommendation"] = recommendation
-        context["status"]["recommendation"] = "completed"
-        print("[OK] Hugging Face recommendation generated successfully.")
-
     except Exception as exc:
         error_message = (
             f"Hugging Face recommendation error: {type(exc).__name__}: {exc}"
@@ -231,6 +235,11 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
         context["status"]["recommendation"] = "failed"
         context["notes"].append(error_message)
         context["recommendation"] = {
+            "provider": "rule_based_fallback",
+            "model": "internal_safety_rules",
+            "prompt_version": "v1.0",
+            "is_fallback": True,
+            "fallback_reason": str(exc),
             "error": str(exc),
             "immediate_action": "Isolate affected plants if possible.",
             "treatment": "Use an appropriate registered treatment for the diagnosed disease and follow product label strictly.",

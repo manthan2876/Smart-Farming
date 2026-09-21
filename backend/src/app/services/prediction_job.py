@@ -211,10 +211,63 @@ def run_prediction_job(
             "completed_at": datetime.now(timezone.utc).isoformat(),
         }
 
+        thresholds = _CONFIG.get("thresholds", {})
+        disease_threshold = thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD)
+        crop_threshold = thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD)
+
+        SCHEMA_VERSION = "2.0.0"
         public_result = _public_result(context)
         public_result["user"] = {"id": user_id}
         public_result["prediction_id"] = prediction_id
         public_result["total_duration_ms"] = total_duration_ms
+        public_result["schema_version"] = SCHEMA_VERSION
+        public_result["provenance"] = {
+            "schema_version": SCHEMA_VERSION,
+            "config": {
+                "version": "1.0.0",
+                "thresholds": {
+                    "crop_confidence": crop_threshold,
+                    "disease_confidence": disease_threshold,
+                },
+            },
+            "models": {
+                "crop": {
+                    "name": context.get("crop", {}).get("model_name", "EfficientNet-B0"),
+                    "version": context.get("crop", {}).get("model_version", "v1.0"),
+                    "model_file": context.get("crop", {}).get("model_file", "crop_identifier_v1.pth"),
+                },
+                "disease": {
+                    "name": context.get("disease", {}).get("model_name", "EfficientNet-B2"),
+                    "version": context.get("disease", {}).get("model_version", "v1.0"),
+                    "model_file": context.get("disease", {}).get("model_used") or "default",
+                },
+                "severity": {
+                    "name": "HSV Contour Heuristic",
+                    "version": "v1.0",
+                },
+                "pest": {
+                    "name": context.get("pest_classification", {}).get("model_name", "YOLO Pest Classifier"),
+                    "version": context.get("pest_classification", {}).get("version", "v1.0"),
+                    "model_file": context.get("pest_classification", {}).get("model_used") or "pest_classifier/weights/best.pt",
+                    "available": context.get("pest_classification", {}).get("available", context.get("status", {}).get("pest_detection") == "completed"),
+                },
+            },
+            "weather_provider": {
+                "provider": context.get("weather", {}).get("provider", "OpenWeatherMap"),
+                "status": context.get("weather", {}).get("status", "unknown"),
+                "is_degraded": context.get("weather", {}).get("is_degraded", False),
+                "timestamp": context.get("weather", {}).get("timestamp"),
+            },
+            "recommendation_provider": {
+                "provider": context.get("recommendation", {}).get("provider", "HuggingFace / nscale"),
+                "model": context.get("recommendation", {}).get("model", "Qwen/Qwen3-4B-Instruct-2507"),
+                "prompt_version": context.get("recommendation", {}).get("prompt_version", "v1.0"),
+                "is_fallback": context.get("recommendation", {}).get("is_fallback", False),
+                "fallback_reason": context.get("recommendation", {}).get("fallback_reason"),
+            },
+            "pipeline_duration_ms": total_duration_ms,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
 
         prediction.result = public_result
         prediction.raw_path = relative_image_path
@@ -228,9 +281,6 @@ def run_prediction_job(
 
         disease_confidence = prediction.disease_conf or 0.0
         crop_confidence = prediction.crop_conf or 0.0
-        thresholds = _CONFIG.get("thresholds", {})
-        disease_threshold = thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD)
-        crop_threshold = thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD)
 
         if disease_confidence < disease_threshold:
             ensure_expert_review(db, prediction, "Disease confidence is below the configured threshold.")

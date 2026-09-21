@@ -91,6 +91,57 @@ def run_pipeline(context: dict) -> dict:
         "completed_at": datetime.now(timezone.utc).isoformat(),
     }
 
+    SCHEMA_VERSION = "2.0.0"
+    context["schema_version"] = SCHEMA_VERSION
+    thresholds = _CONFIG.get("thresholds", {})
+    context["provenance"] = {
+        "schema_version": SCHEMA_VERSION,
+        "config": {
+            "version": "1.0.0",
+            "thresholds": {
+                "crop_confidence": thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD),
+                "disease_confidence": thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD),
+            },
+        },
+        "models": {
+            "crop": {
+                "name": context.get("crop", {}).get("model_name", "EfficientNet-B0"),
+                "version": context.get("crop", {}).get("model_version", "v1.0"),
+                "model_file": context.get("crop", {}).get("model_file", "crop_identifier_v1.pth"),
+            },
+            "disease": {
+                "name": context.get("disease", {}).get("model_name", "EfficientNet-B2"),
+                "version": context.get("disease", {}).get("model_version", "v1.0"),
+                "model_file": context.get("disease", {}).get("model_used") or "default",
+            },
+            "severity": {
+                "name": "HSV Contour Heuristic",
+                "version": "v1.0",
+            },
+            "pest": {
+                "name": context.get("pest_classification", {}).get("model_name", "YOLO Pest Classifier"),
+                "version": context.get("pest_classification", {}).get("version", "v1.0"),
+                "model_file": context.get("pest_classification", {}).get("model_used") or "pest_classifier/weights/best.pt",
+                "available": context.get("pest_classification", {}).get("available", context.get("status", {}).get("pest_detection") == "completed"),
+            },
+        },
+        "weather_provider": {
+            "provider": context.get("weather", {}).get("provider", "OpenWeatherMap"),
+            "status": context.get("weather", {}).get("status", "unknown"),
+            "is_degraded": context.get("weather", {}).get("is_degraded", False),
+            "timestamp": context.get("weather", {}).get("timestamp"),
+        },
+        "recommendation_provider": {
+            "provider": context.get("recommendation", {}).get("provider", "HuggingFace / nscale"),
+            "model": context.get("recommendation", {}).get("model", "Qwen/Qwen3-4B-Instruct-2507"),
+            "prompt_version": context.get("recommendation", {}).get("prompt_version", "v1.0"),
+            "is_fallback": context.get("recommendation", {}).get("is_fallback", False),
+            "fallback_reason": context.get("recommendation", {}).get("fallback_reason"),
+        },
+        "pipeline_duration_ms": total_duration_ms,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
     return context
 
 

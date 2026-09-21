@@ -96,15 +96,21 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
 
     context["crop"]["label"] = label
     context["crop"]["confidence"] = confidence
+    context["crop"]["model_name"] = "EfficientNet-B0"
+    context["crop"]["model_file"] = "crop_identifier_v1.pth"
+    context["crop"]["model_version"] = "v1.0"
     context["status"]["crop_identification"] = "completed"
 
     # ── Confidence floor check ─────────────────────────────────────────
     threshold = config["thresholds"].get("crop_confidence", 0.75)
     if confidence < threshold:
+        context["crop"]["is_uncertain"] = True
         context["notes"].append(
             f"Crop confidence ({confidence:.2f}) is below threshold ({threshold}). "
             "Consider uploading a clearer photo."
         )
+    else:
+        context["crop"]["is_uncertain"] = False
 
     return context
 
