@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../models/prediction.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -272,19 +273,22 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
   Widget build(BuildContext context) {
     final cropLabel = _detectedCrop?['label']?.toString();
     final cropConf = (_detectedCrop?['confidence'] as num?)?.toDouble();
+    final translatedCrop = cropLabel != null ? context.loc.crop(cropLabel) : '';
     final cropStr = cropLabel != null
-        ? '$cropLabel${cropConf != null ? ' (${(cropConf * 100).round()}%)' : ''}'
-        : (_cropDone ? 'Identified' : 'Scanning species...');
+        ? '$translatedCrop${cropConf != null ? ' (${(cropConf * 100).round()}%)' : ''}'
+        : (_cropDone ? context.tr('identifiedPrefix') : context.tr('scanningSpecies'));
 
     final diseaseLabel = _detectedDisease?['label']?.toString();
     final diseaseConf = (_detectedDisease?['confidence'] as num?)?.toDouble();
+    final translatedDisease = diseaseLabel != null ? context.loc.disease(diseaseLabel) : '';
     final diseaseStr = diseaseLabel != null
-        ? '$diseaseLabel${diseaseConf != null ? ' (${(diseaseConf * 100).round()}%)' : ''}'
-        : (_diseaseDone ? 'Identified' : 'Analyzing pathology...');
+        ? '$translatedDisease${diseaseConf != null ? ' (${(diseaseConf * 100).round()}%)' : ''}'
+        : (_diseaseDone ? context.tr('identifiedPrefix') : context.tr('analyzingPathology'));
 
-    final pestStr = _detectedPests.isNotEmpty
-        ? _detectedPests.join(', ')
-        : (_pestDone ? 'No Pests Detected' : 'Scanning for insects...');
+    final translatedPests = _detectedPests.map((p) => context.loc.pest(p)).toList();
+    final pestStr = translatedPests.isNotEmpty
+        ? translatedPests.join(', ')
+        : (_pestDone ? context.tr('noPestsDetected') : context.tr('scanningPests'));
 
     return DraggableScrollableSheet(
       expand: false,
@@ -323,14 +327,17 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 48),
                   const SizedBox(height: 12),
-                  const Text('Analysis Rejection / Failed', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xffc62828))),
+                  Text(
+                    context.tr('analysisFailed'),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xffc62828)),
+                  ),
                   const SizedBox(height: 6),
                   Text(_failure!, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xff5d513f), height: 1.4, fontSize: 13)),
                   const SizedBox(height: 18),
                   FilledButton.icon(
                     onPressed: widget.onRescan,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Try Again / Re-scan'),
+                    label: Text(context.tr('rescanBtn')),
                     style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
                   ),
                 ],
@@ -349,14 +356,14 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
                   const Icon(Icons.check_circle, size: 40, color: AppColors.primary),
                 const SizedBox(height: 12),
                 Text(
-                  _pipelineDone ? 'Diagnostic Pipeline Complete' : 'Running AI Pipeline',
+                  _pipelineDone ? context.tr('diagPipelineComplete') : context.tr('runningAiPipeline'),
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Analyzing your crop and generating diagnostics in real-time...',
+                Text(
+                  context.tr('analyzingCropRealtime'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                 ),
                 if (_liveMessage.isNotEmpty && !_pipelineDone) ...[
                   const SizedBox(height: 10),
@@ -386,15 +393,15 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
             // 5 stages
             _stageRow(
               number: 1,
-              title: 'Image Preprocessing',
+              title: context.tr('stagePreprocessing'),
               isUnlocked: true,
               isDone: _preprocDone,
               activeIndicator: null,
-              detail: const Text('Verified leaf presence and optical clarity.', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+              detail: Text(context.tr('stagePreprocDetail'), style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             ),
             _stageRow(
               number: 2,
-              title: 'Crop Identification',
+              title: context.tr('stageCrop'),
               isUnlocked: true,
               isDone: _cropDone,
               activeIndicator: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xff866b47))),
@@ -402,13 +409,13 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
                   ? Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(6)),
-                      child: Text('Detected: $cropStr', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('${context.tr('detectedPrefix')} $cropStr', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                     )
-                  : const Text('Scanning crop species...', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  : Text(context.tr('scanningSpecies'), style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             ),
             _stageRow(
               number: 3,
-              title: 'Disease Classification',
+              title: context.tr('stageDisease'),
               isUnlocked: _cropDone || _diseaseDone,
               isDone: _diseaseDone,
               activeIndicator: _cropDone ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xff866b47))) : null,
@@ -416,13 +423,13 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
                   ? Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(6)),
-                      child: Text('Identified: $diseaseStr', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('${context.tr('identifiedPrefix')} $diseaseStr', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                     )
-                  : Text(_cropDone ? 'Analyzing foliar pathology...' : 'Waiting for crop identification...', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  : Text(_cropDone ? context.tr('analyzingPathology') : context.tr('scanningSpecies'), style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             ),
             _stageRow(
               number: 4,
-              title: 'Pest & Parasite Detection',
+              title: context.tr('stagePest'),
               isUnlocked: _diseaseDone || _pestDone,
               isDone: _pestDone,
               activeIndicator: _diseaseDone ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xff866b47))) : null,
@@ -430,13 +437,13 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
                   ? Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(6)),
-                      child: Text('Result: $pestStr', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('${context.tr('resultPrefix')} $pestStr', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                     )
-                  : Text(_diseaseDone ? 'Scanning for insect symptoms...' : 'Waiting for disease classification...', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  : Text(_diseaseDone ? context.tr('scanningPests') : context.tr('analyzingPathology'), style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             ),
             _stageRow(
               number: 5,
-              title: 'Advisory Generation',
+              title: context.tr('stageAdvisory'),
               isUnlocked: _pestDone || _advisoryDone,
               isDone: _advisoryDone,
               activeIndicator: _pestDone ? const Icon(Icons.auto_awesome, size: 18, color: Color(0xff866b47)) : null,
@@ -444,9 +451,9 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
                   ? Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(6)),
-                      child: const Text('Advisory Ready.', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text(context.tr('advisoryReady'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                     )
-                  : Text(_pestDone ? 'Synthesizing expert recommendations...' : 'Waiting for pest detection...', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  : Text(_pestDone ? context.tr('synthesizingAdvice') : context.tr('scanningPests'), style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             ),
           ],
         ],
@@ -454,4 +461,3 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
     );
   }
 }
-

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -25,21 +26,21 @@ class AlertsScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'NOTIFICATIONS',
-                      style: TextStyle(
+                      context.tr('appTitle').toUpperCase(),
+                      style: const TextStyle(
                         letterSpacing: 2,
                         color: AppColors.textSubtle,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text('Farm Alerts', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(context.tr('alertsTitle'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -48,10 +49,10 @@ class AlertsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           if (alerts.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(30),
+            Padding(
+              padding: const EdgeInsets.all(30),
               child: Center(
-                child: Text('No alerts found. Everything is calm!', style: TextStyle(color: AppColors.textMuted)),
+                child: Text(context.tr('noAlerts'), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted)),
               ),
             )
           else
@@ -100,14 +101,7 @@ class AlertsScreen extends StatelessWidget {
                                 await onRefresh();
                               }
                             },
-                            child: const Text(
-                              'Mark as read',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
+                            child: Text('Mark as Read', style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
                           ),
                       ],
                     ),
@@ -120,4 +114,3 @@ class AlertsScreen extends StatelessWidget {
     );
   }
 }
-

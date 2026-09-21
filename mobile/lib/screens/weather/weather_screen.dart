@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../providers/locale_provider.dart';
 import '../../theme/app_theme.dart';
 
 class WeatherScreen extends StatelessWidget {
@@ -16,16 +17,17 @@ class WeatherScreen extends StatelessWidget {
     final temp = weather?['temperature_celsius'] != null ? '${weather!['temperature_celsius']}°C' : '--';
     final hum = weather?['humidity_percent'] != null ? '${weather!['humidity_percent']}%' : '--';
     final wind = weather?['wind_speed_mps'] != null ? '${weather!['wind_speed_mps']} km/h' : '--';
-    final cond = weather?['condition']?.toString() ?? 'Clear Sky';
+    final rawCond = weather?['condition']?.toString() ?? 'Clear Sky';
+    final cond = context.loc.weather(rawCond);
     final advisory = weather?['advisory']?.toString() ??
         'Weather conditions are favorable for current field operations. Maintain standard monitoring and watering cycles.';
 
     final content = ListView(
       padding: const EdgeInsets.all(22),
       children: [
-        const Text(
-          'LOCAL MICRO-CLIMATE',
-          style: TextStyle(
+        Text(
+          context.tr('appTitle').toUpperCase(),
+          style: const TextStyle(
             letterSpacing: 2,
             color: AppColors.textSubtle,
             fontSize: 10,
@@ -33,9 +35,9 @@ class WeatherScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Farm Weather Advisory',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+        Text(
+          context.tr('weatherTitle'),
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 22),
         Container(
@@ -63,8 +65,8 @@ class WeatherScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Humidity: $hum', style: const TextStyle(color: Colors.white70)),
-                  Text('Wind: $wind', style: const TextStyle(color: Colors.white70)),
+                  Text('${context.tr('humidity')}: $hum', style: const TextStyle(color: Colors.white70)),
+                  Text('${context.tr('windSpeed')}: $wind', style: const TextStyle(color: Colors.white70)),
                 ],
               ),
             ],
@@ -80,14 +82,14 @@ class WeatherScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.warning),
-                  SizedBox(width: 8),
+                  const Icon(Icons.info_outline, color: AppColors.warning),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Agronomic Warning & Advisory',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.warningText),
+                      context.tr('sprayConditions'),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.warningText),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -114,4 +116,3 @@ class WeatherScreen extends StatelessWidget {
     return content;
   }
 }
-

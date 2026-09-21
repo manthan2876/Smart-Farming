@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../models/prediction.dart';
+import '../../providers/locale_provider.dart';
 import '../../theme/app_theme.dart';
 
 class TodayScreen extends StatelessWidget {
@@ -57,7 +58,7 @@ class TodayScreen extends StatelessWidget {
         ),
       );
 
-  Widget _readingCard() {
+  Widget _readingCard(BuildContext context) {
     if (latestPrediction == null) {
       return Card(
         elevation: 0,
@@ -66,12 +67,13 @@ class TodayScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: AppColors.cardBorder),
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(24),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Center(
             child: Text(
-              'No scans yet. Capture a leaf photo to diagnose crop health.',
-              style: TextStyle(color: AppColors.textMuted),
+              context.tr('noRecentScans'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textMuted),
             ),
           ),
         ),
@@ -109,7 +111,7 @@ class TodayScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      latestPrediction!.crop.toUpperCase(),
+                      context.loc.crop(latestPrediction!.crop).toUpperCase(),
                       style: const TextStyle(
                         letterSpacing: 1.4,
                         color: AppColors.textSubtle,
@@ -119,30 +121,29 @@ class TodayScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      latestPrediction!.disease,
+                      context.loc.disease(latestPrediction!.disease),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
+                    Row(
                       children: [
                         Text(
-                          '${(latestPrediction!.confidence * 100).round()}% confidence',
+                          '${(latestPrediction!.confidence * 100).round()}% ${context.tr('aiConfidence')}',
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
-                          '${latestPrediction!.severity}% affected',
+                          '${latestPrediction!.severity}% ${context.tr('severity')}',
                           style: const TextStyle(
                             color: AppColors.warning,
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -160,7 +161,8 @@ class TodayScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final temp = weather?['temperature_celsius'] != null ? '${weather!['temperature_celsius']}°C' : '--';
-    final cond = weather?['condition']?.toString() ?? 'Telemetry ready';
+    final rawCond = weather?['condition']?.toString() ?? 'Telemetry ready';
+    final cond = context.loc.weather(rawCond);
     final hum = weather?['humidity_percent'] != null ? '${weather!['humidity_percent']}%' : '--';
     final farmLoc = userProfile['location']?.toString().toUpperCase() ?? 'MY FARM';
 
@@ -174,9 +176,9 @@ class TodayScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'FIELDNOTE · FARMER',
-                    style: TextStyle(
+                  Text(
+                    context.tr('appTitle').toUpperCase(),
+                    style: const TextStyle(
                       letterSpacing: 2,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -185,18 +187,27 @@ class TodayScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Welcome, ${userProfile['name'] ?? 'Farmer'}',
+                    '${context.tr('welcomeBack')} ${userProfile['name'] ?? context.tr('farmerBadge')}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
             ),
-            IconButton(
-              onPressed: onLogout,
-              icon: const Icon(Icons.logout, color: Colors.grey),
-              tooltip: 'Sign Out',
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => showLanguageSelectionSheet(context),
+                  icon: const Icon(Icons.language, color: AppColors.primary),
+                  tooltip: context.tr('selectLanguage'),
+                ),
+                IconButton(
+                  onPressed: onLogout,
+                  icon: const Icon(Icons.logout, color: Colors.grey),
+                  tooltip: 'Sign Out',
+                ),
+              ],
             ),
           ],
         ),
@@ -220,12 +231,12 @@ class TodayScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'A clear leaf photo\nstarts a better decision.',
-                style: TextStyle(
+              Text(
+                context.tr('startScanCtaSubtitle'),
+                style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 25,
-                  height: 1.1,
+                  fontSize: 22,
+                  height: 1.2,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -233,7 +244,7 @@ class TodayScreen extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onScanLeaf,
                 icon: const Icon(Icons.camera_alt_outlined),
-                label: const Text('Scan a leaf'),
+                label: Text(context.tr('startScanBtn')),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.accent,
                   foregroundColor: AppColors.textPrimary,
@@ -247,31 +258,33 @@ class TodayScreen extends StatelessWidget {
         Row(
           children: [
             _stat(temp, cond),
-            _stat(hum, 'humidity'),
-            _stat('$pendingCount', 'pending sync'),
+            _stat(hum, context.tr('humidity')),
+            _stat(
+              pendingCount > 0 ? '$pendingCount' : 'Sync',
+              pendingCount > 0 ? context.tr('syncingBadge') : 'Cloud sync',
+            ),
           ],
         ),
-        const SizedBox(height: 25),
+        const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Expanded(
-              child: Text(
-                'Latest reading',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-              ),
+            Text(
+              context.tr('recentDiagnoses'),
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
             ),
             TextButton(
               onPressed: onSeeTrail,
-              child: const Text('See trail'),
+              child: Text(
+                context.tr('viewAll'),
+                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
-        _readingCard(),
+        const SizedBox(height: 10),
+        _readingCard(context),
       ],
     );
   }
 }
-

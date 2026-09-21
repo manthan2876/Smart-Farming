@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -38,7 +39,7 @@ class _FarmScreenState extends State<FarmScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('cancel'))),
           FilledButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -58,7 +59,7 @@ class _FarmScreenState extends State<FarmScreen> {
                 }
               }
             },
-            child: const Text('Create'),
+            child: Text(context.tr('save')),
           ),
         ],
       ),
@@ -70,7 +71,7 @@ class _FarmScreenState extends State<FarmScreen> {
     final plots = (widget.farm?['plots'] as List?) ?? [];
     final name = widget.farm?['name']?.toString() ?? widget.userProfile['farm_name']?.toString() ?? 'My Family Farm';
     final location = widget.farm?['location']?.toString() ?? widget.userProfile['location']?.toString() ?? 'Anand, Gujarat';
-    final area = widget.farm?['area_acres'] != null ? '${widget.farm!['area_acres']} acres' : '5.0 acres';
+    final area = widget.farm?['area_acres'] != null ? '${widget.farm!['area_acres']} ${context.tr('acres')}' : '5.0 ${context.tr('acres')}';
 
     return RefreshIndicator(
       onRefresh: widget.onFarmUpdated,
@@ -78,9 +79,9 @@ class _FarmScreenState extends State<FarmScreen> {
       child: ListView(
         padding: const EdgeInsets.all(22),
         children: [
-          const Text(
-            'LAND & PLOTS',
-            style: TextStyle(
+          Text(
+            context.tr('appTitle').toUpperCase(),
+            style: const TextStyle(
               letterSpacing: 2,
               color: AppColors.textSubtle,
               fontSize: 10,
@@ -96,7 +97,7 @@ class _FarmScreenState extends State<FarmScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Farm Plots (${plots.length})',
+                  '${context.tr('plotsTitle')} (${plots.length})',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -117,8 +118,8 @@ class _FarmScreenState extends State<FarmScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.cardBorder),
               ),
-              child: const Center(
-                child: Text('No plots added yet. Click "Add Plot" above to create one.', style: TextStyle(color: AppColors.textMuted)),
+              child: Center(
+                child: Text(context.tr('noPlotsFound'), style: const TextStyle(color: AppColors.textMuted)),
               ),
             )
           else
@@ -137,7 +138,7 @@ class _FarmScreenState extends State<FarmScreen> {
                     child: Icon(Icons.grass, color: AppColors.primary),
                   ),
                   title: Text(p['name']?.toString() ?? 'Plot', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Crop: ${p['crop'] ?? 'Mixed'} · Area: ${p['area_acres'] ?? 1.0} acres'),
+                  subtitle: Text('${context.loc.crop(p['crop']?.toString())} · ${p['area_acres'] ?? 1.0} ${context.tr('acres')}'),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -157,4 +158,3 @@ class _FarmScreenState extends State<FarmScreen> {
     );
   }
 }
-

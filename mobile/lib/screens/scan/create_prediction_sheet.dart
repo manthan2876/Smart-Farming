@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/sync_service.dart';
 import '../../theme/app_theme.dart';
@@ -38,7 +39,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
   late final TextEditingController _locationCtrl;
   late final TextEditingController _latCtrl;
   late final TextEditingController _lonCtrl;
-  late String _language;
+  String? _language;
   bool _submitting = false;
   String? _error;
 
@@ -50,7 +51,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
     _locationCtrl = TextEditingController(text: widget.user['location']?.toString() ?? 'Anand, Gujarat');
     _latCtrl = TextEditingController(text: widget.user['latitude']?.toString() ?? '21.7645');
     _lonCtrl = TextEditingController(text: widget.user['longitude']?.toString() ?? '72.1519');
-    _language = widget.user['language']?.toString() ?? 'English';
+    _language = widget.user['language']?.toString();
   }
 
   @override
@@ -78,7 +79,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
 
   Future<void> _submit() async {
     if (_bytes == null) {
-      setState(() => _error = 'Please take or upload a leaf photo first.');
+      setState(() => _error = context.tr('photoRequiredError'));
       return;
     }
 
@@ -90,6 +91,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
     final loc = _locationCtrl.text.trim().isNotEmpty ? _locationCtrl.text.trim() : 'My Farm';
     final lat = double.tryParse(_latCtrl.text.trim()) ?? 21.7645;
     final lon = double.tryParse(_lonCtrl.text.trim()) ?? 72.1519;
+    final targetLang = _language ?? context.loc.currentLanguage;
 
     final connectivity = await Connectivity().checkConnectivity();
     if (connectivity.contains(ConnectivityResult.none)) {
@@ -97,12 +99,12 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
         _bytes!,
         _fileName,
         location: loc,
-        language: _language,
+        language: targetLang,
       );
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Offline: Leaf scan saved locally and queued for auto-sync.')),
+          SnackBar(content: Text(context.tr('offlineQueuedBanner'))),
         );
       }
       return;
@@ -113,7 +115,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
         _bytes!,
         _fileName,
         location: loc,
-        language: _language,
+        language: targetLang,
         plotId: _selectedPlotId,
         lat: lat,
         lon: lon,
@@ -137,6 +139,8 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
   @override
   Widget build(BuildContext context) {
     final plots = (widget.farm?['plots'] as List?) ?? [];
+    final currentAppLanguage = context.loc.currentLanguage;
+    final activeLanguage = _language ?? currentAppLanguage;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -158,13 +162,19 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('AI LEAF DIAGNOSTIC SCANNER', style: TextStyle(letterSpacing: 1.5, color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 4),
-                    Text('Diagnose Crop Leaf', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(
+                      context.tr('leafScannerHeader'),
+                      style: const TextStyle(letterSpacing: 1.5, color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.tr('diagnoseCropLeaf'),
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ),
@@ -172,9 +182,9 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Upload a clear photograph of an affected leaf to run OpenCV quality checks, species ID, pest detection, and AI recommendations.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.4),
+          Text(
+            context.tr('leafScanDesc'),
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.4),
           ),
           if (_error != null) ...[
             const SizedBox(height: 14),
@@ -209,9 +219,15 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                     child: Icon(Icons.add_a_photo_outlined, size: 32, color: AppColors.primary),
                   ),
                   const SizedBox(height: 14),
-                  const Text('Select Leaf Image', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text(
+                    context.tr('selectLeafImage'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 4),
-                  const Text('Supports JPEG, PNG, and WebP (max 10MB)', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  Text(
+                    context.tr('leafImageFormats'),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -219,7 +235,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                       ElevatedButton.icon(
                         onPressed: () => _pickImage(ImageSource.camera),
                         icon: const Icon(Icons.camera_alt),
-                        label: const Text('Take Photo'),
+                        label: Text(context.tr('takePhoto')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -230,7 +246,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                       OutlinedButton.icon(
                         onPressed: () => _pickImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo_library),
-                        label: const Text('Browse Files'),
+                        label: Text(context.tr('browseFiles')),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
@@ -259,7 +275,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                       child: OutlinedButton.icon(
                         onPressed: () => _pickImage(ImageSource.camera),
                         icon: const Icon(Icons.camera_alt, size: 16),
-                        label: const Text('Retake Photo'),
+                        label: Text(context.tr('retakePhoto')),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -267,7 +283,7 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                       child: OutlinedButton.icon(
                         onPressed: () => _pickImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo_library, size: 16),
-                        label: const Text('Gallery'),
+                        label: Text(context.tr('gallery')),
                       ),
                     ),
                   ],
@@ -287,17 +303,23 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.tune, color: AppColors.accent, size: 18),
-                    SizedBox(width: 8),
-                    Text('DIAGNOSTIC TELEMETRY', style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 12)),
+                    const Icon(Icons.tune, color: AppColors.accent, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      context.tr('diagnosticTelemetry'),
+                      style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 12),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
                 // Plot selector
-                const Text('Select Plot / Field (Optional)', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                Text(
+                  context.tr('selectPlot'),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<int?>(
                   initialValue: _selectedPlotId,
@@ -311,18 +333,28 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
                   ),
                   items: [
-                    const DropdownMenuItem<int?>(value: null, child: Text('-- No Plot (General Scan) --', style: TextStyle(color: Colors.white))),
-                    ...plots.map((p) => DropdownMenuItem<int?>(
-                          value: p['id'] as int?,
-                          child: Text('${p['name']} (${p['crop'] ?? 'Crop'})', style: const TextStyle(color: Colors.white)),
-                        )),
+                    DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text(context.tr('noPlotGeneralScan'), style: const TextStyle(color: Colors.white)),
+                    ),
+                    ...plots.map((p) {
+                      final rawCrop = p['crop']?.toString() ?? 'Crop';
+                      final cropName = context.loc.crop(rawCrop);
+                      return DropdownMenuItem<int?>(
+                        value: p['id'] as int?,
+                        child: Text('${p['name']} ($cropName)', style: const TextStyle(color: Colors.white)),
+                      );
+                    }),
                   ],
                   onChanged: (val) => setState(() => _selectedPlotId = val),
                 ),
                 const SizedBox(height: 14),
 
                 // Location field
-                const Text('Location Name', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                Text(
+                  context.tr('locationField'),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _locationCtrl,
@@ -345,7 +377,10 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Latitude', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(
+                            context.tr('latitude'),
+                            style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _latCtrl,
@@ -367,7 +402,10 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Longitude', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(
+                            context.tr('longitude'),
+                            style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _lonCtrl,
@@ -389,10 +427,13 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                 const SizedBox(height: 14),
 
                 // Language
-                const Text('Recommendation Language', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                Text(
+                  context.tr('recLanguage'),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  initialValue: _language,
+                  initialValue: activeLanguage,
                   dropdownColor: AppColors.primaryDark,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
@@ -423,7 +464,10 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
             icon: _submitting
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.auto_awesome),
-            label: Text(_submitting ? 'Running AI Pipeline...' : 'Run Diagnostic Analysis', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            label: Text(
+              _submitting ? context.tr('submitting') : context.tr('submitScan'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -435,4 +479,3 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
     );
   }
 }
-

@@ -40,6 +40,16 @@ class LocaleProvider extends ChangeNotifier {
   String disease(String? name) => DomainTranslations.translateDisease(name, _currentLanguage);
   String pest(String? name) => DomainTranslations.translatePest(name, _currentLanguage);
   String severity(String? bucket) => DomainTranslations.translateSeverityBucket(bucket, _currentLanguage);
+  String severityPercent(int percent) {
+    final bucket = percent < 25
+        ? 'low'
+        : percent < 55
+            ? 'moderate'
+            : percent < 80
+                ? 'high'
+                : 'critical';
+    return DomainTranslations.translateSeverityBucket(bucket, _currentLanguage);
+  }
   String weather(String? condition) => DomainTranslations.translateWeather(condition, _currentLanguage);
 }
 

@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../models/prediction.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/sync_service.dart';
 import '../../theme/app_theme.dart';
@@ -253,25 +254,25 @@ class _FarmerShellState extends State<FarmerShell> {
           onDestinationSelected: (index) => setState(() => _tab = index),
           backgroundColor: AppColors.cardBg,
           destinations: [
-            const NavigationDestination(
-              icon: Icon(Icons.wb_sunny_outlined),
-              selectedIcon: Icon(Icons.wb_sunny),
-              label: 'Today',
+            NavigationDestination(
+              icon: const Icon(Icons.wb_sunny_outlined),
+              selectedIcon: const Icon(Icons.wb_sunny),
+              label: context.tr('navToday'),
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.timeline_outlined),
-              selectedIcon: Icon(Icons.timeline),
-              label: 'History',
+            NavigationDestination(
+              icon: const Icon(Icons.timeline_outlined),
+              selectedIcon: const Icon(Icons.timeline),
+              label: context.tr('navHistory'),
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.cloud_outlined),
-              selectedIcon: Icon(Icons.cloud),
-              label: 'Weather',
+            NavigationDestination(
+              icon: const Icon(Icons.cloud_outlined),
+              selectedIcon: const Icon(Icons.cloud),
+              label: context.tr('navWeather'),
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.yard_outlined),
-              selectedIcon: Icon(Icons.yard),
-              label: 'Farm',
+            NavigationDestination(
+              icon: const Icon(Icons.yard_outlined),
+              selectedIcon: const Icon(Icons.yard),
+              label: context.tr('navFarm'),
             ),
             NavigationDestination(
               icon: Badge(
@@ -280,7 +281,7 @@ class _FarmerShellState extends State<FarmerShell> {
                 child: const Icon(Icons.notifications_outlined),
               ),
               selectedIcon: const Icon(Icons.notifications),
-              label: 'Alerts',
+              label: context.tr('navAlerts'),
             ),
           ],
         ),

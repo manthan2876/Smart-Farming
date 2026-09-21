@@ -317,12 +317,24 @@ class ApiService {
     }
   }
 
-  Future<String?> generateTTS(String text) async {
+  Future<Map<String, dynamic>> translatePrediction(int id, String language) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/predictions/$id/translate?target_language=$language'),
+      headers: _headers,
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 400) {
+      throw Exception(body['detail'] ?? 'Failed to translate prediction');
+    }
+    return body;
+  }
+
+  Future<String?> generateTTS(String text, {String language = 'en'}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/tts'),
         headers: {'Content-Type': 'application/json', ..._headers},
-        body: jsonEncode({'text': text}),
+        body: jsonEncode({'text': text, 'language': language}),
       );
       if (response.statusCode >= 400) return null;
       final body = jsonDecode(response.body) as Map<String, dynamic>;

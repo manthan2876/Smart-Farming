@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/prediction.dart';
+import '../../providers/locale_provider.dart';
 import '../../theme/app_theme.dart';
 
 class HistoryScreen extends StatelessWidget {
@@ -19,9 +20,9 @@ class HistoryScreen extends StatelessWidget {
     final listWidget = ListView(
       padding: const EdgeInsets.all(22),
       children: [
-        const Text(
-          'FIELD ARCHIVE',
-          style: TextStyle(
+        Text(
+          context.tr('appTitle').toUpperCase(),
+          style: const TextStyle(
             letterSpacing: 2,
             color: AppColors.textSubtle,
             fontSize: 10,
@@ -29,18 +30,18 @@ class HistoryScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Your scan trail',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+        Text(
+          context.tr('scanHistoryTitle'),
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 22),
         if (history.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(30),
+          Padding(
+            padding: const EdgeInsets.all(30),
             child: Center(
               child: Text(
-                'No historical scans recorded yet.',
-                style: TextStyle(color: AppColors.textMuted),
+                context.tr('emptyHistory'),
+                style: const TextStyle(color: AppColors.textMuted),
               ),
             ),
           )
@@ -61,8 +62,13 @@ class HistoryScreen extends StatelessWidget {
                   backgroundColor: AppColors.primaryLight,
                   child: Icon(Icons.eco_outlined, color: AppColors.primary),
                 ),
-                title: Text(item.disease, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('${item.crop}  ·  ${item.severity}% affected'),
+                title: Text(
+                  context.loc.disease(item.disease),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${context.loc.crop(item.crop)}  ·  ${item.severity}% ${context.tr('severity')}',
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -93,4 +99,3 @@ class HistoryScreen extends StatelessWidget {
     return listWidget;
   }
 }
-

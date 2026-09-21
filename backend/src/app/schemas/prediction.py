@@ -33,5 +33,6 @@ class PredictionResponse(BaseModel):
     expert_review_data: dict[str, Any] | None = None
     historical_images: list[dict[str, str]] | None = None
     follow_up: dict[str, Any] | None = None
+    translations: dict[str, Any] | None = None
 
     model_config = ConfigDict(extra="allow")

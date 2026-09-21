@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -16,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController(text: 'Anand, Gujarat');
-  String _language = 'English';
   bool _busy = false;
   String? _error;
 
@@ -29,16 +29,17 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(BuildContext context) async {
     setState(() {
       _busy = true;
       _error = null;
     });
     final api = ApiService();
+    final lang = context.loc.currentLanguage;
     try {
       if (_isRegister) {
         if (_nameCtrl.text.trim().isEmpty || _passwordCtrl.text.trim().isEmpty) {
-          throw Exception('Please fill in your name and password.');
+          throw Exception(context.tr('emptyCredentialsMsg'));
         }
         final res = await api.register(
           name: _nameCtrl.text.trim(),
@@ -46,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
           email: _identifierCtrl.text.contains('@') ? _identifierCtrl.text.trim() : null,
           phone: !_identifierCtrl.text.contains('@') ? _identifierCtrl.text.trim() : null,
           location: _locationCtrl.text.trim(),
-          language: _language,
+          language: lang,
           cropHistory: ['Tomato', 'Cotton'],
         );
         final tokens = res['tokens'] as Map<String, dynamic>;
@@ -54,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
         widget.onLoggedIn(tokens['access_token'].toString(), user);
       } else {
         if (_identifierCtrl.text.trim().isEmpty || _passwordCtrl.text.trim().isEmpty) {
-          throw Exception('Please enter username and password.');
+          throw Exception(context.tr('emptyCredentialsMsg'));
         }
         final res = await api.login(_identifierCtrl.text.trim(), _passwordCtrl.text.trim());
         final tokens = res['tokens'] as Map<String, dynamic>;
@@ -82,28 +83,46 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.eco, size: 36, color: Colors.white),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.eco, size: 34, color: Colors.white),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => showLanguageSelectionSheet(context),
+                        icon: const Icon(Icons.language, size: 18, color: AppColors.primary),
+                        label: Text(
+                          context.loc.currentLanguage,
+                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.primaryLight,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'Smart Farming',
-                    style: TextStyle(
+                  Text(
+                    context.tr('appTitle'),
+                    style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Farmer Portal · AI Crop Health & Management',
-                    style: TextStyle(
+                  Text(
+                    context.tr('loginSubtitle'),
+                    style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w500,
@@ -117,14 +136,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: AppColors.primaryBorder),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.shield_outlined, size: 18, color: AppColors.primary),
-                        SizedBox(width: 8),
+                        const Icon(Icons.shield_outlined, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Farmer-exclusive client. Experts & Admins must use the web dashboard.',
-                            style: TextStyle(
+                            context.tr('farmersOnlyNotice'),
+                            style: const TextStyle(
                               fontSize: 11,
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,
@@ -168,28 +187,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      initialValue: _language,
-                      decoration: const InputDecoration(
-                        labelText: 'Language',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.language),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'English', child: Text('English')),
-                        DropdownMenuItem(value: 'Gujarati', child: Text('ગુજરાતી (Gujarati)')),
-                        DropdownMenuItem(value: 'Hindi', child: Text('हिन्दी (Hindi)')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _language = val);
-                      },
-                    ),
-                    const SizedBox(height: 16),
                   ],
                   TextField(
                     controller: _identifierCtrl,
                     decoration: InputDecoration(
-                      labelText: _isRegister ? 'Email or Phone' : 'Email, Phone or Username',
+                      labelText: context.tr('identifierHint'),
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.account_circle_outlined),
                     ),
@@ -198,15 +200,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: _passwordCtrl,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock_outline),
+                    decoration: InputDecoration(
+                      labelText: context.tr('passwordHint'),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock_outline),
                     ),
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
-                    onPressed: _busy ? null : _submit,
+                    onPressed: _busy ? null : () => _submit(context),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -218,16 +220,21 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
                         : Text(
-                            _isRegister ? 'Register Farmer Account' : 'Sign In as Farmer',
+                            _isRegister ? 'Register' : context.tr('signInBtn'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () => setState(() => _isRegister = !_isRegister),
+                    onPressed: () => setState(() {
+                      _isRegister = !_isRegister;
+                      _error = null;
+                    }),
                     child: Text(
-                      _isRegister ? 'Already have an account? Sign In' : 'New farmer? Create Account',
-                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                      _isRegister
+                          ? 'Already have an account? Sign In'
+                          : "Don't have an account? Register as Farmer",
+                      style: const TextStyle(color: AppColors.primary),
                     ),
                   ),
                 ],
