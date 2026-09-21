@@ -114,39 +114,3 @@ export type FeedbackLog = {
   created_at: string;
 };
 
-export const demoPrediction: Prediction = {
-  prediction_id: 204,
-  request_id: "fieldnote-demo",
-  image: {
-    raw_path: "aphids_tomato.jpeg",
-    quality_score: 82,
-    leaf_detected: true,
-  },
-  crop: { label: "Tomato", confidence: 0.94 },
-  disease: {
-    label: "Aphids",
-    confidence: 0.88,
-    model_used: "tomato_disease_v1",
-  },
-  severity: { percent: 37, bucket: "moderate" },
-  pests: [{ label: "Aphid", confidence: 0.88 }],
-  weather: {
-    temperature_celsius: 27,
-    humidity_percent: 68,
-    condition: "Clear",
-    status: "success",
-  },
-  recommendation: {
-    immediate_action: "Isolate affected plants if possible.",
-    treatment: "Use a registered aphid treatment according to its label.",
-    prevention: "Inspect new growth every 48 hours.",
-    monitoring: "Check for aphid resurgence daily.",
-    safety_disclaimer: "DISCLAIMER: Always follow local agricultural guidelines.",
-  },
-  status: {
-    preprocessing: "completed",
-    disease_classification: "completed",
-    recommendation: "completed",
-  },
-  notes: [],
-};
