@@ -1,4 +1,6 @@
-export const hi = {
+import { en } from "./en";
+
+export const hi: Record<keyof typeof en, string> = {
   dashboard: "डैशबोर्ड",
   scan: "एआई नैदानिक स्कैन",
   history: "स्कैन इतिहास",
@@ -34,4 +36,35 @@ export const hi = {
   metric: "मीट्रिक (हेक्टेयर, °C, किमी/घंटा)",
   imperial: "इंपीरियल (एकड़, °F, मील/घंटा)",
   savedSuccess: "सेटिंग्स सफलतापूर्वक सहेजी गईं",
+  // Diagnostics & Advisory
+  immediateAction: "त्वरित कार्रवाई",
+  treatmentGuidance: "उपचार निर्देश",
+  preventionStrategy: "रोकथाम रणनीति",
+  monitoringPlan: "निगरानी योजना",
+  accurate: "हाँ, सटीक है",
+  incorrect: "नहीं, गलत है",
+  requestExpert: "मानव कृषि विशेषज्ञ जांच का अनुरोध करें",
+  severity: "गंभीरता",
+  confidence: "सटीकता",
+  crop: "फसल",
+  pests: "कीट",
+  weather: "मौसम",
+  humidity: "आर्द्रता",
+  wind: "हवा की गति",
+  noPests: "कोई कीट नहीं पाया गया",
+  translating: "सलाह का अनुवाद हो रहा है...",
+  listenAdvisory: "पूरी सलाह ऑडियो सुनें",
+  pauseAudio: "ऑडियो रोकें",
+  resumeAudio: "ऑडियो पुनः चलाएं",
+  viewAll: "सभी देखें",
+  location: "खेत का स्थान",
+  latitude: "अक्षांश (Latitude)",
+  longitude: "देशांतर (Longitude)",
+  recommendationLanguage: "सलाह की भाषा",
+  runDiagnostic: "नैदानिक विश्लेषण चलाएं",
+  runningAiPipeline: "AI पाइपलाइन चल रही है...",
+  details: "विवरण",
+  recentDiagnostics: "हाल के निदान",
+  noRecentScans: "कोई हालिया स्कैन नहीं मिला।",
+  startFirstScan: "पहला स्कैन शुरू करें",
 };

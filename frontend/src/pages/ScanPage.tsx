@@ -9,9 +9,10 @@ import imageCompression from 'browser-image-compression';
 import { get, set, update } from 'idb-keyval';
 import { Button, Card, Input } from "../components/ui";
 import { request } from "../api/client";
+import { translateCrop } from "../i18n/domain";
 
 export default function ScanPage() {
-  const { token, user } = useAuth();
+  const { token, user, language: appLanguage, t } = useAuth();
   const navigate = useNavigate();
 
   const [file, setFile] = useState<File | null>(null);
@@ -19,7 +20,7 @@ export default function ScanPage() {
   const [location, setLocation] = useState(user?.location || "Bhavnagar");
   const [lat, setLat] = useState(user?.latitude?.toString() || "21.7645");
   const [lon, setLon] = useState(user?.longitude?.toString() || "72.1519");
-  const [language, setLanguage] = useState("English");
+  const [language, setLanguage] = useState(user?.language || appLanguage || "English");
   const [loading, setLoading] = useState(false);
   const [plotId, setPlotId] = useState<number | undefined>(undefined);
   
@@ -176,7 +177,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             
             <div className="mt-7 space-y-5">
               <label className="block space-y-2" htmlFor="scan-plot">
-                <span className="block text-sm font-semibold text-white/75">Select Plot / Field (Optional)</span>
+                <span className="block text-sm font-semibold text-white/75">{t("farm")} / Plot (Optional)</span>
               <select 
                 id="scan-plot"
                 value={plotId || ""} 
@@ -185,12 +186,12 @@ const handleSubmit = async (e: React.FormEvent) => {
               >
                 <option value="">-- No Plot (General Scan) --</option>
                 {plots.map((p: any) => (
-                  <option key={p.id} value={p.id}>{p.name} {p.crop ? `(${p.crop})` : ""}</option>
+                  <option key={p.id} value={p.id}>{p.name} {p.crop ? `(${translateCrop(p.crop, appLanguage)})` : ""}</option>
                 ))}
               </select>
               </label>
 
-            <Input label="Location Name" leadingIcon={<MapPin size={16} />} 
+            <Input label={t("location")} leadingIcon={<MapPin size={16} />} 
                 type="text" 
                 value={location} 
                 onChange={(e) => setLocation(e.target.value)} 
@@ -199,12 +200,12 @@ const handleSubmit = async (e: React.FormEvent) => {
               />
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <Input label="Latitude" type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
-              <Input label="Longitude" type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
+              <Input label={t("latitude")} type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
+              <Input label={t("longitude")} type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
             </div>
 
             <label className="block space-y-2" htmlFor="scan-language">
-              <span className="flex items-center gap-2 text-sm font-semibold text-white/75"><Globe size={16} /> Recommendation Language</span>
+              <span className="flex items-center gap-2 text-sm font-semibold text-white/75"><Globe size={16} /> {t("recommendationLanguage")}</span>
               <select 
                 id="scan-language"
                 value={language} 
@@ -212,8 +213,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                 className="min-h-11 w-full rounded-sm border border-white/20 bg-white/10 px-3 text-sm text-white focus:border-farmer-300 focus:outline-none focus:ring-4 focus:ring-farmer-300/20"
               >
                 <option value="English">English</option>
-                <option value="Hindi">Hindi (à¤¹à¤¿à¤‚à¤¦à¥€)</option>
-                <option value="Gujarati">Gujarati (àª—à«àªœàª°àª¾àª¤à«€)</option>
+                <option value="Hindi">हिन्दी (Hindi)</option>
+                <option value="Gujarati">ગુજરાતી (Gujarati)</option>
               </select>
             </label>
 
@@ -225,10 +226,10 @@ const handleSubmit = async (e: React.FormEvent) => {
               {loading ? (
                 <>
                   <Loader2 size={18} className="spinner-icon animate-spin" />
-                  <span>Running AI Pipeline...</span>
+                  <span>{t("runningAiPipeline")}</span>
                 </>
               ) : (
-                <>Run Diagnostic Analysis</>
+                <>{t("runDiagnostic")}</>
               )}
             </Button>
             </div>

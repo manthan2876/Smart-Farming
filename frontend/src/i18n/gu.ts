@@ -1,4 +1,6 @@
-export const gu = {
+import { en } from "./en";
+
+export const gu: Record<keyof typeof en, string> = {
   dashboard: "ડેશબોર્ડ",
   scan: "AI નિદાન સ્કેન",
   history: "સ્કેન ઇતિહાસ",
@@ -34,4 +36,35 @@ export const gu = {
   metric: "મેટ્રિક (હેક્ટર, °C, કિમી/કલાક)",
   imperial: "ઇમ્પિરિયલ (એકર, °F, માઇલ/કલાક)",
   savedSuccess: "સેટિંગ્સ સફળતાપૂર્વક સચવાઈ",
+  // Diagnostics & Advisory
+  immediateAction: "ત્વરિત પગલાં",
+  treatmentGuidance: "સારવાર માર્ગદર્શન",
+  preventionStrategy: "નિવારણ વ્યૂહરચના",
+  monitoringPlan: "દેખરેખ યોજના",
+  accurate: "હા, સાચું છે",
+  incorrect: "ના, ખોટું છે",
+  requestExpert: "માનવ કૃષિ નિષ્ણાત તપાસ માટે વિનંતી કરો",
+  severity: "તીવ્રતા",
+  confidence: "ચોકસાઈ",
+  crop: "પાક",
+  pests: "જીવાત",
+  weather: "હવામાન",
+  humidity: "ભેજ",
+  wind: "પવનની ગતિ",
+  noPests: "કોઈ જીવાત જોવા મળી નથી",
+  translating: "ભલામણનું ભાષાંતર થઈ રહ્યું છે...",
+  listenAdvisory: "સંપૂર્ણ સલાહ ઓડિયો સાંભળો",
+  pauseAudio: "ઓડિયો થોભાવો",
+  resumeAudio: "ઓડિયો ફરી ચલાવો",
+  viewAll: "બધા જુઓ",
+  location: "ખેતરનું સ્થળ",
+  latitude: "અક્ષાંશ (Latitude)",
+  longitude: "રેખાંશ (Longitude)",
+  recommendationLanguage: "ભલામણ ભાષા",
+  runDiagnostic: "રોગ નિદાન વિશ્લેષણ શરૂ કરો",
+  runningAiPipeline: "AI પ્રક્રિયા ચાલી રહી છે...",
+  details: "વિગતો",
+  recentDiagnostics: "તાજેતરના નિદાન",
+  noRecentScans: "કોઈ તાજેતરના સ્કેન મળ્યા નથી.",
+  startFirstScan: "પ્રથમ સ્કેન શરૂ કરો",
 };

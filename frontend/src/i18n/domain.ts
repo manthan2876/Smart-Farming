@@ -82,3 +82,43 @@ export function translatePest(pest?: string | null, lang?: string): string {
   const key = pest.trim().toLowerCase();
   return pestsMap[key]?.[code] || pest;
 }
+
+// ── Severity ─────────────────────────────────────────────────────────────
+const severityMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
+  low: { en: "Low", hi: "कम", gu: "ઓછી" },
+  moderate: { en: "Moderate", hi: "मध्यम", gu: "મધ્યમ" },
+  high: { en: "High", hi: "उच्च", gu: "ઉચ્ચ" },
+  critical: { en: "Critical", hi: "गंभीर", gu: "ગંભીર" },
+  severe: { en: "Severe", hi: "गंभीर", gu: "ગંભીર" },
+};
+
+export function translateSeverityBucket(severity?: string | null, lang?: string): string {
+  if (!severity) return "N/A";
+  const code = normalizeLangCode(lang);
+  const key = severity.trim().toLowerCase();
+  return severityMap[key]?.[code] || severity;
+}
+
+// ── Weather ──────────────────────────────────────────────────────────────
+const weatherMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
+  clear: { en: "Clear Sky", hi: "साफ आसमान", gu: "સ્વચ્છ આકાશ" },
+  sunny: { en: "Sunny", hi: "धूप", gu: "તડકો" },
+  clouds: { en: "Cloudy", hi: "बादल छाए रहेंगे", gu: "વાદળછાયું" },
+  cloudy: { en: "Cloudy", hi: "बादल छाए रहेंगे", gu: "વાદળછાયું" },
+  rain: { en: "Rainy", hi: "बारिश", gu: "વરસાદ" },
+  rainy: { en: "Rainy", hi: "बारिश", gu: "વરસાદ" },
+  drizzle: { en: "Drizzle", hi: "बूंदाबांदी", gu: "ઝરમર વરસાદ" },
+  thunderstorm: { en: "Thunderstorm", hi: "आंधी-तूफान", gu: "ગાજવીજ સાથે વાવાઝોડું" },
+  windy: { en: "Windy", hi: "तेज हवा", gu: "પવનવાળું" },
+  fog: { en: "Foggy", hi: "कोहरा", gu: "ધુમ્મસ" },
+  haze: { en: "Haze", hi: "धुंध", gu: "ઝાકળ" },
+  mist: { en: "Mist", hi: "धुंध", gu: "ધુમ્મસ" },
+};
+
+export function translateWeather(weather?: string | null, lang?: string): string {
+  if (!weather) return "Clear";
+  const code = normalizeLangCode(lang);
+  const key = weather.trim().toLowerCase();
+  return weatherMap[key]?.[code] || weather;
+}
+

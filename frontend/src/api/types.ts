@@ -47,6 +47,7 @@ export type Prediction = {
     processed_path?: string;
   }[];
   follow_up?: Prediction;
+  translations?: Record<string, any>;
   schema_version?: string;
   provenance?: Record<string, any>;
   total_duration_ms?: number;

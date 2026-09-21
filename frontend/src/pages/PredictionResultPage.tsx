@@ -8,16 +8,19 @@ import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2 } from 
 import { useAuth } from "../context/AuthContext";
 import { getPrediction, requestExpertReview } from "../api/predictions";
 import { Badge, Button, Card, Input } from "../components/ui";
+import { translateCrop, translateDisease, translatePest, translateSeverityBucket, translateWeather } from "../i18n/domain";
 
 export default function PredictionResultPage() {
   const { id } = useParams<{ id: string }>();
-  const { token } = useAuth();
+  const { token, language, t } = useAuth();
+  const targetLang = language === "Hindi" ? "hi" : language === "Gujarati" ? "gu" : "en";
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [farmerNote, setFarmerNote] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -31,6 +34,19 @@ export default function PredictionResultPage() {
       return (latest.status as any)?.pipeline === "processing" || (latest.status as any)?.preprocessing === "processing" ? 2000 : false;
     },
   });
+
+  useEffect(() => {
+    if (targetLang !== "en" && prediction && id && token) {
+      const primary = prediction.follow_up || prediction;
+      if (!primary.translations?.[targetLang] && !isTranslating) {
+        setIsTranslating(true);
+        request(`/predictions/${id}/translate?target_language=${targetLang}`, { method: "POST" }, token)
+          .then(() => refetch())
+          .catch((e) => console.error("Auto translation error:", e))
+          .finally(() => setIsTranslating(false));
+      }
+    }
+  }, [targetLang, prediction, id, token, isTranslating, refetch]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0];
@@ -75,7 +91,7 @@ export default function PredictionResultPage() {
     }
     try {
       setIsLoadingAudio(true);
-      const response: any = await request("/tts", { method: "POST", body: JSON.stringify({ text }) }, token!);
+      const response: any = await request("/tts", { method: "POST", body: JSON.stringify({ text, language: targetLang }) }, token!);
       if (response?.audioContent) {
         const audio = new Audio(`data:audio/mp3;base64,${response.audioContent}`);
         audioRef.current = audio;
@@ -125,24 +141,32 @@ export default function PredictionResultPage() {
 
   const AudioButton = ({ text }: { text: string }) => <Button variant="secondary" size="sm" onClick={() => toggleAudio(text)} disabled={isLoadingAudio}>
     {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
-    {isLoadingAudio ? "Loading..." : isPlaying ? "Pause Audio" : "Listen to Advisory"}
+    {isLoadingAudio ? "Loading..." : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
   </Button>;
 
   const Advisory = ({ predictionData }: { predictionData: any }) => {
-    const recommendation = predictionData.recommendation || {};
+    const rawRec = predictionData.recommendation || {};
+    const translatedRec = targetLang !== "en" ? predictionData.translations?.[targetLang] : null;
+    const recommendation = translatedRec || rawRec;
     const expertGuidance = predictionData.expert_review_data?.farmer_guidance;
-    const isFallback = recommendation.is_fallback === true;
+    const isFallback = rawRec.is_fallback === true;
     const masked = (predictionData.status as any)?.mask_advisory === true || ((predictionData.status as any)?.expert_review === "pending" && !recommendation.immediate_action);
     if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">Advisory Masked (Review Required)</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">To ensure farm safety, AI treatment recommendations are held until an expert verifies the diagnosis.</p></Card>;
     if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl"><CheckCircle2 size={22} /> Specialist Verified Advisory Plan</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5"><h4 className="font-semibold text-farmer-800">Agronomist Guidance</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
     if (!Object.keys(recommendation).length) return null;
     const advisoryText = [recommendation.immediate_action, recommendation.action, recommendation.fertilizer, recommendation.treatment, recommendation.pesticide, recommendation.prevention, recommendation.prevention_tips, recommendation.monitoring, recommendation.irrigation].filter(Boolean).join(". ");
-    const sections = [["Immediate Action / Fertilizer", recommendation.immediate_action || recommendation.action || recommendation.fertilizer, "border-red-200 bg-red-50 text-danger"], ["Treatment Plan / Pesticide", recommendation.treatment || recommendation.pesticide, "border-farmer-200 bg-farmer-50 text-farmer-800"], ["Prevention", recommendation.prevention || recommendation.prevention_tips, "border-expert-100 bg-expert-50 text-expert-700"], ["Monitoring / Irrigation", recommendation.monitoring || recommendation.irrigation, "border-line bg-canvas text-muted"]];
+    const sections = [
+      [t("immediateAction"), recommendation.immediate_action || recommendation.action || recommendation.fertilizer, "border-red-200 bg-red-50 text-danger"],
+      [t("treatmentGuidance"), recommendation.treatment || recommendation.pesticide, "border-farmer-200 bg-farmer-50 text-farmer-800"],
+      [t("preventionStrategy"), recommendation.prevention || recommendation.prevention_tips, "border-expert-100 bg-expert-50 text-expert-700"],
+      [t("monitoringPlan"), recommendation.monitoring || recommendation.irrigation, "border-line bg-canvas text-muted"],
+    ];
     return <Card className="mt-6 bg-farmer-900 text-white" padding="lg">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-2xl text-farmer-200">{isFallback ? "Standard Agronomic Advisory" : "AI Advisory Plan"}</h3>
           {isFallback && <Badge tone="warning">Standard Rules (AI Fallback)</Badge>}
+          {isTranslating && <span className="inline-flex items-center gap-1.5 text-xs text-farmer-300"><Loader2 size={12} className="animate-spin" /> {t("translating")}</span>}
         </div>
         <AudioButton text={advisoryText} />
       </div>
@@ -172,22 +196,22 @@ export default function PredictionResultPage() {
         </div>
         <div className="mt-5 space-y-4">
           <div className="rounded-sm bg-canvas p-4">
-            <h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? "Pending Verification" : predictionData.disease?.label || "Unknown"}</h2>
-            <p className="mt-1 text-sm text-muted">Model Confidence: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
+            <h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? "Pending Verification" : translateDisease(predictionData.disease?.label, language)}</h2>
+            <p className="mt-1 text-sm text-muted">Model {t("confidence")}: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
               <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700"}`} style={{ width: `${diseaseConfidence}%` }} />
             </div>
             {isLowConfidence && <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">Tentative diagnosis: Model confidence is low. Field inspection or requesting specialist verification is recommended.</div>}
           </div>
           <div className="rounded-sm bg-canvas p-4">
-            <h2 className="font-display text-xl text-ink">Severity: {predictionData.severity?.bucket || "N/A"}</h2>
+            <h2 className="font-display text-xl text-ink">{t("severity")}: {translateSeverityBucket(predictionData.severity?.bucket, language)}</h2>
             <p className="mt-1 text-sm text-muted">Affected Area: {severityPercent}%</p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-admin-500" style={{ width: `${severityPercent}%` }} /></div>
           </div>
           <div className="text-xs uppercase tracking-wide text-muted space-y-1.5">
-            <p><strong>Crop:</strong> {predictionData.crop?.label || "N/A"} {predictionData.crop?.confidence && `(${(predictionData.crop.confidence * 100).toFixed(1)}%)`}</p>
-            <p><strong>Pests:</strong> {pestOffline ? <span className="italic text-amber-600">Offline / Detector Not Available</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => p.label).join(", ") : "None detected"}</p>
-            <p><strong>Weather Context:</strong> {weatherDegraded ? <span className="italic text-amber-600">Unavailable during scan</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% humidity (${predictionData.weather?.condition || "Clear"})`}</p>
+            <p><strong>{t("crop")}:</strong> {translateCrop(predictionData.crop?.label, language)} {predictionData.crop?.confidence && `(${(predictionData.crop.confidence * 100).toFixed(1)}%)`}</p>
+            <p><strong>{t("pests")}:</strong> {pestOffline ? <span className="italic text-amber-600">Offline / Detector Not Available</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => translatePest(p.label, language)).join(", ") : t("noPests")}</p>
+            <p><strong>{t("weather")} Context:</strong> {weatherDegraded ? <span className="italic text-amber-600">Unavailable during scan</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% ${t("humidity").toLowerCase()} (${translateWeather(predictionData.weather?.condition, language)})`}</p>
           </div>
           <div className="flex flex-wrap items-center justify-between border-t border-line pt-3 text-[11px] text-muted">
             <span>Model: {predictionData.provenance?.models?.disease?.name || predictionData.disease?.model_used || "EfficientNet-B2"}</span>
@@ -201,5 +225,5 @@ export default function PredictionResultPage() {
   };
 
   const historicalImages = primary.historical_images || [];
-  return <>{isUploading && <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4"><Loader2 size={52} className="animate-spin text-farmer-700" /><h2 className="mt-6 font-display text-2xl text-ink">Re-running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your follow-up photo.</p></div>}<motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}><div><Link to="/history" className="text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700">&larr; Back to History</Link><h1 className="mt-4 font-display text-3xl text-ink sm:text-4xl">Scan #{primary.prediction_id || id} Diagnosis {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}</h1></div>{isPendingReview && <Card className="border-admin-100 bg-admin-50"><h3 className="font-display text-xl text-admin-700">Additional Review Required</h3><p className="mt-2 text-sm leading-6 text-admin-700">This scan was routed to an agricultural specialist to verify the issue and ensure safe recommendations.</p></Card>}<Card className="flex flex-col gap-4 bg-canvas sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-display text-xl text-ink">Diagnostic Status</h3><div className="mt-3 flex flex-wrap gap-2"><Badge tone={status?.pipeline === "completed" ? "success" : "warning"}>Pipeline: {status?.pipeline || "Unknown"}</Badge><Badge tone={status?.expert_review === "completed" ? "info" : "neutral"}>Expert Review: {status?.expert_review || "Not Requested"}</Badge></div></div>{status?.expert_review === "not_requested" && !isFailed && <Button variant="secondary" onClick={handleRequestExpert}>Request Expert Review</Button>}</Card>{historicalImages.length > 0 && <Card><h3 className="font-display text-xl text-ink">Disease Progression Timeline</h3><div className="mt-5 flex gap-3 overflow-x-auto pb-2">{historicalImages.map((item: any, index: number) => <div className="min-w-40 rounded-sm border border-line bg-canvas p-4" key={index}><div className="text-xs text-muted">{new Date(item.created_at).toLocaleDateString()}</div><div className="mt-2 font-semibold text-ink">{item.disease}</div><div className={`mt-1 text-xs font-semibold ${item.severity_pct > 60 ? "text-danger" : "text-farmer-700"}`}>Severity: {item.severity_pct}%</div></div>)}<div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4"><div className="text-xs font-bold text-expert-700">Latest Scan</div><div className="mt-2 font-semibold text-ink">{primary.disease?.label || "Unknown"}</div><div className="mt-1 text-xs font-semibold text-farmer-700">Severity: {primary.severity?.percent || 0}%</div></div></div></Card>}{isProcessing ? <Card className="flex flex-col items-center text-center" padding="lg"><Loader2 size={48} className="animate-spin text-farmer-700" /><h2 className="mt-5 font-display text-2xl text-ink">Running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your crop image in the background. Please wait.</p></Card> : <PredictionBlock predictionData={primary} />}{original && <Card><details><summary className="cursor-pointer font-display text-xl text-ink">View Original Prediction Details</summary><div className="mt-6"><PredictionBlock predictionData={original} /></div></details></Card>}{!isPendingReview && !isFailed && <Card><h3 className="font-display text-xl text-ink">Farmer Field Feedback</h3>{feedbackSubmitted ? <div className="mt-4 rounded-sm bg-farmer-700 p-4 text-sm font-semibold text-white">Thank you for verifying this diagnosis. Your feedback helps improve the AI for everyone!</div> : <><p className="mt-2 text-sm leading-6 text-muted">Did this diagnosis match what you observed in the field? Help us improve the model by validating the result.</p><textarea className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" placeholder="Optional notes" value={farmerNote} onChange={(event) => setFarmerNote(event.target.value)} /><div className="mt-4 flex flex-col gap-3 sm:flex-row"><Button className="flex-1" onClick={() => submitFeedback(true)}>Yes, Accurate</Button><Button variant="secondary" className="flex-1 border-danger text-danger" onClick={() => submitFeedback(false)}>No, Incorrect</Button></div></>}</Card>}</motion.div></>;
+  return <>{isUploading && <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4"><Loader2 size={52} className="animate-spin text-farmer-700" /><h2 className="mt-6 font-display text-2xl text-ink">Re-running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your follow-up photo.</p></div>}<motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}><div><Link to="/history" className="text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700">&larr; Back to History</Link><h1 className="mt-4 font-display text-3xl text-ink sm:text-4xl">Scan #{primary.prediction_id || id} Diagnosis {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}</h1></div>{isPendingReview && <Card className="border-admin-100 bg-admin-50"><h3 className="font-display text-xl text-admin-700">Additional Review Required</h3><p className="mt-2 text-sm leading-6 text-admin-700">This scan was routed to an agricultural specialist to verify the issue and ensure safe recommendations.</p></Card>}<Card className="flex flex-col gap-4 bg-canvas sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-display text-xl text-ink">Diagnostic Status</h3><div className="mt-3 flex flex-wrap gap-2"><Badge tone={status?.pipeline === "completed" ? "success" : "warning"}>Pipeline: {status?.pipeline || "Unknown"}</Badge><Badge tone={status?.expert_review === "completed" ? "info" : "neutral"}>Expert Review: {status?.expert_review || "Not Requested"}</Badge></div></div>{status?.expert_review === "not_requested" && !isFailed && <Button variant="secondary" onClick={handleRequestExpert}>{t("requestExpert")}</Button>}</Card>{historicalImages.length > 0 && <Card><h3 className="font-display text-xl text-ink">Disease Progression Timeline</h3><div className="mt-5 flex gap-3 overflow-x-auto pb-2">{historicalImages.map((item: any, index: number) => <div className="min-w-40 rounded-sm border border-line bg-canvas p-4" key={index}><div className="text-xs text-muted">{new Date(item.created_at).toLocaleDateString()}</div><div className="mt-2 font-semibold text-ink">{translateDisease(item.disease, language)}</div><div className={`mt-1 text-xs font-semibold ${item.severity_pct > 60 ? "text-danger" : "text-farmer-700"}`}>{t("severity")}: {item.severity_pct}%</div></div>)}<div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4"><div className="text-xs font-bold text-expert-700">Latest Scan</div><div className="mt-2 font-semibold text-ink">{translateDisease(primary.disease?.label, language)}</div><div className="mt-1 text-xs font-semibold text-farmer-700">{t("severity")}: {primary.severity?.percent || 0}%</div></div></div></Card>}{isProcessing ? <Card className="flex flex-col items-center text-center" padding="lg"><Loader2 size={48} className="animate-spin text-farmer-700" /><h2 className="mt-5 font-display text-2xl text-ink">Running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your crop image in the background. Please wait.</p></Card> : <PredictionBlock predictionData={primary} />}{original && <Card><details><summary className="cursor-pointer font-display text-xl text-ink">View Original Prediction Details</summary><div className="mt-6"><PredictionBlock predictionData={original} /></div></details></Card>}{!isPendingReview && !isFailed && <Card><h3 className="font-display text-xl text-ink">Farmer Field Feedback</h3>{feedbackSubmitted ? <div className="mt-4 rounded-sm bg-farmer-700 p-4 text-sm font-semibold text-white">Thank you for verifying this diagnosis. Your feedback helps improve the AI for everyone!</div> : <><p className="mt-2 text-sm leading-6 text-muted">Did this diagnosis match what you observed in the field? Help us improve the model by validating the result.</p><textarea className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" placeholder="Optional notes" value={farmerNote} onChange={(event) => setFarmerNote(event.target.value)} /><div className="mt-4 flex flex-col gap-3 sm:flex-row"><Button className="flex-1" onClick={() => submitFeedback(true)}>{t("accurate")}</Button><Button variant="secondary" className="flex-1 border-danger text-danger" onClick={() => submitFeedback(false)}>{t("incorrect")}</Button></div></>}</Card>}</motion.div></>;
 }

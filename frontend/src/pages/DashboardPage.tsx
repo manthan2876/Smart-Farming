@@ -6,6 +6,7 @@ import { request } from "../api/client";
 import { motion } from "motion/react";
 import { Badge, Button, Card } from "../components/ui";
 import { formatTemperature, formatWindSpeed } from "../lib/format";
+import { translateCrop, translateDisease, translateSeverityBucket, translateWeather } from "../i18n/domain";
 
 interface ScanItem {
   id?: number;
@@ -24,7 +25,7 @@ interface WeatherData {
 }
 
 export default function DashboardPage() {
-  const { user, token, units, t } = useAuth();
+  const { user, token, units, language, t } = useAuth();
 
   const { data: history = [] } = useQuery<ScanItem[]>({
     queryKey: ["scanHistorySummary"],
@@ -67,17 +68,17 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between gap-4">
             <h3 className="flex items-center gap-2 font-display text-xl text-ink"><CloudSun className="text-expert-500" size={20} /> {t("liveWeather")}</h3>
-            <Link to="/weather" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900">Details <ArrowRight size={14} /></Link>
+            <Link to="/weather" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900">{t("details")} <ArrowRight size={14} /></Link>
           </div>
           {weather ? (
             <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
               <div>
                 <span className="font-display text-5xl text-ink">{formatTemperature(weather.temperature_celsius, units)}</span>
-                <span className="mt-1 block text-sm text-muted">{weather.condition || "Clear"}</span>
+                <span className="mt-1 block text-sm text-muted">{translateWeather(weather.condition, language)}</span>
               </div>
               <div className="flex gap-6 text-right">
-                <div><span className="block text-xs text-muted">Humidity</span><strong className="text-lg text-ink">{weather.humidity_percent ?? "--"}%</strong></div>
-                <div><span className="block text-xs text-muted">Wind</span><strong className="text-lg text-ink">{formatWindSpeed(weather.wind_speed_mps, units)}</strong></div>
+                <div><span className="block text-xs text-muted">{t("humidity")}</span><strong className="text-lg text-ink">{weather.humidity_percent ?? "--"}%</strong></div>
+                <div><span className="block text-xs text-muted">{t("wind")}</span><strong className="text-lg text-ink">{formatWindSpeed(weather.wind_speed_mps, units)}</strong></div>
               </div>
             </div>
           ) : (
@@ -93,15 +94,15 @@ export default function DashboardPage() {
           transition={{ delay: 0.2 }}
         >
           <div>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Activity className="text-farmer-700" size={20} /> Farm Status</h3>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Activity className="text-farmer-700" size={20} /> {t("farmStatus")}</h3>
           </div>
           <div className="mt-8 grid gap-5 sm:grid-cols-2">
             <div className="rounded-sm bg-canvas p-4">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-muted">Location</span>
+              <span className="block text-xs font-semibold uppercase tracking-wide text-muted">{t("location")}</span>
               <div className="mt-2 font-semibold text-ink">{user?.location || "Unknown"}</div>
             </div>
             <div className="rounded-sm bg-canvas p-4">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-muted">Crops</span>
+              <span className="block text-xs font-semibold uppercase tracking-wide text-muted">{t("crop")}</span>
               <div className="mt-2 font-semibold text-ink">{user?.crop_history?.length || 0} active</div>
             </div>
           </div>
@@ -115,26 +116,26 @@ export default function DashboardPage() {
         transition={{ delay: 0.3 }}
       >
         <div className="flex items-center justify-between gap-4">
-          <h3 className="font-display text-xl text-ink">Recent Diagnostics</h3>
-          <Link to="/history" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900">View All <ArrowRight size={14} /></Link>
+          <h3 className="font-display text-xl text-ink">{t("recentDiagnostics")}</h3>
+          <Link to="/history" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900">{t("viewAll")} <ArrowRight size={14} /></Link>
         </div>
         
         {history.length === 0 ? (
           <div className="mt-6 rounded-sm bg-canvas p-6 text-center">
-            <p className="text-sm text-muted">No recent scans found.</p>
-            <Link to="/scan" className="mt-4 inline-block"><Button variant="secondary" size="sm">Start First Scan</Button></Link>
+            <p className="text-sm text-muted">{t("noRecentScans")}</p>
+            <Link to="/scan" className="mt-4 inline-block"><Button variant="secondary" size="sm">{t("startFirstScan")}</Button></Link>
           </div>
         ) : (
           <div className="mt-5 space-y-3">
             {history.map((scan) => (
               <Link to={`/predictions/${scan.prediction_id}`} key={scan.prediction_id} className="flex flex-col gap-4 rounded-sm border border-line p-4 transition hover:-translate-y-0.5 hover:border-farmer-300 hover:shadow-soft sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <Badge>{scan.crop?.label || "Unknown Crop"}</Badge>
-                  <h4 className="mt-2 font-display text-lg text-ink">{scan.disease?.label || "Unknown Disease" || "Unknown"}</h4>
+                  <Badge>{translateCrop(scan.crop?.label, language)}</Badge>
+                  <h4 className="mt-2 font-display text-lg text-ink">{translateDisease(scan.disease?.label, language)}</h4>
                 </div>
                 <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                  <Badge tone={scan.severity?.bucket?.toLowerCase() === "severe" ? "danger" : scan.severity?.bucket?.toLowerCase() === "moderate" ? "warning" : "success"}>
-                    {scan.severity?.bucket || "N/A"}
+                  <Badge tone={scan.severity?.bucket?.toLowerCase() === "severe" || scan.severity?.bucket?.toLowerCase() === "critical" ? "danger" : scan.severity?.bucket?.toLowerCase() === "moderate" ? "warning" : "success"}>
+                    {translateSeverityBucket(scan.severity?.bucket, language)}
                   </Badge>
                   <span className="text-xs text-muted">
                     {scan.created_at ? new Date(scan.created_at).toLocaleDateString() : "Just now"}
