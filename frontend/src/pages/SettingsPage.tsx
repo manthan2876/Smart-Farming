@@ -18,13 +18,14 @@ import { motion } from "motion/react";
 import { Button, Card, Input } from "../components/ui";
 
 export default function SettingsPage() {
-  const { user, token } = useAuth();
+  const { user, token, language, units, setLanguage, setUnits, t } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === "admin";
   
   // General
-  const [lang, setLang] = useState("English");
-  const [units, setUnits] = useState("Metric");
+  const [lang, setLang] = useState(language);
+  const [unitPref, setUnitPref] = useState(units);
+  const [prefSaved, setPrefSaved] = useState(false);
 
   // Danger Zone
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -143,25 +144,39 @@ export default function SettingsPage() {
       </div>
 
       <Card>
-        <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Globe size={20} className="text-farmer-700" /> Language & Telemetry Preferences</h3>
+        <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Globe size={20} className="text-farmer-700" /> {t("languagePreferences")}</h3>
         <p className="mt-2 text-sm text-muted">System-wide defaults for localized UI and measurement units.</p>
         
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <label className="block space-y-2" htmlFor="settings-language">
-            <span className="block text-sm font-semibold text-ink">Interface Language</span>
-            <select id="settings-language" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={lang} onChange={e => setLang(e.target.value)}>
-              <option>English</option>
-              <option>Gujarati</option>
-              <option>Hindi</option>
+            <span className="block text-sm font-semibold text-ink">{t("interfaceLanguage")}</span>
+            <select id="settings-language" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={lang} onChange={e => setLang(e.target.value as any)}>
+              <option value="English">English</option>
+              <option value="Gujarati">ગુજરાતી (Gujarati)</option>
+              <option value="Hindi">हिन्दी (Hindi)</option>
             </select>
           </label>
           <label className="block space-y-2" htmlFor="settings-units">
-            <span className="block text-sm font-semibold text-ink">Units</span>
-            <select id="settings-units" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={units} onChange={e => setUnits(e.target.value)}>
-              <option>Metric (ha, °C)</option>
-              <option>Imperial (acres, °F)</option>
+            <span className="block text-sm font-semibold text-ink">{t("units")}</span>
+            <select id="settings-units" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={unitPref} onChange={e => setUnitPref(e.target.value as any)}>
+              <option value="Metric">{t("metric")}</option>
+              <option value="Imperial">{t("imperial")}</option>
             </select>
           </label>
+        </div>
+
+        <div className="mt-6 flex items-center gap-3">
+          <Button 
+            onClick={async () => {
+              await setLanguage(lang as any);
+              setUnits(unitPref as any);
+              setPrefSaved(true);
+              setTimeout(() => setPrefSaved(false), 3000);
+            }}
+          >
+            {t("save")}
+          </Button>
+          {prefSaved && <span className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700"><CheckCircle2 size={16} /> {t("savedSuccess")}</span>}
         </div>
       </Card>
 

@@ -1,10 +1,11 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { CloudSun, Activity, Scan, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
 import { motion } from "motion/react";
 import { Badge, Button, Card } from "../components/ui";
+import { formatTemperature, formatWindSpeed } from "../lib/format";
 
 interface ScanItem {
   id?: number;
@@ -23,7 +24,7 @@ interface WeatherData {
 }
 
 export default function DashboardPage() {
-  const { user, token } = useAuth();
+  const { user, token, units, t } = useAuth();
 
   const { data: history = [] } = useQuery<ScanItem[]>({
     queryKey: ["scanHistorySummary"],
@@ -44,13 +45,13 @@ export default function DashboardPage() {
     <div className="space-y-6 pb-12">
       <header className="flex flex-col gap-6 rounded-lg bg-farmer-900 p-7 text-white shadow-card sm:p-10 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="font-display text-3xl text-farmer-200 sm:text-4xl">Welcome back, {user?.name || "Farmer"}!</h1>
-          <p className="mt-3 max-w-2xl leading-7 text-white/70">Monitor your crop health, analyze leaf scans with AI, and track local weather conditions in real-time.</p>
+          <h1 className="font-display text-3xl text-farmer-200 sm:text-4xl">{t("greeting")}, {user?.name || "Farmer"}!</h1>
+          <p className="mt-3 max-w-2xl leading-7 text-white/70">{t("scanCtaCopy")}</p>
         </div>
         <div>
           <Link to="/scan">
             <Button className="bg-farmer-300 text-ink hover:bg-farmer-200">
-            <Scan size={18} /> Start New Scan
+            <Scan size={18} /> {t("scanCta")}
             </Button>
           </Link>
         </div>
@@ -65,18 +66,18 @@ export default function DashboardPage() {
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center justify-between gap-4">
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><CloudSun className="text-expert-500" size={20} /> Live Farm Weather</h3>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><CloudSun className="text-expert-500" size={20} /> {t("liveWeather")}</h3>
             <Link to="/weather" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900">Details <ArrowRight size={14} /></Link>
           </div>
           {weather ? (
             <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
               <div>
-                <span className="font-display text-5xl text-ink">{weather.temperature_celsius ?? "--"}°C</span>
+                <span className="font-display text-5xl text-ink">{formatTemperature(weather.temperature_celsius, units)}</span>
                 <span className="mt-1 block text-sm text-muted">{weather.condition || "Clear"}</span>
               </div>
               <div className="flex gap-6 text-right">
                 <div><span className="block text-xs text-muted">Humidity</span><strong className="text-lg text-ink">{weather.humidity_percent ?? "--"}%</strong></div>
-                <div><span className="block text-xs text-muted">Wind</span><strong className="text-lg text-ink">{weather.wind_speed_mps ?? "--"} km/h</strong></div>
+                <div><span className="block text-xs text-muted">Wind</span><strong className="text-lg text-ink">{formatWindSpeed(weather.wind_speed_mps, units)}</strong></div>
               </div>
             </div>
           ) : (

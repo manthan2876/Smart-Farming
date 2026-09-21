@@ -27,7 +27,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { user, token, signOut } = useAuth();
+  const { user, token, signOut, t } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === "admin" || user?.role === "expert";
   const isSuperAdmin = user?.role === "admin";
@@ -94,18 +94,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-line p-4 font-semibold">
-              <span>Notifications</span>
-              <button type="button" className="text-xs font-semibold text-farmer-700 hover:text-farmer-900" onClick={() => { alerts.filter(a => !a.is_read).forEach(a => markRead(a.id)); setShowNotifications(false); }}>Mark all read</button>
+              <span>{t("notifications")}</span>
+              <button type="button" className="text-xs font-semibold text-farmer-700 hover:text-farmer-900" onClick={() => { alerts.filter(a => !a.is_read).forEach(a => markRead(a.id)); setShowNotifications(false); }}>{t("markAllRead")}</button>
             </div>
             {alerts.length === 0 ? (
-              <div className="p-4 text-center text-sm text-muted">No new alerts</div>
+              <div className="p-4 text-center text-sm text-muted">{t("noNewAlerts")}</div>
             ) : (
               alerts.map((alert: any) => (
                 <div key={alert.id} className={`border-b border-line p-4 last:border-0 ${alert.is_read ? "bg-surface" : "bg-farmer-50"}`}>
                   <div className="mb-1 break-words text-sm font-bold text-ink">{alert.title}</div>
                   <div className="mb-2 break-words text-xs leading-5 text-muted">{alert.body}</div>
                   {!alert.is_read && (
-                    <button onClick={() => markRead(alert.id)} className="p-0 text-xs font-semibold text-farmer-700 hover:text-farmer-900">Mark as read</button>
+                    <button onClick={() => markRead(alert.id)} className="p-0 text-xs font-semibold text-farmer-700 hover:text-farmer-900">{t("markAsRead")}</button>
                   )}
                 </div>
               ))
@@ -116,54 +116,54 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-6">
           <div className="space-y-1">
-            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Core</span>
+            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">{t("core")}</span>
           <NavLink onClick={onClose} to="/dashboard" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
             <LayoutDashboard size={18} />
-            <span>Dashboard</span>
+            <span>{t("dashboard")}</span>
           </NavLink>
           <NavLink onClick={onClose} to="/scan" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
             <Scan size={18} />
-            <span>AI Diagnostic Scan</span>
+            <span>{t("scan")}</span>
           </NavLink>
           <NavLink onClick={onClose} to="/history" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
             <History size={18} />
-            <span>Scan History</span>
+            <span>{t("history")}</span>
           </NavLink>
           </div>
 
           <div className="space-y-1">
-            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Management</span>
+            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">{t("management")}</span>
           <NavLink onClick={onClose} to="/settings" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
             <Settings size={18} />
-            <span>System Settings</span>
+            <span>{t("settings")}</span>
           </NavLink>
           <NavLink onClick={onClose} to="/farm/settings" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
             <MapPin size={18} />
-            <span>Farm Settings</span>
+            <span>{t("farm")}</span>
           </NavLink>
           <NavLink onClick={onClose} to="/weather" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
             <CloudSun size={18} />
-            <span>Weather Advisory</span>
+            <span>{t("weatherAdvisory")}</span>
           </NavLink>
 
           </div>
 
         {isAdmin && (
           <div className="space-y-1">
-            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Administration</span>
+            <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">{t("administration")}</span>
             {isSuperAdmin && (
               <NavLink onClick={onClose} to="/admin/metrics" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-admin-100 text-admin-700" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                 <ShieldAlert size={18} />
-                <span>System Metrics</span>
+                <span>{t("systemMetrics")}</span>
               </NavLink>
             )}
             <NavLink onClick={onClose} to="/admin/feedback" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-admin-100 text-admin-700" : "text-muted hover:bg-canvas hover:text-ink"}`}>
               <FileText size={18} />
-              <span>Expert Feedback</span>
+              <span>{t("expertFeedback")}</span>
             </NavLink>
             <NavLink onClick={onClose} to="/admin/expert" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-admin-100 text-admin-700" : "text-muted hover:bg-canvas hover:text-ink"}`}>
               <ShieldAlert size={18} />
-              <span>Expert Triage Queue</span>
+              <span>{t("expertQueue")}</span>
             </NavLink>
           </div>
         )}
