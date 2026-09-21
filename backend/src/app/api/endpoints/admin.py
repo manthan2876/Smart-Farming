@@ -141,8 +141,8 @@ async def purge_blobs(is_admin: bool = Depends(require_admin_role), session: Ses
             valid_paths.add(img.processed_path.replace("\\", "/"))
             
     deleted_count = 0
-    # Walk both data/uploads and data/processed
-    directories_to_clean = ["data/uploads", "data/processed"]
+    # Walk image storage and the generated audio cache.
+    directories_to_clean = ["data/uploads", "data/processed", "data/audio"]
     
     for dir_path in directories_to_clean:
         folder = Path(dir_path)

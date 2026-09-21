@@ -21,7 +21,7 @@ async def purge_orphaned_blobs_cron(ctx):
                 valid_paths.add(img.processed_path.replace("\\", "/"))
                 
         deleted_count = 0
-        directories_to_clean = ["data/uploads", "data/processed"]
+        directories_to_clean = ["data/uploads", "data/processed", "data/audio"]
         
         for dir_path in directories_to_clean:
             folder = Path(dir_path)
@@ -44,7 +44,7 @@ import asyncio
 
 logger = logging.getLogger("smart-farming.arq")
 
-async def process_prediction_job(ctx, prediction_id: int, user_id: str, context: dict, relative_image_path: str, is_rescan: bool = False, parent_id: int = None):
+async def process_prediction_job(ctx, prediction_id: int, user_id: str, context: dict, relative_image_path: str, is_rescan: bool = False, parent_id: int | None = None):
     # run_background_pipeline is a synchronous function that blocks the thread.
     # To run it properly without blocking the ARQ event loop, we run it in a threadpool.
     logger.info(f"Starting ARQ job for prediction {prediction_id}")
