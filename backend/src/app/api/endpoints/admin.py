@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import sqlalchemy as sa
@@ -8,6 +8,8 @@ from app.models import DatasetCandidate, Farm, Image, Recommendation, Alert, Plo
 from app.api.deps import require_admin_role, require_expert_role
 from app.core import get_session
 from app.models import Prediction, Feedback, User
+from app.core.config import settings
+from app.core.paths import ensure_storage_directories, storage_relative_path
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -87,7 +89,7 @@ from pathlib import Path
 
 import yaml
 
-CONFIG_PATH = Path("config.yaml")
+CONFIG_PATH = settings.CONFIG_PATH
 
 class ConfigPayload(BaseModel):
     crop_routing_threshold: float
@@ -142,7 +144,8 @@ async def purge_blobs(is_admin: bool = Depends(require_admin_role), session: Ses
             
     deleted_count = 0
     # Walk image storage and the generated audio cache.
-    directories_to_clean = ["data/uploads", "data/processed", "data/audio"]
+    ensure_storage_directories()
+    directories_to_clean = [settings.UPLOAD_ROOT, settings.PROCESSED_ROOT, settings.AUDIO_ROOT]
     
     for dir_path in directories_to_clean:
         folder = Path(dir_path)
@@ -150,7 +153,7 @@ async def purge_blobs(is_admin: bool = Depends(require_admin_role), session: Ses
             for file in folder.glob("*"):
                 if file.is_file():
                     # The DB stores them as 'data/uploads/filename.jpg'
-                    rel_path = f"{dir_path}/{file.name}"
+                    rel_path = storage_relative_path(file)
                     if rel_path not in valid_paths:
                         file.unlink()
                         deleted_count += 1

@@ -12,6 +12,7 @@ from typing import Optional, Tuple
 
 import torch
 import timm
+from app.core.paths import resolve_backend_path
 
 # ---------------------------------------------------------------------------
 # Global in-memory model cache  {model_path_str: (model, classes)}
@@ -23,20 +24,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def resolve_project_path(rel_or_abs_path: str | Path) -> Path:
     p = Path(rel_or_abs_path)
-    if p.is_absolute() and p.exists():
-        return p
-    # Candidate search roots
-    roots = [
-        Path(__file__).resolve().parents[4],  # Smart-Farming root
-        Path(__file__).resolve().parents[3],  # backend
-        Path.cwd(),
-        Path.cwd().parent,
-    ]
-    for r in roots:
-        candidate = r / p
-        if candidate.exists():
-            return candidate
-    return roots[0] / p
+    return p if p.is_absolute() else resolve_backend_path(p)
 
 
 def load_efficientnet(

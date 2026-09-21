@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 import yaml
+from app.core.config import settings
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -20,17 +21,7 @@ from app.services.weather.service import fetch_weather
 from app.services.recommendation.service import generate_recommendation
 
 def _find_config_path() -> Path:
-    candidates = [
-        Path(__file__).resolve().parents[2] / "config.yaml",  # backend/config.yaml
-        Path(__file__).resolve().parents[3] / "config.yaml",  # Smart-Farming/config.yaml
-        Path(__file__).resolve().parent / "config.yaml",      # app/config.yaml
-        Path.cwd() / "config.yaml",
-        Path.cwd() / "backend" / "config.yaml",
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return Path(__file__).resolve().parents[2] / "config.yaml"
+    return settings.CONFIG_PATH
 
 
 _CONFIG_PATH = _find_config_path()

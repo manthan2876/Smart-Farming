@@ -19,14 +19,13 @@ from app.context import create_context
 from app.pipeline import run_pipeline
 from app.utils import prediction_event
 from app.crud import record_prediction, get_prediction
+from app.core.config import settings
+from app.core.paths import ensure_storage_directories, storage_relative_path
 
 router = APIRouter()
 
-_BACKEND_DIR = Path(__file__).resolve().parents[4]
-_UPLOAD_DIR = _BACKEND_DIR / "data" / "uploads"
-if not _UPLOAD_DIR.parent.exists():
-    _UPLOAD_DIR = Path.cwd() / "data" / "uploads"
-_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+_UPLOAD_DIR = settings.UPLOAD_ROOT
+_MAX_UPLOAD_BYTES = settings.UPLOAD_MAX_BYTES
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _LOGGER = logging.getLogger("smart-farming.api")
 
@@ -62,7 +61,15 @@ def run_background_pipeline(
         if context["status"]["preprocessing"] == "completed":
             # Initialize redis client for pub/sub status streaming
             import redis, json
-            redis_client = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+            from urllib.parse import urlparse
+            redis_url = urlparse(settings.REDIS_URL)
+            redis_client = redis.Redis(
+                host=redis_url.hostname or "127.0.0.1",
+                port=redis_url.port or 6379,
+                password=redis_url.password,
+                db=int(redis_url.path.lstrip("/") or 0),
+                decode_responses=True,
+            )
             
             def push_status(stage: str):
                 try:
@@ -194,7 +201,7 @@ async def predict(
     if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
         suffix = ".jpg" if file.content_type == "image/jpeg" else ".png"
     
-    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_storage_directories()
     
 
     try:
@@ -209,7 +216,7 @@ async def predict(
         hash_val = hashlib.sha256(image_bytes).hexdigest()
         filename = f"{hash_val}{suffix}"
         upload_path = _UPLOAD_DIR / filename
-        relative_image_path = f"data/uploads/{filename}"
+        relative_image_path = storage_relative_path(upload_path)
         
         # Check cache
         from app.models import Image, Prediction
@@ -371,10 +378,10 @@ async def rescan_prediction(
     if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
         suffix = ".jpg" if file.content_type == "image/jpeg" else ".png"
     
-    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_storage_directories()
     filename = f"{uuid.uuid4().hex}{suffix}"
     upload_path = _UPLOAD_DIR / filename
-    relative_image_path = f"data/uploads/{filename}"
+    relative_image_path = storage_relative_path(upload_path)
 
     size = 0
     try:
@@ -499,7 +506,15 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
     import redis.asyncio as aioredis
     import json
     
-    redis_client = aioredis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+    from urllib.parse import urlparse
+    redis_url = urlparse(settings.REDIS_URL)
+    redis_client = aioredis.Redis(
+        host=redis_url.hostname or "127.0.0.1",
+        port=redis_url.port or 6379,
+        password=redis_url.password,
+        db=int(redis_url.path.lstrip("/") or 0),
+        decode_responses=True,
+    )
     pubsub = redis_client.pubsub()
     channel = f"prediction_status:{prediction_id}"
     await pubsub.subscribe(channel)

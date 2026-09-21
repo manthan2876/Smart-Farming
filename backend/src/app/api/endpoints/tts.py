@@ -6,14 +6,16 @@ import hashlib
 import base64
 from pathlib import Path
 from app.api.deps import get_current_user
+from app.core.config import settings
+from app.core.paths import ensure_storage_directories
 
 router = APIRouter(tags=["tts"])
 
 class TTSRequest(BaseModel):
     text: str
 
-AUDIO_CACHE_DIR = Path("data/audio")
-AUDIO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+AUDIO_CACHE_DIR = settings.AUDIO_ROOT
+ensure_storage_directories()
 
 @router.post("/tts")
 async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_user)):
