@@ -77,6 +77,44 @@ async def _enqueue_prediction_job(
         raise HTTPException(status_code=503, detail="Unable to queue prediction for processing.")
     return str(job.job_id)
 
+
+def _validate_preprocessing(context: dict[str, Any], upload_path: Path, preprocessor: Any) -> dict[str, Any]:
+    context = preprocessor.process(context)
+    prep_status = context.get("status", {}).get("preprocessing")
+    if prep_status != "completed":
+        if upload_path.exists():
+            try:
+                upload_path.unlink()
+            except OSError:
+                pass
+
+        if prep_status == "failed_blur":
+            blur_score = context.get("image", {}).get("blur_score", 0.0)
+            detail = (
+                f"Image is too blurry (sharpness variance score: {blur_score:.1f}, "
+                f"required: >= {preprocessor.blur_threshold:.1f}). Please hold the camera steady and refocus on the leaf."
+            )
+        elif prep_status == "failed_lighting":
+            brightness = context.get("image", {}).get("brightness_score", 0.0)
+            detail = (
+                f"Image lighting is outside acceptable range (brightness: {brightness:.1f}, "
+                f"expected between {preprocessor.min_brightness:.1f} and {preprocessor.max_brightness:.1f}). "
+                f"Please retake the photo in balanced lighting."
+            )
+        elif prep_status == "failed_no_leaf":
+            detail = (
+                "No crop leaf could be detected in the image. Please center the leaf in the frame with good contrast."
+            )
+        else:
+            detail = "Image quality check failed. Please retake the photo."
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+        )
+    return context
+
+
 @router.post(
     "/predict",
     response_model=PredictionResponse,
@@ -149,14 +187,7 @@ async def predict(
         
         # Fast synchronous image quality check
         from app.pipeline import _PREPROCESSOR
-        context = _PREPROCESSOR.process(context)
-        if context["status"]["preprocessing"] != "completed":
-            if upload_path.exists():
-                upload_path.unlink()
-            raise HTTPException(
-                status_code=400,
-                detail="Image is too blurry or has poor lighting. Please retake the photo."
-            )
+        context = _validate_preprocessing(context, upload_path, _PREPROCESSOR)
             
         # Create placeholder prediction record
         placeholder_result = {
@@ -340,14 +371,7 @@ async def rescan_prediction(
         
         # Fast synchronous image quality check
         from app.pipeline import _PREPROCESSOR
-        context = _PREPROCESSOR.process(context)
-        if context["status"]["preprocessing"] != "completed":
-            if upload_path.exists():
-                upload_path.unlink()
-            raise HTTPException(
-                status_code=400,
-                detail="Image is too blurry or has poor lighting. Please retake the photo."
-            )
+        context = _validate_preprocessing(context, upload_path, _PREPROCESSOR)
             
         # Create placeholder prediction record
         placeholder_result = {

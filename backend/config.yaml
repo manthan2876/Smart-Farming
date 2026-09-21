@@ -29,7 +29,7 @@ models:
 thresholds:
   crop_confidence: 0.7
   disease_confidence: 0.7
-  blur_var_threshold: 100.0
+  blur_var_threshold: 50.0
   min_brightness: 40.0
   max_brightness: 240.0
 storage:

@@ -48,7 +48,7 @@ class OpenCVPreprocessorService:
         self.storage = config.get("storage", {})
 
         self.blur_threshold: float = float(
-            self.thresholds.get("blur_var_threshold", 100.0)
+            self.thresholds.get("blur_var_threshold", 50.0)
         )
         self.min_brightness: float = float(self.thresholds.get("min_brightness", 40.0))
         self.max_brightness: float = float(self.thresholds.get("max_brightness", 240.0))
@@ -72,21 +72,11 @@ class OpenCVPreprocessorService:
             context["status"]["preprocessing"] = "failed_read"
             return context
 
-        # ── A. Blur Detection ──────────────────────────────────────────
+        # ── A. Global Blur and Brightness Detection ────────────────────
         gray = cv2.cvtColor(input_im, cv2.COLOR_BGR2GRAY)
         blur_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
         context["image"]["blur_score"] = blur_score
 
-        if blur_score < self.blur_threshold:
-            print(
-                f"[Preprocessing] Image too blurry "
-                f"(score={blur_score:.2f} < threshold={self.blur_threshold})"
-            )
-            context["image"]["leaf_detected"] = False
-            context["status"]["preprocessing"] = "failed_blur"
-            return context
-
-        # ── B. Brightness Check ────────────────────────────────────────
         hsv = cv2.cvtColor(input_im, cv2.COLOR_BGR2HSV)
         brightness_score = float(np.mean(hsv[:, :, 2]))
         context["image"]["brightness_score"] = brightness_score
@@ -101,17 +91,35 @@ class OpenCVPreprocessorService:
             context["status"]["preprocessing"] = "failed_lighting"
             return context
 
-        # ── C & D. Leaf Detection + Isolation ─────────────────────────
-        # First try the smarter sharpness-aware isolator (notebook 03).
+        # ── B. Leaf Detection + Isolation ─────────────────────────────
+        # First try the sharpness-aware isolator.
         leaf_crop_bgr = isolate_subject_leaf(input_im)
 
         if leaf_crop_bgr is None or leaf_crop_bgr.size == 0:
-            # Fall back to the simpler watershed approach from opencv-pipeline.ipynb
+            # Fall back to watershed approach
             leaf_crop_bgr = self._watershed_leaf_detection(input_im, hsv)
 
         if leaf_crop_bgr is None:
             context["image"]["leaf_detected"] = False
             context["status"]["preprocessing"] = "failed_no_leaf"
+            return context
+
+        # ── C. Subject-Specific Sharpness Evaluation ──────────────────
+        # Many smartphone photos have a sharp leaf in foreground with shallow
+        # depth-of-field (bokeh) in the soil background, lowering global variance.
+        leaf_gray = cv2.cvtColor(leaf_crop_bgr, cv2.COLOR_BGR2GRAY)
+        leaf_blur_score = float(cv2.Laplacian(leaf_gray, cv2.CV_64F).var())
+        effective_blur = max(blur_score, leaf_blur_score)
+        context["image"]["blur_score"] = effective_blur
+        context["image"]["leaf_blur_score"] = leaf_blur_score
+
+        if effective_blur < self.blur_threshold:
+            print(
+                f"[Preprocessing] Image too blurry "
+                f"(global={blur_score:.2f}, leaf={leaf_blur_score:.2f} < threshold={self.blur_threshold})"
+            )
+            context["image"]["leaf_detected"] = False
+            context["status"]["preprocessing"] = "failed_blur"
             return context
 
         context["image"]["leaf_detected"] = True

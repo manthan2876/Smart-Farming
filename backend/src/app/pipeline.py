@@ -61,9 +61,12 @@ def run_pipeline(context: dict) -> dict:
         }
         res = fn(*args, **kwargs)
         duration_ms = round((time.perf_counter() - t0) * 1000)
-        context["status"][stage_name] = "completed"
+        curr_status = context["status"].get(stage_name, "processing")
+        if curr_status == "processing":
+            context["status"][stage_name] = "completed"
+        final_status = context["status"][stage_name]
         context["stages"][stage_name].update({
-            "status": "completed",
+            "status": final_status,
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "duration_ms": duration_ms,
         })
