@@ -7,17 +7,14 @@ from typing import Any
 
 from fastapi import APIRouter
 from app.core.limiter import limiter
-from fastapi import Depends, File, Form, HTTPException, UploadFile, status, BackgroundTasks, Request
+from fastapi import Depends, File, Form, HTTPException, UploadFile, status, Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core import get_session
-from app.utils.json_utils import _json_safe
 from app.schemas import PredictionResponse, ErrorResponse
 from app.context import create_context
-from app.pipeline import run_pipeline
-from app.utils import prediction_event
 from app.crud import record_prediction, get_prediction
 from app.core.config import settings
 from app.core.paths import ensure_storage_directories, storage_relative_path
@@ -31,142 +28,51 @@ _LOGGER = logging.getLogger("smart-farming.api")
 
 
 
-def run_background_pipeline(
-    prediction_id: int, 
+async def _enqueue_prediction_job(
+    request: Request,
+    session: Session,
+    prediction_id: int,
     user_id: str,
-    context: dict,
     relative_image_path: str,
+    location: str,
+    lat: float,
+    lon: float,
+    language: str,
     is_rescan: bool = False,
-    parent_id: int | None = None
-):
-    from app.core.session import _session_factory
-    from app.models import Prediction, ExpertReview
-    import logging
-    _BG_LOGGER = logging.getLogger("smart-farming.background")
-    
-    db = _session_factory()()
+    parent_id: int | None = None,
+    plot_id: int | None = None,
+) -> str:
+    from app.models import Prediction
+
+    arq_pool = getattr(request.app.state, "arq_pool", None)
+    if arq_pool is None:
+        raise HTTPException(status_code=503, detail="Prediction worker is unavailable. Start Redis and retry.")
+
     try:
-        # Run heavy pipeline incrementally
-        from app.pipeline import (
-            _PREPROCESSOR, predict_crop, route_to_disease_model, 
-            predict_disease, estimate_severity, predict_pest, 
-            fetch_weather, generate_recommendation, _CONFIG
+        job = await arq_pool.enqueue_job(
+            "process_prediction_job",
+            prediction_id=prediction_id,
+            user_id=user_id,
+            relative_image_path=relative_image_path,
+            location=location,
+            lat=lat,
+            lon=lon,
+            language=language,
+            is_rescan=is_rescan,
+            parent_id=parent_id,
+            plot_id=plot_id,
         )
-        from app.api.endpoints.predict import _public_result
-        import time
-        
-        # Execute pipeline in memory without saving partial results to the database
-        # (Preprocessing was already successfully completed synchronously)
-        
-        if context["status"]["preprocessing"] == "completed":
-            # Initialize redis client for pub/sub status streaming
-            import redis, json
-            from urllib.parse import urlparse
-            redis_url = urlparse(settings.REDIS_URL)
-            redis_client = redis.Redis(
-                host=redis_url.hostname or "127.0.0.1",
-                port=redis_url.port or 6379,
-                password=redis_url.password,
-                db=int(redis_url.path.lstrip("/") or 0),
-                decode_responses=True,
-            )
-            
-            def push_status(stage: str):
-                try:
-                    redis_client.publish(f"prediction_status:{prediction_id}", json.dumps({"stage": stage}))
-                except Exception:
-                    pass
-            
-            push_status("crop_identification")
-            # Step 2: Crop
-            context = predict_crop(context, _CONFIG)
-            context["status"]["crop_identification"] = "completed"
+    except Exception as exc:
+        prediction = session.get(Prediction, prediction_id)
+        if prediction is not None:
+            prediction.status = "failed"
+            prediction.result = {"prediction_id": prediction_id, "error": "Unable to queue prediction for processing."}
+            session.commit()
+        raise HTTPException(status_code=503, detail="Unable to queue prediction for processing.") from exc
 
-            # Step 3: Disease
-            context = route_to_disease_model(context, _CONFIG)
-            context = predict_disease(context, _CONFIG)
-            context = estimate_severity(context)
-            context["status"]["disease_classification"] = "completed"
-
-            # Step 4: Pest & Weather
-            context = predict_pest(context, _CONFIG)
-            context = fetch_weather(context, _CONFIG)
-            context["status"]["pest_detection"] = "completed"
-
-            # Step 5: Advisory
-            context = generate_recommendation(context, _CONFIG)
-
-        result = context
-        preprocessing_status = result.get("status", {}).get("preprocessing")
-        if preprocessing_status != "completed":
-            new_status = "failed"
-            public_result = {"error": "Image quality check failed; please upload a clearer leaf image."}
-        else:
-            if "image" in result and isinstance(result["image"], dict):
-                result["image"]["raw_path"] = relative_image_path
-            
-            if "status" in result:
-                result["status"]["pipeline"] = "completed"
-            
-            public_result = _public_result(result)
-            
-            # Determine status via comprehensive rules
-            d_conf = public_result.get("disease", {}).get("confidence", 0.0) or 0.0
-            c_conf = public_result.get("crop", {}).get("confidence", 0.0) or 0.0
-            sev_pct = public_result.get("severity", {}).get("percent", 0.0) or 0.0
-            pests = public_result.get("pests", [])
-            img_qual = public_result.get("image", {}).get("quality_score", 1.0) or 1.0
-            all_probs = public_result.get("disease", {}).get("all_probs", {})
-            advisory = public_result.get("recommendation", {})
-            
-            new_status = "ready"
-            res_status = dict(public_result.get("status", {}))
-            res_status["expert_review"] = "not_requested"
-            res_status["pipeline"] = "completed"
-            
-            public_result["status"] = res_status
-            
-        # Update Database Record
-        pred = db.query(Prediction).filter(Prediction.id == prediction_id).first()
-        if pred:
-            # Merge context user data
-            if not public_result.get("error"):
-                public_result["user"] = {"id": user_id}
-            
-            pred.result = public_result
-            pred.status = new_status
-            
-            if hasattr(pred, "image_path"):
-                pred.image_path = relative_image_path
-                
-            if new_status == "pending_expert_review":
-                if not pred.expert_review:
-                    pred.expert_review = ExpertReview(status="pending")
-                
-            db.commit()
-            push_status("completed")
-    except Exception as e:
-        _BG_LOGGER.error(f"Background ML Pipeline failed: {e}")
-        db.rollback()
-        pred = db.query(Prediction).filter(Prediction.id == prediction_id).first()
-        if pred:
-            pred.status = "failed"
-            pred.result = {"error": str(e)}
-            db.commit()
-            push_status("completed")
-    finally:
-        db.close()
-
-def _public_result(context: dict[str, Any]) -> dict[str, Any]:
-    public_context = {
-        key: value for key, value in context.items() if not key.startswith("_")
-    }
-    public_context["image"] = {
-        key: value
-        for key, value in public_context.get("image", {}).items()
-        if key != "leaf_crop"
-    }
-    return _json_safe(public_context)
+    if job is None:
+        raise HTTPException(status_code=503, detail="Unable to queue prediction for processing.")
+    return str(job.job_id)
 
 @router.post(
     "/predict",
@@ -181,7 +87,6 @@ def _public_result(context: dict[str, Any]) -> dict[str, Any]:
 @limiter.limit('20/minute')
 async def predict(
     request: Request,
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     location: str = Form(default="Unknown"),
     lat: float = Form(default=52.2297),
@@ -265,16 +170,21 @@ async def predict(
         new_pred.status = "processing"
         session.commit()
         
-        # Dispatch background task
-        background_tasks.add_task(
-            run_background_pipeline,
+        job_id = await _enqueue_prediction_job(
+            request=request,
+            session=session,
             prediction_id=new_pred.id,
             user_id=user_id,
-            context=context,
-            relative_image_path=relative_image_path
+            relative_image_path=relative_image_path,
+            location=location,
+            lat=lat,
+            lon=lon,
+            language=language,
+            plot_id=plot_id,
         )
         
         placeholder_result["prediction_id"] = new_pred.id
+        placeholder_result["job_id"] = job_id
         return placeholder_result
     finally:
         await file.close()
@@ -351,7 +261,6 @@ async def prediction_detail(
 async def rescan_prediction(
     request: Request,
     prediction_id: int,
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     plot_id: int | None = Form(default=None),
     user_id: str = Depends(get_current_user),
@@ -396,8 +305,11 @@ async def rescan_prediction(
                 destination.write(chunk)
 
         old_res = dict(old_prediction.result)
-        location = old_res.get("location", "Unknown")
-        language = old_res.get("language", "English")
+        old_user = old_res.get("user", {})
+        location = old_user.get("location", old_res.get("location", "Unknown"))
+        lat = old_user.get("lat", 52.2297)
+        lon = old_user.get("lon", 21.0122)
+        language = old_user.get("language", old_res.get("language", "English"))
         
         context = create_context(
             image_path=str(upload_path),
@@ -436,16 +348,23 @@ async def rescan_prediction(
         new_pred.status = "processing"
         session.commit()
         
-        # Dispatch background task
-        background_tasks.add_task(
-            run_background_pipeline,
+        job_id = await _enqueue_prediction_job(
+            request=request,
+            session=session,
             prediction_id=new_pred.id,
             user_id=user_id,
-            context=context,
-            relative_image_path=relative_image_path
+            relative_image_path=relative_image_path,
+            location=location,
+            lat=lat,
+            lon=lon,
+            language=language,
+            is_rescan=True,
+            parent_id=old_prediction.id,
+            plot_id=new_pred.plot_id,
         )
         
         placeholder_result["prediction_id"] = new_pred.id
+        placeholder_result["job_id"] = job_id
         return placeholder_result
     finally:
         await file.close()

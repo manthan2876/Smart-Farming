@@ -44,25 +44,39 @@ async def purge_orphaned_blobs_cron(ctx):
         db.close()
 
 import logging
-from app.api.endpoints.predict import run_background_pipeline
+from app.services.prediction_job import run_prediction_job
 import asyncio
 
 logger = logging.getLogger("smart-farming.arq")
 
-async def process_prediction_job(ctx, prediction_id: int, user_id: str, context: dict, relative_image_path: str, is_rescan: bool = False, parent_id: int | None = None):
-    # run_background_pipeline is a synchronous function that blocks the thread.
-    # To run it properly without blocking the ARQ event loop, we run it in a threadpool.
+async def process_prediction_job(
+    ctx,
+    prediction_id: int,
+    user_id: str,
+    relative_image_path: str,
+    location: str,
+    lat: float,
+    lon: float,
+    language: str,
+    is_rescan: bool = False,
+    parent_id: int | None = None,
+    plot_id: int | None = None,
+):
     logger.info(f"Starting ARQ job for prediction {prediction_id}")
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
         None, 
-        run_background_pipeline, 
+        run_prediction_job,
         prediction_id, 
         user_id, 
-        context, 
         relative_image_path, 
+        location,
+        lat,
+        lon,
+        language,
         is_rescan, 
-        parent_id
+        parent_id,
+        plot_id,
     )
     logger.info(f"Completed ARQ job for prediction {prediction_id}")
 
@@ -72,6 +86,9 @@ class WorkerSettings:
         cron(purge_orphaned_blobs_cron, hour=3, minute=0, day=6),  # Run at 3:00 AM every Sunday
         cron(evaluate_weather_risks, hour={6, 12, 18}, minute=0),  # Run 3x/day for proactive alerts
     ]
+    max_jobs = 2
+    job_timeout = 900
+    max_tries = 3
     redis_settings = RedisSettings(
         host=urlparse(settings.REDIS_URL).hostname or "127.0.0.1",
         port=urlparse(settings.REDIS_URL).port or 6379,

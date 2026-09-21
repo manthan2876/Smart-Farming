@@ -10,7 +10,8 @@ from app.utils.json_utils import _json_safe
 from app.api.endpoints.auth import router as auth_router
 from app.api.endpoints.profile import router as profile_router
 from app.api.endpoints.farm import router as farm_router
-from app.api.endpoints.predict import router as predict_router, _public_result
+from app.api.endpoints.predict import router as predict_router
+from app.services.prediction_job import _public_result
 from app.api.endpoints.history import router as history_router
 from app.api.endpoints.feedback import router as feedback_router
 from app.api.endpoints.crops import router as crops_router

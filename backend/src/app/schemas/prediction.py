@@ -12,6 +12,7 @@ class PredictionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     prediction_id: int | None = None
+    job_id: str | None = None
     request_id: str | None = None
     user: dict[str, Any] | None = None
     image: dict[str, Any] | None = None
