@@ -15,6 +15,7 @@ import WeatherPage from "./pages/WeatherPage";
 import CropsPage from "./pages/CropsPage";
 import AdminMetricsPage from "./pages/AdminMetricsPage";
 import AdminFeedbackPage from "./pages/AdminFeedbackPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 import ExpertQueuePage from "./pages/ExpertQueuePage";
 import ExpertReviewPage from "./pages/ExpertReviewPage";
 import AlertsPage from "./pages/AlertsPage";
@@ -22,6 +23,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
 import { AuthProvider } from "./context/AuthContext";
 import { getApiUrl } from "./api/client";
+
 
 function ExternalRedirect({ to }: { to: string }) {
   window.location.href = to;
@@ -55,6 +57,7 @@ export default function App() {
 
         {/* Admin Only Routes */}
         <Route path="/admin/metrics" element={<ProtectedRoute strictAdminOnly><AdminMetricsPage /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute strictAdminOnly><AdminUsersPage /></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute adminOnly><AdminFeedbackPage /></ProtectedRoute>} />
         <Route path="/admin/expert" element={<ProtectedRoute adminOnly><ExpertQueuePage /></ProtectedRoute>} />
         <Route path="/admin/expert/:id" element={<ProtectedRoute adminOnly><ExpertReviewPage /></ProtectedRoute>} />

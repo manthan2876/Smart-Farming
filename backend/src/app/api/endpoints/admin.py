@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import sqlalchemy as sa
@@ -187,21 +188,162 @@ async def get_metrics(
     }
 
 
+class AdminPurgeRequest(BaseModel):
+    confirmation: str
+
+
 @router.delete("/purge")
 async def purge_database(
-    user_id: str = Depends(require_admin_role), session: Session = Depends(get_session)
+    payload: AdminPurgeRequest,
+    dry_run: bool = False,
+    user_id: str = Depends(require_admin_role),
+    session: Session = Depends(get_session)
 ) -> dict[str, Any]:
+    if payload.confirmation != "PURGE_ALL_DATA":
+        raise HTTPException(
+            status_code=400,
+            detail="Confirmation token mismatch. Must provide 'PURGE_ALL_DATA' to confirm.",
+        )
+    if dry_run:
+        counts = {
+            "dataset_candidates": session.query(func.count(DatasetCandidate.id)).scalar() or 0,
+            "expert_reviews": session.query(func.count(ExpertReview.id)).scalar() or 0,
+            "recommendations": session.query(func.count(Recommendation.id)).scalar() or 0,
+            "feedback": session.query(func.count(Feedback.id)).scalar() or 0,
+            "alerts": session.query(func.count(Alert.id)).scalar() or 0,
+            "predictions": session.query(func.count(Prediction.id)).scalar() or 0,
+            "images": session.query(func.count(Image.id)).scalar() or 0,
+        }
+        return {"status": "dry_run", "message": "Records that would be purged", "counts": counts}
+
     session.execute(sa.delete(DatasetCandidate))
     session.execute(sa.delete(ExpertReview))
     session.execute(sa.delete(Recommendation))
     session.execute(sa.delete(Feedback))
     session.execute(sa.delete(Alert))
-    # Prediction has parent_id, so we can delete all
     session.execute(sa.delete(Prediction))
     session.execute(sa.delete(Image))
-    
     session.commit()
     return {"status": "success", "message": "Database wiped successfully."}
+
+
+
+# --------------------------------------------------------------------------------------
+# Admin User Management & Role Switching
+# --------------------------------------------------------------------------------------
+class AdminRoleUpdateRequest(BaseModel):
+    role: str
+    reason: str | None = None
+
+
+@router.get("/users")
+async def get_users_list(
+    skip: int = 0,
+    limit: int = 50,
+    role: str | None = None,
+    search: str | None = None,
+    caller_id: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """List registered users with role filtering, search, and pagination."""
+    query = session.query(User)
+    if role and role.strip() and role.strip().lower() != "all":
+        query = query.filter(User.role == role.strip().lower())
+    if search and search.strip():
+        term = f"%{search.strip().lower()}%"
+        query = query.filter(
+            sa.or_(
+                sa.func.lower(User.name).like(term),
+                sa.func.lower(User.email).like(term),
+                sa.func.lower(User.phone).like(term),
+            )
+        )
+    total = query.count()
+    users = query.order_by(User.created_at.desc()).offset(skip).limit(limit).all()
+    results = []
+    for u in users:
+        farm = u.farm
+        results.append({
+            "id": u.id,
+            "name": u.name,
+            "email": u.email,
+            "phone": u.phone,
+            "role": u.role,
+            "language": u.language,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "deleted_at": u.deleted_at.isoformat() if u.deleted_at else None,
+            "scan_count": len(u.predictions) if u.predictions else 0,
+            "farm_name": farm.name if farm else None,
+            "farm_location": farm.location if farm else None,
+        })
+    return {"total": total, "users": results}
+
+
+@router.patch("/users/{target_user_id}/role")
+async def update_user_role(
+    target_user_id: str,
+    payload: AdminRoleUpdateRequest,
+    caller_id: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """
+    Change user role (farmer, expert, admin).
+    Lockout Protections:
+    - An admin cannot demote their own account.
+    - An admin cannot demote the last remaining active administrator on the platform.
+    """
+    allowed_roles = {"farmer", "expert", "admin"}
+    new_role = payload.role.strip().lower()
+    if new_role not in allowed_roles:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid role '{payload.role}'. Allowed roles: {sorted(list(allowed_roles))}",
+        )
+
+    target_user = session.get(User, target_user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Target user not found.")
+
+    # Guard 1: Self-demotion lockout prevention
+    if target_user_id == caller_id and new_role != "admin":
+        raise HTTPException(
+            status_code=400,
+            detail="Security violation: Administrators cannot demote their own account.",
+        )
+
+    # Guard 2: Last admin demotion prevention
+    if target_user.role == "admin" and new_role != "admin":
+        active_admins = session.query(func.count(User.id)).filter(User.role == "admin").scalar() or 0
+        if active_admins <= 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Operation blocked: Cannot demote the last remaining administrator on the platform.",
+            )
+
+    old_role = target_user.role
+    target_user.role = new_role
+    session.add(target_user)
+    session.commit()
+    session.refresh(target_user)
+
+    return {
+        "status": "success",
+        "user_id": target_user_id,
+        "old_role": old_role,
+        "new_role": new_role,
+        "reason": payload.reason,
+    }
+
+
+# --------------------------------------------------------------------------------------
+# Proactive Weather Risk Manual Trigger
+# --------------------------------------------------------------------------------------
+@router.post("/weather-risk/trigger")
+async def trigger_weather_risk_job(caller_id: str = Depends(require_admin_role)) -> dict[str, Any]:
+    """Manually trigger proactive weather risk alert job for all farms."""
+    from app.services.weather.proactive import evaluate_weather_risks
+    result = await evaluate_weather_risks(None)
+    return {"status": "success", "result": result or "Completed"}
 
 
 @router.get("/feedback")
@@ -244,7 +386,7 @@ def get_config():
     if not CONFIG_PATH.exists():
         return {"crop_routing_threshold": 0.75, "expert_escalation_cutoff": 0.70}
     with CONFIG_PATH.open("r", encoding='utf-8') as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
         return {
             "crop_routing_threshold": data.get("thresholds", {}).get("crop_confidence", 0.75),
             "expert_escalation_cutoff": data.get("thresholds", {}).get("disease_confidence", 0.70)
@@ -256,11 +398,16 @@ async def read_config(is_admin: bool = Depends(require_admin_role)):
 
 @router.put("/config")
 async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require_admin_role)):
+    if payload.crop_routing_threshold < 0.05 or payload.crop_routing_threshold > 0.99:
+        raise HTTPException(status_code=422, detail="crop_routing_threshold must be between 0.05 and 0.99")
+    if payload.expert_escalation_cutoff < 0.05 or payload.expert_escalation_cutoff > 0.99:
+        raise HTTPException(status_code=422, detail="expert_escalation_cutoff must be between 0.05 and 0.99")
+
     if not CONFIG_PATH.exists():
         raise HTTPException(status_code=404, detail="config.yaml not found")
         
     with CONFIG_PATH.open("r", encoding='utf-8') as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
         
     if "thresholds" not in data:
         data["thresholds"] = {}
@@ -270,37 +417,57 @@ async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require
     
     with CONFIG_PATH.open("w", encoding='utf-8') as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+    # Hot-reload in-process
+    try:
+        from app import pipeline
+        pipeline.reload_config()
+    except Exception as exc:
+        pass
+
+    # Publish Redis pub/sub reload event for worker processes
+    try:
+        import redis
+        r = redis.from_url(settings.REDIS_URL)
+        r.publish("config_reload_events", json.dumps({"event": "reload_config", "updated_at": datetime.now(timezone.utc).isoformat()}))
+    except Exception:
+        pass
         
     return get_config()
 
 @router.delete("/blobs")
-async def purge_blobs(is_admin: bool = Depends(require_admin_role), session: Session = Depends(get_session)):
-    from app.models.image import Image
-    from pathlib import Path
-    
-    # Get all DB image paths
+async def purge_blobs(
+    dry_run: bool = False,
+    is_admin: bool = Depends(require_admin_role),
+    session: Session = Depends(get_session)
+):
+    from app.core.storage import get_storage
+    storage = get_storage()
     db_images = session.query(Image).all()
-    valid_paths = set()
+    valid_keys = set()
     for img in db_images:
         if img.raw_path:
-            valid_paths.add(img.raw_path.replace("\\", "/"))
+            valid_keys.add(img.raw_path.replace("\\", "/").strip("/"))
         if img.processed_path:
-            valid_paths.add(img.processed_path.replace("\\", "/"))
-            
+            valid_keys.add(img.processed_path.replace("\\", "/").strip("/"))
+
     deleted_count = 0
-    # Walk image storage and the generated audio cache.
-    ensure_storage_directories()
-    directories_to_clean = [settings.UPLOAD_ROOT, settings.PROCESSED_ROOT, settings.AUDIO_ROOT]
+    would_delete: list[str] = []
     
-    for dir_path in directories_to_clean:
-        folder = Path(dir_path)
-        if folder.exists():
-            for file in folder.glob("*"):
-                if file.is_file():
-                    # The DB stores them as 'data/uploads/filename.jpg'
-                    rel_path = storage_relative_path(file)
-                    if rel_path not in valid_paths:
-                        file.unlink()
+    for prefix in ["uploads", "processed", "audio"]:
+        all_keys = storage.list_objects(prefix)
+        for k in all_keys:
+            norm_k = k.replace("\\", "/").strip("/")
+            if norm_k.startswith("data/"):
+                norm_k = norm_k[5:]
+            if norm_k not in valid_keys and f"data/{norm_k}" not in valid_keys:
+                if dry_run:
+                    would_delete.append(norm_k)
+                else:
+                    if storage.delete(norm_k):
                         deleted_count += 1
-                        
+
+    if dry_run:
+        return {"status": "dry_run", "unreferenced_files_count": len(would_delete), "files": would_delete[:20]}
     return {"status": "success", "deleted_files": deleted_count}
+
