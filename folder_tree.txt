@@ -1,4 +1,4 @@
-Smart-Farming/ (98733 files)
+Smart-Farming/ (98937 files)
     ├── Datasets/ (98459 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
@@ -259,55 +259,84 @@ Smart-Farming/ (98733 files)
                 ├── Leaf Miner/ (58 files)
                 ├── Spider Mite/ (8 files)
         ├── testing_images/ (13 files)
-            ├── How To Keep Aphids Off Tomato Plants - 4 Simple Secrets To Success!.jfif
-            ├── aphids_tomato.jpeg
-            ├── army_worm_cotton.jpeg
-            ├── blury_leaf_1.jpg
-            ├── download.jpeg
-            ├── leaf_miner_tomato.jpeg
-            ├── low_brightness_leaf_1.jpg
-            ├── opencv_test_1.jpg
-            ├── opencv_test_2.jpg
-            ├── opencv_test_3.jpg
-            ├── opencv_test_4.jpg
-            ├── sample.jpg
-            ├── spider_mite_tomato.jpeg
-    ├── Docs/ (12 files)
+    ├── Docs/ (17 files)
+        ├── API_Specification.md
         ├── Ai-Powered-Smart-Farming.pptx
-        ├── dataset descriptions.txt
+        ├── Architecture.md
+        ├── Auth_Roles.md
+        ├── Config_Reference.md
+        ├── DATASET.md
+        ├── Deployment_Guide.md
+        ├── MLOps_Retraining.md
+        ├── Model_Cards.md
+        ├── UI_UX_Spec.md
+        ├── functionality-status.md
+        ├── mlops_training_guide.md
         ├── name change of folders.txt
-        ├── opencv_notes.txt
-        ├── research-notes_on_how-weather-affect-on-crop.txt
         ├── screen_specifications.md
-        ├── smart_farming_roadmap.md
         ├── smart_farming_roadmap.pdf
         ├── smart_farming_roadmap_stage10_plus.pdf
-        ├── smart_farming_roadmap_v2.md
         ├── smart_farming_roadmap_v2.pdf
-        ├── ui-redesign-plan-cursor.md
-    ├── backend/ (113 files)
+    ├── backend/ (154 files)
+        ├── alembic/ (2 files)
+            ├── versions/ (1 files)
+                ├── 0001_add_feedback_review_fields.py
+            ├── env.py
         ├── backend.egg-info/ (5 files)
             ├── PKG-INFO
             ├── SOURCES.txt
             ├── dependency_links.txt
             ├── requires.txt
             ├── top_level.txt
-        ├── data/ (9 files)
-            ├── processed/ (0 files)
-            ├── uploads/ (9 files)
-                ├── 1bc248003a12410c980999e45c0ad4df.jpg
-                ├── 2313e9854d044cd6bed81fd34c01abab.jpg
-                ├── 2525c3db29b044a390cf87ed7b2e8a55.jpg
-                ├── 382dd590c61447a885cc8d1dd76bba1b.jpg
-                ├── 5a21c5683d54413ba06cee2417aea79e.jpg
-                ├── 6a30584caac94157bf43ed9c7f19ed81.jpg
-                ├── bd44b62f58a440c1b646a1c0fde6cf4f.jpg
-                ├── f2cd1b2fc93a4c23b7e5b3ce6f25bc35.jpg
-                ├── fcae3399c41e40829dec9e75c8c0c1df.jpeg
-        ├── src/ (85 files)
-            ├── app/ (80 files)
-                ├── api/ (17 files)
-                    ├── endpoints/ (15 files)
+        ├── data/ (38 files)
+            ├── audio/ (14 files)
+                ├── 170a095cd899f181062ce212e3d5b2a306a7903a3e71ba89f0861c623ee55c36.mp3
+                ├── 3d8eaa586e9a805ddcddfae6347d5a98dd3e9dd3ee88752da2958f2602d2c4b2.mp3
+                ├── 63441f821ad7efa86bbbcddf126a63e612addeeac3daf1376d3d4c76d49bf469.mp3
+                ├── 64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c.mp3
+                ├── 69834c587a20fce812b20624c29da37dd0691a0a7c748249c98d4ecfd17b3d1f.mp3
+                ├── 79f950b7f156a0861c15dd123641d4690d1dcb5dbf7ab94419d64aeb0df0dac9.mp3
+                ├── 9b0f51e61cf22139dbd92d03063938467e38338745033e8cb2b058751e414384.mp3
+                ├── 9d95c400e679fff3048eb8928e71c4f78a4565c750b22afa4de93cdc90fdf36f.mp3
+                ├── ac3a871d3f9883d9c493185a0b7adf5f3034b17e590b1bc17c257d9451215cac.mp3
+                ├── bade058f0fe3aa03fe463348c098b7fa897df64181d4f9a0f7d85a2166a0518a.mp3
+                ├── bfae5e39d9c5d7bdce4480f1fbb2ffce02d1ec6d70c842948d4713c54ecf2364.mp3
+                ├── c095de96bcdab969f6dbc7623668c83b478e85fb098f3f6891496b98be036692.mp3
+                ├── c1ca37f9bbdd2e35439f3ab472d9587fd5617d49c57c2a0eee96d33d12c6ac1d.mp3
+                ├── e9f7c8f3ea9223c0b124873606ea8a1c7ee19dd27788817998260ab46ae48511.mp3
+            ├── processed/ (13 files)
+                ├── 10c43bdcaddd55de759b651a0e48f56e6d4c8679759fd713f28f1572d71cbd71.jpg
+                ├── 3502b04f19678c579e45c1fa860264abfeec6d6a9de90f18859fab41b3a29a0f.png
+                ├── 4f2c8630e07e3812339c73c1d90bece2bb9fd204ba826c3ef7286eeb84260a5f.jpg
+                ├── 94c3346826b90a3cd0489058c0e9a4a50d296ecf89ce9051e2f4965cf431f391.jpg
+                ├── aphids_tomato.jpeg
+                ├── b909f7e0283f32b8180f058581781e9cad022947a6b35d7db15dc3b7377841d6.jpg
+                ├── bac29c0b95f3f0432b444cc288dd9fd0cb5a239fa4dd995303773a928b9079fb.jpg
+                ├── be6a8ac2c7ebd3108735ed20751238d167a7aa91f88a10eaff5a34bfaadc4712.jpg
+                ├── d1919df9fbe64f1c3bf7082dc6e34bb542c506ae1737635e7c1c54d16622433f.jpg
+                ├── f0c5cf8cd2b5cd77acf705d11d41eec97a42a3f31a4636fdeafa40bb053c69d7.jpg
+                ├── f1225dce8303e4a10397a7713a4b93528ade28edc9b358873db9061ba2317282.jpg
+                ├── f845d7dc09b62d643135fc411f844387d173e488ce40c587179e95424054d4db.jpg
+                ├── media_1789974766831.jpg
+            ├── uploads/ (11 files)
+                ├── 10c43bdcaddd55de759b651a0e48f56e6d4c8679759fd713f28f1572d71cbd71.jpg
+                ├── 3502b04f19678c579e45c1fa860264abfeec6d6a9de90f18859fab41b3a29a0f.png
+                ├── 4f2c8630e07e3812339c73c1d90bece2bb9fd204ba826c3ef7286eeb84260a5f.jpg
+                ├── 94c3346826b90a3cd0489058c0e9a4a50d296ecf89ce9051e2f4965cf431f391.jpg
+                ├── b909f7e0283f32b8180f058581781e9cad022947a6b35d7db15dc3b7377841d6.jpg
+                ├── bac29c0b95f3f0432b444cc288dd9fd0cb5a239fa4dd995303773a928b9079fb.jpg
+                ├── be6a8ac2c7ebd3108735ed20751238d167a7aa91f88a10eaff5a34bfaadc4712.jpg
+                ├── d1919df9fbe64f1c3bf7082dc6e34bb542c506ae1737635e7c1c54d16622433f.jpg
+                ├── f0c5cf8cd2b5cd77acf705d11d41eec97a42a3f31a4636fdeafa40bb053c69d7.jpg
+                ├── f1225dce8303e4a10397a7713a4b93528ade28edc9b358873db9061ba2317282.jpg
+                ├── f845d7dc09b62d643135fc411f844387d173e488ce40c587179e95424054d4db.jpg
+        ├── scripts/ (2 files)
+            ├── migrate_to_s3.py
+            ├── train_eval.py
+        ├── src/ (90 files)
+            ├── app/ (90 files)
+                ├── api/ (19 files)
+                    ├── endpoints/ (17 files)
                         ├── __init__.py
                         ├── admin.py
                         ├── alerts.py
@@ -319,24 +348,29 @@ Smart-Farming/ (98733 files)
                         ├── health.py
                         ├── history.py
                         ├── mlops.py
+                        ├── model_registry.py
                         ├── predict.py
                         ├── profile.py
+                        ├── translation.py
                         ├── tts.py
                         ├── weather.py
                     ├── __init__.py
                     ├── deps.py
-                ├── core/ (9 files)
+                ├── core/ (11 files)
                     ├── __init__.py
                     ├── arq.py
                     ├── config.py
                     ├── database.py
                     ├── init_db.py
                     ├── limiter.py
+                    ├── paths.py
                     ├── scheduler.py
                     ├── security.py
                     ├── session.py
-                ├── crud/ (5 files)
+                    ├── storage.py
+                ├── crud/ (6 files)
                     ├── __init__.py
+                    ├── expert_review.py
                     ├── farm.py
                     ├── feedback.py
                     ├── prediction.py
@@ -365,7 +399,7 @@ Smart-Farming/ (98733 files)
                     ├── plot.py
                     ├── prediction.py
                     ├── user.py
-                ├── services/ (19 files)
+                ├── services/ (24 files)
                     ├── crop_identifier/ (2 files)
                         ├── __init__.py
                         ├── predictor.py
@@ -382,16 +416,23 @@ Smart-Farming/ (98733 files)
                         ├── __init__.py
                         ├── leaf_isolator.py
                         ├── service.py
+                    ├── rag/ (2 files)
+                        ├── __init__.py
+                        ├── retriever.py
                     ├── recommendation/ (2 files)
                         ├── __init__.py
                         ├── service.py
                     ├── severity/ (2 files)
                         ├── __init__.py
                         ├── estimator.py
-                    ├── weather/ (2 files)
+                    ├── translation/ (1 files)
+                        ├── service.py
+                    ├── weather/ (3 files)
                         ├── __init__.py
+                        ├── proactive.py
                         ├── service.py
                     ├── __init__.py
+                    ├── prediction_job.py
                     ├── weather_cron.py
                 ├── utils/ (4 files)
                     ├── __init__.py
@@ -409,27 +450,41 @@ Smart-Farming/ (98733 files)
                 ├── dependency_links.txt
                 ├── requires.txt
                 ├── top_level.txt
-        ├── tests/ (4 files)
+        ├── tests/ (9 files)
+            ├── test_admin_users.py
             ├── test_api.py
             ├── test_auth.py
+            ├── test_features_extended.py
             ├── test_hf_recommendation.py
+            ├── test_media_auth.py
+            ├── test_observability.py
             ├── test_pipeline.py
+            ├── test_storage.py
         ├── .env
         ├── .env.example
+        ├── alembic.ini
         ├── config.yaml
         ├── count.py
         ├── folder_tree.txt
+        ├── model_registry.json
         ├── package-lock.json
         ├── pyproject.toml
         ├── requirements.txt
+        ├── s3_migration_report.json
         ├── seed_users.py
         ├── uv.lock
-    ├── frontend/ (66 files)
-        ├── public/ (1 files)
+    ├── data/ (2 files)
+        ├── processed/ (2 files)
             ├── aphids_tomato.jpeg
-        ├── src/ (53 files)
-            ├── api/ (8 files)
+            ├── media_1789974766831.jpg
+    ├── frontend/ (71 files)
+        ├── public/ (2 files)
+            ├── aphids_tomato.jpeg
+            ├── favicon.svg
+        ├── src/ (55 files)
+            ├── api/ (9 files)
                 ├── admin.ts
+                ├── alerts.ts
                 ├── auth.ts
                 ├── client.ts
                 ├── crops.ts
@@ -437,9 +492,18 @@ Smart-Farming/ (98733 files)
                 ├── farm.ts
                 ├── predictions.ts
                 ├── types.ts
-            ├── components/ (4 files)
+            ├── components/ (12 files)
+                ├── ui/ (7 files)
+                    ├── Badge.tsx
+                    ├── Button.tsx
+                    ├── Card.tsx
+                    ├── Input.tsx
+                    ├── Modal.tsx
+                    ├── Table.tsx
+                    ├── index.ts
                 ├── Appshell.tsx
                 ├── ProtectedRoute.tsx
+                ├── PublicNav.tsx
                 ├── SideBar.tsx
                 ├── Toast.tsx
             ├── context/ (1 files)
@@ -447,15 +511,21 @@ Smart-Farming/ (98733 files)
             ├── hooks/ (2 files)
                 ├── usePredict.ts
                 ├── useToast.ts
-            ├── i18n/ (4 files)
+            ├── i18n/ (5 files)
+                ├── domain.ts
                 ├── en.ts
                 ├── gu.ts
                 ├── hi.ts
                 ├── index.ts
-            ├── pages/ (18 files)
+            ├── lib/ (2 files)
+                ├── format.ts
+                ├── routes.ts
+            ├── pages/ (20 files)
                 ├── AboutPage.tsx
                 ├── AdminFeedbackPage.tsx
                 ├── AdminMetricsPage.tsx
+                ├── AdminUsersPage.tsx
+                ├── AlertsPage.tsx
                 ├── CropsPage.tsx
                 ├── DashboardPage.tsx
                 ├── ExpertQueuePage.tsx
@@ -471,20 +541,8 @@ Smart-Farming/ (98733 files)
                 ├── ServicesPage.tsx
                 ├── SettingsPage.tsx
                 ├── WeatherPage.tsx
-            ├── styles/ (13 files)
-                ├── AboutPage.css
-                ├── AdminPages.css
-                ├── AuthPages.css
-                ├── DashboardPage.css
-                ├── ExpertReviewPage.css
-                ├── FarmSettingsPage.css
-                ├── HistoryPage.css
-                ├── LandingPage.css
-                ├── ResultPage.css
-                ├── ScanPage.css
-                ├── ServicesPage.css
-                ├── WeatherCrops.css
-                ├── styles.css
+            ├── styles/ (1 files)
+                ├── tailwind.css
             ├── App.tsx
             ├── main.tsx
             ├── vite-env.d.ts
@@ -493,6 +551,8 @@ Smart-Farming/ (98733 files)
         ├── index.html
         ├── package-lock.json
         ├── package.json
+        ├── postcss.config.js
+        ├── tailwind.config.ts
         ├── tsconfig.app.json
         ├── tsconfig.json
         ├── tsconfig.node.json
@@ -500,8 +560,237 @@ Smart-Farming/ (98733 files)
         ├── vite.config.d.ts
         ├── vite.config.js
         ├── vite.config.ts
-    ├── mobile/ (1 files)
+    ├── mobile/ (151 files)
+        ├── android/ (25 files)
+            ├── app/ (15 files)
+                ├── src/ (14 files)
+                    ├── debug/ (1 files)
+                        ├── AndroidManifest.xml
+                    ├── main/ (12 files)
+                        ├── java/ (1 files)
+                            ├── io/ (1 files)
+                                ├── flutter/ (1 files)
+                                    ├── plugins/ (1 files)
+                                        ├── GeneratedPluginRegistrant.java
+                        ├── kotlin/ (1 files)
+                            ├── com/ (1 files)
+                                ├── example/ (1 files)
+                                    ├── smart_farming_mobile/ (1 files)
+                                        ├── MainActivity.kt
+                        ├── res/ (9 files)
+                            ├── drawable/ (1 files)
+                                ├── launch_background.xml
+                            ├── drawable-v21/ (1 files)
+                                ├── launch_background.xml
+                            ├── mipmap-hdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-mdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-xhdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-xxhdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-xxxhdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── values/ (1 files)
+                                ├── styles.xml
+                            ├── values-night/ (1 files)
+                                ├── styles.xml
+                        ├── AndroidManifest.xml
+                    ├── profile/ (1 files)
+                        ├── AndroidManifest.xml
+                ├── build.gradle.kts
+            ├── gradle/ (2 files)
+                ├── wrapper/ (2 files)
+                    ├── gradle-wrapper.jar
+                    ├── gradle-wrapper.properties
+            ├── .gitignore
+            ├── build.gradle.kts
+            ├── gradle.properties
+            ├── gradlew
+            ├── gradlew.bat
+            ├── local.properties
+            ├── settings.gradle.kts
+            ├── smart_farming_mobile_android.iml
+        ├── ios/ (44 files)
+            ├── Flutter/ (5 files)
+                ├── AppFrameworkInfo.plist
+                ├── Debug.xcconfig
+                ├── Generated.xcconfig
+                ├── Release.xcconfig
+                ├── flutter_export_environment.sh
+            ├── Runner/ (29 files)
+                ├── Assets.xcassets/ (21 files)
+                    ├── AppIcon.appiconset/ (16 files)
+                        ├── Contents.json
+                        ├── Icon-App-1024x1024@1x.png
+                        ├── Icon-App-20x20@1x.png
+                        ├── Icon-App-20x20@2x.png
+                        ├── Icon-App-20x20@3x.png
+                        ├── Icon-App-29x29@1x.png
+                        ├── Icon-App-29x29@2x.png
+                        ├── Icon-App-29x29@3x.png
+                        ├── Icon-App-40x40@1x.png
+                        ├── Icon-App-40x40@2x.png
+                        ├── Icon-App-40x40@3x.png
+                        ├── Icon-App-60x60@2x.png
+                        ├── Icon-App-60x60@3x.png
+                        ├── Icon-App-76x76@1x.png
+                        ├── Icon-App-76x76@2x.png
+                        ├── Icon-App-83.5x83.5@2x.png
+                    ├── LaunchImage.imageset/ (5 files)
+                        ├── Contents.json
+                        ├── LaunchImage.png
+                        ├── LaunchImage@2x.png
+                        ├── LaunchImage@3x.png
+                        ├── README.md
+                ├── Base.lproj/ (2 files)
+                    ├── LaunchScreen.storyboard
+                    ├── Main.storyboard
+                ├── AppDelegate.swift
+                ├── GeneratedPluginRegistrant.h
+                ├── GeneratedPluginRegistrant.m
+                ├── Info.plist
+                ├── Runner-Bridging-Header.h
+                ├── SceneDelegate.swift
+            ├── Runner.xcodeproj/ (5 files)
+                ├── project.xcworkspace/ (3 files)
+                    ├── xcshareddata/ (2 files)
+                        ├── IDEWorkspaceChecks.plist
+                        ├── WorkspaceSettings.xcsettings
+                    ├── contents.xcworkspacedata
+                ├── xcshareddata/ (1 files)
+                    ├── xcschemes/ (1 files)
+                        ├── Runner.xcscheme
+                ├── project.pbxproj
+            ├── Runner.xcworkspace/ (3 files)
+                ├── xcshareddata/ (2 files)
+                    ├── IDEWorkspaceChecks.plist
+                    ├── WorkspaceSettings.xcsettings
+                ├── contents.xcworkspacedata
+            ├── RunnerTests/ (1 files)
+                ├── RunnerTests.swift
+            ├── .gitignore
+        ├── lib/ (26 files)
+            ├── i18n/ (2 files)
+                ├── app_translations.dart
+                ├── domain_translations.dart
+            ├── models/ (2 files)
+                ├── prediction.dart
+                ├── sync_queue_item.dart
+            ├── providers/ (2 files)
+                ├── locale_provider.dart
+                ├── prediction_provider.dart
+            ├── screens/ (12 files)
+                ├── alerts/ (1 files)
+                    ├── alerts_screen.dart
+                ├── auth/ (2 files)
+                    ├── auth_wrapper.dart
+                    ├── login_screen.dart
+                ├── farm/ (1 files)
+                    ├── farm_screen.dart
+                ├── history/ (1 files)
+                    ├── history_screen.dart
+                ├── scan/ (3 files)
+                    ├── create_prediction_sheet.dart
+                    ├── processing_sheet.dart
+                    ├── result_detail_sheet.dart
+                ├── shell/ (1 files)
+                    ├── farmer_shell.dart
+                ├── today/ (1 files)
+                    ├── today_screen.dart
+                ├── weather/ (1 files)
+                    ├── weather_screen.dart
+                ├── camera_screen.dart
+            ├── services/ (3 files)
+                ├── api_service.dart
+                ├── sync_service.dart
+                ├── tts_service.dart
+            ├── theme/ (1 files)
+                ├── app_theme.dart
+            ├── utils/ (1 files)
+                ├── app_logger.dart
+            ├── widgets/ (2 files)
+                ├── camera_guide_overlay.dart
+                ├── severity_gauge.dart
+            ├── main.dart
+        ├── linux/ (10 files)
+            ├── flutter/ (4 files)
+                ├── CMakeLists.txt
+                ├── generated_plugin_registrant.cc
+                ├── generated_plugin_registrant.h
+                ├── generated_plugins.cmake
+            ├── runner/ (4 files)
+                ├── CMakeLists.txt
+                ├── main.cc
+                ├── my_application.cc
+                ├── my_application.h
+            ├── .gitignore
+            ├── CMakeLists.txt
+        ├── macos/ (28 files)
+            ├── Flutter/ (3 files)
+                ├── Flutter-Debug.xcconfig
+                ├── Flutter-Release.xcconfig
+                ├── GeneratedPluginRegistrant.swift
+            ├── Runner/ (18 files)
+                ├── Assets.xcassets/ (8 files)
+                    ├── AppIcon.appiconset/ (8 files)
+                        ├── Contents.json
+                        ├── app_icon_1024.png
+                        ├── app_icon_128.png
+                        ├── app_icon_16.png
+                        ├── app_icon_256.png
+                        ├── app_icon_32.png
+                        ├── app_icon_512.png
+                        ├── app_icon_64.png
+                ├── Base.lproj/ (1 files)
+                    ├── MainMenu.xib
+                ├── Configs/ (4 files)
+                    ├── AppInfo.xcconfig
+                    ├── Debug.xcconfig
+                    ├── Release.xcconfig
+                    ├── Warnings.xcconfig
+                ├── AppDelegate.swift
+                ├── DebugProfile.entitlements
+                ├── Info.plist
+                ├── MainFlutterWindow.swift
+                ├── Release.entitlements
+            ├── Runner.xcodeproj/ (3 files)
+                ├── project.xcworkspace/ (1 files)
+                    ├── xcshareddata/ (1 files)
+                        ├── IDEWorkspaceChecks.plist
+                ├── xcshareddata/ (1 files)
+                    ├── xcschemes/ (1 files)
+                        ├── Runner.xcscheme
+                ├── project.pbxproj
+            ├── Runner.xcworkspace/ (2 files)
+                ├── xcshareddata/ (1 files)
+                    ├── IDEWorkspaceChecks.plist
+                ├── contents.xcworkspacedata
+            ├── RunnerTests/ (1 files)
+                ├── RunnerTests.swift
+            ├── .gitignore
+        ├── test/ (2 files)
+            ├── prediction_history_test.dart
+            ├── widget_test.dart
+        ├── web/ (7 files)
+            ├── icons/ (4 files)
+                ├── Icon-192.png
+                ├── Icon-512.png
+                ├── Icon-maskable-192.png
+                ├── Icon-maskable-512.png
+            ├── favicon.png
+            ├── index.html
+            ├── manifest.json
+        ├── .flutter-plugins-dependencies
+        ├── .gitignore
+        ├── .metadata
+        ├── README.md
+        ├── analysis_options.yaml
+        ├── devtools_options.yaml
+        ├── pubspec.lock
         ├── pubspec.yaml
+        ├── smart_farming_mobile.iml
     ├── models/ (48 files)
         ├── csvs/ (7 files)
             ├── cotton_disease_manifest.csv
@@ -591,5 +880,6 @@ Smart-Farming/ (98733 files)
         ├── yolov8n-cls.pt
     ├── .gitattributes
     ├── .gitignore
+    ├── README.md
     ├── count.py
     ├── folder_tree.txt

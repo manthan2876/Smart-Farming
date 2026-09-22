@@ -1,12 +1,34 @@
 import os
+import fnmatch
 
 ROOT_FOLDER = r"Z:\Projects\Smart-Farming"
-IGNORE_FOLDERS = ["node_modules", ".git","__pycache__", "build", "develop-eggs", "dist", "downloads", "eggs", ".eggs", "lib", "lib64", "parts", "sdist", "var", "wheels", "share-python-wheels", "*.egg-info", "htmlcov", ".tox", ".nosenv", ".gauge", ".hypothesis", ".pytest_cache", "cover", "instance", "docs/_build", ".pybuilder", "target", "profile_default", "__pypackages__", ".env", ".venv", "env", "venv", "ENV", "env.bak", "venv.bak", "cropidentification", ".mypy_cache", ".pyre", ".pytype", "cython_debug", ".gradio", "gradio_cached_examples", ".vscode", ".idea", "old_files", ".agents", ".fastapicloud"]
-DATASET_FOLDERS = ["datasets", "final_combined_datasets", "dataset_split", "disease_dataset", "generated_crops", "pest_dataset", "processed_dataset-old"]
+IGNORE_FOLDERS = [
+    # Package & Version Control
+    "node_modules", ".git", ".vscode", ".idea",
+    # Python & Caches
+    "__pycache__", "build", "develop-eggs", "dist", "downloads", "eggs", ".eggs",
+    "lib64", "parts", "sdist", "var", "wheels", "share-python-wheels", "*.egg-info",
+    "htmlcov", ".tox", ".nosenv", ".gauge", ".hypothesis", ".pytest_cache", "cover",
+    "instance", "docs/_build", ".pybuilder", "target", "profile_default", "__pypackages__",
+    ".env", ".venv", "env", "venv", "ENV", "env.bak", "venv.bak", "cropidentification",
+    ".mypy_cache", ".pyre", ".pytype", "cython_debug", ".gradio", "gradio_cached_examples",
+    "old_files", ".agents", ".fastapicloud",
+    # Mobile (Flutter / Dart / Android / iOS) specific unnecessary folders
+    ".dart_tool", ".pub-cache", ".pub", "ephemeral", ".plugin_symlinks",
+    ".symlinks", ".packages", "Pods", ".gradle", ".fvm", ".widget_preview",
+    "coverage", ".build", ".buildlog", "DerivedData", "derivedData",
+    ".externalNativeBuild", ".cxx", "captures"
+]
+DATASET_FOLDERS = [
+    "datasets", "Datasets", "final_combined_datasets", "dataset_split",
+    "disease_dataset", "generated_crops", "pest_dataset", "processed_dataset-old"
+]
 OUTPUT_FILE = "folder_tree.txt"
 
 def is_ignored(folder_name, ignore_folders):
-    return folder_name in ignore_folders
+    if folder_name in ignore_folders:
+        return True
+    return any(fnmatch.fnmatch(folder_name, pat) for pat in ignore_folders if "*" in pat or "?" in pat)
 
 def count_files(folder_path, ignore_folders):
     count = 0
