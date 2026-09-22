@@ -138,7 +138,13 @@ async def export_dataset_post(
     query = query.filter(DatasetCandidate.source.in_(sources))
 
     # Filter by status
-    if payload.filters.status:
+    valid_statuses = {"pending_review", "added_to_dataset", "rejected", "all"}
+    if payload.filters.status and payload.filters.status.lower() not in valid_statuses:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid status filter '{payload.filters.status}'. Allowed: {sorted(list(valid_statuses))}",
+        )
+    if payload.filters.status and payload.filters.status.lower() != "all":
         query = query.filter(DatasetCandidate.status == payload.filters.status)
 
     # Filter by crop — proper case-insensitive join filter
@@ -152,12 +158,20 @@ async def export_dataset_post(
     if not selected:
         raise HTTPException(status_code=404, detail="No dataset candidates match the selected filters")
 
+    if len(selected) > 5000:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Export candidate count ({len(selected)}) exceeds safe maximum limit of 5,000.",
+        )
+
     # Compute split summary for provenance
     split_counts = {"train": 0, "val": 0, "test": 0}
+    missing_images_warnings = []
 
     tmp_dir = Path(tempfile.mkdtemp(prefix="smartfarming-mlops-"))
     zip_path = tmp_dir / "dataset_export.zip"
     metadata = []
+
 
     try:
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:

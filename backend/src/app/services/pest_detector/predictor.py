@@ -136,9 +136,12 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
             all_probs_dict[label] = conf
 
         predictions.sort(key=lambda item: item["confidence"], reverse=True)
+        detected_pests = [p for p in predictions if p["confidence"] >= 0.40]
 
         # Populate context["pests"] list expected by test_pipeline.py
-        context["pests"] = predictions
+        context["pests"] = detected_pests if detected_pests else predictions
+
+        pest_status = "pest_detected" if detected_pests else "no_pest_detected"
 
         # Populate context["pest_classification"] details
         context["pest_classification"] = {
@@ -147,12 +150,14 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
             "model_used": model_path.name,
             "version": "v1.0",
             "available": True,
+            "status": pest_status,
             "top_k": len(predictions),
             "all_probs": all_probs_dict,
         }
 
         # Set status back to completed for backward compatibility
         context["status"]["pest_detection"] = "completed"
+
 
         primary_prediction = predictions[0]
         pest_confidence = primary_prediction["confidence"]

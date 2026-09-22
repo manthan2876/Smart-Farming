@@ -46,13 +46,17 @@ def route_to_disease_model(context: dict, config: dict[str, Any]) -> dict:
     threshold = config["thresholds"].get("crop_confidence", 0.75)
 
     # ── Confidence floor ───────────────────────────────────────────────
-    if crop_confidence < threshold:
+    if crop_confidence < threshold or context["crop"].get("status") == "unsupported_crop":
         context["notes"].append(
             f"Crop confidence ({crop_confidence:.2f}) is below threshold ({threshold}). "
-            "Skipping disease classification — ask the farmer for a clearer photo."
+            "Skipping disease classification — crop too uncertain to diagnose reliably."
         )
         context["status"]["decision_routing"] = "skipped_low_confidence"
+        context["disease"]["label"] = "Indeterminate (Low Crop Confidence)"
+        context["disease"]["confidence"] = 0.0
+        context["disease"]["model_used"] = "none"
         return context
+
 
     # ── Look up the disease model config ──────────────────────────────
     # The config.yaml uses the crop label as the key (e.g. "Tomato").

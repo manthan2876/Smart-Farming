@@ -92,24 +92,60 @@ async def translate_weather_advisory_text(
 
 @router.get("/weather")
 async def weather(
-    lat: float = 52.2297,
-    lon: float = 21.0122,
+    lat: float | None = Query(None, description="Latitude"),
+    lon: float | None = Query(None, description="Longitude"),
     language: str | None = Query(None, description="Optional target language: 'en', 'hi', 'gu'"),
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
+    from app.models import User
+    # Coordinate resolution: require explicit coords or fallback to farmer's registered farm
+    if lat is None or lon is None:
+        user = session.get(User, user_id)
+        if user and user.farm and user.farm.latitude is not None and user.farm.longitude is not None:
+            lat = float(user.farm.latitude)
+            lon = float(user.farm.longitude)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Coordinates 'lat' and 'lon' are required, or configure your farm location in profile.",
+            )
+
     target_code = normalize_language_code(language) if language else "en"
     cache_key = f"{round(lat, 2)}_{round(lon, 2)}"
+    redis_key = f"weather:{cache_key}"
     now = time.time()
 
-    # 1. Return from in-memory cache if fresh
+    # 1. Try Redis cache for multi-worker consistency
+    try:
+        import redis, json
+        r = redis.from_url(settings.REDIS_URL, socket_timeout=1.5)
+        cached_str = r.get(redis_key)
+        if cached_str:
+            data = json.loads(cached_str)
+            translations = data.get("translations") or {}
+            if target_code != "en" and target_code not in translations:
+                base_advisory = data.get("advisory", "")
+                if base_advisory:
+                    try:
+                        translated = await translate_text(base_advisory, target_code)
+                        translations[target_code] = translated
+                        data["translations"] = translations
+                        r.setex(redis_key, _CACHE_TTL_SECONDS, json.dumps(data))
+                    except Exception:
+                        pass
+            data["translated_advisory"] = translations.get(target_code, data.get("advisory", ""))
+            return _json_safe(data)
+    except Exception:
+        pass
+
+    # 2. Return from in-memory cache if fresh
     if cache_key in _WEATHER_CACHE:
         cached_time, cached_data = _WEATHER_CACHE[cache_key]
         if now - cached_time < _CACHE_TTL_SECONDS:
             data = dict(cached_data)
             translations = dict(data.get("translations") or {})
             
-            # If target language advisory not in translations cache, translate now
             if target_code != "en" and target_code not in translations:
                 base_advisory = data.get("advisory", "")
                 if base_advisory:
@@ -126,6 +162,7 @@ async def weather(
 
     from app.services.weather.service import fetch_weather
     from app.services.recommendation.service import generate_weather_advisory
+
 
     # Fetch user data for personalized advisory
     user = get_user(session, user_id)
@@ -195,7 +232,16 @@ async def weather(
         "advisory": advisory,
         "translated_advisory": translated_advisory,
         "translations": translations,
+        "cached": False,
+        "timestamp": now,
     }
-
     _WEATHER_CACHE[cache_key] = (now, result_payload)
+    try:
+        import redis, json
+        r = redis.from_url(settings.REDIS_URL, socket_timeout=1.5)
+        r.setex(redis_key, _CACHE_TTL_SECONDS, json.dumps(_json_safe(result_payload)))
+    except Exception:
+        pass
     return _json_safe(result_payload)
+
+

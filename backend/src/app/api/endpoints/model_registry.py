@@ -253,3 +253,76 @@ async def promote_model(
         "promoted_at": registry["models"][payload.model_key]["versions"][payload.version]["promoted_at"],
     }
 
+
+class RollbackRequest(BaseModel):
+    model_key: str
+    target_version: str | None = None
+
+
+@router.post("/rollback")
+async def rollback_model(
+    payload: RollbackRequest, is_admin: str = Depends(require_admin_role)
+) -> dict[str, Any]:
+    """Roll back active model to the specified or immediately preceding retired version."""
+    registry = _load_registry()
+    model_entry = registry.get("models", {}).get(payload.model_key)
+    if not model_entry:
+        raise HTTPException(status_code=404, detail=f"Model '{payload.model_key}' not in registry.")
+
+    current_active = model_entry.get("active_version")
+    versions = model_entry.get("versions", {})
+
+    target_ver = payload.target_version
+    if not target_ver:
+        # Find the most recently retired version
+        retired_vers = [v for v, info in versions.items() if v != current_active]
+        if not retired_vers:
+            raise HTTPException(status_code=400, detail="No previous versions available for rollback.")
+        target_ver = sorted(retired_vers, reverse=True)[0]
+
+    if target_ver not in versions:
+        raise HTTPException(status_code=404, detail=f"Target version '{target_ver}' not found in registry.")
+
+    target_info = versions[target_ver]
+    target_checkpoint = _resolve_model_path(target_info.get("checkpoint"))
+    if not target_checkpoint.exists():
+        raise HTTPException(status_code=400, detail=f"Target checkpoint missing on disk: {target_checkpoint}")
+
+    # Switch active version in registry
+    model_entry["active_version"] = target_ver
+    for v, info in versions.items():
+        info["status"] = "active" if v == target_ver else "retired"
+
+    _save_registry(registry)
+
+    # Update config.yaml
+    config = _load_config()
+    updated_config = False
+    if payload.model_key == "crop_identifier":
+        config.setdefault("models", {})["crop_identifier"]["path"] = target_info.get("checkpoint")
+        updated_config = True
+    elif payload.model_key.endswith("_disease"):
+        crop_raw = payload.model_key.replace("_disease", "")
+        crop_key = "_".join(part.capitalize() for part in crop_raw.split("_"))
+        disease_models = config.setdefault("models", {}).setdefault("disease_models", {})
+        if crop_key in disease_models:
+            disease_models[crop_key]["path"] = target_info.get("checkpoint")
+            updated_config = True
+
+    if updated_config:
+        _save_config(config)
+        try:
+            from app import pipeline
+            pipeline.reload_config()
+        except Exception:
+            pass
+
+    logger.info("Model '%s' rolled back from '%s' to '%s'", payload.model_key, current_active, target_ver)
+    return {
+        "status": "rolled_back",
+        "model_key": payload.model_key,
+        "previous_version": current_active,
+        "active_version": target_ver,
+    }
+
+

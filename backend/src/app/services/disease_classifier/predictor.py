@@ -119,8 +119,10 @@ def predict_disease(context: dict, config: dict[str, Any]) -> dict:
     context["disease"]["model_version"] = "v1.0"
     context["status"]["disease_classification"] = "completed"
 
-    # ── Low confidence note ────────────────────────────────────────────
-    threshold = config["thresholds"].get("disease_confidence", 0.60)
+    # ── Low confidence policy ──────────────────────────────────────────
+    threshold = config["thresholds"].get("disease_confidence", 0.70)
+    context["disease"]["uncertainty"] = round(float(1.0 - confidence), 3)
+
     if confidence >= 0.85:
         context["disease"]["confidence_rating"] = "high"
     elif confidence >= threshold:
@@ -130,11 +132,14 @@ def predict_disease(context: dict, config: dict[str, Any]) -> dict:
 
     if confidence < threshold:
         context["disease"]["is_uncertain"] = True
+        context["disease"]["escalation_required"] = True
         context["notes"].append(
-            f"Disease confidence ({confidence:.2f}) is low — "
-            "treat this prediction as tentative."
+            f"Disease confidence ({confidence:.2f}) is below threshold ({threshold}) — "
+            "escalated to expert review."
         )
     else:
         context["disease"]["is_uncertain"] = False
+        context["disease"]["escalation_required"] = False
 
     return context
+

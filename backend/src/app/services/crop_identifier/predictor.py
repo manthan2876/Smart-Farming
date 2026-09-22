@@ -103,6 +103,8 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
 
     # ── Confidence floor check ─────────────────────────────────────────
     threshold = config["thresholds"].get("crop_confidence", 0.75)
+    context["crop"]["uncertainty"] = round(float(1.0 - confidence), 3)
+
     if confidence >= 0.85:
         context["crop"]["confidence_rating"] = "high"
     elif confidence >= threshold:
@@ -111,15 +113,18 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
         context["crop"]["confidence_rating"] = "low"
 
     if confidence < threshold:
+        context["crop"]["status"] = "unsupported_crop"
         context["crop"]["is_uncertain"] = True
         context["notes"].append(
             f"Crop confidence ({confidence:.2f}) is below threshold ({threshold}). "
-            "Consider uploading a clearer photo."
+            "Flagged as unsupported or ambiguous crop for expert review."
         )
     else:
+        context["crop"]["status"] = "supported_crop"
         context["crop"]["is_uncertain"] = False
 
     return context
+
 
 
 # ── Shared inference helper ────────────────────────────────────────────────

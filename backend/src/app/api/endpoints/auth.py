@@ -39,6 +39,38 @@ def _profile(user) -> ProfileResponse:
         farm_area_acres=farm.area_acres if farm else None,
     )
 
+from app.core.config import settings
+from app.api.deps import get_current_user
+from pydantic import BaseModel, Field
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(..., min_length=8, description="New password, minimum 8 characters")
+
+
+@router.post("/change-password", status_code=200)
+async def change_password(
+    payload: ChangePasswordRequest,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> dict[str, str]:
+    """Change password for the authenticated user."""
+    from app.models import User
+    user = session.get(User, user_id)
+    if not user or not user.password_hash:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if not verify_password(payload.old_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+    user.password_hash = hash_password(payload.new_password)
+    session.add(user)
+    session.commit()
+    return {"status": "success", "message": "Password changed successfully."}
+
+
+def _cookie_secure() -> bool:
+    return getattr(settings, "ENVIRONMENT", "development") == "production"
+
+
 @router.post("/register", response_model=AuthResponse, status_code=201)
 async def register(
     payload: RegisterRequest, response: Response, session: Session = Depends(get_session)
@@ -77,7 +109,7 @@ async def register(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=False,
+        secure=_cookie_secure(),
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
@@ -107,7 +139,7 @@ async def login(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=False,
+        secure=_cookie_secure(),
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
@@ -129,7 +161,7 @@ async def refresh(request: Request, response: Response) -> dict[str, str | int]:
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=False,
+        secure=_cookie_secure(),
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
@@ -138,5 +170,6 @@ async def refresh(request: Request, response: Response) -> dict[str, str | int]:
 
 @router.post("/logout", response_model=dict[str, str])
 async def logout(response: Response) -> dict[str, str]:
-    response.delete_cookie("refresh_token", httponly=True, secure=False, samesite="lax")
+    response.delete_cookie("refresh_token", httponly=True, secure=_cookie_secure(), samesite="lax")
     return {"status": "success"}
+

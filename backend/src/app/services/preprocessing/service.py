@@ -65,12 +65,19 @@ class OpenCVPreprocessorService:
         Returns the mutated context dict.
         """
         raw_path = context["image"]["raw_path"]
-        input_im = cv2.imread(raw_path, cv2.IMREAD_COLOR)
-
-        if input_im is None:
-            print(f"[Preprocessing] Failed to read image: {raw_path}")
-            context["status"]["preprocessing"] = "failed_read"
+        try:
+            input_im = cv2.imread(raw_path, cv2.IMREAD_COLOR)
+        except Exception as exc:
+            context["status"]["preprocessing"] = "failed_corrupt_image"
+            context["notes"].append(f"Image decode error: {exc}")
             return context
+
+        if input_im is None or input_im.size == 0 or input_im.shape[0] < 10 or input_im.shape[1] < 10:
+            print(f"[Preprocessing] Failed to read or corrupt image: {raw_path}")
+            context["status"]["preprocessing"] = "failed_corrupt_image"
+            context["notes"].append("Image is corrupt or unreadable.")
+            return context
+
 
         # ── A. Global Blur and Brightness Detection ────────────────────
         gray = cv2.cvtColor(input_im, cv2.COLOR_BGR2GRAY)

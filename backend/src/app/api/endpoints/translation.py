@@ -75,14 +75,18 @@ async def translate_prediction_recommendation(
         session.commit()
         session.refresh(pred)
 
+    except Exception as exc:
+        logger.warning(
+            "On-demand translation failed for prediction #%d: %s; falling back to canonical English",
+            prediction_id, exc
+        )
         return {
             "prediction_id": prediction_id,
-            "language": target_code,
+            "language": "en",
             "cached": False,
-            "recommendation": translated_rec,
-            "translations": translations,
+            "recommendation": canonical_rec,
+            "translation_status": "degraded",
+            "warning": "Translation services currently unavailable. Displaying original English.",
         }
-    except Exception as exc:
-        logger.exception("On-demand translation failed for prediction #%d: %s", prediction_id, exc)
-        raise HTTPException(status_code=502, detail=f"Translation service failed: {exc}")
+
 

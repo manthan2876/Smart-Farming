@@ -89,7 +89,14 @@ async def post_expert_review(
     review = session.get(ExpertReview, review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-        
+
+    # State Machine & Concurrency Lock: only pending reviews can be submitted
+    if review.status != "pending":
+        raise HTTPException(
+            status_code=409,
+            detail="Conflict: This review has already been verified and finalized.",
+        )
+
     action = payload.get("action")
     review.decision = action
     review.status = "verified"
@@ -97,20 +104,20 @@ async def post_expert_review(
     
     if action == "Override / Correct Findings":
         review.corrected_disease = payload.get("corrected_disease")
-        # Handle corrected severity (can be string or float. wireframe shows strings like 'Moderate (32%)' or just 'Moderate')
         raw_sev = payload.get("corrected_severity")
-        # We store float in DB but for now if it's a string let's just log it in internal note or try to parse
-        if raw_sev:
-            try:
-                # very naive parsing or just ignore if it's a string, since db column is Float.
-                # if the payload passes a string, we might crash. Let's just avoid crashing.
-                if isinstance(raw_sev, (int, float)):
-                    review.corrected_severity = float(raw_sev)
-            except:
-                pass
+        if raw_sev is not None:
+            if isinstance(raw_sev, (int, float)):
+                review.corrected_severity = float(raw_sev)
+            elif isinstance(raw_sev, str):
+                import re
+                m = re.search(r"\d+(\.\d+)?", raw_sev)
+                if m:
+                    review.corrected_severity = float(m.group(0))
     
     review.farmer_guidance = payload.get("farmer_guidance")
     review.internal_note = payload.get("internal_note")
+    review.reviewed_at = datetime.now(timezone.utc)
+
     
     pred = review.prediction
     pred.status = "rescan_requested" if action == "Request Rescan" else "verified"

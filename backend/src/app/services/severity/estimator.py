@@ -182,12 +182,22 @@ def estimate_severity(context: dict) -> dict:
 
     bucket = _severity_bucket(percent)
 
+    quality_flag = "reliable"
+    total_pixels = image_bgr.shape[0] * image_bgr.shape[1] if image_bgr is not None else 0
+    if percent > 85.0:
+        quality_flag = "extreme_damage"
+    elif total_pixels < 2500:
+        quality_flag = "low_leaf_area"
+
+
     context["severity"]["percent"] = round(float(percent), 2)
     context["severity"]["affected_area"] = round(float(affected_area), 4)
     context["severity"]["bucket"] = bucket
+    context["severity"]["quality_flag"] = quality_flag
     context["status"]["severity"] = "completed"
 
     return context
+
 
 
 # ============================================================================

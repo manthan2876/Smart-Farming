@@ -15,6 +15,7 @@ from typing import NamedTuple
 
 
 class KnowledgeChunk(NamedTuple):
+    id: str
     disease: str
     content: str
     keywords: list[str]
@@ -23,66 +24,78 @@ class KnowledgeChunk(NamedTuple):
 # ──────────────────────────────────────────────────────────────
 # Curated Agronomic Knowledge Base
 # Based on Indian agricultural guidelines (ICAR / Central Insecticide Board)
+# Covering all 5 supported crops: Cotton, Groundnut, Pepper Bell, Potato, Tomato
 # ──────────────────────────────────────────────────────────────
 KNOWLEDGE_BASE: list[KnowledgeChunk] = [
     KnowledgeChunk(
+        id="cotton_bollworm",
         disease="Cotton Bollworm",
         content=(
-            "For Cotton Bollworm (Helicoverpa armigera), recommended pesticides are Chlorpyrifos 20EC "
-            "(2ml/L) or Indoxacarb 14.5SC (1ml/L). Avoid Endosulfan — it is BANNED in India under the "
-            "Insecticides Act. Spray during early morning or evening only. Maintain a 14-day pre-harvest "
-            "interval (PHI). Do NOT spray within 500m of water bodies."
+            "For Cotton Bollworm (Helicoverpa armigera / Pectinophora gossypiella), recommended insecticides are "
+            "Chlorpyrifos 20EC (2ml/L), Indoxacarb 14.5SC (1ml/L), or Spinosad 45SC (0.3ml/L). Avoid Endosulfan — "
+            "it is BANNED in India. Spray during early morning or late evening. Maintain a 14-day pre-harvest interval (PHI)."
         ),
-        keywords=["cotton", "bollworm", "helicoverpa", "chlorpyrifos", "indoxacarb", "pink bollworm"],
+        keywords=["cotton", "bollworm", "helicoverpa", "spinosad", "indoxacarb", "chlorpyrifos", "pink bollworm"],
     ),
     KnowledgeChunk(
-        disease="Tomato Early Blight",
+        id="cotton_leaf_curl",
+        disease="Cotton Leaf Curl & Bacterial Blight",
+        content=(
+            "For Cotton Leaf Curl Virus transmitted by whiteflies, manage vectors with Diafenthiuron 50WP (1.2g/L) "
+            "or Neem oil 1500ppm (3ml/L). For Bacterial Blight (Xanthomonas), spray Copper Oxychloride 50WP (2.5g/L) "
+            "mixed with Streptocycline (100mg/L). Never spray Monocrotophos."
+        ),
+        keywords=["cotton", "leaf curl", "whitefly", "bacterial blight", "xanthomonas", "copper oxychloride", "streptocycline"],
+    ),
+    KnowledgeChunk(
+        id="tomato_blight",
+        disease="Tomato Early and Late Blight",
         content=(
             "For Tomato Early Blight (Alternaria solani), apply Mancozeb 75WP (2g/L) or Chlorothalonil 75WP (2g/L). "
-            "Copper Oxychloride (3g/L) is also effective and permitted for organic farming. "
-            "Avoid Captan on food crops within 7 days of harvest. Rotate fungicides every 2 sprays to prevent resistance. "
-            "Do NOT mix Mancozeb with alkaline pesticides."
+            "For Late Blight (Phytophthora infestans), apply Metalaxyl 8% + Mancozeb 64% (2.5g/L) or Cymoxanil + Mancozeb. "
+            "Copper Oxychloride (3g/L) is permitted for organic use. PHI for Mancozeb on tomato is 5 days."
         ),
-        keywords=["tomato", "early blight", "alternaria", "mancozeb", "chlorothalonil", "copper"],
+        keywords=["tomato", "early blight", "late blight", "alternaria", "phytophthora", "mancozeb", "metalaxyl", "copper"],
     ),
     KnowledgeChunk(
-        disease="Rice Blast",
+        id="potato_blight",
+        disease="Potato Late Blight & Early Blight",
         content=(
-            "For Rice Blast (Pyricularia oryzae), Tricyclazole 75WP (0.6g/L) is the first-choice systemic fungicide. "
-            "Propiconazole 25EC (1ml/L) is an alternative. PHI is 15 days. "
-            "Do NOT apply during flowering stage. Kasugamycin (2g/L) is recommended as an antibiotic alternative "
-            "if systemic resistance is suspected. Avoid repeated use of the same active ingredient."
+            "For Potato Late Blight (Phytophthora infestans), apply prophylactic spray of Mancozeb 75WP (2.5g/L). "
+            "Under active infection, apply Cymoxanil 8% + Mancozeb 64% (2.5g/L) or Fenamidone + Mancozeb. "
+            "Avoid excessive irrigation during fog/high humidity. Observe 14-day PHI before tuber harvest."
         ),
-        keywords=["rice", "blast", "pyricularia", "tricyclazole", "propiconazole", "kasugamycin"],
+        keywords=["potato", "late blight", "early blight", "phytophthora", "cymoxanil", "mancozeb", "tuber"],
     ),
     KnowledgeChunk(
-        disease="Wheat Rust",
+        id="pepper_bell_anthracnose",
+        disease="Pepper Bell Anthracnose & Bacterial Spot",
         content=(
-            "For Wheat Yellow Rust (Puccinia striiformis) or Brown Rust (P. recondita), apply Propiconazole 25EC "
-            "(1ml/L) at early infection. Tebuconazole 25.9EC (1ml/L) is effective for heavy infections. "
-            "PHI is 35 days. Do NOT apply more than 2 fungicide sprays per season to prevent resistance buildup."
+            "For Pepper Bell / Capsicum Anthracnose (Colletotrichum), spray Azoxystrobin 23SC (1ml/L) or "
+            "Difenoconazole 25EC (1ml/L). For Bacterial Spot (Xanthomonas), apply Copper Hydroxide (2g/L). "
+            "Allow 7-day PHI before picking bell peppers. Avoid overhead sprinkler irrigation."
         ),
-        keywords=["wheat", "rust", "yellow rust", "brown rust", "puccinia", "propiconazole", "tebuconazole"],
+        keywords=["pepper", "bell", "capsicum", "anthracnose", "colletotrichum", "azoxystrobin", "difenoconazole", "bacterial spot"],
     ),
     KnowledgeChunk(
-        disease="Groundnut Leaf Spot",
+        id="groundnut_tikka",
+        disease="Groundnut Tikka Leaf Spot & Rust",
         content=(
-            "For Groundnut Tikka / Leaf Spot (Cercospora arachidicola), apply Chlorothalonil 75WP (2g/L) "
-            "or Mancozeb 75WP (2.5g/L) at 10-day intervals. Carbendazim 50WP (1g/L) is an effective systemic option. "
-            "PHI for Mancozeb is 10 days. Avoid spraying after pod formation to prevent contamination."
+            "For Groundnut Tikka / Leaf Spot (Cercospora arachidicola) and Rust (Puccinia arachidis), apply "
+            "Hexaconazole 5EC (2ml/L) or Chlorothalonil 75WP (2g/L) or Mancozeb 75WP (2g/L). "
+            "Carbendazim 50WP (1g/L) is effective if alternate sprays are used. PHI is 14 days."
         ),
-        keywords=["groundnut", "peanut", "leaf spot", "tikka", "cercospora", "chlorothalonil", "carbendazim"],
+        keywords=["groundnut", "peanut", "tikka", "leaf spot", "cercospora", "rust", "hexaconazole", "chlorothalonil"],
     ),
     KnowledgeChunk(
+        id="general_pesticide_safety",
         disease="General Pesticide Safety",
         content=(
-            "BANNED pesticides in India (not to recommend under any circumstances): Endosulfan, Monocrotophos, "
-            "Methyl Parathion, Phorate (on certain crops), Carbaryl (on some uses). "
-            "Always recommend PPE: gloves, mask, goggles. Never recommend aerial spraying near schools or hospitals. "
-            "Bee-safe window: spray only after 6PM or before 6AM when pollinators are inactive. "
-            "Organic certified farms must use only copper, sulfur, neem-based, or Bacillus thuringiensis (Bt) products."
+            "BANNED pesticides in India: Endosulfan, Monocrotophos, Methyl Parathion, Phorate (certain crops), Carbaryl. "
+            "Always advise personal protective equipment (PPE): gloves, eye goggles, face mask. "
+            "Observe Pre-Harvest Interval (PHI). Protect pollinator bees: do not spray during midday flowering; spray before 6AM or after 6PM."
         ),
-        keywords=["banned", "safety", "ppe", "organic", "endosulfan", "monocrotophos", "bee", "general"],
+        keywords=["banned", "safety", "ppe", "organic", "endosulfan", "monocrotophos", "bee", "general", "phi"],
     ),
 ]
 
@@ -126,17 +139,9 @@ def _tfidf_vector(tokens: list[str]) -> dict[str, float]:
     }
 
 
-def retrieve_context(query: str, top_k: int = 2) -> str:
+def retrieve_context_with_ids(query: str, top_k: int = 2) -> tuple[str, list[str]]:
     """
-    Retrieve the most relevant knowledge chunks for a given disease/crop query.
-    Returns a pre-formatted string ready to inject into an LLM system prompt.
-
-    Args:
-        query: The disease label + crop label from the AI pipeline (e.g. "Cotton Bollworm")
-        top_k: Number of chunks to retrieve
-
-    Returns:
-        A formatted context string or empty string if nothing relevant found.
+    Retrieve formatted context text alongside matching chunk IDs for audit logging.
     """
     query_tokens = _tokenize(query)
     query_vec = _tfidf_vector(query_tokens)
@@ -147,21 +152,29 @@ def retrieve_context(query: str, top_k: int = 2) -> str:
         score = _cosine(query_vec, chunk_vec)
         scored.append((score, chunk))
 
-    # Always include the general safety chunk
     results = sorted(scored, key=lambda x: x[0], reverse=True)[:top_k]
-    safety_chunk = next((c for c in KNOWLEDGE_BASE if c.disease == "General Pesticide Safety"), None)
+    safety_chunk = next((c for c in KNOWLEDGE_BASE if c.id == "general_pesticide_safety"), None)
 
-    chunks_to_return = [r[1] for r in results if r[0] > 0.05]
+    chunks_to_return = [r[1] for r in results if r[0] > 0.04]
     if safety_chunk and safety_chunk not in chunks_to_return:
         chunks_to_return.append(safety_chunk)
 
     if not chunks_to_return:
-        return ""
+        return "", []
 
+    chunk_ids = [c.id for c in chunks_to_return]
     sections = "\n\n".join(f"[{c.disease}]\n{c.content}" for c in chunks_to_return)
-    return (
+    context_text = (
         "=== VERIFIED AGRONOMIC SAFETY GUIDELINES (use these constraints when making recommendations) ===\n"
         + sections
         + "\n=== END OF GUIDELINES ==="
     )
+    return context_text, chunk_ids
+
+
+def retrieve_context(query: str, top_k: int = 2) -> str:
+    """Backward-compatible context retriever."""
+    text, _ = retrieve_context_with_ids(query, top_k=top_k)
+    return text
+
 
