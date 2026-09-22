@@ -96,17 +96,64 @@ export type WeatherData = {
 };
 
 export type AdminMetrics = {
-  total_predictions: number;
-  total_scans?: number;
-  total_feedback?: number;
-  accuracy_rate_pct: number | null; 
-  feedback_accuracy_pct?: number | null; 
-  avg_crop_confidence: number | null;
-  avg_disease_confidence: number | null;
-  avg_quality_score: number | null;
-  crop_distribution: Record<string, number>;
-  disease_distribution: Record<string, number>;
+  total_users: number;
+  total_scans: number;
+  completed_scans?: number;
+  accuracy: number;
+  queue_depth?: number;
+  failures?: {
+    total_failed: number;
+    failure_rate: number;
+  };
+  processing_duration?: {
+    avg_ms: number;
+    p95_ms: number;
+    sample_count: number;
+  };
+  fallbacks?: {
+    recommendation_fallbacks: number;
+    weather_fallbacks: number;
+  };
+  expert_metrics?: {
+    total_reviews: number;
+    approved: number;
+    overrides: number;
+    pending: number;
+    validated_accuracy: number | null;
+  };
+  disease_distribution: Array<{ name: string; value: number }>;
+  confidence_histogram?: Array<{ name: string; count: number }>;
+  drift?: {
+    avg_disease_confidence_7d: number | null;
+    avg_disease_confidence_30d: number | null;
+    low_confidence_rate_7d: number | null;
+    predictions_last_7d: number;
+    low_confidence_last_7d: number;
+    retraining_candidates: number;
+    expert_correction_rate: number | null;
+    confidence_threshold: number;
+  };
 };
+
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: "farmer" | "expert" | "admin";
+  language: string;
+  created_at: string | null;
+  deleted_at: string | null;
+  scan_count: number;
+  farm_name: string | null;
+  farm_location: string | null;
+};
+
+export type AdminUsersResponse = {
+  total: number;
+  users: AdminUser[];
+};
+
 export type FeedbackLog = {
   id: number;
   prediction_id: number;
@@ -116,4 +163,5 @@ export type FeedbackLog = {
   farmer_note: string | null;
   created_at: string;
 };
+
 
