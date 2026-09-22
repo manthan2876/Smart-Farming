@@ -243,10 +243,31 @@ async def predict(
                 detail="Image exceeds the 10 MB upload limit.",
             )
 
+        # Magic-byte file content validation
+        import io
+        from PIL import Image as PILImage
+        try:
+            with PILImage.open(io.BytesIO(image_bytes)) as img_check:
+                img_check.verify()
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The uploaded file is not a valid or readable image.",
+            )
+
         hash_val = hashlib.sha256(image_bytes).hexdigest()
         filename = f"{hash_val}{suffix}"
         upload_path = _UPLOAD_DIR / filename
         relative_image_path = storage_relative_path(upload_path)
+
+        # Save to active storage backend (Local disk or AWS S3)
+        from app.core.storage import get_storage
+        storage = get_storage()
+        storage.save(image_bytes, f"uploads/{filename}", content_type=file.content_type)
+
+        # Ensure local disk copy exists for immediate OpenCV preprocessing
+        if not upload_path.exists():
+            upload_path.write_bytes(image_bytes)
 
         # Same image + same plot => reuse the existing prediction instead of re-running the
         # pipeline. A FAILED prediction is never served from cache, so the user can retry.
@@ -652,3 +673,159 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
             await websocket.close()
         except Exception:
             pass
+
+
+# --------------------------------------------------------------------------------------
+# Media Authorization Gateway & ARQ Job Status
+# --------------------------------------------------------------------------------------
+@router.get("/predictions/{prediction_id}/media-url/{media_type}")
+async def get_prediction_media_url(
+    prediction_id: int,
+    media_type: str,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """
+    Get a secure 15-minute authorized URL for prediction media (raw leaf, processed overlay, or audio).
+    Strict Access Control:
+    - Farmer owner: Allowed for own predictions.
+    - Reviewing expert: Allowed if prediction has pending/verified expert review.
+    - Admin: Allowed for all predictions.
+    - Others: 403 Forbidden.
+    """
+    from app.models import Prediction, User
+    from app.core.storage import get_storage
+
+    caller = session.get(User, user_id)
+    pred = session.get(Prediction, prediction_id)
+    if not pred:
+        raise HTTPException(status_code=404, detail="Prediction not found.")
+
+    is_owner = str(pred.user_id) == str(user_id)
+    is_admin = caller and caller.role == "admin"
+    is_reviewing_expert = (
+        caller and caller.role in ["expert", "admin"] and (
+            pred.status in ["pending_expert_review", "verified", "rescan_requested"]
+            or pred.expert_review is not None
+        )
+    )
+
+    if not (is_owner or is_admin or is_reviewing_expert):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission to access media for this prediction.",
+        )
+
+    norm_type = media_type.lower().strip()
+    storage = get_storage()
+    key: str | None = None
+    if norm_type in ["raw", "image", "upload"]:
+        key = pred.raw_path or (pred.image.raw_path if pred.image else None)
+    elif norm_type in ["processed", "mask"]:
+        key = pred.processed_path or (pred.image.processed_path if pred.image else None)
+    elif norm_type in ["audio", "tts"]:
+        res = pred.result if isinstance(pred.result, dict) else {}
+        key = res.get("audio_path")
+    else:
+        raise HTTPException(status_code=422, detail="Invalid media_type. Allowed: raw, processed, audio.")
+
+    if not key:
+        raise HTTPException(status_code=404, detail=f"No {media_type} asset recorded for this prediction.")
+
+    url = storage.get_url(key, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+    return {
+        "prediction_id": prediction_id,
+        "media_type": norm_type,
+        "url": url,
+        "expires_in": settings.S3_PRESIGNED_EXPIRY_SECONDS,
+    }
+
+
+@router.get("/predictions/{prediction_id}/media/{media_type}")
+async def get_prediction_media_stream(
+    prediction_id: int,
+    media_type: str,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """
+    Direct access stream or redirect to authorized presigned URL with ownership enforcement.
+    """
+    from app.models import Prediction, User
+    from app.core.storage import get_storage
+    from fastapi.responses import Response, RedirectResponse
+
+    caller = session.get(User, user_id)
+    pred = session.get(Prediction, prediction_id)
+    if not pred:
+        raise HTTPException(status_code=404, detail="Prediction not found.")
+
+    is_owner = str(pred.user_id) == str(user_id)
+    is_admin = caller and caller.role == "admin"
+    is_reviewing_expert = (
+        caller and caller.role in ["expert", "admin"] and (
+            pred.status in ["pending_expert_review", "verified", "rescan_requested"]
+            or pred.expert_review is not None
+        )
+    )
+
+    if not (is_owner or is_admin or is_reviewing_expert):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission to access media for this prediction.",
+        )
+
+    norm_type = media_type.lower().strip()
+    storage = get_storage()
+    key: str | None = None
+    mime = "application/octet-stream"
+    if norm_type in ["raw", "image", "upload"]:
+        key = pred.raw_path or (pred.image.raw_path if pred.image else None)
+        mime = "image/jpeg"
+    elif norm_type in ["processed", "mask"]:
+        key = pred.processed_path or (pred.image.processed_path if pred.image else None)
+        mime = "image/jpeg"
+    elif norm_type in ["audio", "tts"]:
+        res = pred.result if isinstance(pred.result, dict) else {}
+        key = res.get("audio_path")
+        mime = "audio/mpeg"
+    else:
+        raise HTTPException(status_code=422, detail="Invalid media_type. Allowed: raw, processed, audio.")
+
+    if not key:
+        raise HTTPException(status_code=404, detail=f"No {media_type} asset found for this prediction.")
+
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
+        presigned_url = storage.get_url(key, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+        return RedirectResponse(url=presigned_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+    try:
+        content = storage.get(key)
+        return Response(content=content, media_type=mime)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Media file not found.")
+
+
+@router.get("/predictions/jobs/{job_id}")
+async def get_prediction_job_status(
+    job_id: str,
+    request: Request,
+    user_id: str = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Retrieve ARQ worker queue status for a submitted job."""
+    arq_pool = getattr(request.app.state, "arq_pool", None)
+    if arq_pool is None:
+        return {"job_id": job_id, "status": "unknown", "detail": "Worker pool unavailable."}
+    from arq.jobs import Job
+    job = Job(job_id=job_id, redis=arq_pool)
+    try:
+        job_status = await job.status()
+        info = await job.info()
+        return {
+            "job_id": job_id,
+            "status": str(job_status),
+            "enqueue_time": info.enqueue_time.isoformat() if info and info.enqueue_time else None,
+            "success": info.success if info else None,
+        }
+    except Exception as exc:
+        return {"job_id": job_id, "status": "error", "detail": str(exc)}
