@@ -1,9 +1,10 @@
-﻿import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { LogIn, Sprout } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Input } from "../components/ui";
+import { getDefaultRouteForRole } from "../lib/routes";
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
@@ -11,15 +12,23 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { user, isAuthenticated, signIn } = useAuth();
+
+  // If already authenticated, redirect to role's designated landing route
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(getDefaultRouteForRole(user.role), { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await signIn(identifier, password);
-      navigate("/dashboard");
+      const loggedUser = await signIn(identifier, password);
+      const targetRoute = getDefaultRouteForRole(loggedUser.role);
+      navigate(targetRoute, { replace: true });
     } catch (err: any) {
       setError(err.message || "Failed to login. Please check your credentials.");
     } finally {
@@ -37,7 +46,7 @@ export default function LoginPage() {
           >
             <Sprout className="mb-7 text-farmer-700" size={40} />
             <h2 className="font-display text-3xl text-ink sm:text-4xl">Welcome Back</h2>
-            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-muted">[ACCESS YOUR DASHBOARD]</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-muted">[ACCESS YOUR ACCOUNT]</p>
 
             {error && <div className="mt-6 rounded-sm border border-red-100 bg-red-50 p-3 text-sm text-danger">{error}</div>}
 

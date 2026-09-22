@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getDefaultRouteForRole } from "../lib/routes";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -27,13 +28,14 @@ export default function ProtectedRoute({ children, adminOnly = false, strictAdmi
     return <Navigate to="/auth/login" replace />;
   }
 
-  // If route requires admin rights and user is not an admin, redirect to dashboard
+  // If route requires super-admin rights and user is not an admin, redirect to role's home
   if (strictAdminOnly && user?.role !== "admin") {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultRouteForRole(user?.role)} replace />;
   }
 
+  // If route requires admin or expert rights and user is neither, redirect to role's home
   if (adminOnly && user?.role !== "admin" && user?.role !== "expert") {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultRouteForRole(user?.role)} replace />;
   }
 
   return <>{children}</>;

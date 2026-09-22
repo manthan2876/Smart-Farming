@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { CloudSun, Activity, Scan, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
@@ -41,6 +41,10 @@ export default function DashboardPage() {
     queryFn: () => request<WeatherData>(`/weather?lat=${lat}&lon=${lon}`, {}, token!),
     enabled: !!token,
   });
+
+  if (user?.role === "expert") {
+    return <Navigate to="/admin/expert" replace />;
+  }
 
   return (
     <div className="space-y-6 pb-12">

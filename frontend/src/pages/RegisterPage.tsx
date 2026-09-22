@@ -1,9 +1,11 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { UserPlus, Sprout } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Input } from "../components/ui";
+
+import { getDefaultRouteForRole } from "../lib/routes";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -23,8 +25,8 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await signUp({ name, email, phone, password, language, location });
-      navigate("/dashboard");
+      const newUser = await signUp({ name, email, phone, password, language, location });
+      navigate(getDefaultRouteForRole(newUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || "Failed to create account.");
     } finally {

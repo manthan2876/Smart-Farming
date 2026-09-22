@@ -13,8 +13,8 @@ interface AuthContextType {
   t: (key: TranslationKey) => string;
   setLanguage: (lang: Language) => Promise<void>;
   setUnits: (units: Units) => void;
-  signIn: (identifier: string, pass: string) => Promise<void>;
-  signUp: (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => Promise<void>;
+  signIn: (identifier: string, pass: string) => Promise<Profile>;
+  signUp: (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => Promise<Profile>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return t(key, language);
   };
 
-  const signIn = async (identifier: string, pass: string) => {
+  const signIn = async (identifier: string, pass: string): Promise<Profile> => {
     const res: AuthResponse = await login(identifier, pass);
     const accessToken = res.tokens.access_token;
     localStorage.setItem("smart_farm_token", accessToken);
@@ -104,9 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLanguageState(res.user.language as Language);
       localStorage.setItem(PREF_LANG_KEY, res.user.language);
     }
+    return res.user;
   };
 
-  const signUp = async (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => {
+  const signUp = async (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }): Promise<Profile> => {
     const res: AuthResponse = await register({
       name: payload.name,
       email: payload.email || "",
@@ -123,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLanguageState(payload.language as Language);
       localStorage.setItem(PREF_LANG_KEY, payload.language);
     }
+    return res.user;
   };
 
   const signOut = async () => {
