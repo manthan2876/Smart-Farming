@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/prediction.dart';
+import '../utils/app_logger.dart';
 
 class ApiService {
   ApiService({String? baseUrl, this.accessToken})
@@ -369,9 +370,60 @@ class ApiService {
     }
   }
 
-  Future<List<Prediction>> history() async {
-    final response = await http.get(Uri.parse('$baseUrl/history?limit=30'), headers: _headers);
-    if (response.statusCode >= 400) throw Exception('History unavailable');
-    return (jsonDecode(response.body) as List).map((item) => Prediction.fromJson(item)).toList();
+  Future<List<Prediction>> history({int limit = 30}) async {
+    final url = '$baseUrl/history?limit=$limit';
+    AppLogger.network('GET', url, detail: 'Fetching historical crop scans');
+    try {
+      final response = await http.get(Uri.parse(url), headers: _headers);
+      AppLogger.network(
+        'GET',
+        url,
+        statusCode: response.statusCode,
+        detail: 'Response payload: ${response.body.length} bytes',
+      );
+
+      if (response.statusCode >= 400) {
+        AppLogger.error(
+          'ApiService',
+          'Failed to retrieve scan history (HTTP ${response.statusCode}): ${response.body}',
+        );
+        throw Exception('History unavailable (${response.statusCode})');
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        AppLogger.warn('ApiService', 'Expected List from /history but received: ${decoded.runtimeType}');
+        return [];
+      }
+
+      final List<Prediction> items = [];
+      for (final raw in decoded) {
+        if (raw is Map<String, dynamic>) {
+          try {
+            final pred = Prediction.fromJson(raw);
+            items.add(pred);
+          } catch (e, stack) {
+            AppLogger.error('ApiService', 'Error parsing prediction record #${raw['prediction_id'] ?? raw['id']}: $e', e, stack);
+          }
+        } else if (raw is Map) {
+          try {
+            final pred = Prediction.fromJson(raw.cast<String, dynamic>());
+            items.add(pred);
+          } catch (e, stack) {
+            AppLogger.error('ApiService', 'Error parsing prediction record: $e', e, stack);
+          }
+        }
+      }
+
+      AppLogger.info('ApiService', 'Successfully parsed ${items.length} of ${decoded.length} scan history items:');
+      for (final p in items) {
+        AppLogger.info('ApiService', '  • Scan #${p.id}: ${p.crop} | ${p.disease} (${p.severity}% severity, ${(p.confidence * 100).round()}% conf) [${p.status}]');
+      }
+
+      return items;
+    } catch (e, stack) {
+      AppLogger.error('ApiService', 'Exception during history() call', e, stack);
+      rethrow;
+    }
   }
 }

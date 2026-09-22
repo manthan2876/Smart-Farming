@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/app_logger.dart';
 import '../shell/farmer_shell.dart';
 import 'login_screen.dart';
 
@@ -27,11 +28,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
     final prefs = await SharedPreferences.getInstance();
     final savedToken = prefs.getString('auth_token');
     if (savedToken != null && savedToken.isNotEmpty) {
+      AppLogger.info('AuthWrapper', 'Found stored auth token. Validating user session...');
       final api = ApiService(accessToken: savedToken);
       try {
         final profile = await api.getProfile();
         final role = profile['role']?.toString().toLowerCase();
         if (role == 'farmer') {
+          AppLogger.info('AuthWrapper', 'Session restored successfully for ${profile['name']} (role: farmer).');
           if (mounted) {
             setState(() {
               _token = savedToken;
@@ -41,12 +44,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
           }
           return;
         } else {
-          // Log out non-farmer immediately
+          AppLogger.warn('AuthWrapper', 'User has role "$role" but mobile app is restricted to farmers. Clearing session.');
           await prefs.remove('auth_token');
         }
-      } catch (_) {
+      } catch (e) {
+        AppLogger.warn('AuthWrapper', 'Stored token is expired or invalid: $e. Prompting login.');
         await prefs.remove('auth_token');
       }
+    } else {
+      AppLogger.info('AuthWrapper', 'No stored auth token found. Displaying login screen.');
     }
     if (mounted) {
       setState(() {
@@ -58,6 +64,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _onLoggedIn(String token, Map<String, dynamic> user) async {
+    AppLogger.info('AuthWrapper', 'Farmer logged in successfully: ${user['name']} (${user['email'] ?? user['phone']})');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
     if (mounted) {
@@ -69,6 +76,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _onLoggedOut() async {
+    AppLogger.info('AuthWrapper', 'Farmer logged out. Clearing local session.');
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     if (mounted) {

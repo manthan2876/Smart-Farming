@@ -8,6 +8,7 @@ import '../../i18n/domain_translations.dart';
 import '../../services/api_service.dart';
 import '../../services/sync_service.dart';
 import '../../services/tts_service.dart';
+import '../../utils/app_logger.dart';
 import '../../theme/app_theme.dart';
 import '../alerts/alerts_screen.dart';
 import '../farm/farm_screen.dart';
@@ -92,6 +93,7 @@ class _FarmerShellState extends State<FarmerShell> {
   }
 
   Future<void> _loadAllData() async {
+    AppLogger.info('FarmerShell', 'Initializing mobile session data for user: ${_userProfile['email'] ?? _userProfile['name']}');
     await Future.wait([
       _loadHistory(),
       _loadProfile(),
@@ -102,36 +104,49 @@ class _FarmerShellState extends State<FarmerShell> {
   }
 
   Future<void> _loadHistory() async {
+    AppLogger.info('FarmerShell', 'Fetching past scan history from API...');
     try {
       final items = await _api.history();
-      if (mounted && items.isNotEmpty) {
+      AppLogger.info('FarmerShell', 'Received ${items.length} scan records.');
+      if (mounted) {
         setState(() {
           _history
             ..clear()
             ..addAll(items);
-          _latest ??= items.first;
+          if (items.isNotEmpty) {
+            _latest ??= items.first;
+          }
         });
+        AppLogger.info('FarmerShell', 'UI state updated with ${_history.length} scans (Latest: ${_latest?.id} ${_latest?.disease}).');
       }
-    } catch (_) {}
+    } catch (e, stack) {
+      AppLogger.error('FarmerShell', 'Failed to load scan history: $e', e, stack);
+    }
   }
 
   Future<void> _loadProfile() async {
     try {
       final profile = await _api.getProfile();
+      AppLogger.info('FarmerShell', 'Profile loaded for ${profile['name']} (${profile['email'] ?? profile['phone']})');
       if (mounted) setState(() => _userProfile = profile);
-    } catch (_) {}
+    } catch (e, stack) {
+      AppLogger.error('FarmerShell', 'Failed to load profile: $e', e, stack);
+    }
   }
 
   Future<void> _loadFarm() async {
     try {
       final farm = await _api.getFarm();
+      AppLogger.info('FarmerShell', 'Farm data loaded: ${farm['name'] ?? 'None'} (${farm['area_acres'] ?? 0} acres)');
       if (mounted) {
         setState(() => _farm = farm);
         if (_weather == null && farm['latitude'] != null) {
           _loadWeather();
         }
       }
-    } catch (_) {}
+    } catch (e, stack) {
+      AppLogger.error('FarmerShell', 'Failed to load farm: $e', e, stack);
+    }
   }
 
   Future<void> _loadWeather() async {
@@ -147,17 +162,21 @@ class _FarmerShellState extends State<FarmerShell> {
           71.1924;
 
       final weather = await _api.getWeather(lat: lat, lon: lon, language: lang);
+      AppLogger.info('FarmerShell', 'Weather loaded for ($lat, $lon): ${weather['temperature_celsius']}°C, condition: ${weather['condition']}');
       if (mounted) setState(() => _weather = weather);
-    } catch (e) {
-      debugPrint('[FarmerShell] Weather load error: $e');
+    } catch (e, stack) {
+      AppLogger.error('FarmerShell', 'Weather load error: $e', e, stack);
     }
   }
 
   Future<void> _loadAlerts() async {
     try {
       final alerts = await _api.getAlerts();
+      AppLogger.info('FarmerShell', 'Alerts loaded: ${alerts.length} total (${alerts.where((a) => a['is_read'] != true).length} unread)');
       if (mounted) setState(() => _alerts = alerts);
-    } catch (_) {}
+    } catch (e, stack) {
+      AppLogger.error('FarmerShell', 'Failed to load alerts: $e', e, stack);
+    }
   }
 
   void _openCreatePredictionModal({Uint8List? initialBytes, String? initialName}) {

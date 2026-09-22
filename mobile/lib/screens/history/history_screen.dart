@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/prediction.dart';
 import '../../providers/locale_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/app_logger.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({
@@ -17,6 +18,7 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLogger.info('HistoryScreen', 'Rendering scan history list with ${history.length} past scans.');
     final listWidget = ListView(
       padding: const EdgeInsets.all(22),
       children: [
@@ -56,7 +58,10 @@ class HistoryScreen extends StatelessWidget {
               ),
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
-                onTap: () => onSelectPrediction(item),
+                onTap: () {
+                  AppLogger.info('HistoryScreen', 'Tapped scan item #${item.id}: ${item.crop} - ${item.disease}');
+                  onSelectPrediction(item);
+                },
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 leading: const CircleAvatar(
                   backgroundColor: AppColors.primaryLight,

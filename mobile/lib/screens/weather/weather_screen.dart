@@ -137,7 +137,14 @@ class _WeatherScreenState extends State<WeatherScreen> {
     final weather = widget.weather;
     final temp = weather?['temperature_celsius'] != null ? '${weather!['temperature_celsius']}°C' : '--';
     final hum = weather?['humidity_percent'] != null ? '${weather!['humidity_percent']}%' : '--';
-    final wind = weather?['wind_speed_mps'] != null ? '${weather!['wind_speed_mps']} km/h' : '--';
+    final rawWind = weather?['wind_speed_mps'];
+    final String wind;
+    if (rawWind != null && rawWind is num) {
+      final kmh = (rawWind.toDouble() * 3.6).toStringAsFixed(1);
+      wind = '$kmh km/h';
+    } else {
+      wind = '--';
+    }
     final rawCond = weather?['condition']?.toString() ?? 'Clear Sky';
     final cond = context.loc.weather(rawCond);
 
@@ -169,9 +176,29 @@ class _WeatherScreenState extends State<WeatherScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              context.tr('weatherTitle'),
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('weatherTitle'),
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+                ),
+                if (weather?['cached'] == true)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cached, size: 12, color: AppColors.textSubtle),
+                        SizedBox(width: 4),
+                        Text(
+                          'Cached observation',
+                          style: TextStyle(fontSize: 11, color: AppColors.textSubtle),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
             if (widget.onRefresh != null)
               IconButton(
@@ -182,6 +209,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ],
         ),
         const SizedBox(height: 22),
+
         if (weather == null) ...[
           Container(
             padding: const EdgeInsets.all(20),

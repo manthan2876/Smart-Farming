@@ -20,17 +20,41 @@ class PredictionProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<Prediction?> submitBytes(Uint8List bytes, String fileName, {String location = 'North plot', String language = 'English'}) async {
+  Future<Prediction?> submitBytes(
+    Uint8List bytes,
+    String fileName, {
+    String location = 'North plot',
+    String language = 'English',
+    int? plotId,
+    double? lat,
+    double? lon,
+  }) async {
     isBusy = true;
     notifyListeners();
     try {
-      final result = await api.predictBytes(bytes, fileName, location: location, language: language);
+      final result = await api.predictBytes(
+        bytes,
+        fileName,
+        location: location,
+        language: language,
+        plotId: plotId,
+        lat: lat ?? 21.7645,
+        lon: lon ?? 72.1519,
+      );
       final pid = (result['prediction_id'] as num?)?.toInt() ?? (result['id'] as num?)?.toInt() ?? 0;
       final pred = pid > 0 ? await api.getPrediction(pid) : Prediction.fromJson(result);
       items.insert(0, pred);
       return pred;
     } catch (_) {
-      await sync.enqueueBytes(bytes, fileName, location: location, language: language);
+      await sync.enqueueBytes(
+        bytes,
+        fileName,
+        location: location,
+        language: language,
+        plotId: plotId,
+        lat: lat,
+        lon: lon,
+      );
       pending = await sync.pendingCount();
       return null;
     } finally {
