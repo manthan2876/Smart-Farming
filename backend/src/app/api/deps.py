@@ -14,8 +14,13 @@ _ACCESS_MINUTES = 30
 _REFRESH_DAYS = 30
 
 
+from app.core.config import settings
+
 def _secret_key() -> str:
-    return os.getenv("JWT_SECRET_KEY", "change-this-development-secret-key-32-bytes")
+    key = getattr(settings, "JWT_SECRET_KEY", None) or os.getenv("JWT_SECRET_KEY", "change-this-development-secret-key-32-bytes")
+    if getattr(settings, "ENVIRONMENT", "development") == "production" and key in ("change-this-development-secret-key-32-bytes", "dev-secret-key-change-me"):
+        raise RuntimeError("FATAL: Insecure default JWT_SECRET_KEY detected in production environment.")
+    return key
 
 
 def hash_password(password: str) -> str:
@@ -67,18 +72,20 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_BEARER),
     x_user_id: str | None = Header(default=None),
 ) -> str:
-    """Resolve a JWT user, retaining X-User-ID only as a development fallback."""
+    """Resolve a JWT user, retaining X-User-ID only as an explicit development fallback."""
     if credentials is not None:
         try:
             return decode_token(credentials.credentials)
         except ValueError as exc:
             raise HTTPException(status_code=401, detail=str(exc)) from exc
-    if not x_user_id or not x_user_id.strip():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="A bearer access token is required.",
-        )
-    return x_user_id.strip()
+    if getattr(settings, "ENVIRONMENT", "development") == "development" and getattr(settings, "DEBUG", True):
+        if x_user_id and x_user_id.strip():
+            return x_user_id.strip()
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="A valid bearer access token is required.",
+    )
+
 
 from app.core import get_session
 from app.crud import get_user

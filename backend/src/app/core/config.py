@@ -27,6 +27,19 @@ class Settings(BaseSettings):
     GOOGLE_TTS_API_KEY: str = Field(default="")
     GOOGLE_TRANSLATION_API_KEY: str = Field(default="")
 
+    # AWS S3 Storage
+    STORAGE_BACKEND: str = Field(default="local")
+    AWS_ACCESS_KEY_ID: str | None = Field(default=None)
+    AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
+    AWS_REGION: str = Field(default="us-east-1")
+    AWS_S3_BUCKET: str = Field(default="smart-farming-data-575509634394-us-east-1-an")
+    S3_PRESIGNED_EXPIRY_SECONDS: int = 900
+
+    # Environment and Security
+    ENVIRONMENT: str = Field(default="development")
+    DEBUG: bool = Field(default=True)
+    JWT_SECRET_KEY: str = Field(default="dev-secret-key-change-me")
+
     model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
 
 settings = Settings()

@@ -18,6 +18,10 @@ class User(Base):
         DateTime(timezone=True), 
         default=lambda: datetime.now(timezone.utc)
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+
 
     predictions: Mapped[list["Prediction"]] = relationship(back_populates="user")
     farm: Mapped["Farm | None"] = relationship(

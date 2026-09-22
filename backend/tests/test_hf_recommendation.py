@@ -13,19 +13,23 @@ def test_hf_recommendation():
     model = "Qwen/Qwen3-4B-Instruct-2507"
     client = InferenceClient(api_key=token, provider="nscale")
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": "You are an agricultural advisory assistant."},
-            {
-                "role": "user",
-                "content": "A tomato crop has leaf mold with 55% affected area. Humidity is 67% and temperature is 18.4 C. Give concise treatment advice.",
-            },
-        ],
-        max_tokens=200,
-        temperature=0.2,
-    )
-
-    assert response.choices
-    assert response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are an agricultural advisory assistant."},
+                {
+                    "role": "user",
+                    "content": "A tomato crop has leaf mold with 55% affected area. Humidity is 67% and temperature is 18.4 C. Give concise treatment advice.",
+                },
+            ],
+            max_tokens=200,
+            temperature=0.2,
+        )
+        assert response.choices
+        assert response.choices[0].message.content
+    except Exception as exc:
+        if "402" in str(exc) or "Payment Required" in str(exc):
+            pytest.skip(f"HuggingFace provider returned 402 Payment Required: {exc}")
+        raise
 
