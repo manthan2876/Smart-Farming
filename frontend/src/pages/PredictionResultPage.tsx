@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import imageCompression from "browser-image-compression";
-import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getPrediction, requestExpertReview } from "../api/predictions";
 import { Badge, Button, Card, Input } from "../components/ui";
@@ -151,7 +151,7 @@ export default function PredictionResultPage() {
   const isProcessing = status?.pipeline === "processing" || status?.preprocessing === "processing";
   const isFailed = status?.pipeline === "failed";
 
-  const AudioButton = ({ text }: { text: string }) => <Button variant="secondary" size="sm" onClick={() => toggleAudio(text)} disabled={isLoadingAudio}>
+  const AudioButton = ({ text }: { text: string }) => <Button variant="secondary" size="sm" className="no-print" onClick={() => toggleAudio(text)} disabled={isLoadingAudio}>
     {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
     {isLoadingAudio ? "Loading..." : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
   </Button>;
@@ -237,5 +237,156 @@ export default function PredictionResultPage() {
   };
 
   const historicalImages = primary.historical_images || [];
-  return <>{isUploading && <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4"><Loader2 size={52} className="animate-spin text-farmer-700" /><h2 className="mt-6 font-display text-2xl text-ink">Re-running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your follow-up photo.</p></div>}<motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}><div><Link to="/history" className="text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700">&larr; Back to History</Link><h1 className="mt-4 font-display text-3xl text-ink sm:text-4xl">Scan #{primary.prediction_id || id} Diagnosis {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}</h1></div>{isPendingReview && <Card className="border-admin-100 bg-admin-50"><h3 className="font-display text-xl text-admin-700">Additional Review Required</h3><p className="mt-2 text-sm leading-6 text-admin-700">This scan was routed to an agricultural specialist to verify the issue and ensure safe recommendations.</p></Card>}<Card className="flex flex-col gap-4 bg-canvas sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-display text-xl text-ink">Diagnostic Status</h3><div className="mt-3 flex flex-wrap gap-2"><Badge tone={status?.pipeline === "completed" ? "success" : "warning"}>Pipeline: {status?.pipeline || "Unknown"}</Badge><Badge tone={status?.expert_review === "completed" ? "info" : "neutral"}>Expert Review: {status?.expert_review || "Not Requested"}</Badge></div></div>{status?.expert_review === "not_requested" && !isFailed && <Button variant="secondary" onClick={handleRequestExpert}>{t("requestExpert")}</Button>}</Card>{historicalImages.length > 0 && <Card><h3 className="font-display text-xl text-ink">Disease Progression Timeline</h3><div className="mt-5 flex gap-3 overflow-x-auto pb-2">{historicalImages.map((item: any, index: number) => <div className="min-w-40 rounded-sm border border-line bg-canvas p-4" key={index}><div className="text-xs text-muted">{new Date(item.created_at).toLocaleDateString()}</div><div className="mt-2 font-semibold text-ink">{translateDisease(item.disease, language)}</div><div className={`mt-1 text-xs font-semibold ${item.severity_pct > 60 ? "text-danger" : "text-farmer-700"}`}>{t("severity")}: {item.severity_pct}%</div></div>)}<div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4"><div className="text-xs font-bold text-expert-700">Latest Scan</div><div className="mt-2 font-semibold text-ink">{translateDisease(primary.disease?.label, language)}</div><div className="mt-1 text-xs font-semibold text-farmer-700">{t("severity")}: {primary.severity?.percent || 0}%</div></div></div></Card>}{isProcessing ? <Card className="flex flex-col items-center text-center" padding="lg"><Loader2 size={48} className="animate-spin text-farmer-700" /><h2 className="mt-5 font-display text-2xl text-ink">Running AI Pipeline...</h2><p className="mt-2 text-muted">Analyzing your crop image in the background. Please wait.</p></Card> : <PredictionBlock predictionData={primary} />}{original && <Card><details><summary className="cursor-pointer font-display text-xl text-ink">View Original Prediction Details</summary><div className="mt-6"><PredictionBlock predictionData={original} /></div></details></Card>}{!isPendingReview && !isFailed && <Card><h3 className="font-display text-xl text-ink">Farmer Field Feedback</h3>{feedbackSubmitted ? <div className="mt-4 rounded-sm bg-farmer-700 p-4 text-sm font-semibold text-white">Thank you for verifying this diagnosis. Your feedback helps improve the AI for everyone!</div> : <><p className="mt-2 text-sm leading-6 text-muted">Did this diagnosis match what you observed in the field? Help us improve the model by validating the result.</p><textarea className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" placeholder="Optional notes" value={farmerNote} onChange={(event) => setFarmerNote(event.target.value)} /><div className="mt-4 flex flex-col gap-3 sm:flex-row"><Button className="flex-1" onClick={() => submitFeedback(true)}>{t("accurate")}</Button><Button variant="secondary" className="flex-1 border-danger text-danger" onClick={() => submitFeedback(false)}>{t("incorrect")}</Button></div></>}</Card>}</motion.div></>;
+  return (
+    <>
+      {isUploading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4 no-print">
+          <Loader2 size={52} className="animate-spin text-farmer-700" />
+          <h2 className="mt-6 font-display text-2xl text-ink">Re-running AI Pipeline...</h2>
+          <p className="mt-2 text-muted">Analyzing your follow-up photo.</p>
+        </div>
+      )}
+      <motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Printable Official Header */}
+        <div className="hidden print-only mb-6 border-b border-gray-300 pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Smart Farming Diagnostic & Treatment Report</h1>
+              <p className="text-xs text-gray-600 mt-1">
+                Scan Reference: #{primary.prediction_id || id} | Generated: {new Date().toLocaleString()}
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-bold text-emerald-800">Smart Farming Platform</span>
+              <p className="text-xs text-gray-500">Agri-tech Field Intelligence</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <Link to="/history" className="no-print text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700">
+              &larr; Back to History
+            </Link>
+            <h1 className="mt-2 font-display text-3xl text-ink sm:text-4xl">
+              Scan #{primary.prediction_id || id} Diagnosis {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}
+            </h1>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => window.print()}
+            className="no-print flex items-center gap-2"
+          >
+            <Printer size={16} />
+            <span>Print / Export PDF</span>
+          </Button>
+        </div>
+
+        {isPendingReview && (
+          <Card className="border-admin-100 bg-admin-50">
+            <h3 className="font-display text-xl text-admin-700">Additional Review Required</h3>
+            <p className="mt-2 text-sm leading-6 text-admin-700">
+              This scan was routed to an agricultural specialist to verify the issue and ensure safe recommendations.
+            </p>
+          </Card>
+        )}
+
+        <Card className="flex flex-col gap-4 bg-canvas sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-display text-xl text-ink">Diagnostic Status</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Badge tone={status?.pipeline === "completed" ? "success" : "warning"}>
+                Pipeline: {status?.pipeline || "Unknown"}
+              </Badge>
+              <Badge tone={status?.expert_review === "completed" ? "info" : "neutral"}>
+                Expert Review: {status?.expert_review || "Not Requested"}
+              </Badge>
+            </div>
+          </div>
+          {status?.expert_review === "not_requested" && !isFailed && (
+            <Button variant="secondary" className="no-print" onClick={handleRequestExpert}>
+              {t("requestExpert")}
+            </Button>
+          )}
+        </Card>
+
+        {historicalImages.length > 0 && (
+          <Card>
+            <h3 className="font-display text-xl text-ink">Disease Progression Timeline</h3>
+            <div className="mt-5 flex gap-3 overflow-x-auto pb-2">
+              {historicalImages.map((item: any, index: number) => (
+                <div className="min-w-40 rounded-sm border border-line bg-canvas p-4" key={index}>
+                  <div className="text-xs text-muted">{new Date(item.created_at).toLocaleDateString()}</div>
+                  <div className="mt-2 font-semibold text-ink">{translateDisease(item.disease, language)}</div>
+                  <div className={`mt-1 text-xs font-semibold ${item.severity_pct > 60 ? "text-danger" : "text-farmer-700"}`}>
+                    {t("severity")}: {item.severity_pct}%
+                  </div>
+                </div>
+              ))}
+              <div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4">
+                <div className="text-xs font-bold text-expert-700">Latest Scan</div>
+                <div className="mt-2 font-semibold text-ink">{translateDisease(primary.disease?.label, language)}</div>
+                <div className="mt-1 text-xs font-semibold text-farmer-700">
+                  {t("severity")}: {primary.severity?.percent || 0}%
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {isProcessing ? (
+          <Card className="flex flex-col items-center text-center" padding="lg">
+            <Loader2 size={48} className="animate-spin text-farmer-700" />
+            <h2 className="mt-5 font-display text-2xl text-ink">Running AI Pipeline...</h2>
+            <p className="mt-2 text-muted">Analyzing your crop image in the background. Please wait.</p>
+          </Card>
+        ) : (
+          <PredictionBlock predictionData={primary} />
+        )}
+
+        {original && (
+          <Card>
+            <details>
+              <summary className="cursor-pointer font-display text-xl text-ink">View Original Prediction Details</summary>
+              <div className="mt-6">
+                <PredictionBlock predictionData={original} />
+              </div>
+            </details>
+          </Card>
+        )}
+
+        {!isPendingReview && !isFailed && (
+          <Card className="no-print">
+            <h3 className="font-display text-xl text-ink">Farmer Field Feedback</h3>
+            {feedbackSubmitted ? (
+              <div className="mt-4 rounded-sm bg-farmer-700 p-4 text-sm font-semibold text-white">
+                Thank you for verifying this diagnosis. Your feedback helps improve the AI for everyone!
+              </div>
+            ) : (
+              <>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Did this diagnosis match what you observed in the field? Help us improve the model by validating the result.
+                </p>
+                <textarea
+                  className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100"
+                  placeholder="Optional notes"
+                  value={farmerNote}
+                  onChange={(event) => setFarmerNote(event.target.value)}
+                />
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <Button className="flex-1" onClick={() => submitFeedback(true)}>
+                    {t("accurate")}
+                  </Button>
+                  <Button variant="secondary" className="flex-1 border-danger text-danger" onClick={() => submitFeedback(false)}>
+                    {t("incorrect")}
+                  </Button>
+                </div>
+              </>
+            )}
+          </Card>
+        )}
+      </motion.div>
+    </>
+  );
 }

@@ -50,3 +50,23 @@
     font-family: "Fraunces", "Newsreader", Georgia, serif;
   }
 }
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  aside, nav, button, .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  @page {
+    margin: 1.2cm;
+    size: auto;
+  }
+}
+
