@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import Sidebar from "./SideBar";
+import Sidebar from "./Sidebar";
 import { motion } from "motion/react";
 import { Menu } from "lucide-react";
 import { useState } from "react";
