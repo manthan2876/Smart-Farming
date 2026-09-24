@@ -32,12 +32,15 @@ class Settings(BaseSettings):
     MODEL_SERVER_URL: str = Field(default="http://127.0.0.1:8001")
     MODEL_SERVER_TIMEOUT: int = Field(default=60)
 
-    # AWS S3 Storage
+    # Storage (AWS S3 & Google Cloud Storage)
     STORAGE_BACKEND: str = Field(default="local")
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)
     AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
     AWS_REGION: str = Field(default="us-east-1")
-    AWS_S3_BUCKET: str = Field(default="smart-farming-data-575509634394-us-east-1-an")
+    AWS_S3_BUCKET: str = Field(default="smart-farming-data")
+    AWS_ENDPOINT_URL: str | None = Field(default=None)
+    STORAGE_ENDPOINT_URL: str | None = Field(default=None)
+    GCS_BUCKET: str | None = Field(default=None)
     S3_PRESIGNED_EXPIRY_SECONDS: int = 900
 
     # Environment and Security

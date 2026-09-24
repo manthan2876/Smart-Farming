@@ -69,7 +69,7 @@ def _apply_pipeline_status(result: dict[str, Any], db_status: str | None) -> dic
 
 def _enrich_image_urls(result: dict) -> dict:
     """If S3 storage is enabled, generate fresh presigned S3 URLs for raw and processed images."""
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("s3", "gcs"):
         try:
             from app.core.storage import get_storage
             storage = get_storage()
@@ -923,7 +923,7 @@ async def get_prediction_media_stream(
     if not key:
         raise HTTPException(status_code=404, detail=f"No {media_type} asset found for this prediction.")
 
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("s3", "gcs"):
         presigned_url = storage.get_url(key, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
         return RedirectResponse(url=presigned_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
