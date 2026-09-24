@@ -9,8 +9,20 @@ export function getApiUrl() {
   return API_URL;
 }
 
-export function getAssetUrl(path: string) {
-  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+export function getAssetUrl(path: string | null | undefined): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  // Normalize Windows backslashes to forward slashes
+  let clean = path.replace(/\\/g, "/");
+  // Extract relative storage key if path contains absolute prefix
+  const dataIdx = clean.indexOf("data/");
+  if (dataIdx !== -1) {
+    clean = clean.slice(dataIdx);
+  }
+  const rel = clean.startsWith("/") ? clean : `/${clean}`;
+  return `${API_URL}${rel}`;
 }
 export function getWebSocketUrl(path: string) {
   const url = new URL(API_URL);
@@ -31,6 +43,10 @@ export async function request<T>(
     const headers = new Headers(options.headers);
     if (currentToken) {
       headers.set("Authorization", `Bearer ${currentToken}`);
+    }
+    const savedLang = localStorage.getItem("smart_farm_lang");
+    if (savedLang && !headers.has("Accept-Language")) {
+      headers.set("Accept-Language", savedLang);
     }
     if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");

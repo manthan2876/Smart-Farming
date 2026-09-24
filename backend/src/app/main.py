@@ -46,6 +46,11 @@ async def lifespan(app: FastAPI):
     start_scheduler()
     app.state.arq_pool = await init_arq()
     start_weather_cron()
+    try:
+        from app.api.endpoints.tts import sync_existing_audio_to_storage
+        sync_existing_audio_to_storage()
+    except Exception:
+        pass
     yield
     await close_arq()
     shutdown_scheduler()

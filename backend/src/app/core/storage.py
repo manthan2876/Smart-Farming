@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import io
+import time
+from datetime import datetime, timezone
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -230,4 +232,170 @@ def reset_storage() -> None:
     """Reset storage singleton (useful in test harnesses)."""
     global _STORAGE_INSTANCE
     _STORAGE_INSTANCE = None
+
+
+def purge_orphaned_blobs(
+    session: Any,
+    dry_run: bool = False,
+    grace_seconds: int = 0,
+    prefixes: list[str] | None = None,
+) -> dict[str, Any]:
+    """Purge orphaned leaf blobs and media assets from BOTH object storage (S3) and local disk storage.
+
+    A blob is considered orphaned if its path is not referenced in the database by any
+    Image (raw_path, processed_path), Prediction (raw_path, processed_path),
+    or DatasetCandidate (image_path).
+
+    Args:
+        session: Active SQLAlchemy database session.
+        dry_run: If True, returns count and list of unreferenced files without deleting them.
+        grace_seconds: Minimum age of files in seconds before they can be considered orphaned.
+                       (Protects in-flight prediction uploads from being deleted before DB commit).
+        prefixes: Target storage prefixes/folders (default: ["uploads", "processed", "audio"]).
+
+    Returns:
+        Summary dict containing overall deleted count, local deleted count, and S3 deleted count.
+    """
+    prefixes = prefixes or ["uploads", "processed"]
+    from app.models import Image, Prediction, DatasetCandidate
+
+    valid_keys: set[str] = set()
+
+    # 1. Images table
+    try:
+        for img in session.query(Image).all():
+            for p in (img.raw_path, img.processed_path):
+                if p:
+                    clean = p.replace("\\", "/").strip("/")
+                    valid_keys.add(clean)
+                    if clean.startswith("data/"):
+                        valid_keys.add(clean[5:])
+                    else:
+                        valid_keys.add(f"data/{clean}")
+    except Exception as exc:
+        logger.warning("Error scanning Image records: %s", exc)
+
+    # 2. Predictions table
+    try:
+        for pred in session.query(Prediction).all():
+            for p in (getattr(pred, "raw_path", None), getattr(pred, "processed_path", None)):
+                if p:
+                    clean = p.replace("\\", "/").strip("/")
+                    valid_keys.add(clean)
+                    if clean.startswith("data/"):
+                        valid_keys.add(clean[5:])
+                    else:
+                        valid_keys.add(f"data/{clean}")
+    except Exception as exc:
+        logger.warning("Error scanning Prediction records: %s", exc)
+
+    # 3. DatasetCandidate table
+    try:
+        for cand in session.query(DatasetCandidate).all():
+            if cand.image_path:
+                clean = cand.image_path.replace("\\", "/").strip("/")
+                valid_keys.add(clean)
+                if clean.startswith("data/"):
+                    valid_keys.add(clean[5:])
+                else:
+                    valid_keys.add(f"data/{clean}")
+    except Exception as exc:
+        logger.warning("Error scanning DatasetCandidate records: %s", exc)
+
+    now = time.time()
+    now_utc = datetime.now(timezone.utc)
+
+    # ── 1. Purge from Local Storage ──
+    local_deleted = 0
+    local_would_delete: list[str] = []
+
+    for prefix in prefixes:
+        prefix_dir = (settings.DATA_ROOT / prefix).resolve()
+        if not prefix_dir.exists():
+            continue
+        for file_path in prefix_dir.rglob("*"):
+            if not file_path.is_file():
+                continue
+            if grace_seconds > 0 and (now - file_path.stat().st_mtime < grace_seconds):
+                continue
+
+            try:
+                rel_to_data = file_path.relative_to(settings.DATA_ROOT).as_posix()
+            except ValueError:
+                continue
+            data_key = f"data/{rel_to_data}"
+
+            if rel_to_data not in valid_keys and data_key not in valid_keys:
+                if dry_run:
+                    local_would_delete.append(data_key)
+                else:
+                    try:
+                        file_path.unlink()
+                        local_deleted += 1
+                    except Exception as err:
+                        logger.warning("Failed to delete local file %s: %s", file_path, err)
+
+    # ── 2. Purge from Object Storage (S3) ──
+    s3_deleted = 0
+    s3_would_delete: list[str] = []
+    s3_error: str | None = None
+
+    if settings.AWS_S3_BUCKET:
+        try:
+            s3_backend = S3StorageBackend()
+            client = s3_backend.client
+            paginator = client.get_paginator("list_objects_v2")
+
+            for prefix in prefixes:
+                norm_prefix = prefix.strip("/") + "/"
+                try:
+                    for page in paginator.paginate(Bucket=s3_backend.bucket_name, Prefix=norm_prefix):
+                        for item in page.get("Contents", []):
+                            key = item.get("Key", "")
+                            if not key or key.endswith("/"):
+                                continue
+
+                            if grace_seconds > 0:
+                                last_mod = item.get("LastModified")
+                                if last_mod and (now_utc - last_mod).total_seconds() < grace_seconds:
+                                    continue
+
+                            norm_key = key.replace("\\", "/").strip("/")
+                            rel_key = norm_key[5:] if norm_key.startswith("data/") else norm_key
+                            data_key = f"data/{rel_key}"
+
+                            if norm_key not in valid_keys and rel_key not in valid_keys and data_key not in valid_keys:
+                                if dry_run:
+                                    s3_would_delete.append(key)
+                                else:
+                                    try:
+                                        client.delete_object(Bucket=s3_backend.bucket_name, Key=key)
+                                        s3_deleted += 1
+                                    except Exception as err:
+                                        logger.warning("Failed to delete S3 key %s: %s", key, err)
+                except Exception as prefix_err:
+                    logger.warning("Failed to list S3 prefix %s: %s", prefix, prefix_err)
+        except Exception as exc:
+            logger.warning("Object storage purge skipped or failed: %s", exc)
+            s3_error = str(exc)
+
+    if dry_run:
+        return {
+            "status": "dry_run",
+            "unreferenced_files_count": len(local_would_delete) + len(s3_would_delete),
+            "local_unreferenced_count": len(local_would_delete),
+            "s3_unreferenced_count": len(s3_would_delete),
+            "files": (local_would_delete + s3_would_delete)[:50],
+            "local_files": local_would_delete[:25],
+            "s3_files": s3_would_delete[:25],
+            "s3_error": s3_error,
+        }
+
+    return {
+        "status": "success",
+        "deleted_files": local_deleted + s3_deleted,
+        "local_deleted": local_deleted,
+        "s3_deleted": s3_deleted,
+        "s3_error": s3_error,
+    }
 

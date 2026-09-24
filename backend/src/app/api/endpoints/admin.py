@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -189,20 +189,28 @@ async def get_metrics(
 
 
 class AdminPurgeRequest(BaseModel):
-    confirmation: str
+    confirmation: str | None = None
 
 
 @router.delete("/purge")
 async def purge_database(
-    payload: AdminPurgeRequest,
+    payload: AdminPurgeRequest | None = Body(None),
+    confirmation: str | None = Query(None),
     dry_run: bool = False,
     user_id: str = Depends(require_admin_role),
     session: Session = Depends(get_session)
 ) -> dict[str, Any]:
-    if payload.confirmation != "PURGE_ALL_DATA":
+    token = None
+    if payload and payload.confirmation:
+        token = payload.confirmation.strip().upper()
+    elif confirmation:
+        token = confirmation.strip().upper()
+
+    valid_tokens = {"PURGE_ALL_DATA", "DELETE"}
+    if token and token not in valid_tokens:
         raise HTTPException(
             status_code=400,
-            detail="Confirmation token mismatch. Must provide 'PURGE_ALL_DATA' to confirm.",
+            detail="Confirmation token mismatch. Must provide 'DELETE' or 'PURGE_ALL_DATA' to confirm.",
         )
     if dry_run:
         counts = {
@@ -441,33 +449,6 @@ async def purge_blobs(
     is_admin: bool = Depends(require_admin_role),
     session: Session = Depends(get_session)
 ):
-    from app.core.storage import get_storage
-    storage = get_storage()
-    db_images = session.query(Image).all()
-    valid_keys = set()
-    for img in db_images:
-        if img.raw_path:
-            valid_keys.add(img.raw_path.replace("\\", "/").strip("/"))
-        if img.processed_path:
-            valid_keys.add(img.processed_path.replace("\\", "/").strip("/"))
-
-    deleted_count = 0
-    would_delete: list[str] = []
-    
-    for prefix in ["uploads", "processed", "audio"]:
-        all_keys = storage.list_objects(prefix)
-        for k in all_keys:
-            norm_k = k.replace("\\", "/").strip("/")
-            if norm_k.startswith("data/"):
-                norm_k = norm_k[5:]
-            if norm_k not in valid_keys and f"data/{norm_k}" not in valid_keys:
-                if dry_run:
-                    would_delete.append(norm_k)
-                else:
-                    if storage.delete(norm_k):
-                        deleted_count += 1
-
-    if dry_run:
-        return {"status": "dry_run", "unreferenced_files_count": len(would_delete), "files": would_delete[:20]}
-    return {"status": "success", "deleted_files": deleted_count}
+    from app.core.storage import purge_orphaned_blobs
+    return purge_orphaned_blobs(session, dry_run=dry_run, grace_seconds=0)
 

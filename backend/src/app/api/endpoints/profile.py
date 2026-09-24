@@ -1,11 +1,13 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.schemas import ProfileResponse, ProfileUpdateRequest
 from app.crud import get_user, update_profile
 from app.core import get_session
+from app.services.translation.overlay import overlay_dict_translations
+from app.models.translation import EntityTranslation
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -28,7 +30,10 @@ def _profile(user) -> ProfileResponse:
 
 @router.get("", response_model=ProfileResponse)
 async def get_farmer_profile(
-    user_id: str = Depends(get_current_user), session: Session = Depends(get_session)
+    request: Request,
+    lang: str | None = None,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ) -> ProfileResponse:
     try:
         user = get_user(session, user_id)
@@ -36,7 +41,28 @@ async def get_farmer_profile(
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
     if user is None:
         raise HTTPException(status_code=404, detail="Farmer profile not found.")
-    return _profile(user)
+    
+    res = _profile(user)
+    req_lang = lang or request.headers.get("accept-language")
+    if req_lang and not req_lang.lower().startswith("en"):
+        norm_code = "gu" if req_lang.lower().startswith("gu") else ("hi" if req_lang.lower().startswith("hi") else None)
+        if norm_code:
+            res_dict = res.model_dump()
+            overlay_dict_translations(session, res_dict, "user", user.id, ["name"], norm_code)
+            if user.farm:
+                farm_trans = session.query(EntityTranslation).filter_by(
+                    entity_type="farm",
+                    entity_id=str(user.farm.id),
+                    language=norm_code,
+                    status="done"
+                ).all()
+                for ft in farm_trans:
+                    if ft.field_name == "name" and ft.translated_text:
+                        res_dict["farm_name"] = ft.translated_text
+                    elif ft.field_name == "location" and ft.translated_text:
+                        res_dict["location"] = ft.translated_text
+            return ProfileResponse(**res_dict)
+    return res
 
 import re
 from datetime import datetime, timedelta, timezone
@@ -70,6 +96,14 @@ async def update_farmer_profile(
             longitude=payload.longitude,
             crop_history=payload.crop_history,
         )
+
+        # Enqueue write-time transliteration for user name
+        if payload.name:
+            from app.core.arq import enqueue_translation
+            try:
+                await enqueue_translation("user", user.id, {"name": payload.name}, name_fields=["name"])
+            except Exception:
+                pass
     except HTTPException:
         raise
     except SQLAlchemyError as exc:

@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session
 
 from app.core import Base, database_url
+from app.core.session import create_app_engine
 from app.core.config import settings
 import app.models
 
@@ -47,16 +48,20 @@ def initialize_database() -> None:
     """
     url = database_url()
     is_sqlite = url.startswith("sqlite")
+    engine = create_app_engine(url)
 
-    if is_sqlite:
-        engine = create_engine(url, connect_args={"check_same_thread": False})
-    else:
-        engine = create_engine(
-            url, pool_size=15, max_overflow=20, pool_recycle=1200, pool_pre_ping=True
-        )
-
-    # 1. Create all metadata tables if they do not exist
-    Base.metadata.create_all(engine)
+    # 1. Create all metadata tables if they do not exist (with retry for cloud DB connections)
+    import time
+    for attempt in range(1, 4):
+        try:
+            Base.metadata.create_all(engine)
+            break
+        except Exception as exc:
+            if attempt == 3:
+                logger.error("Failed to connect to database after 3 attempts: %s", exc)
+                raise
+            logger.warning("Database connection attempt %d failed (%s). Retrying in %ds...", attempt, exc, attempt * 2)
+            time.sleep(attempt * 2)
 
     # 2. Apply inline column additions for existing production / development databases
     try:

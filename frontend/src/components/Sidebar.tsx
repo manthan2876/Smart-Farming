@@ -88,7 +88,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="min-w-0">
               <h2 className="truncate font-display text-lg text-ink">Smart Farming</h2>
               <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[0.68rem] font-bold uppercase tracking-wide ${badgeBg}`}>
-                {user?.role === "expert" ? "Field Agronomist" : user?.role || "Farmer"}
+                {user?.role === "expert" ? t("roleExpert") : user?.role === "admin" ? t("roleAdmin") : t("roleFarmer")}
               </span>
             </div>
           </div>
@@ -134,34 +134,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {isExpert ? (
             <>
               <div className="space-y-1">
-                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-purple-700">Agronomy Desk</span>
+                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-purple-700">{t("agronomyDesk")}</span>
                 <NavLink onClick={onClose} to="/admin/expert" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-purple-100 text-purple-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <ClipboardList size={18} />
-                  <span>Review Queue</span>
+                  <span>{t("reviewQueue")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/admin/feedback" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-purple-100 text-purple-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <FileText size={18} />
-                  <span>Feedback Audits</span>
+                  <span>{t("feedbackAudits")}</span>
                 </NavLink>
               </div>
 
               <div className="space-y-1">
-                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Field Tools</span>
+                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">{t("fieldTools")}</span>
                 <NavLink onClick={onClose} to="/scan" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-purple-100 text-purple-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <Scan size={18} />
-                  <span>Diagnostic Scanner</span>
+                  <span>{t("diagnosticScanner")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/history" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-purple-100 text-purple-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <History size={18} />
-                  <span>Scan History</span>
+                  <span>{t("history")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/weather" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-purple-100 text-purple-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <CloudSun size={18} />
-                  <span>Weather Advisory</span>
+                  <span>{t("weatherAdvisory")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/alerts" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-purple-100 text-purple-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <Bell size={18} />
-                  <span>Alerts</span>
+                  <span>{t("alerts")}</span>
                   {unreadCount > 0 && (
                     <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
                       {unreadCount}
@@ -171,10 +171,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
 
               <div className="space-y-1">
-                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Account</span>
+                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">{t("account")}</span>
                 <NavLink onClick={onClose} to="/settings" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-purple-100 text-purple-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <Settings size={18} />
-                  <span>Settings</span>
+                  <span>{t("settings")}</span>
                 </NavLink>
               </div>
             </>
@@ -182,50 +182,50 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             /* DEDICATED SUPER ADMIN WORKFLOW */
             <>
               <div className="space-y-1">
-                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-blue-700">Platform Control</span>
+                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-blue-700">{t("platformControl")}</span>
                 <NavLink onClick={onClose} to="/admin/metrics" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-blue-100 text-blue-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <ShieldAlert size={18} />
-                  <span>Metrics & MLOps</span>
+                  <span>{t("metricsMlops")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/admin/users" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-blue-100 text-blue-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <Users size={18} />
-                  <span>User Roles</span>
+                  <span>{t("userRoles")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/admin/expert" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-blue-100 text-blue-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <ClipboardList size={18} />
-                  <span>Review Queue</span>
+                  <span>{t("reviewQueue")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/admin/feedback" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-blue-100 text-blue-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <FileText size={18} />
-                  <span>Feedback Logs</span>
+                  <span>{t("feedbackLogs")}</span>
                 </NavLink>
               </div>
 
               <div className="space-y-1">
-                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Operations</span>
+                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">{t("operations")}</span>
                 <NavLink onClick={onClose} to="/dashboard" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <LayoutDashboard size={18} />
-                  <span>Dashboard</span>
+                  <span>{t("dashboard")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/scan" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <Scan size={18} />
-                  <span>Diagnostic Scan</span>
+                  <span>{t("scan")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/history" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <History size={18} />
-                  <span>History</span>
+                  <span>{t("history")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/farm/settings" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <MapPin size={18} />
-                  <span>Farm Plots</span>
+                  <span>{t("farmPlots")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/weather" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <CloudSun size={18} />
-                  <span>Weather</span>
+                  <span>{t("weather")}</span>
                 </NavLink>
                 <NavLink onClick={onClose} to="/alerts" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <Bell size={18} />
-                  <span>Alerts</span>
+                  <span>{t("alerts")}</span>
                   {unreadCount > 0 && (
                     <span className="ml-auto rounded-full bg-danger px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
                       {unreadCount}
@@ -235,10 +235,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
 
               <div className="space-y-1">
-                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">Account</span>
+                <span className="mb-2 block px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-muted">{t("account")}</span>
                 <NavLink onClick={onClose} to="/settings" className={({ isActive }) => `flex items-center gap-3 rounded-sm px-3 py-3 text-sm font-semibold transition-colors ${isActive ? "bg-farmer-100 text-farmer-900" : "text-muted hover:bg-canvas hover:text-ink"}`}>
                   <Settings size={18} />
-                  <span>Settings</span>
+                  <span>{t("settings")}</span>
                 </NavLink>
               </div>
             </>
@@ -294,11 +294,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-farmer-700 text-sm font-bold text-white">{user?.name ? user.name.charAt(0).toUpperCase() : "F"}</div>
             <div className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-ink">{user?.name || "Farmer"}</span>
+              <span className="block truncate text-sm font-semibold text-ink">
+                {user?.name === "Admin User" || user?.name === "Super Administrator" || user?.name === "Administrator"
+                  ? t("roleAdmin")
+                  : user?.name === "Expert Agronomist" || user?.name === "Expert User" || user?.name === "Expert"
+                  ? t("roleExpert")
+                  : user?.name === "Farmer User" || user?.name === "Farmer"
+                  ? t("roleFarmer")
+                  : user?.name || (user?.role === "expert" ? t("roleExpert") : user?.role === "admin" ? t("roleAdmin") : t("roleFarmer"))}
+              </span>
               <span className="block truncate text-xs text-muted">{user?.email || user?.phone || ""}</span>
             </div>
           </div>
-          <button onClick={handleSignOut} className="rounded-sm p-2 text-muted hover:bg-red-50 hover:text-danger" title="Sign Out" aria-label="Sign out">
+          <button onClick={handleSignOut} className="rounded-sm p-2 text-muted hover:bg-red-50 hover:text-danger" title={t("logout")} aria-label={t("logout")}>
             <LogOut size={18} />
           </button>
         </div>

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -6,6 +6,7 @@ import { request } from "../api/client";
 import { History, ArrowRight, Filter, Search } from "lucide-react";
 import { motion } from "motion/react";
 import { Badge, Button, Card, Input, Table } from "../components/ui";
+import { translateCrop, translateDisease, translateSeverityBucket } from "../i18n/domain";
 
 interface PredictionRecord {
   prediction_id: number | string | null;
@@ -18,7 +19,7 @@ interface PredictionRecord {
 }
 
 export default function HistoryPage() {
-  const { token } = useAuth();
+  const { token, t, language } = useAuth();
   const [filterCrop, setFilterCrop] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -47,8 +48,8 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl text-ink sm:text-4xl">Diagnostic Scan History</h1>
-        <p className="mt-3 max-w-3xl leading-7 text-muted">Review past crop health reports, confidence scores, and historical disease outbreaks.</p>
+        <h1 className="font-display text-3xl text-ink sm:text-4xl">{t("scanHistoryTitle")}</h1>
+        <p className="mt-3 max-w-3xl leading-7 text-muted">{t("scanHistorySubtitle")}</p>
       </div>
 
       <motion.div 
@@ -58,10 +59,10 @@ export default function HistoryPage() {
       >
         <Card className="flex flex-col gap-4 sm:flex-row sm:items-end" padding="md">
           <div className="flex-1">
-            <Input id="history-search" label="Search records" leadingIcon={<Search size={18} />} type="text" placeholder="Search disease or crop..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Input id="history-search" label={t("searchRecords")} leadingIcon={<Search size={18} />} type="text" placeholder={t("searchPlaceholder")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <label className="block space-y-2 sm:w-56" htmlFor="history-crop-filter">
-            <span className="flex items-center gap-2 text-sm font-semibold text-ink"><Filter size={16} /> Crop</span>
+            <span className="flex items-center gap-2 text-sm font-semibold text-ink"><Filter size={16} /> {t("crop")}</span>
             <select 
               id="history-crop-filter"
               value={filterCrop} 
@@ -69,30 +70,30 @@ export default function HistoryPage() {
               className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100"
             >
               {uniqueCrops.map((crop, idx) => (
-                <option key={idx} value={crop}>{crop}</option>
+                <option key={idx} value={crop}>{crop === "All" ? t("all") : translateCrop(crop, language)}</option>
               ))}
             </select>
           </label>
         </Card>
 
         {isLoading ? (
-          <Card className="flex items-center justify-center gap-3 text-sm text-muted"><div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" /><p>Loading scan records...</p></Card>
+          <Card className="flex items-center justify-center gap-3 text-sm text-muted"><div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" /><p>{t("loadingRecords")}</p></Card>
         ) : filteredScans.length === 0 ? (
           <Card className="flex flex-col items-center text-center" padding="lg">
             <History className="text-farmer-700" size={48} />
-            <h3 className="mt-5 font-display text-xl text-ink">No scan history found</h3>
-            <p className="mt-2 text-sm text-muted">You haven't run any diagnostic scans matching this filter yet.</p>
-            <Link to="/scan" className="mt-5"><Button size="sm">Run New Scan</Button></Link>
+            <h3 className="mt-5 font-display text-xl text-ink">{t("noHistoryFound")}</h3>
+            <p className="mt-2 text-sm text-muted">{t("noHistoryDesc")}</p>
+            <Link to="/scan" className="mt-5"><Button size="sm">{t("runNewScan")}</Button></Link>
           </Card>
         ) : (
           <Table>
               <thead>
                 <tr className="bg-canvas text-xs uppercase tracking-wide text-muted">
-                  <th className="px-5 py-4 font-semibold">Crop</th>
-                  <th className="px-5 py-4 font-semibold">Identified Condition</th>
-                  <th className="px-5 py-4 font-semibold">Severity</th>
-                  <th className="px-5 py-4 font-semibold">Date / Request</th>
-                  <th className="px-5 py-4 font-semibold">Action</th>
+                  <th className="px-5 py-4 font-semibold">{t("crop")}</th>
+                  <th className="px-5 py-4 font-semibold">{t("identifiedCondition")}</th>
+                  <th className="px-5 py-4 font-semibold">{t("severity")}</th>
+                  <th className="px-5 py-4 font-semibold">{t("dateOrRequest")}</th>
+                  <th className="px-5 py-4 font-semibold">{t("action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,16 +111,16 @@ export default function HistoryPage() {
 
                   return (
                     <tr className="border-t border-line text-sm text-ink" key={recordId || index}>
-                      <td className="px-5 py-4"><Badge>{cropName}</Badge></td>
-                      <td className="px-5 py-4 font-semibold">{diseaseName}</td>
+                      <td className="px-5 py-4"><Badge>{translateCrop(cropName, language)}</Badge></td>
+                      <td className="px-5 py-4 font-semibold">{translateDisease(diseaseName, language)}</td>
                       <td className="px-5 py-4">
-                        <Badge tone={severityText.toLowerCase() === "severe" ? "danger" : severityText.toLowerCase() === "moderate" ? "warning" : "success"}>{severityText}</Badge>
+                        <Badge tone={severityText.toLowerCase() === "severe" ? "danger" : severityText.toLowerCase() === "moderate" ? "warning" : "success"}>{translateSeverityBucket(severityText, language)}</Badge>
                       </td>
                       <td className="px-5 py-4 text-muted">{scan.request_id ? `ID: ${scan.request_id.slice(0, 8)}...` : "N/A"}</td>
                       <td className="px-5 py-4">
                         {recordId ? (
                           <Link to={`/predictions/${recordId}`} className="inline-flex items-center gap-1 font-semibold text-farmer-700 hover:text-farmer-900">
-                            View <ArrowRight size={14} />
+                            {t("viewScan")} <ArrowRight size={14} />
                           </Link>
                         ) : (
                           <span className="text-muted">Unavailable</span>

@@ -1,11 +1,12 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.schemas import FarmRequest, FarmResponse, PlotRequest, PlotResponse
 from app.crud import get_user, save_farm
 from app.core import get_session
+from app.services.translation.overlay import overlay_entity_translations, overlay_dict_translations
 
 router = APIRouter(prefix="/farm", tags=["farm"])
 
@@ -55,7 +56,10 @@ def _validate_geojson_polygon(geom: dict | None) -> tuple[bool, str, float | Non
 
 @router.get("", response_model=FarmResponse)
 async def get_farmer_farm(
-    user_id: str = Depends(get_current_user), session: Session = Depends(get_session)
+    request: Request,
+    lang: str | None = None,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ) -> FarmResponse:
     try:
         user = get_user(session, user_id)
@@ -64,24 +68,29 @@ async def get_farmer_farm(
     if user is None or user.farm is None:
         raise HTTPException(status_code=404, detail="Farm has not been configured.")
     farm = user.farm
-    return FarmResponse(
-        id=farm.id,
-        name=farm.name,
-        location=farm.location,
-        area_acres=farm.area_acres,
-        latitude=farm.latitude,
-        longitude=farm.longitude,
-        crop_history=farm.crop_history or [],
-        boundary=farm.boundary,
-        plots=[{
-            "id": p.id,
-            "name": p.name,
-            "crop": p.crop,
-            "area_acres": p.area_acres,
-            "status": p.status,
-            "geometry": p.geometry,
-        } for p in farm.plots]
-    )
+    plot_items = [{
+        "id": p.id,
+        "name": p.name,
+        "crop": p.crop,
+        "area_acres": p.area_acres,
+        "status": p.status,
+        "geometry": p.geometry,
+    } for p in farm.plots]
+    req_lang = lang or request.headers.get("accept-language")
+    overlay_entity_translations(session, plot_items, "plot", lambda x: x["id"], ["name"], req_lang)
+    farm_data = {
+        "id": farm.id,
+        "name": farm.name,
+        "location": farm.location,
+        "area_acres": farm.area_acres,
+        "latitude": farm.latitude,
+        "longitude": farm.longitude,
+        "crop_history": farm.crop_history or [],
+        "boundary": farm.boundary,
+        "plots": plot_items,
+    }
+    overlay_dict_translations(session, farm_data, "farm", farm.id, ["name", "location"], req_lang)
+    return FarmResponse(**farm_data)
 
 @router.put("", response_model=FarmResponse)
 async def save_farmer_farm(
@@ -103,6 +112,18 @@ async def save_farmer_farm(
                 data["area_acres"] = calc_acres
 
         farm = save_farm(session, user, data)
+
+        # Enqueue write-time transliteration for farm name and location
+        from app.core.arq import enqueue_translation
+        try:
+            await enqueue_translation(
+                "farm",
+                farm.id,
+                {"name": farm.name, "location": farm.location or ""},
+                name_fields=["name", "location"],
+            )
+        except Exception:
+            pass
     except HTTPException:
         raise
     except SQLAlchemyError as exc:
@@ -171,6 +192,14 @@ async def create_plot(
         session.add(new_plot)
         session.commit()
         session.refresh(new_plot)
+
+        # Enqueue write-time transliteration for plot name
+        from app.core.arq import enqueue_translation
+        try:
+            await enqueue_translation("plot", new_plot.id, {"name": new_plot.name}, name_fields=["name"])
+        except Exception:
+            pass
+
         return new_plot
     except SQLAlchemyError as exc:
         session.rollback()
@@ -202,6 +231,14 @@ async def update_plot(
             plot.geometry = payload.geometry
         session.commit()
         session.refresh(plot)
+
+        # Enqueue write-time transliteration for updated plot name
+        from app.core.arq import enqueue_translation
+        try:
+            await enqueue_translation("plot", plot.id, {"name": plot.name}, name_fields=["name"])
+        except Exception:
+            pass
+
         return plot
     except SQLAlchemyError as exc:
         session.rollback()

@@ -1,1 +1,0 @@
-# pest_detector package

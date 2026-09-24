@@ -15,6 +15,8 @@ export type Prediction = {
   image: {
     raw_path?: string;
     processed_path?: string;
+    raw_url?: string;
+    processed_url?: string;
     quality_score?: number;
     leaf_detected?: boolean;
   };

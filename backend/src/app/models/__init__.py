@@ -9,6 +9,7 @@ from app.models.recommendation import Recommendation
 from app.models.alert import Alert
 from app.models.plot import Plot
 from app.models.expertReview import ExpertReview
+from app.models.translation import EntityTranslation
 
 __all__ = [
     "DatasetCandidate",
@@ -20,5 +21,6 @@ __all__ = [
     "Recommendation",
     "Alert",
     "Plot",
-    "ExpertReview"
-    ]
+    "ExpertReview",
+    "EntityTranslation",
+]

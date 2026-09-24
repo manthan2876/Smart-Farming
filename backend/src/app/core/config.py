@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     AUDIO_ROOT: Path = DATA_ROOT / "audio"
     GOOGLE_TTS_API_KEY: str = Field(default="")
     GOOGLE_TRANSLATION_API_KEY: str = Field(default="")
+    GEMINI_API_KEY: str = Field(default="")
+
+    # Model Inference Server (Server 2)
+    MODEL_SERVER_URL: str = Field(default="http://127.0.0.1:8001")
+    MODEL_SERVER_TIMEOUT: int = Field(default=60)
 
     # AWS S3 Storage
     STORAGE_BACKEND: str = Field(default="local")

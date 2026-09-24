@@ -130,8 +130,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl text-ink sm:text-4xl">AI Crop Diagnostic Scanner</h1>
-        <p className="mt-3 max-w-3xl leading-7 text-muted">Upload a clear photograph of an affected crop leaf to run OpenCV quality checks, pest detection, and LLM analysis.</p>
+        <h1 className="font-display text-3xl text-ink sm:text-4xl">{t("aiCropScanner")}</h1>
+        <p className="mt-3 max-w-3xl leading-7 text-muted">{t("scanDescription")}</p>
       </div>
 
       <motion.form 
@@ -156,15 +156,15 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <img src={previewUrl} alt="Leaf Preview" className="h-full min-h-[25rem] w-full object-contain" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-ink/55 text-white opacity-0 transition group-hover:opacity-100">
                     <Camera size={24} />
-                    <span className="mt-2 text-sm font-semibold">Click or drop to replace image</span>
+                    <span className="mt-2 text-sm font-semibold">{t("replaceImage")}</span>
                   </div>
                 </div>
               ) : (
                 <div>
                   <Upload size={48} className="mx-auto text-farmer-700" />
-                  <h3 className="mt-5 font-display text-xl text-ink">Upload Leaf Image</h3>
-                  <p className="mt-2 text-sm text-muted">Supports .jpg, .jpeg, .png, .webp (max 10MB)</p>
-                  <span className="mt-5 inline-flex rounded-sm border border-farmer-700 px-4 py-2 text-sm font-semibold text-farmer-800">Browse Files</span>
+                  <h3 className="mt-5 font-display text-xl text-ink">{t("uploadLeafImage")}</h3>
+                  <p className="mt-2 text-sm text-muted">{t("supportedFormats")}</p>
+                  <span className="mt-5 inline-flex rounded-sm border border-farmer-700 px-4 py-2 text-sm font-semibold text-farmer-800">{t("browseFiles")}</span>
                 </div>
               )}
               <input type="file" accept="image/*" onChange={handleFileChange} hidden />
@@ -173,18 +173,18 @@ const handleSubmit = async (e: React.FormEvent) => {
 
           {/* Telemetry Parameters */}
           <Card className="!border-farmer-900 !bg-farmer-900 text-white" padding="lg">
-            <h3 className="font-display text-2xl text-farmer-200">Diagnostic Telemetry</h3>
+            <h3 className="font-display text-2xl text-farmer-200">{t("diagnosticTelemetry")}</h3>
             
             <div className="mt-7 space-y-5">
               <label className="block space-y-2" htmlFor="scan-plot">
-                <span className="block text-sm font-semibold text-white/75">{t("farm")} / Plot (Optional)</span>
+                <span className="block text-sm font-semibold text-white/75">{t("farm")} / {t("plotOptional")}</span>
               <select 
                 id="scan-plot"
                 value={plotId || ""} 
                 onChange={(e) => setPlotId(e.target.value ? Number(e.target.value) : undefined)} 
                 className="min-h-11 w-full rounded-sm border border-white/20 bg-white/10 px-3 text-sm text-white focus:border-farmer-300 focus:outline-none focus:ring-4 focus:ring-farmer-300/20"
               >
-                <option value="">-- No Plot (General Scan) --</option>
+                <option value="">{t("noPlotGeneralScan")}</option>
                 {plots.map((p: any) => (
                   <option key={p.id} value={p.id}>{p.name} {p.crop ? `(${translateCrop(p.crop, appLanguage)})` : ""}</option>
                 ))}

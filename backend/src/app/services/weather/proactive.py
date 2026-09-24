@@ -110,6 +110,7 @@ async def evaluate_weather_risks(ctx: dict | None = None) -> None:
     try:
         plots = db.query(Plot).join(Farm, Plot.farm_id == Farm.id).all()
 
+        new_alerts = []
         async with httpx.AsyncClient() as client:
             for plot in plots:
                 farm = plot.farm
@@ -134,9 +135,19 @@ async def evaluate_weather_risks(ctx: dict | None = None) -> None:
                             body=body,
                         )
                         db.add(alert)
+                        new_alerts.append(alert)
                         created_count += 1
 
         db.commit()
+
+        # Enqueue background translation for all created alerts
+        from app.core.arq import enqueue_translation
+        for a in new_alerts:
+            try:
+                await enqueue_translation("alert", a.id, {"title": a.title, "body": a.body})
+            except Exception:
+                pass
+
         logger.info(f"Proactive weather evaluation complete. {created_count} new alert(s) created.")
     except Exception as exc:
         logger.error(f"Proactive weather cron error: {exc}")

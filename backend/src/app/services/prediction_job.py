@@ -18,14 +18,10 @@ from app.models import Prediction
 from app.pipeline import (
     SCHEMA_VERSION,
     build_provenance,
-    estimate_severity,
     fetch_weather,
     generate_recommendation,
-    predict_crop,
-    predict_disease,
-    predict_pest,
-    route_to_disease_model,
 )
+from app.services.model_client import call_model_service_sync, merge_and_save_cv_result
 from app.utils.json_utils import _json_safe
 
 logger = logging.getLogger("smart-farming.background")
@@ -83,7 +79,6 @@ def run_prediction_job(
 
     # Read at call time (not import time) so app.pipeline.reload_config() takes effect.
     config = _pipeline._CONFIG
-    preprocessor = _pipeline._PREPROCESSOR
 
     def push_status(
         stage: str,
@@ -228,34 +223,17 @@ def run_prediction_job(
                     push_status(extra_stage, "completed", message, duration_ms, data=current_data)
             return duration_ms
 
-        # 1. Preprocessing
+        # Read image binary
+        image_bytes = raw_path.read_bytes()
+
+        # 1. Preprocessing & Computer Vision Pipeline (via Model Server)
         t0 = stage_start("preprocessing", "Validating image quality and clarity...")
-        context = preprocessor.process(context)
-        prep_status = context.get("status", {}).get("preprocessing")
-        if prep_status != "completed":
-            if prep_status == "failed_blur":
-                blur_score = context.get("image", {}).get("blur_score", 0.0)
-                err = (
-                    f"Image is too blurry (sharpness score: {blur_score:.1f}, "
-                    f"required: >= {preprocessor.blur_threshold:.1f}). Please hold the camera steady and refocus on the leaf."
-                )
-            elif prep_status == "failed_lighting":
-                brightness = context.get("image", {}).get("brightness_score", 0.0)
-                err = (
-                    f"Image lighting is outside acceptable range (brightness: {brightness:.1f}, "
-                    f"expected between {preprocessor.min_brightness:.1f} and {preprocessor.max_brightness:.1f}). "
-                    f"Please retake the photo in balanced lighting."
-                )
-            elif prep_status == "failed_no_leaf":
-                err = "No crop leaf could be detected in the image. Please center the leaf in the frame with good contrast."
-            else:
-                err = "Image quality check failed; please upload a clearer leaf image."
-            raise ValueError(err)
+        cv_result = call_model_service_sync(image_bytes, raw_path.name)
         stage_finish("preprocessing", t0, "Image preprocessed and quality validated.")
 
         # 2. Crop Identification
         t0 = stage_start("crop_identification", "Identifying crop species...")
-        context = predict_crop(context, config)
+        context.setdefault("crop", {}).update(cv_result.get("crop", {}))
         crop_label = context.get("crop", {}).get("label") or "Unknown"
         crop_conf = context.get("crop", {}).get("confidence") or 0.0
         stage_finish(
@@ -267,18 +245,17 @@ def run_prediction_job(
 
         # 3. Decision Routing
         t0 = stage_start("decision_routing", "Selecting crop-specific disease model...")
-        context = route_to_disease_model(context, config)
-        disease_model_name = context.get("disease", {}).get("model_used") or "default"
+        disease_model_name = cv_result.get("disease", {}).get("model_used") or "default"
         stage_finish(
             "decision_routing",
             t0,
             f"Routed to model: {disease_model_name}",
-            data={"disease": context.get("disease")},
+            data={"disease": cv_result.get("disease")},
         )
 
         # 4. Disease Classification
         t0 = stage_start("disease_classification", "Classifying crop disease...")
-        context = predict_disease(context, config)
+        context.setdefault("disease", {}).update(cv_result.get("disease", {}))
         disease_label = context.get("disease", {}).get("label") or "Unknown"
         disease_conf = context.get("disease", {}).get("confidence") or 0.0
         stage_finish(
@@ -290,7 +267,7 @@ def run_prediction_job(
 
         # 5. Severity Calculation
         t0 = stage_start("severity", "Calculating leaf damage percentage and severity bucket...")
-        context = estimate_severity(context)
+        context.setdefault("severity", {}).update(cv_result.get("severity", {}))
         severity_pct = context.get("severity", {}).get("percent") or 0.0
         severity_bucket = context.get("severity", {}).get("bucket") or "Unknown"
         stage_finish(
@@ -303,7 +280,8 @@ def run_prediction_job(
 
         # 6. Pest Detection
         t0 = stage_start("pest_detection", "Scanning for known agricultural pests...")
-        context = predict_pest(context, config)
+        context["pests"] = cv_result.get("pests", [])
+        context.setdefault("pest_classification", {}).update(cv_result.get("pest_classification", {}))
         pests = context.get("pests", [])
         pest_summary = ", ".join([p.get("label", "Pest") for p in pests]) if pests else "No pests detected"
         stage_finish(
@@ -312,6 +290,9 @@ def run_prediction_job(
             pest_summary,
             data={"pests": pests, "pest_classification": context.get("pest_classification")},
         )
+
+        # Merge remaining context fields from model service & persist processed Grad-CAM image
+        merge_and_save_cv_result(context, cv_result, raw_path.name)
 
         # 7. Weather
         t0 = stage_start("weather", "Fetching current weather conditions...")
@@ -356,18 +337,26 @@ def run_prediction_job(
         disease_threshold = thresholds.get("disease_confidence", settings.DISEASE_CONFIDENCE_THRESHOLD)
         crop_threshold = thresholds.get("crop_confidence", settings.CROP_CONFIDENCE_THRESHOLD)
 
-        # Dynamic translation of recommendation if requested language is not English
-        from app.services.translation.service import translate_recommendation_sync, normalize_language_code
+        # Write-time translation architecture:
+        # Load any existing translations from entity_translations table (instant lookup)
+        from app.models.translation import EntityTranslation
+        from app.services.translation.service import normalize_language_code
         target_code = normalize_language_code(language)
         translations: dict[str, Any] = {}
-        if target_code != "en":
-            canonical_rec = context.get("recommendation", {})
-            if canonical_rec:
-                try:
-                    translated_rec = translate_recommendation_sync(canonical_rec, target_code)
-                    translations[target_code] = translated_rec
-                except Exception as trans_err:
-                    logger.warning("Auto-translation to %s failed: %s", target_code, trans_err)
+
+        try:
+            cached_trans = db.query(EntityTranslation).filter_by(
+                entity_type="prediction",
+                entity_id=str(prediction_id),
+                status="done",
+            ).all()
+            for ct in cached_trans:
+                if ct.language not in translations:
+                    translations[ct.language] = dict(context.get("recommendation", {}))
+                    translations[ct.language]["language"] = ct.language
+                translations[ct.language][ct.field_name] = ct.translated_text
+        except Exception:
+            pass
 
         public_result = _public_result(context)
         # Location/lat/lon/language are stored so a later rescan can reuse them.
@@ -423,6 +412,26 @@ def run_prediction_job(
             prediction.status = "ready"
 
         db.commit()
+
+        # Enqueue background translation to Redis (does not block user or pipeline)
+        canonical_rec = context.get("recommendation", {})
+        if canonical_rec and isinstance(canonical_rec, dict):
+            rec_fields = {}
+            for k in [
+                "immediate_action", "treatment", "prevention", "monitoring",
+                "safety_disclaimer", "action", "fertilizer", "pesticide",
+                "irrigation", "prevention_tips"
+            ]:
+                v = canonical_rec.get(k)
+                if v and isinstance(v, str) and v.strip():
+                    rec_fields[k] = v.strip()
+            if rec_fields:
+                try:
+                    from app.core.arq import enqueue_translation_sync
+                    enqueue_translation_sync("prediction", prediction_id, rec_fields)
+                except Exception as enq_err:
+                    logger.warning("Could not enqueue prediction translation to Redis: %s", enq_err)
+
         push_status(
             "completed",
             "completed",

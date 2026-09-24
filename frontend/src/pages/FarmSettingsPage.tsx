@@ -454,7 +454,11 @@ export default function FarmSettingsPage() {
     if (deleteConfirmText !== "DELETE") return;
     setIsDeleting(true);
     try {
-      await request("/admin/purge", { method: "DELETE" }, token!);
+      await request("/admin/purge?confirmation=DELETE", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: "DELETE" }),
+      }, token!);
       alert("Database has been wiped successfully.");
       setShowDeleteModal(false);
       setDeleteConfirmText("");

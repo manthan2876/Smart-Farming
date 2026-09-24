@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_expert_role
@@ -45,7 +45,9 @@ async def get_expert_queue(
 
 @router.get("/expert/reviews/{review_id}")
 async def get_expert_review(
+    request: Request,
     review_id: int,
+    lang: str | None = None,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
 ):
@@ -60,7 +62,7 @@ async def get_expert_review(
     disease_conf = result_json.get("disease", {}).get("confidence") or pred.disease_conf
     severity_pct = result_json.get("severity", {}).get("percent") or pred.severity_pct
 
-    return {
+    data = {
         "review_id": review.id,
         "prediction_id": review.prediction_id,
         "status": review.status,
@@ -76,6 +78,10 @@ async def get_expert_review(
         "severity_pct": severity_pct,
         "created_at": review.created_at.isoformat() if review.created_at else None
     }
+    req_lang = lang or request.headers.get("accept-language")
+    from app.services.translation.overlay import overlay_dict_translations
+    overlay_dict_translations(session, data, "expert_review", review.id, ["farmer_guidance"], req_lang)
+    return data
 
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -123,18 +129,20 @@ async def post_expert_review(
     pred.status = "rescan_requested" if action == "Request Rescan" else "verified"
     
     # Generate Alert for farmer
+    new_alert = None
     if not session.query(Alert).filter(
         Alert.prediction_id == pred.id,
         Alert.kind == "review_verified",
     ).first():
-        session.add(Alert(
+        new_alert = Alert(
             user_id=pred.user_id,
             prediction_id=pred.id,
             kind="review_verified",
             severity="high",
             title=f"Expert Review Completed for Scan #{pred.id}",
             body=f"An agronomist has verified your scan. Conclusion: {action}."
-        ))
+        )
+        session.add(new_alert)
     
     # Dataset flagging
     if payload.get("add_to_retraining"):
@@ -183,4 +191,18 @@ async def post_expert_review(
     flag_modified(pred, "result")
     
     session.commit()
+
+    # Background write-time translation to Redis
+    from app.core.arq import enqueue_translation
+    if review.farmer_guidance:
+        try:
+            await enqueue_translation("expert_review", review.id, {"farmer_guidance": review.farmer_guidance})
+        except Exception:
+            pass
+    if new_alert and new_alert.id:
+        try:
+            await enqueue_translation("alert", new_alert.id, {"title": new_alert.title, "body": new_alert.body})
+        except Exception:
+            pass
+
     return {"status": "success", "review_id": review_id}

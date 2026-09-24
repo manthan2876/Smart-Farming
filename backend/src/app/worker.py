@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import logging
 import time
 from pathlib import Path
@@ -25,32 +25,11 @@ _ORPHAN_GRACE_SECONDS = 60 * 60
 
 def _purge_orphaned_blobs() -> int:
     """Blocking implementation, run in a worker thread by the cron wrapper below."""
+    from app.core.storage import purge_orphaned_blobs
     db = _session_factory()()
     try:
-        valid_paths: set[str] = set()
-        for img in db.query(Image).all():
-            if img.raw_path:
-                valid_paths.add(img.raw_path.replace("\\", "/"))
-            if img.processed_path:
-                valid_paths.add(img.processed_path.replace("\\", "/"))
-
-        deleted_count = 0
-        now = time.time()
-        directories_to_clean = [settings.UPLOAD_ROOT, settings.PROCESSED_ROOT, settings.AUDIO_ROOT]
-
-        for dir_path in directories_to_clean:
-            folder = Path(dir_path)
-            if not folder.exists():
-                continue
-            for file in folder.glob("*"):
-                if not file.is_file():
-                    continue
-                if now - file.stat().st_mtime < _ORPHAN_GRACE_SECONDS:
-                    continue
-                if storage_relative_path(file) not in valid_paths:
-                    file.unlink()
-                    deleted_count += 1
-        return deleted_count
+        res = purge_orphaned_blobs(db, dry_run=False, grace_seconds=_ORPHAN_GRACE_SECONDS)
+        return res.get("deleted_files", 0)
     finally:
         db.close()
 
@@ -101,6 +80,33 @@ async def process_prediction_job(
     logger.info(f"Completed ARQ job for prediction {prediction_id}")
 
 
+async def translate_entity_job(
+    ctx,
+    entity_type: str,
+    entity_id: str,
+    fields: dict[str, str],
+    name_fields: list[str] | None = None,
+):
+    """Background ARQ job that processes translations and transliterations via Redis."""
+    from app.services.translation.manager import process_entity_translation_sync
+
+    logger.info("Executing translation job via Redis for %s #%s (fields: %s)", entity_type, entity_id, list(fields.keys()))
+    db = _session_factory()()
+    try:
+        stats = await asyncio.to_thread(
+            process_entity_translation_sync,
+            db,
+            entity_type,
+            str(entity_id),
+            fields,
+            name_fields or [],
+        )
+        logger.info("Finished translation job for %s #%s: %s", entity_type, entity_id, stats)
+        return stats
+    finally:
+        db.close()
+
+
 async def on_startup(ctx):
     # The arq CLI only configures the 'arq' logger. Without this, INFO/WARNING records from
     # 'smart-farming.*' (e.g. "Unable to publish status ...") can be silently lost.
@@ -113,7 +119,7 @@ async def on_startup(ctx):
 
 
 class WorkerSettings:
-    functions = [process_prediction_job]
+    functions = [process_prediction_job, translate_entity_job]
     on_startup = on_startup
     cron_jobs = [
         # weekday=6 -> Sunday (arq: Monday=0 ... Sunday=6). `day=` would mean day-of-month.

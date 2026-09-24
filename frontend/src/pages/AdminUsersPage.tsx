@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function AdminUsersPage() {
-  const { user: currentUser, token } = useAuth();
+  const { user: currentUser, token, t } = useAuth();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -98,9 +98,9 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-ink sm:text-4xl">User & Role Management</h1>
+          <h1 className="font-display text-3xl text-ink sm:text-4xl">{t("platformUserRoles")}</h1>
           <p className="mt-2 text-sm text-muted">
-            Manage system access, permissions, and roles across Farmers, Field Experts, and Administrators.
+            {t("userRolesSubtitle")}
           </p>
         </div>
         <Button
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
           className="flex items-center gap-2"
         >
           <RefreshCw size={15} className={isFetching ? "animate-spin" : ""} />
-          <span>Refresh</span>
+          <span>{t("refresh")}</span>
         </Button>
       </div>
 
@@ -119,41 +119,41 @@ export default function AdminUsersPage() {
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Total Registered</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("totalRegistered")}</h3>
             <Users size={18} className="text-muted" />
           </div>
           <div className="mt-3 font-display text-3xl text-ink">{total}</div>
-          <p className="mt-1 text-xs text-muted">Matching current filters</p>
+          <p className="mt-1 text-xs text-muted">{t("matchingFilters")}</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Growers (Farmers)</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("farmers")}</h3>
             <Sprout size={18} className="text-farmer-600" />
           </div>
           <div className="mt-3 font-display text-3xl text-farmer-700">
             {users.filter((u) => u.role === "farmer").length}
           </div>
-          <p className="mt-1 text-xs text-muted">Active on this page</p>
+          <p className="mt-1 text-xs text-muted">{t("activeOnPage")}</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Field Experts</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("fieldExperts")}</h3>
             <GraduationCap size={18} className="text-purple-600" />
           </div>
           <div className="mt-3 font-display text-3xl text-purple-700">
             {users.filter((u) => u.role === "expert").length}
           </div>
-          <p className="mt-1 text-xs text-muted">Active on this page</p>
+          <p className="mt-1 text-xs text-muted">{t("activeOnPage")}</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Administrators</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("administrators")}</h3>
             <ShieldCheck size={18} className="text-admin-600" />
           </div>
           <div className="mt-3 font-display text-3xl text-admin-700">
             {users.filter((u) => u.role === "admin").length}
           </div>
-          <p className="mt-1 text-xs text-muted">Protected tier</p>
+          <p className="mt-1 text-xs text-muted">{t("protectedTier")}</p>
         </Card>
       </div>
 
@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <Input
-              placeholder="Search by name, email, or phone..."
+              placeholder={t("searchUsersPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -182,10 +182,10 @@ export default function AdminUsersPage() {
               }}
               className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-farmer-600 focus:outline-none"
             >
-              <option value="all">All Roles</option>
-              <option value="farmer">Farmers</option>
-              <option value="expert">Field Experts</option>
-              <option value="admin">Administrators</option>
+              <option value="all">{t("allRoles")}</option>
+              <option value="farmer">{t("farmers")}</option>
+              <option value="expert">{t("fieldExperts")}</option>
+              <option value="admin">{t("administrators")}</option>
             </select>
           </div>
         </div>
@@ -197,13 +197,13 @@ export default function AdminUsersPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line bg-canvas text-xs uppercase text-muted">
               <tr>
-                <th className="px-6 py-4 font-semibold">User</th>
-                <th className="px-6 py-4 font-semibold">Contact</th>
-                <th className="px-6 py-4 font-semibold">Role</th>
-                <th className="px-6 py-4 font-semibold">Farm & Location</th>
-                <th className="px-6 py-4 font-semibold text-center">Scans</th>
-                <th className="px-6 py-4 font-semibold">Registered</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <th className="px-6 py-4 font-semibold">{t("user")}</th>
+                <th className="px-6 py-4 font-semibold">{t("phoneOrEmail")}</th>
+                <th className="px-6 py-4 font-semibold">{t("role")}</th>
+                <th className="px-6 py-4 font-semibold">{t("farm")} & {t("location")}</th>
+                <th className="px-6 py-4 font-semibold text-center">{t("scan")}</th>
+                <th className="px-6 py-4 font-semibold">{t("registered")}</th>
+                <th className="px-6 py-4 font-semibold text-right">{t("actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -265,7 +265,7 @@ export default function AdminUsersPage() {
                           {u.role === "admin" && <ShieldCheck size={13} />}
                           {u.role === "expert" && <GraduationCap size={13} />}
                           {u.role === "farmer" && <Sprout size={13} />}
-                          <span className="capitalize">{u.role}</span>
+                          <span className="capitalize">{u.role === "admin" ? t("roleAdmin") : u.role === "expert" ? t("roleExpert") : t("roleFarmer")}</span>
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
                           onClick={() => handleOpenRoleModal(u)}
                           className="text-xs font-semibold"
                         >
-                          Change Role
+                          {t("changeRole")}
                         </Button>
                       </td>
                     </tr>

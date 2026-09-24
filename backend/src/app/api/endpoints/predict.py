@@ -67,6 +67,75 @@ def _apply_pipeline_status(result: dict[str, Any], db_status: str | None) -> dic
     return result
 
 
+def _enrich_image_urls(result: dict) -> dict:
+    """If S3 storage is enabled, generate fresh presigned S3 URLs for raw and processed images."""
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
+        try:
+            from app.core.storage import get_storage
+            storage = get_storage()
+            img = result.get("image")
+            if isinstance(img, dict):
+                raw_k = img.get("raw_path")
+                proc_k = img.get("processed_path")
+                if raw_k:
+                    img["raw_url"] = storage.get_url(raw_k, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+                if proc_k:
+                    img["processed_url"] = storage.get_url(proc_k, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+        except Exception as exc:
+            _LOGGER.warning("Could not generate presigned S3 URLs: %s", exc)
+    return result
+
+
+def _ensure_processed_image_for_prediction(prediction, result: dict, session: Session) -> None:
+    """Self-healing helper: if an existing prediction has a raw image but is missing its
+    processed heatmap (e.g. historical scan), generate it on-the-fly and persist to S3."""
+    img = result.setdefault("image", {})
+    proc_path = img.get("processed_path") or prediction.processed_path
+    raw_path = img.get("raw_path") or prediction.raw_path
+
+    if proc_path:
+        img["processed_path"] = proc_path
+        return
+
+    if not raw_path:
+        return
+
+    try:
+        from pathlib import Path
+        import base64
+        from app.core.storage import get_storage
+        from app.services.model_client import call_model_service_sync
+        from app.core.config import settings
+
+        storage = get_storage()
+        clean_name = Path(raw_path).name
+        raw_obj = Path(raw_path)
+        if raw_obj.exists():
+            raw_bytes = raw_obj.read_bytes()
+        elif storage.exists(raw_path):
+            raw_bytes = storage.get(raw_path)
+        else:
+            return
+
+        cv_res = call_model_service_sync(raw_bytes, clean_name)
+        b64_str = cv_res.get("image", {}).get("processed_image_base64")
+        if b64_str:
+            proc_bytes = base64.b64decode(b64_str)
+            storage.save(proc_bytes, f"processed/{clean_name}", content_type="image/jpeg")
+            local_p = settings.DATA_ROOT / "processed" / clean_name
+            local_p.parent.mkdir(parents=True, exist_ok=True)
+            local_p.write_bytes(proc_bytes)
+
+            rel_proc = f"data/processed/{clean_name}"
+            img["processed_path"] = rel_proc
+            prediction.processed_path = rel_proc
+            prediction.result = result
+            session.commit()
+    except Exception as exc:
+        _LOGGER.warning("Could not auto-generate missing processed image for prediction %s: %s", prediction.id, exc)
+
+
+
 def _placeholder_result(user_id: str, relative_image_path: str, suffix: str) -> dict[str, Any]:
     return {
         "request_id": str(uuid.uuid4()),
@@ -153,41 +222,11 @@ async def _enqueue_prediction_job(
     return str(job.job_id)
 
 
-def _validate_preprocessing(context: dict[str, Any], upload_path: Path, preprocessor: Any) -> dict[str, Any]:
-    context = preprocessor.process(context)
-    prep_status = context.get("status", {}).get("preprocessing")
-    if prep_status != "completed":
-        if upload_path.exists():
-            try:
-                upload_path.unlink()
-            except OSError:
-                pass
-
-        if prep_status == "failed_blur":
-            blur_score = context.get("image", {}).get("blur_score", 0.0)
-            detail = (
-                f"Image is too blurry (sharpness variance score: {blur_score:.1f}, "
-                f"required: >= {preprocessor.blur_threshold:.1f}). Please hold the camera steady and refocus on the leaf."
-            )
-        elif prep_status == "failed_lighting":
-            brightness = context.get("image", {}).get("brightness_score", 0.0)
-            detail = (
-                f"Image lighting is outside acceptable range (brightness: {brightness:.1f}, "
-                f"expected between {preprocessor.min_brightness:.1f} and {preprocessor.max_brightness:.1f}). "
-                f"Please retake the photo in balanced lighting."
-            )
-        elif prep_status == "failed_no_leaf":
-            detail = (
-                "No crop leaf could be detected in the image. Please center the leaf in the frame with good contrast."
-            )
-        else:
-            detail = "Image quality check failed. Please retake the photo."
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=detail,
-        )
-    return context
+async def _validate_preprocessing_remote(
+    image_bytes: bytes, filename: str, content_type: str = "image/jpeg"
+) -> None:
+    from app.services.model_client import call_model_service
+    await call_model_service(image_bytes, filename, content_type)
 
 
 # --------------------------------------------------------------------------------------
@@ -289,7 +328,7 @@ async def predict(
             destination.write(image_bytes)
 
         context = create_context(
-            image_path=str(upload_path),
+            image_path=relative_image_path,
             user_id=user_id,
             location=location,
             lat=lat,
@@ -297,10 +336,31 @@ async def predict(
             language=language,
         )
 
-        # Fast synchronous image quality check
-        from app.pipeline import _PREPROCESSOR
+        # If Redis/ARQ is not configured or offline, execute synchronously via Server 2
+        arq_pool = getattr(request.app.state, "arq_pool", None)
+        if arq_pool is None or not getattr(settings, "REQUIRE_REDIS", False):
+            from app.pipeline import run_pipeline
 
-        context = _validate_preprocessing(context, upload_path, _PREPROCESSOR)
+            context = await run_pipeline(
+                context, image_bytes, filename, file.content_type or "image/jpeg"
+            )
+
+            # Ensure relative storage path is preserved for asset serving
+            context["image"]["raw_path"] = relative_image_path
+
+            public_res = _public_result(context)
+            new_pred = record_prediction(session, user_id, public_res)
+            if plot_id:
+                new_pred.plot_id = plot_id
+            new_pred.status = "completed"
+            session.commit()
+
+            public_res["prediction_id"] = new_pred.id
+            public_res["job_id"] = None
+            return _enrich_image_urls(public_res)
+
+        # Fast synchronous image quality check via model service before enqueuing
+        await _validate_preprocessing_remote(image_bytes, file.filename or filename, file.content_type or "image/jpeg")
 
         placeholder_result = _placeholder_result(user_id, relative_image_path, suffix)
 
@@ -333,7 +393,9 @@ async def predict(
 @router.get("/predict/{prediction_id}", response_model=PredictionResponse)
 @router.get("/predictions/{prediction_id}", response_model=PredictionResponse)
 async def prediction_detail(
+    request: Request,
     prediction_id: int,
+    lang: str | None = None,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -346,6 +408,12 @@ async def prediction_detail(
 
     result = dict(prediction.result or {})
     result["prediction_id"] = prediction.id
+    _ensure_processed_image_for_prediction(prediction, result, session)
+    if prediction.processed_path and not result.get("image", {}).get("processed_path"):
+        result.setdefault("image", {})["processed_path"] = prediction.processed_path
+    if prediction.raw_path and not result.get("image", {}).get("raw_path"):
+        result.setdefault("image", {})["raw_path"] = prediction.raw_path
+
     _apply_pipeline_status(result, prediction.status)
 
     # Traverse parent chain for historical images
@@ -388,6 +456,7 @@ async def prediction_detail(
         # Same normalisation as the parent so the client keeps polling a running rescan
         # and correctly detects a failed one.
         _apply_pipeline_status(fu_res, latest_follow_up.status)
+        _enrich_image_urls(fu_res)
         if latest_follow_up.expert_review and latest_follow_up.status == "verified":
             fu_res["expert_review_data"] = {
                 "decision": latest_follow_up.expert_review.decision,
@@ -396,7 +465,45 @@ async def prediction_detail(
             }
         result["follow_up"] = fu_res
 
-    return result
+    # Overlay pre-computed translations from entity_translations table (instant lookup)
+    from app.models.translation import EntityTranslation
+    translations = dict(result.get("translations") or {})
+    try:
+        cached_trans = session.query(EntityTranslation).filter_by(
+            entity_type="prediction",
+            entity_id=str(prediction_id),
+            status="done"
+        ).all()
+        for ct in cached_trans:
+            if ct.language not in translations:
+                translations[ct.language] = dict(result.get("recommendation") or {})
+                translations[ct.language]["language"] = ct.language
+            translations[ct.language][ct.field_name] = ct.translated_text
+        result["translations"] = translations
+    except Exception:
+        pass
+
+    req_lang = lang or request.headers.get("accept-language")
+    if req_lang and not req_lang.lower().startswith("en"):
+        norm_code = "gu" if req_lang.lower().startswith("gu") else ("hi" if req_lang.lower().startswith("hi") else None)
+        if norm_code:
+            if norm_code in translations and translations[norm_code]:
+                result["recommendation"] = dict(translations[norm_code])
+            if prediction.expert_review and result.get("expert_review_data"):
+                try:
+                    guidance_trans = session.query(EntityTranslation).filter_by(
+                        entity_type="expert_review",
+                        entity_id=str(prediction.expert_review.id),
+                        field_name="farmer_guidance",
+                        language=norm_code,
+                        status="done",
+                    ).first()
+                    if guidance_trans and guidance_trans.translated_text:
+                        result["expert_review_data"]["farmer_guidance"] = guidance_trans.translated_text
+                except Exception:
+                    pass
+
+    return _enrich_image_urls(result)
 
 
 @router.post("/predictions/{prediction_id}/rescan", response_model=PredictionResponse)
@@ -461,7 +568,7 @@ async def rescan_prediction(
         language = old_user.get("language", old_res.get("language", "English"))
 
         context = create_context(
-            image_path=str(upload_path),
+            image_path=relative_image_path,
             user_id=user_id,
             location=location,
             lat=lat,
@@ -469,10 +576,31 @@ async def rescan_prediction(
             language=language,
         )
 
-        # Fast synchronous image quality check
-        from app.pipeline import _PREPROCESSOR
+        image_bytes = upload_path.read_bytes()
 
-        context = _validate_preprocessing(context, upload_path, _PREPROCESSOR)
+        # If Redis/ARQ is not configured or offline, execute synchronously via Server 2
+        arq_pool = getattr(request.app.state, "arq_pool", None)
+        if arq_pool is None or not getattr(settings, "REQUIRE_REDIS", False):
+            from app.pipeline import run_pipeline
+
+            context = await run_pipeline(
+                context, image_bytes, filename, file.content_type or "image/jpeg"
+            )
+            context["image"]["raw_path"] = relative_image_path
+
+            public_res = _public_result(context)
+            new_pred = record_prediction(session, user_id, public_res)
+            new_pred.parent_id = old_prediction.id
+            new_pred.plot_id = plot_id or old_prediction.plot_id
+            new_pred.status = "completed"
+            session.commit()
+
+            public_res["prediction_id"] = new_pred.id
+            public_res["job_id"] = None
+            return _enrich_image_urls(public_res)
+
+        # Fast synchronous image quality check via model service before enqueuing
+        await _validate_preprocessing_remote(image_bytes, file.filename or filename, file.content_type or "image/jpeg")
 
         placeholder_result = _placeholder_result(user_id, relative_image_path, suffix)
 

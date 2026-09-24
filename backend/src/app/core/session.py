@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 from collections.abc import Generator
 from functools import lru_cache
 from pathlib import Path
@@ -38,15 +39,69 @@ def database_url() -> str:
     )
 
 
+def get_db_connect_args(url: str) -> dict[str, Any]:
+    """Return appropriate connect_args for the database engine.
+
+    For SQLite: disables thread check.
+    For PostgreSQL: resolves cloud hostnames (such as Render) with fallback to
+    public DNS (8.8.8.8, 1.1.1.1) to prevent 'could not translate host name'
+    errors caused by slow or misconfigured local network / Wi-Fi DNS.
+    """
+    if "sqlite" in url:
+        return {"check_same_thread": False}
+
+    connect_args: dict[str, Any] = {}
+    if "postgresql" in url or "postgres" in url:
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+            if hostname and hostname not in ("localhost", "127.0.0.1", "0.0.0.0") and "hostaddr=" not in url:
+                import socket
+                resolved_ip: str | None = None
+                try:
+                    resolved_ip = socket.gethostbyname(hostname)
+                except Exception:
+                    try:
+                        import dns.resolver
+                        resolver = dns.resolver.Resolver()
+                        resolver.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+                        resolver.timeout = 3.0
+                        resolver.lifetime = 3.0
+                        answers = resolver.resolve(hostname, "A")
+                        for r in answers:
+                            resolved_ip = r.to_text()
+                            break
+                    except Exception:
+                        if "singapore-postgres.render.com" in hostname:
+                            resolved_ip = "18.142.152.125"
+
+                if resolved_ip:
+                    connect_args["hostaddr"] = resolved_ip
+        except Exception:
+            pass
+
+    return connect_args
+
+
+def create_app_engine(url: str | None = None):
+    target_url = url or database_url()
+    connect_args = get_db_connect_args(target_url)
+    if target_url.startswith("sqlite"):
+        return create_engine(target_url, connect_args=connect_args)
+    return create_engine(
+        target_url,
+        pool_size=15,
+        max_overflow=20,
+        pool_recycle=1200,
+        pool_pre_ping=True,
+        connect_args=connect_args,
+    )
+
+
 @lru_cache(maxsize=1)
 def _session_factory() -> sessionmaker[Session]:
-    url = database_url()
-    if url.startswith("sqlite"):
-        engine = create_engine(url, connect_args={"check_same_thread": False})
-    else:
-        engine = create_engine(
-            url, pool_size=15, max_overflow=20, pool_recycle=1200, pool_pre_ping=True
-        )
+    engine = create_app_engine()
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

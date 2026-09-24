@@ -1,1 +1,0 @@
-# crop_identifier package

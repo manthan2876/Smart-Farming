@@ -1,4 +1,4 @@
-﻿import os
+import os
 import httpx
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -21,6 +21,7 @@ async def check_weather_risk():
     db = SessionLocal()
     try:
         farms = db.query(Farm).all()
+        new_alerts: list[Alert] = []
         async with httpx.AsyncClient() as client:
             for farm in farms:
                 if not farm.latitude or not farm.longitude:
@@ -48,7 +49,16 @@ async def check_weather_risk():
                                 body=f"Local conditions (Humidity {humidity}%, Temp {temp}°C) indicate a high risk for Early Blight. Consider preventative fungicides."
                             )
                             db.add(alert)
+                            new_alerts.append(alert)
         db.commit()
+
+        # Enqueue background translation for created alerts
+        from app.core.arq import enqueue_translation
+        for a in new_alerts:
+            try:
+                await enqueue_translation("alert", a.id, {"title": a.title, "body": a.body})
+            except Exception:
+                pass
     except Exception as e:
         logger.error(f"Weather cron error: {e}")
         db.rollback()

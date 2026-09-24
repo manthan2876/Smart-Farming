@@ -15,6 +15,7 @@ async def evaluate_weather_risks():
     db: Session = _session_factory()()
     try:
         plots = db.query(Plot).join(Farm).filter(Farm.latitude.isnot(None), Farm.longitude.isnot(None)).all()
+        new_alerts: list[Alert] = []
         for plot in plots:
             farm = plot.farm
             try:
@@ -45,9 +46,19 @@ async def evaluate_weather_risks():
                             is_read=False
                         )
                         db.add(alert)
+                        new_alerts.append(alert)
             except Exception as e:
                 logger.error(f"Failed to check weather for plot {plot.id}: {e}")
         db.commit()
+
+        # Enqueue background translation for created alerts
+        from app.core.arq import enqueue_translation_sync
+        for a in new_alerts:
+            try:
+                enqueue_translation_sync("alert", a.id, {"title": a.title, "body": a.body})
+            except Exception:
+                pass
+
         logger.info("Weather risk evaluation completed.")
     except Exception as e:
         logger.error(f"Weather evaluation job failed: {e}")

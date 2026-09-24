@@ -176,7 +176,7 @@ export default function PredictionResultPage() {
     return <Card className="mt-6 bg-farmer-900 text-white" padding="lg">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h3 className="font-display text-2xl text-farmer-200">{isFallback ? "Standard Agronomic Advisory" : "AI Advisory Plan"}</h3>
+          <h3 className="font-display text-2xl text-farmer-200">{isFallback ? t("standardAdvisory") : t("aiAdvisoryPlan")}</h3>
           {isFallback && <Badge tone="warning">Standard Rules (AI Fallback)</Badge>}
           {isTranslating && <span className="inline-flex items-center gap-1.5 text-xs text-farmer-300"><Loader2 size={12} className="animate-spin" /> {t("translating")}</span>}
         </div>
@@ -184,14 +184,14 @@ export default function PredictionResultPage() {
       </div>
       {isFallback && <div className="mt-4 rounded-sm border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-200 leading-5">Note: Live AI generation was unavailable. Safety-validated standard agricultural treatment rules are displayed above.</div>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div>
-      <p className="mt-5 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
+      <p className="mt-5 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>{t("important")}:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
     </Card>;
   };
 
   const PredictionBlock = ({ predictionData }: { predictionData: any }) => {
     if (predictionData.error || (predictionData.status as any)?.pipeline === "failed") return <div className="rounded-md border border-red-200 bg-red-50 p-6 text-danger"><h3 className="flex items-center gap-2 font-display text-xl"><AlertCircle size={22} /> ML Pipeline Error</h3><p className="mt-3">{predictionData.error || "The analysis could not be completed."}</p><p className="mt-3 text-sm">Please capture another scan with better lighting.</p></div>;
-    const rawImage = predictionData.image?.raw_path ? getAssetUrl(predictionData.image.raw_path) : null;
-    const processedImage = predictionData.image?.processed_path ? getAssetUrl(predictionData.image.processed_path) : null;
+    const rawImage = predictionData.image?.raw_url || predictionData.raw_url || (predictionData.image?.raw_path ? getAssetUrl(predictionData.image.raw_path) : (predictionData.raw_path ? getAssetUrl(predictionData.raw_path) : null));
+    const processedImage = predictionData.image?.processed_url || predictionData.processed_url || (predictionData.image?.processed_path ? getAssetUrl(predictionData.image.processed_path) : (predictionData.processed_path ? getAssetUrl(predictionData.processed_path) : null));
     const diseaseConfidence = (predictionData.disease?.confidence || 0) * 100;
     const isLowConfidence = predictionData.disease?.is_uncertain === true || diseaseConfidence < 60;
     const confRating = predictionData.disease?.confidence_rating || (diseaseConfidence >= 85 ? "high" : diseaseConfidence >= 60 ? "moderate" : "low");
@@ -200,15 +200,15 @@ export default function PredictionResultPage() {
     const weatherDegraded = predictionData.weather?.is_degraded || predictionData.weather?.status === "failed" || !predictionData.weather?.temperature_celsius;
 
     return <div className="space-y-6">
-      <Card><h3 className="font-display text-xl text-ink">Visual Analysis</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[["Original Upload", rawImage, ""], ["Grad-CAM / Heatmap", processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">Image unavailable</div>}</div>)}</div></Card>
+      <Card><h3 className="font-display text-xl text-ink">{t("visualAnalysis")}</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[[t("originalUpload"), rawImage, ""], [t("gradcamHeatmap"), processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">{t("imageUnavailable")}</div>}</div>)}</div></Card>
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-display text-xl text-ink">Diagnostic Telemetry</h3>
-          <Badge tone={confRating === "high" ? "success" : confRating === "moderate" ? "info" : "warning"}>{confRating.toUpperCase()} CONFIDENCE</Badge>
+          <h3 className="font-display text-xl text-ink">{t("diagnosticTelemetry")}</h3>
+          <Badge tone={confRating === "high" ? "success" : confRating === "moderate" ? "info" : "warning"}>{confRating.toUpperCase()} {t("confidence").toUpperCase()}</Badge>
         </div>
         <div className="mt-5 space-y-4">
           <div className="rounded-sm bg-canvas p-4">
-            <h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? "Pending Verification" : translateDisease(predictionData.disease?.label, language)}</h2>
+            <h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? t("pendingVerification") : translateDisease(predictionData.disease?.label, language)}</h2>
             <p className="mt-1 text-sm text-muted">Model {t("confidence")}: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
               <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700"}`} style={{ width: `${diseaseConfidence}%` }} />
@@ -217,13 +217,13 @@ export default function PredictionResultPage() {
           </div>
           <div className="rounded-sm bg-canvas p-4">
             <h2 className="font-display text-xl text-ink">{t("severity")}: {translateSeverityBucket(predictionData.severity?.bucket, language)}</h2>
-            <p className="mt-1 text-sm text-muted">Affected Area: {severityPercent}%</p>
+            <p className="mt-1 text-sm text-muted">{t("affectedArea")}: {severityPercent}%</p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-admin-500" style={{ width: `${severityPercent}%` }} /></div>
           </div>
           <div className="text-xs uppercase tracking-wide text-muted space-y-1.5">
             <p><strong>{t("crop")}:</strong> {translateCrop(predictionData.crop?.label, language)} {predictionData.crop?.confidence && `(${(predictionData.crop.confidence * 100).toFixed(1)}%)`}</p>
             <p><strong>{t("pests")}:</strong> {pestOffline ? <span className="italic text-amber-600">Offline / Detector Not Available</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => translatePest(p.label, language)).join(", ") : t("noPests")}</p>
-            <p><strong>{t("weather")} Context:</strong> {weatherDegraded ? <span className="italic text-amber-600">Unavailable during scan</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% ${t("humidity").toLowerCase()} (${translateWeather(predictionData.weather?.condition, language)})`}</p>
+            <p><strong>{t("weather")} {t("context")}:</strong> {weatherDegraded ? <span className="italic text-amber-600">Unavailable during scan</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% ${t("humidity").toLowerCase()} (${translateWeather(predictionData.weather?.condition, language)})`}</p>
           </div>
           <div className="flex flex-wrap items-center justify-between border-t border-line pt-3 text-[11px] text-muted">
             <span>Model: {predictionData.provenance?.models?.disease?.name || predictionData.disease?.model_used || "EfficientNet-B2"}</span>
@@ -266,7 +266,7 @@ export default function PredictionResultPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <Link to="/history" className="no-print text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700">
-              &larr; Back to History
+              &larr; {t("backToHistory")}
             </Link>
             <h1 className="mt-2 font-display text-3xl text-ink sm:text-4xl">
               Scan #{primary.prediction_id || id} Diagnosis {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}
@@ -279,22 +279,22 @@ export default function PredictionResultPage() {
             className="no-print flex items-center gap-2"
           >
             <Printer size={16} />
-            <span>Print / Export PDF</span>
+            <span>{t("printExportPdf")}</span>
           </Button>
         </div>
 
         {isPendingReview && (
           <Card className="border-admin-100 bg-admin-50">
-            <h3 className="font-display text-xl text-admin-700">Additional Review Required</h3>
+            <h3 className="font-display text-xl text-admin-700">{t("additionalReviewRequired")}</h3>
             <p className="mt-2 text-sm leading-6 text-admin-700">
-              This scan was routed to an agricultural specialist to verify the issue and ensure safe recommendations.
+              {t("additionalReviewDesc")}
             </p>
           </Card>
         )}
 
         <Card className="flex flex-col gap-4 bg-canvas sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="font-display text-xl text-ink">Diagnostic Status</h3>
+            <h3 className="font-display text-xl text-ink">{t("diagnosticStatus")}</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge tone={status?.pipeline === "completed" ? "success" : "warning"}>
                 Pipeline: {status?.pipeline || "Unknown"}
@@ -313,7 +313,7 @@ export default function PredictionResultPage() {
 
         {historicalImages.length > 0 && (
           <Card>
-            <h3 className="font-display text-xl text-ink">Disease Progression Timeline</h3>
+            <h3 className="font-display text-xl text-ink">{t("diseaseTimeline")}</h3>
             <div className="mt-5 flex gap-3 overflow-x-auto pb-2">
               {historicalImages.map((item: any, index: number) => (
                 <div className="min-w-40 rounded-sm border border-line bg-canvas p-4" key={index}>
@@ -325,7 +325,7 @@ export default function PredictionResultPage() {
                 </div>
               ))}
               <div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4">
-                <div className="text-xs font-bold text-expert-700">Latest Scan</div>
+                <div className="text-xs font-bold text-expert-700">{t("latestScan")}</div>
                 <div className="mt-2 font-semibold text-ink">{translateDisease(primary.disease?.label, language)}</div>
                 <div className="mt-1 text-xs font-semibold text-farmer-700">
                   {t("severity")}: {primary.severity?.percent || 0}%
@@ -338,8 +338,8 @@ export default function PredictionResultPage() {
         {isProcessing ? (
           <Card className="flex flex-col items-center text-center" padding="lg">
             <Loader2 size={48} className="animate-spin text-farmer-700" />
-            <h2 className="mt-5 font-display text-2xl text-ink">Running AI Pipeline...</h2>
-            <p className="mt-2 text-muted">Analyzing your crop image in the background. Please wait.</p>
+            <h2 className="mt-5 font-display text-2xl text-ink">{t("runningPipeline")}</h2>
+            <p className="mt-2 text-muted">{t("analyzingBackground")}</p>
           </Card>
         ) : (
           <PredictionBlock predictionData={primary} />
@@ -358,19 +358,19 @@ export default function PredictionResultPage() {
 
         {!isPendingReview && !isFailed && (
           <Card className="no-print">
-            <h3 className="font-display text-xl text-ink">Farmer Field Feedback</h3>
+            <h3 className="font-display text-xl text-ink">{t("farmerFeedbackTitle")}</h3>
             {feedbackSubmitted ? (
               <div className="mt-4 rounded-sm bg-farmer-700 p-4 text-sm font-semibold text-white">
-                Thank you for verifying this diagnosis. Your feedback helps improve the AI for everyone!
+                {t("feedbackThanks")}
               </div>
             ) : (
               <>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Did this diagnosis match what you observed in the field? Help us improve the model by validating the result.
+                  {t("farmerFeedbackSubtitle")}
                 </p>
                 <textarea
                   className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100"
-                  placeholder="Optional notes"
+                  placeholder={t("optionalNotes")}
                   value={farmerNote}
                   onChange={(event) => setFarmerNote(event.target.value)}
                 />

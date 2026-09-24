@@ -113,6 +113,21 @@ async def register(
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
+
+    # Enqueue write-time transliteration for user and farm name
+    from app.core.arq import enqueue_translation
+    try:
+        await enqueue_translation("user", user.id, {"name": user.name}, name_fields=["name"])
+        if user.farm:
+            await enqueue_translation(
+                "farm",
+                user.farm.id,
+                {"name": user.farm.name, "location": user.farm.location or ""},
+                name_fields=["name", "location"],
+            )
+    except Exception:
+        pass
+
     return AuthResponse(tokens=tokens, user=_profile(user))
 
 

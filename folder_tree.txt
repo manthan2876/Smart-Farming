@@ -1,4 +1,4 @@
-Smart-Farming/ (98937 files)
+Smart-Farming/ (98966 files)
     ├── Datasets/ (98459 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
@@ -277,7 +277,7 @@ Smart-Farming/ (98937 files)
         ├── smart_farming_roadmap.pdf
         ├── smart_farming_roadmap_stage10_plus.pdf
         ├── smart_farming_roadmap_v2.pdf
-    ├── backend/ (154 files)
+    ├── backend/ (114 files)
         ├── alembic/ (2 files)
             ├── versions/ (1 files)
                 ├── 0001_add_feedback_review_fields.py
@@ -288,53 +288,21 @@ Smart-Farming/ (98937 files)
             ├── dependency_links.txt
             ├── requires.txt
             ├── top_level.txt
-        ├── data/ (38 files)
-            ├── audio/ (14 files)
-                ├── 170a095cd899f181062ce212e3d5b2a306a7903a3e71ba89f0861c623ee55c36.mp3
-                ├── 3d8eaa586e9a805ddcddfae6347d5a98dd3e9dd3ee88752da2958f2602d2c4b2.mp3
-                ├── 63441f821ad7efa86bbbcddf126a63e612addeeac3daf1376d3d4c76d49bf469.mp3
-                ├── 64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c.mp3
-                ├── 69834c587a20fce812b20624c29da37dd0691a0a7c748249c98d4ecfd17b3d1f.mp3
-                ├── 79f950b7f156a0861c15dd123641d4690d1dcb5dbf7ab94419d64aeb0df0dac9.mp3
-                ├── 9b0f51e61cf22139dbd92d03063938467e38338745033e8cb2b058751e414384.mp3
-                ├── 9d95c400e679fff3048eb8928e71c4f78a4565c750b22afa4de93cdc90fdf36f.mp3
-                ├── ac3a871d3f9883d9c493185a0b7adf5f3034b17e590b1bc17c257d9451215cac.mp3
-                ├── bade058f0fe3aa03fe463348c098b7fa897df64181d4f9a0f7d85a2166a0518a.mp3
-                ├── bfae5e39d9c5d7bdce4480f1fbb2ffce02d1ec6d70c842948d4713c54ecf2364.mp3
-                ├── c095de96bcdab969f6dbc7623668c83b478e85fb098f3f6891496b98be036692.mp3
-                ├── c1ca37f9bbdd2e35439f3ab472d9587fd5617d49c57c2a0eee96d33d12c6ac1d.mp3
-                ├── e9f7c8f3ea9223c0b124873606ea8a1c7ee19dd27788817998260ab46ae48511.mp3
-            ├── processed/ (13 files)
-                ├── 10c43bdcaddd55de759b651a0e48f56e6d4c8679759fd713f28f1572d71cbd71.jpg
-                ├── 3502b04f19678c579e45c1fa860264abfeec6d6a9de90f18859fab41b3a29a0f.png
-                ├── 4f2c8630e07e3812339c73c1d90bece2bb9fd204ba826c3ef7286eeb84260a5f.jpg
-                ├── 94c3346826b90a3cd0489058c0e9a4a50d296ecf89ce9051e2f4965cf431f391.jpg
-                ├── aphids_tomato.jpeg
-                ├── b909f7e0283f32b8180f058581781e9cad022947a6b35d7db15dc3b7377841d6.jpg
-                ├── bac29c0b95f3f0432b444cc288dd9fd0cb5a239fa4dd995303773a928b9079fb.jpg
-                ├── be6a8ac2c7ebd3108735ed20751238d167a7aa91f88a10eaff5a34bfaadc4712.jpg
-                ├── d1919df9fbe64f1c3bf7082dc6e34bb542c506ae1737635e7c1c54d16622433f.jpg
-                ├── f0c5cf8cd2b5cd77acf705d11d41eec97a42a3f31a4636fdeafa40bb053c69d7.jpg
-                ├── f1225dce8303e4a10397a7713a4b93528ade28edc9b358873db9061ba2317282.jpg
-                ├── f845d7dc09b62d643135fc411f844387d173e488ce40c587179e95424054d4db.jpg
-                ├── media_1789974766831.jpg
-            ├── uploads/ (11 files)
-                ├── 10c43bdcaddd55de759b651a0e48f56e6d4c8679759fd713f28f1572d71cbd71.jpg
-                ├── 3502b04f19678c579e45c1fa860264abfeec6d6a9de90f18859fab41b3a29a0f.png
-                ├── 4f2c8630e07e3812339c73c1d90bece2bb9fd204ba826c3ef7286eeb84260a5f.jpg
-                ├── 94c3346826b90a3cd0489058c0e9a4a50d296ecf89ce9051e2f4965cf431f391.jpg
-                ├── b909f7e0283f32b8180f058581781e9cad022947a6b35d7db15dc3b7377841d6.jpg
-                ├── bac29c0b95f3f0432b444cc288dd9fd0cb5a239fa4dd995303773a928b9079fb.jpg
-                ├── be6a8ac2c7ebd3108735ed20751238d167a7aa91f88a10eaff5a34bfaadc4712.jpg
-                ├── d1919df9fbe64f1c3bf7082dc6e34bb542c506ae1737635e7c1c54d16622433f.jpg
-                ├── f0c5cf8cd2b5cd77acf705d11d41eec97a42a3f31a4636fdeafa40bb053c69d7.jpg
-                ├── f1225dce8303e4a10397a7713a4b93528ade28edc9b358873db9061ba2317282.jpg
-                ├── f845d7dc09b62d643135fc411f844387d173e488ce40c587179e95424054d4db.jpg
+        ├── data/ (6 files)
+            ├── audio/ (2 files)
+                ├── 6dcc7bc959c23c0b7d2aeaab1e9cb3996f5c1e363fcf9245ad3292c028a7aa2c.mp3
+                ├── d07762cb505c39c554a9a4e235ee447858573a5250711752a6c3982e249c7d46.mp3
+            ├── processed/ (2 files)
+                ├── 4b8d76092c74ea448ec5831fa2c7b44b5fc4d0e8330e20065e1975c74212f03e.jpg
+                ├── a0ec0cc715ac06831ef73c2930c9305d08127f9cc74d0a4020b2041a31d0a66b.jpg
+            ├── uploads/ (2 files)
+                ├── 4b8d76092c74ea448ec5831fa2c7b44b5fc4d0e8330e20065e1975c74212f03e.jpg
+                ├── a0ec0cc715ac06831ef73c2930c9305d08127f9cc74d0a4020b2041a31d0a66b.jpg
         ├── scripts/ (2 files)
             ├── migrate_to_s3.py
             ├── train_eval.py
-        ├── src/ (90 files)
-            ├── app/ (90 files)
+        ├── src/ (82 files)
+            ├── app/ (82 files)
                 ├── api/ (19 files)
                     ├── endpoints/ (17 files)
                         ├── __init__.py
@@ -375,7 +343,7 @@ Smart-Farming/ (98937 files)
                     ├── feedback.py
                     ├── prediction.py
                     ├── user.py
-                ├── models/ (12 files)
+                ├── models/ (13 files)
                     ├── __init__.py
                     ├── alert.py
                     ├── dataset.py
@@ -387,6 +355,7 @@ Smart-Farming/ (98937 files)
                     ├── plot.py
                     ├── prediction.py
                     ├── recommendation.py
+                    ├── translation.py
                     ├── user.py
                 ├── public/ (1 files)
                     ├── aphids_tomato.jpeg
@@ -399,46 +368,32 @@ Smart-Farming/ (98937 files)
                     ├── plot.py
                     ├── prediction.py
                     ├── user.py
-                ├── services/ (24 files)
-                    ├── crop_identifier/ (2 files)
-                        ├── __init__.py
-                        ├── predictor.py
-                    ├── decision_engine/ (2 files)
-                        ├── __init__.py
-                        ├── router.py
-                    ├── disease_classifier/ (2 files)
-                        ├── __init__.py
-                        ├── predictor.py
-                    ├── pest_detector/ (2 files)
-                        ├── __init__.py
-                        ├── predictor.py
-                    ├── preprocessing/ (3 files)
-                        ├── __init__.py
-                        ├── leaf_isolator.py
-                        ├── service.py
+                ├── scripts/ (1 files)
+                    ├── backfill_translations.py
+                ├── services/ (15 files)
                     ├── rag/ (2 files)
                         ├── __init__.py
                         ├── retriever.py
                     ├── recommendation/ (2 files)
                         ├── __init__.py
                         ├── service.py
-                    ├── severity/ (2 files)
-                        ├── __init__.py
-                        ├── estimator.py
-                    ├── translation/ (1 files)
+                    ├── translation/ (4 files)
+                        ├── manager.py
+                        ├── overlay.py
                         ├── service.py
+                        ├── transliteration.py
                     ├── weather/ (3 files)
                         ├── __init__.py
                         ├── proactive.py
                         ├── service.py
                     ├── __init__.py
+                    ├── model_client.py
                     ├── prediction_job.py
                     ├── weather_cron.py
-                ├── utils/ (4 files)
+                ├── utils/ (3 files)
                     ├── __init__.py
                     ├── json_utils.py
                     ├── logging.py
-                    ├── model_loader.py
                 ├── __init__.py
                 ├── context.py
                 ├── main.py
@@ -791,6 +746,76 @@ Smart-Farming/ (98937 files)
         ├── pubspec.lock
         ├── pubspec.yaml
         ├── smart_farming_mobile.iml
+    ├── model_service/ (60 files)
+        ├── models/ (48 files)
+            ├── csvs/ (7 files)
+                ├── cotton_disease_manifest.csv
+                ├── groundnut_disease_manifest.csv
+                ├── manifest.csv
+                ├── pepper_bell_disease_manifest.csv
+                ├── pest_manifest.csv
+                ├── potato_disease_manifest.csv
+                ├── tomato_disease_manifest.csv
+            ├── matrixes/ (8 files)
+                ├── confusion_matrix.png
+                ├── confusion_matrix_Cotton.png
+                ├── confusion_matrix_Groundnut.png
+                ├── confusion_matrix_Pepper_Bell.png
+                ├── confusion_matrix_Potato.png
+                ├── confusion_matrix_Tomato.png
+                ├── confusion_matrix_pest.png
+                ├── gradcam_samples.png
+            ├── pest_classifier/ (21 files)
+                ├── training/ (19 files)
+                    ├── run/ (19 files)
+                        ├── weights/ (2 files)
+                            ├── best.pt
+                            ├── last.pt
+                        ├── args.yaml
+                        ├── confusion_matrix.png
+                        ├── confusion_matrix_normalized.png
+                        ├── results.csv
+                        ├── results.png
+                        ├── train_batch0.jpg
+                        ├── train_batch1.jpg
+                        ├── train_batch2.jpg
+                        ├── train_batch480.jpg
+                        ├── train_batch481.jpg
+                        ├── train_batch482.jpg
+                        ├── val_batch0_labels.jpg
+                        ├── val_batch0_pred.jpg
+                        ├── val_batch1_labels.jpg
+                        ├── val_batch1_pred.jpg
+                        ├── val_batch2_labels.jpg
+                        ├── val_batch2_pred.jpg
+                ├── last.pt
+                ├── pest_classifier.pt
+            ├── crop_identifier_labels.json
+            ├── crop_identifier_v1.pth
+            ├── disease_Cotton.pth
+            ├── disease_Cotton_labels.json
+            ├── disease_Groundnut.pth
+            ├── disease_Groundnut_labels.json
+            ├── disease_Pepper_Bell.pth
+            ├── disease_Pepper_Bell_labels.json
+            ├── disease_Potato.pth
+            ├── disease_Potato_labels.json
+            ├── disease_Tomato.pth
+            ├── disease_Tomato_labels.json
+        ├── src/ (9 files)
+            ├── stages/ (7 files)
+                ├── crop_identifier.py
+                ├── decision_router.py
+                ├── disease_classifier.py
+                ├── leaf_isolator.py
+                ├── pest_detector.py
+                ├── preprocessing.py
+                ├── severity.py
+            ├── loader.py
+            ├── pipeline.py
+        ├── config.yaml
+        ├── main.py
+        ├── requirements.txt
     ├── models/ (48 files)
         ├── csvs/ (7 files)
             ├── cotton_disease_manifest.csv
@@ -878,8 +903,18 @@ Smart-Farming/ (98937 files)
         ├── project_config.py
         ├── requirements.txt
         ├── yolov8n-cls.pt
+    ├── scripts/ (8 files)
+        ├── count.py
+        ├── start_all.ps1
+        ├── start_backend.bat
+        ├── start_frontend.bat
+        ├── start_mobile.bat
+        ├── start_model_server.bat
+        ├── start_worker.bat
+        ├── stop_all.bat
     ├── .gitattributes
     ├── .gitignore
     ├── README.md
-    ├── count.py
     ├── folder_tree.txt
+    ├── start_all.bat
+    ├── start_all_with_mobile.bat

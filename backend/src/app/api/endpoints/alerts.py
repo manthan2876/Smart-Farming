@@ -1,17 +1,20 @@
 from __future__ import annotations
 from typing import Any
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core import get_session
 from app.models import Alert
+from app.services.translation.overlay import overlay_entity_translations
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 @router.get("")
 async def get_alerts(
+    request: Request,
     offset: int = 0,
     limit: int = 20,
+    lang: str | None = None,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> list[dict[str, Any]]:
@@ -23,7 +26,7 @@ async def get_alerts(
         .limit(min(limit, 100))
         .all()
     )
-    return [
+    res = [
         {
             "id": a.id,
             "prediction_id": a.prediction_id,
@@ -36,6 +39,9 @@ async def get_alerts(
         }
         for a in alerts
     ]
+    req_lang = lang or request.headers.get("accept-language")
+    overlay_entity_translations(session, res, "alert", lambda x: x["id"], ["title", "body"], req_lang)
+    return res
 
 
 @router.post("/{alert_id}/read")

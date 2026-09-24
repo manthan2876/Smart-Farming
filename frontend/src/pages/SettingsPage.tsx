@@ -85,7 +85,11 @@ export default function SettingsPage() {
     if (deleteConfirmText !== "DELETE") return;
     setIsDeleting(true);
     try {
-      await request("/admin/purge", { method: "DELETE" }, token!);
+      await request("/admin/purge?confirmation=DELETE", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: "DELETE" }),
+      }, token!);
       alert("Database wiped.");
       setShowDeleteModal(false);
       window.location.reload();
@@ -100,7 +104,9 @@ export default function SettingsPage() {
     if (!confirm("Delete all orphaned image blobs?")) return;
     try {
       const res = await request<any>("/admin/blobs", { method: "DELETE" }, token!);
-      alert(`Success! Deleted ${res.deleted_files} orphaned files.`);
+      const localCount = res.local_deleted ?? 0;
+      const s3Count = res.s3_deleted ?? 0;
+      alert(`Success! Deleted ${res.deleted_files ?? (localCount + s3Count)} orphaned files (Local: ${localCount}, S3: ${s3Count}).`);
     } catch (err: any) {
       alert("Failed: " + err.message);
     }

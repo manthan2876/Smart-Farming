@@ -60,6 +60,32 @@ async def translate_prediction_recommendation(
             "translations": translations,
         }
 
+    # Check EntityTranslation table first (0 ms external API latency)
+    from app.models.translation import EntityTranslation
+    db_translations = session.query(EntityTranslation).filter_by(
+        entity_type="prediction",
+        entity_id=str(prediction_id),
+        language=target_code,
+        status="done",
+    ).all()
+    if db_translations:
+        db_rec = dict(canonical_rec)
+        db_rec["language"] = target_code
+        for tr in db_translations:
+            db_rec[tr.field_name] = tr.translated_text
+        translations[target_code] = db_rec
+        res["translations"] = translations
+        pred.result = res
+        flag_modified(pred, "result")
+        session.commit()
+        return {
+            "prediction_id": prediction_id,
+            "language": target_code,
+            "cached": True,
+            "recommendation": db_rec,
+            "translations": translations,
+        }
+
     # Translate on-demand
     if not canonical_rec:
         raise HTTPException(status_code=400, detail="Prediction has no recommendation to translate")
@@ -71,6 +97,35 @@ async def translate_prediction_recommendation(
         res["translations"] = translations
         pred.result = res
         flag_modified(pred, "result")
+
+        # Persist to EntityTranslation table
+        from app.services.translation.manager import compute_hash
+        for f_name, f_val in translated_rec.items():
+            if f_name in ["immediate_action", "treatment", "prevention", "monitoring", "safety_disclaimer"] and isinstance(f_val, str):
+                orig_val = canonical_rec.get(f_name, "")
+                existing = session.query(EntityTranslation).filter_by(
+                    entity_type="prediction",
+                    entity_id=str(prediction_id),
+                    field_name=f_name,
+                    language=target_code,
+                ).first()
+                if existing:
+                    existing.translated_text = f_val
+                    existing.source_hash = compute_hash(orig_val)
+                    existing.status = "done"
+                else:
+                    session.add(EntityTranslation(
+                        entity_type="prediction",
+                        entity_id=str(prediction_id),
+                        field_name=f_name,
+                        language=target_code,
+                        translated_text=f_val,
+                        source_hash=compute_hash(orig_val),
+                        is_transliteration=False,
+                        status="done",
+                        retries=0,
+                    ))
+
         session.add(pred)
         session.commit()
         session.refresh(pred)

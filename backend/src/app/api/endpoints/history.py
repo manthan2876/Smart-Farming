@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -23,8 +23,10 @@ from app.models import Prediction
 
 @router.get("/history")
 async def history(
+    request: Request,
     offset: int = 0,
     limit: int = 20,
+    lang: str | None = None,
     crop: str | None = None,
     disease: str | None = None,
     status: str | None = None,
@@ -147,7 +149,32 @@ async def history(
             }
 
         res["created_at"] = p.created_at.isoformat() if p.created_at else None
-        results.append(res)
+        from app.api.endpoints.predict import _enrich_image_urls
+        results.append(_enrich_image_urls(res))
+
+    req_lang = lang or request.headers.get("accept-language")
+    if req_lang and not req_lang.lower().startswith("en") and results:
+        norm = "gu" if req_lang.lower().startswith("gu") else ("hi" if req_lang.lower().startswith("hi") else None)
+        if norm:
+            from app.models.translation import EntityTranslation
+            pred_ids = [str(r["id"]) for r in results if r.get("id")]
+            if pred_ids:
+                try:
+                    trans_rows = session.query(EntityTranslation).filter(
+                        EntityTranslation.entity_type == "prediction",
+                        EntityTranslation.entity_id.in_(pred_ids),
+                        EntityTranslation.language == norm,
+                        EntityTranslation.status == "done"
+                    ).all()
+                    trans_map: dict[str, dict[str, str]] = {}
+                    for tr in trans_rows:
+                        trans_map.setdefault(tr.entity_id, {})[tr.field_name] = tr.translated_text
+                    for r in results:
+                        pid = str(r.get("id"))
+                        if pid in trans_map and isinstance(r.get("recommendation"), dict):
+                            r["recommendation"].update(trans_map[pid])
+                except Exception:
+                    pass
 
     return results
 
