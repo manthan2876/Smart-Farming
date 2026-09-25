@@ -1,7 +1,7 @@
 import { getAssetUrl, request } from "../api/client";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import imageCompression from "browser-image-compression";
 import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer } from "lucide-react";
@@ -25,6 +25,14 @@ export default function PredictionResultPage() {
   const [localTranslations, setLocalTranslations] = useState<Record<string, any>>({});
   const inFlightLangRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // Whenever a prediction is viewed, refresh alerts cache so unread notifications update
+    if (id && token) {
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+    }
+  }, [id, token, queryClient]);
 
   const { data: prediction, isLoading, isError, refetch } = useQuery({
     queryKey: ["prediction", id],

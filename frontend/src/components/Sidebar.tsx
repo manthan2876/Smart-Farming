@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { 
   Bell,
@@ -119,9 +119,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <div key={alert.id} className={`border-b border-line p-4 last:border-0 ${alert.is_read ? "bg-surface" : "bg-farmer-50"}`}>
                   <div className="mb-1 break-words text-sm font-bold text-ink">{alert.title}</div>
                   <div className="mb-2 break-words text-xs leading-5 text-muted">{alert.body}</div>
-                  {!alert.is_read && (
-                    <button onClick={() => markRead(alert.id)} className="p-0 text-xs font-semibold text-farmer-700 hover:text-farmer-900">{t("markAsRead")}</button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {alert.prediction_id && (
+                      <Link
+                        to={`/predictions/${alert.prediction_id}`}
+                        onClick={() => {
+                          if (!alert.is_read) markRead(alert.id);
+                          setShowNotifications(false);
+                          if (onClose) onClose();
+                        }}
+                        className="text-xs font-semibold text-farmer-700 hover:text-farmer-900 hover:underline"
+                      >
+                        {t("viewScan") || "View Scan"} →
+                      </Link>
+                    )}
+                    {!alert.is_read && (
+                      <button onClick={() => markRead(alert.id)} className="p-0 text-xs font-semibold text-farmer-700 hover:text-farmer-900">{t("markAsRead")}</button>
+                    )}
+                  </div>
                 </div>
               ))
             )}

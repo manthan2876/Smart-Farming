@@ -442,6 +442,23 @@ async def prediction_detail(
 
     result = dict(prediction.result or {})
     result["prediction_id"] = prediction.id
+
+    # Automatically mark unread alerts for this prediction as read
+    try:
+        from app.models import Alert
+        unread_alerts = session.query(Alert).filter(
+            Alert.prediction_id == prediction.id,
+            Alert.user_id == user_id,
+            Alert.is_read == False,
+        ).all()
+        if unread_alerts:
+            for alert_obj in unread_alerts:
+                alert_obj.is_read = True
+            session.commit()
+    except Exception as exc:
+        session.rollback()
+        _LOGGER.warning("Could not auto-mark alerts as read for prediction %s: %s", prediction_id, exc)
+
     _ensure_processed_image_for_prediction(prediction, result, session)
     if prediction.processed_path and not result.get("image", {}).get("processed_path"):
         result.setdefault("image", {})["processed_path"] = prediction.processed_path
