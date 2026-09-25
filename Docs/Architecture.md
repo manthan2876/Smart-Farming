@@ -1,9 +1,9 @@
 # Architecture & System Design Document
 
-**Project:** AI-Powered Smart Farming
-**Version:** 1.0
-**Date:** September 2026
-**Status:** Active Development
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
 
@@ -70,8 +70,9 @@ flowchart TD
         end
     end
 
-    subgraph PERSIST["🗄️ Persistence Layer"]
+    subgraph PERSIST["🗄️ Persistence & State Layer"]
         DB["Render PostgreSQL\nManaged DB (sslmode=require)"]
+        UPSTASH["Upstash Serverless Redis REST\nHTTPS Token Auth\n• Translation Cache (en/hi/gu)\n• Image Dedup Cache (SHA-256)\n• Dynamic ML Threshold Sync\n• Lazy Weather Cron Locks"]
     end
 
     subgraph EXTERNAL["🌍 External AI Services"]
@@ -83,6 +84,7 @@ flowchart TD
     API -- "OIDC IdToken HTTPS" --> INF
     API -- "S3 HMAC XML API" --> GCS
     API -- "asyncpg / psycopg2 SSL" --> DB
+    API -- "HTTPS REST (Bearer)" --> UPSTASH
     API -- "REST" --> HF
     API -- "REST" --> OWM
 ```
@@ -124,10 +126,13 @@ The platform supports two deployment execution modes depending on infrastructure
 #### Mode A: Serverless Synchronous Microservices (Cloud Run Production — Active)
 In Cloud Run, persistent background polling workers (like ARQ) would consume the entire monthly Always Free quota in ~2 days. To allow both services to scale to **0 instances** when idle, `REQUIRE_REDIS=False` is set:
 1. `POST /predict` receives the leaf upload.
-2. Synchronous validation & quality check run immediately.
-3. The image is saved to **Google Cloud Storage** (`smart-farming-data`).
-4. Main Backend invokes **Cloud Run Service #2 (`inference-service`)** synchronously over HTTPS using GCP OIDC Identity Tokens.
-5. The full prediction result, provenance block, and GCS presigned URLs are committed to Render PostgreSQL and returned in the HTTP response.
+2. An image SHA-256 hash check consults **Upstash Serverless Redis REST** (`sf:dedup:{hash}`). If a duplicate prediction exists within 24 hours, the cached result is returned immediately in under 20ms.
+3. Synchronous validation & quality pre-checks run immediately.
+4. The image is saved to **Google Cloud Storage** (`smart-farming-data`) via S3 HMAC XML API.
+5. Main Backend invokes **Cloud Run Service #2 (`inference-service`)** synchronously over HTTPS using GCP OIDC Identity Tokens.
+6. Weather enrichment and LLM advisory recommendations are generated.
+7. FastAPI `BackgroundTasks` automatically pre-translates the advisory into Hindi (`hi`) and Gujarati (`gu`), populating Upstash Redis REST cache (`sf:trans:{lang}:{hash}`) asynchronously without holding up the HTTP response.
+8. The full prediction result, provenance block, and GCS presigned URLs are committed to Render PostgreSQL and returned in the HTTP response.
 
 #### Mode B: Asynchronous Queue (Dedicated Host / Local Development)
 When Redis is provisioned and `REQUIRE_REDIS=True`:
@@ -210,6 +215,7 @@ flowchart LR
 |---|---|---|
 | **Relational DB** | All structured data (users, farms, predictions, feedback) | Render PostgreSQL (`sslmode=require`) · SQLite (dev/test) |
 | **Object Store** | Raw uploads, processed images, audio files | Google Cloud Storage (`smart-farming-data` via S3 HMAC API) · AWS S3 · Local |
+| **Serverless Cache & State** | Sub-20ms translation caching, prediction dedup, dynamic thresholds, weather caching & lazy cron locks | Upstash Serverless Redis REST (`UPSTASH_REDIS_REST_URL` via HTTPS token auth) |
 
 The storage interface (`storage.py`) is fully abstracted — switching between `local`, `gcs`, or `s3` backends is a single environment variable change (`STORAGE_BACKEND`).
 
@@ -554,33 +560,35 @@ Each role inherits permissions from the roles below it. Role checks are applied 
 flowchart TD
     A["👨‍🌾 Farmer uploads leaf photo\nvia React Scan page"]
     B["POST /predict\nmultipart/form-data"]
-    C{"Validation"}
+    C{"Validation Checks"}
     C1["❌ 400/422 error\nreturned immediately"]
-    D["SHA-256 dedup check\nSame image + plot → cached result"]
-    D1["✅ Return cached\nGET /predictions/{id}"]
-    E["Synchronous preprocessing\nquality pre-check"]
-    F["INSERT Prediction\nstatus = processing"]
-    G["Enqueue ARQ job\nprocess_prediction_job(prediction_id)"]
-    H["202 Accepted\n{prediction_id}"]
-    I["WS /ws/predictions/{id}\nSUBSCRIBE Redis channel"]
-    J["ARQ Worker\nprocess_prediction_job"]
-    K["run_pipeline(context)\n8 stages in sequence"]
-    L["PUBLISH stage_event\nafter each stage"]
-    M["WS push to client\n{stage, status, partial_result}"]
-    N["UPDATE Prediction\nstatus = ready | failed | pending_expert_review\nresult = full JSON"]
-    O["GET /predictions/{id}\nFull result with provenance"]
+    D{"Upstash Dedup Check\nsf:dedup:{sha256}"}
+    D1["⚡ Return cached prediction\nsub-20ms response"]
+    E["Synchronous Preprocessing\nOpenCV blur & brightness pre-check"]
+    F["Upload to GCS\nsmart-farming-data (S3 HMAC API)"]
+    G{"REQUIRE_REDIS?"}
+    
+    subgraph SYNC["Cloud Run Production (REQUIRE_REDIS=False)"]
+        H1["Invoke Cloud Run Service #2\nHTTPS + GCP OIDC Token"]
+        H2["Enrich Weather + Qwen3 LLM"]
+        H3["Commit to Render PostgreSQL\nstatus = ready | pending_expert_review"]
+        H4["FastAPI BackgroundTasks\nPre-cache Hindi & Gujarati in Upstash"]
+        H5["Return 200 OK + full result JSON"]
+    end
+
+    subgraph ASYNC["Local Dev / Dedicated Host (REQUIRE_REDIS=True)"]
+        J1["Enqueue ARQ Job in Redis\nReturn 202 Accepted {id}"]
+        J2["ARQ Worker runs pipeline\nWebSocket pushes stage events"]
+        J3["Update PostgreSQL record"]
+    end
 
     A --> B --> C
-    C -- "Invalid file / type / size" --> C1
+    C -- "Invalid file/size" --> C1
     C -- "Valid" --> D
-    D -- "Duplicate found" --> D1
-    D -- "New" --> E --> F --> G --> H
-    H --> I
-    G --> J --> K
-    K --> L --> M
-    K --> N
-    I -. "DB poll fallback\nevery 3 seconds" .-> N
-    N --> O
+    D -- "Cache hit (24h)" --> D1
+    D -- "New Image" --> E --> F --> G
+    G -- "False (Default)" --> H1 --> H2 --> H3 --> H4 --> H5
+    G -- "True" --> J1 --> J2 --> J3
 ```
 
 **Validation checks at `POST /predict`:**
@@ -626,30 +634,37 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    SCHED["APScheduler\nscheduler.py\nstarts at app lifespan"]
-
-    subgraph CRON["Every 30 minutes"]
+    subgraph DEDICATED["Dedicated Host / Local"]
+        SCHED["APScheduler\nscheduler.py\nruns in-memory"]
         WC["weather_cron.py\nFetch OpenWeatherMap\nfor all farms with lat/lon"]
         PA["proactive.py\nEvaluate risk thresholds\n(humidity, temp, wind)"]
         ALC["INSERT Alert records\nkind=weather_risk"]
+        SCHED --> WC --> PA --> ALC
     end
 
-    SCHED --> WC --> PA --> ALC
-
-    subgraph REDIS_RELOAD["Redis Pub/Sub"]
-        CR["Channel:\nconfig_reload_events"]
-        WKR["ARQ Worker\nsubscribes to channel"]
-        RL["reload_config()\nHot-reloads config.yaml\n+ preprocessor weights"]
+    subgraph SERVERLESS["Serverless Cloud Run Architecture"]
+        REQ["Periodic Request\nor Cloud Scheduler"]
+        LOCK{"Upstash Lock\nsf:cron:last_weather_eval"}
+        EVAL["Evaluate Farm Weather\n& Insert Alerts"]
+        REQ --> LOCK
+        LOCK -- "Lock acquired (>30m)" --> EVAL
+        LOCK -- "Throttled (<30m)" --> SKIP["Skip (No Duplicate Work)"]
     end
 
-    CR -->|"Admin PUT /config"| WKR --> RL
+    subgraph CONFIG_SYNC["Dynamic Config Sync"]
+        ADMIN["Admin PUT /admin/config"]
+        UP_CONF["Upstash Redis REST\nsf:config:thresholds"]
+        INSTANCES["All Cloud Run Backend & Inference Instances\n(Read sf:config:thresholds per inference)"]
+        ADMIN --> UP_CONF --> INSTANCES
+    end
 ```
 
-| Job | Trigger | Purpose |
+| Job / Mechanism | Trigger | Implementation / Purpose |
 |---|---|---|
-| `weather_cron` | Every 30 min (APScheduler) | Proactively fetch weather for all registered farms |
-| `proactive_alerts` | After each `weather_cron` | Evaluate thresholds and insert `Alert` records |
-| `config_reload` | Redis pub/sub event | Hot-reload `config.yaml` + model config in all workers without restart |
+| `weather_cron` | Every 30 min (APScheduler / Request) | Proactively fetches weather for all registered farms, cached in Upstash Redis REST (`sf:weather:{lat}:{lon}`) for 30 minutes |
+| `proactive_alerts` | After each `weather_cron` | Evaluates agronomic thresholds and inserts `Alert` records into Render PostgreSQL |
+| `serverless_cron_lock` | Upstash Redis REST | Atomically manages `sf:cron:last_weather_eval` timestamp to prevent duplicate alert evaluations across autoscaled instances |
+| `dynamic_threshold_sync` | Admin `PUT /admin/config` | Updates `sf:config:thresholds` in Upstash Redis REST, allowing all Cloud Run instances to instantly pick up threshold changes without worker restarts |
 
 ---
 
@@ -732,27 +747,31 @@ flowchart LR
         CR_INFER["Cloud Run Service #2\ninference-service\n(PyTorch CPU · 2GiB · Private)"]
         GCS_STORE["Google Cloud Storage\nBucket: smart-farming-data"]
         RENDER_PG["Render PostgreSQL\nManaged DB (SSL)"]
+        UPSTASH_REDIS["Upstash Serverless Redis REST\n(Token Auth · HTTPS)"]
     end
 
     VERCEL -->|HTTPS REST| CR_BACKEND
     CR_BACKEND -->|GCP OIDC Auth| CR_INFER
     CR_BACKEND -->|S3 HMAC API| GCS_STORE
     CR_BACKEND -->|SSL| RENDER_PG
+    CR_BACKEND -->|HTTPS REST| UPSTASH_REDIS
 ```
 
 ### Environment Configuration (Production Cloud Run)
 
 | Variable | Value / Purpose |
 |---|---|
-| `DATABASE_URL` | Render PostgreSQL DSN (`postgresql://...singapore-postgres.render.com/...?sslmode=require`) |
+| `DATABASE_URL` | Render PostgreSQL DSN (`postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require`) |
 | `STORAGE_BACKEND` | `gcs` (Google Cloud Storage) |
-| `AWS_ACCESS_KEY_ID` | GCS HMAC Access ID (`GOOG1E...`) |
-| `AWS_SECRET_ACCESS_KEY` | GCS HMAC Secret Key |
+| `AWS_ACCESS_KEY_ID` | GCS HMAC Access ID (`<YOUR_GCS_HMAC_ACCESS_KEY>`) |
+| `AWS_SECRET_ACCESS_KEY` | GCS HMAC Secret Key (`<YOUR_GCS_HMAC_SECRET_KEY>`) |
 | `AWS_REGION` | `auto` |
 | `AWS_S3_BUCKET` | `smart-farming-data` |
 | `AWS_ENDPOINT_URL` | `https://storage.googleapis.com` |
-| `MODEL_SERVER_URL` | Cloud Run Service #2 URL (`https://inference-service-...us-central1.run.app`) |
-| `REQUIRE_REDIS` | `False` (bypasses persistent worker polling; enables scale-to-zero) |
+| `MODEL_SERVER_URL` | Cloud Run Service #2 URL (`https://inference-service-<PROJECT_HASH>.<REGION>.run.app`) |
+| `UPSTASH_REDIS_REST_URL` | Upstash Serverless Redis REST URL (`https://<YOUR_UPSTASH_DB_NAME>.upstash.io`) |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Serverless Redis REST Bearer Token (`<YOUR_UPSTASH_REST_TOKEN>`) |
+| `REQUIRE_REDIS` | `False` (bypasses persistent worker polling; enables true scale-to-zero) |
 | `JWT_SECRET_KEY` | Production JWT signing key (HS256) |
 | `OPENWEATHER_API` | OpenWeatherMap API key |
 | `HF_TOKEN` | HuggingFace Inference API token (Qwen3-4B Agronomist) |
@@ -766,13 +785,14 @@ flowchart LR
 
 - **Graceful degradation:** Each pipeline stage is independently fenced. A failed weather or LLM stage does not abort the prediction — it marks that stage as failed and continues, serving a partial result with `is_fallback: true` where applicable.
 - **Expert escalation:** Uncertain predictions are never silently downgraded — they are held for human review.
-- **Deduplication:** SHA-256 hash check prevents redundant compute on identical uploads.
+- **Deduplication:** SHA-256 hash check consults Upstash Redis REST (`sf:dedup:{hash}`) to return cached results in <20ms, preventing redundant compute on identical uploads.
 
 ### Performance
 
-- **Async pipeline via ARQ:** The HTTP request returns immediately (202) — the client never blocks on ML inference.
+- **Serverless Zero-Idle Latency:** Main backend routes inference synchronously to `inference-service` via private HTTPS, scaling to zero when idle while achieving fast execution (~1.5s–3s cold start, sub-500ms warm).
+- **Sub-20ms Translation Caching:** Multilingual advisory translations (Hindi, Gujarati) are pre-cached in Upstash Redis REST via FastAPI `BackgroundTasks`, delivering instant response times on language toggles.
 - **Stage timing:** Every stage records `duration_ms`, enabling per-stage bottleneck analysis via the provenance block.
-- **Hot config reload:** Model routing configuration can be updated without worker restart, minimising downtime during crop season transitions.
+- **Dynamic Config Sync:** Model thresholds (`sf:config:thresholds`) are synced across all Cloud Run instances via Upstash Redis REST with zero downtime and without requiring server restarts.
 
 ### Observability
 
@@ -786,14 +806,15 @@ flowchart LR
 - Rate limiting (slowapi) protects inference endpoints from abuse.
 - Magic-byte file validation prevents content-type spoofing on uploads.
 - Presigned S3 URLs (15-min expiry) enforce time-bounded image access.
+- Private Cloud Run Ingress ensures `inference-service` is accessible only via authenticated GCP OIDC identity tokens from the backend.
 
 ### Scalability
 
-- ARQ workers are horizontally scalable — additional worker processes connect to the same Redis queue.
-- Storage backend is swappable (local → S3) without code changes.
-- The database layer supports PostgreSQL for production multi-instance deployments.
+- Cloud Run instances scale automatically from 0 up to configured maximum instances based on incoming request concurrency.
+- Storage backend is swappable (local → GCS/S3) without code changes.
+- Persistence is fully managed via Render PostgreSQL (with connection pooling) and Upstash Serverless Redis REST (stateless HTTPS connections).
 
 ---
 
-*Document generated for AI-Powered Smart Farming Platform.*
-*For questions, contact the project maintainers.*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

@@ -1,4 +1,11 @@
-# Smart Farming — Landing Page UI/UX Specification
+# Screen Specifications — AI-Powered Smart Farming
+
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
+
+---
 
 For your project, the **Landing Page should be a public-facing product introduction**, not the farmer dashboard.
 
@@ -22504,3 +22511,8 @@ Model Version Deployed → Prediction Monitoring (again)
 ```
 
 That full cycle — not any single screen — is what makes the admin panel read as a real production ML system rather than a set of disconnected dashboards.
+
+---
+
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

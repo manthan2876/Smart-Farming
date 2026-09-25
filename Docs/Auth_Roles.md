@@ -1,7 +1,9 @@
 # Authentication & Roles / Permissions Reference
 
-**Project:** AI-Powered Smart Farming
-**Last Updated:** 2026-09-22
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
 
@@ -275,4 +277,5 @@ if target_user.role == "admin" AND admin_count == 1 AND new_role != "admin":
 
 ---
 
-*This document is auto-maintained. For implementation details, refer to the corresponding route files and `dependencies.py` in the backend source.*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

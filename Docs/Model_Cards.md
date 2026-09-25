@@ -1,8 +1,9 @@
 # Model Cards — AI-Powered Smart Farming
 
-> **Project**: AI-Powered Smart Farming System
-> **Document Version**: 1.0
-> **Last Updated**: 2026-09-22
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
 
@@ -561,4 +562,5 @@ All image-based ML models (Crop Identifier, Disease Classifiers, Pest Classifier
 
 ---
 
-*Document maintained by the smart farming development team. For queries, refer to the project README or contact the team lead.*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

@@ -1,7 +1,9 @@
 # Smart Farming — Deployment Guide
 
-**Project:** AI-Powered Smart Farming
-**Last Updated:** September 2026
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
 
@@ -28,10 +30,11 @@
     - 10.1 [Overview & Serverless Zero-Idle Strategy](#101-overview--serverless-zero-idle-strategy)
     - 10.2 [Google Cloud Storage (GCS) Provisioning & HMAC Keys](#102-google-cloud-storage-gcs-provisioning--hmac-keys)
     - 10.3 [Render PostgreSQL Database](#103-render-postgresql-database)
-    - 10.4 [Cloud Run Service #2: inference-service](#104-cloud-run-service-2-inference-service)
-    - 10.5 [Cloud Run Service #1: smart-farming-backend](#105-cloud-run-service-1-smart-farming-backend)
-    - 10.6 [Vercel Frontend Deployment (smart-farming-dashboard)](#106-vercel-frontend-deployment-smart-farming-dashboard)
-    - 10.7 [Automated Continuous Deployment from GitHub](#107-automated-continuous-deployment-from-github)
+    - 10.4 [Upstash Serverless Redis REST Provisioning](#104-upstash-serverless-redis-rest-provisioning)
+    - 10.5 [Cloud Run Service #2: inference-service](#105-cloud-run-service-2-inference-service)
+    - 10.6 [Cloud Run Service #1: smart-farming-backend](#106-cloud-run-service-1-smart-farming-backend)
+    - 10.7 [Vercel Frontend Deployment (smart-farming-dashboard)](#107-vercel-frontend-deployment-smart-farming-dashboard)
+    - 10.8 [Automated Continuous Deployment from GitHub](#108-automated-continuous-deployment-from-github)
 11. [Production Checklist](#11-production-checklist)
 12. [Monitoring & Operations](#12-monitoring--operations)
 13. [Troubleshooting](#13-troubleshooting)
@@ -43,7 +46,7 @@
 The Smart Farming platform supports two deployment targets depending on your infrastructure requirements:
 
 ### Target A: Serverless Cloud Production (Active Live Architecture)
-A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform, Vercel, and Render:
+A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform, Vercel, Render, and Upstash:
 
 ```
                             ┌────────────────────────┐
@@ -59,14 +62,14 @@ A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform
                             │   Cloud Run Service #1: Backend    │
                             │   (FastAPI · 512MiB · Public)      │
                             │   REQUIRE_REDIS=False (Sync Exec)  │
-                            └──┬─────────────┬─────────────────┬─┘
-           GCP OIDC HTTPS Auth │             │ S3 HMAC XML API │ SSL
-               ┌───────────────┘             │                 │
-    ┌──────────▼───────────────┐     ┌───────▼────────┐  ┌─────▼──────────┐
-    │ Cloud Run Service #2:    │     │  Google Cloud  │  │ Render         │
-    │ inference-service        │     │  Storage (GCS) │  │ PostgreSQL     │
-    │ (PyTorch CPU · 2GiB)     │     │  Bucket: data  │  │ Managed DB     │
-    │ Private Ingress          │     └────────────────┘  └────────────────┘
+                            └──┬───────────┬───────────┬─────────┤
+           GCP OIDC HTTPS Auth │           │ S3 HMAC   │ SSL     │ HTTPS Token
+               ┌───────────────┘           │ XML API   │         │
+    ┌──────────▼───────────────┐   ┌───────▼──────┐  ┌─▼───────┐ ┌▼──────────────┐
+    │ Cloud Run Service #2:    │   │ Google Cloud │  │ Render  │ │ Upstash       │
+    │ inference-service        │   │ Storage (GCS)│  │ Postgres│ │ Redis REST    │
+    │ (PyTorch CPU · 2GiB)     │   │ Bucket: data │  │ Managed │ │ Serverless    │
+    │ Private Ingress          │   └──────────────┘  └─────────┘ └───────────────┘
     └──────────────────────────┘
 ```
 
@@ -77,6 +80,7 @@ A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform
 | **ML Inference** | Google Cloud Run (Service #2) | FastAPI + PyTorch CPU, 2 vCPU, 2 GiB RAM | Private HTTPS (`--no-allow-unauthenticated`, GCP OIDC) |
 | **Object Storage** | Google Cloud Storage (GCS) | Multi-regional bucket (`smart-farming-data`) | S3 HMAC XML API (`signature_version="s3"`) |
 | **Database** | Render PostgreSQL | Managed PostgreSQL 15+ with SSL | Encrypted external SSL (`sslmode=require`) |
+| **Serverless Cache** | Upstash Redis REST | Serverless Redis (HTTPS Token Auth) | Outbound HTTPS REST (`sf:*` namespace) |
 | **External AI** | Hugging Face & OpenWeather | Qwen3-4B Agronomist LLM & Weather API | Outbound HTTPS |
 
 ---
@@ -891,14 +895,14 @@ In production, the platform is decoupled into two independent microservices and 
                             │   Cloud Run Service #1: Backend    │
                             │   (FastAPI · 512MiB · Public)      │
                             │   REQUIRE_REDIS=False (Sync Exec)  │
-                            └──┬─────────────┬─────────────────┬─┘
-           GCP OIDC HTTPS Auth │             │ S3 HMAC XML API │ SSL
-               ┌───────────────┘             │                 │
-    ┌──────────▼───────────────┐     ┌───────▼────────┐  ┌─────▼──────────┐
-    │ Cloud Run Service #2:    │     │  Google Cloud  │  │ Render         │
-    │ inference-service        │     │  Storage (GCS) │  │ PostgreSQL     │
-    │ (PyTorch CPU · 2GiB)     │     │  Bucket: data  │  │ Managed DB     │
-    │ Private Ingress          │     └────────────────┘  └────────────────┘
+                            └──┬───────────┬───────────┬─────────┤
+           GCP OIDC HTTPS Auth │           │ S3 HMAC   │ SSL     │ HTTPS Token
+               ┌───────────────┘           │ XML API   │         │
+    ┌──────────▼───────────────┐   ┌───────▼──────┐  ┌─▼───────┐ ┌▼──────────────┐
+    │ Cloud Run Service #2:    │   │ Google Cloud │  │ Render  │ │ Upstash       │
+    │ inference-service        │   │ Storage (GCS)│  │ Postgres│ │ Redis REST    │
+    │ (PyTorch CPU · 2GiB)     │   │ Bucket: data │  │ Managed │ │ Serverless    │
+    │ Private Ingress          │   └──────────────┘  └─────────┘ └───────────────┘
     └──────────────────────────┘
 ```
 
@@ -926,7 +930,7 @@ Using Google Cloud Console or `gcloud`:
 
 ```bash
 gcloud storage buckets create gs://smart-farming-data \
-  --project=gen-lang-client-0172102020 \
+  --project=<YOUR_GCP_PROJECT_ID> \
   --location=us-central1 \
   --default-storage-class=STANDARD \
   --uniform-bucket-level-access
@@ -935,7 +939,7 @@ gcloud storage buckets create gs://smart-farming-data \
 #### Step 2: Generate S3 Interoperability HMAC Keys
 1. In Google Cloud Console, navigate to **Cloud Storage** → **Settings** → **Interoperability**.
 2. Click **Create a key** for your user account or service account.
-3. Save the **Access Key** (format: `GOOG1E...`) and **Secret**.
+3. Save the **Access Key** (`<YOUR_GCS_HMAC_ACCESS_KEY>`) and **Secret** (`<YOUR_GCS_HMAC_SECRET_KEY>`).
 
 #### Step 3: Signature Version Configuration
 > [!IMPORTANT]
@@ -968,19 +972,71 @@ Render provides a managed PostgreSQL 15+ database with automated backups and enc
 1. **Provision Database:** In Render Dashboard, click **New +** → **PostgreSQL**. Select the nearest region (e.g., Singapore or US).
 2. **Copy External Connection URL:**
    ```
-   postgresql://sfuser:<PASSWORD>@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require
+   postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require
    ```
 3. **Run Alembic Migrations:**
    Run migrations against Render PostgreSQL before deploying new backend code:
    ```bash
    cd backend
-   DATABASE_URL="postgresql://sfuser:<PASSWORD>@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require" \
+   DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require" \
    alembic upgrade head
    ```
 
 ---
 
-### 10.4 Cloud Run Service #2: `inference-service`
+### 10.4 Upstash Serverless Redis REST Provisioning
+
+Upstash provides a zero-idle, pay-per-request serverless Redis database accessible directly over HTTPS REST without keeping long-lived TCP connections open.
+
+#### Step 1: Create Database in Upstash Console
+1. Navigate to the [Upstash Console](https://console.upstash.com) and sign in.
+2. Click **Create Database**.
+3. Configure settings:
+   - **Name:** `smart-farming-redis`
+   - **Type:** Serverless Redis
+   - **Region:** Select a region with low latency to your Cloud Run deployment (e.g., `us-central1` or nearest zone).
+   - **TLS:** Enabled (default).
+4. Click **Create**. The free tier provides 500,000 commands/month and 256 MB storage.
+
+#### Step 2: Retrieve REST API Keys
+1. On your database dashboard, scroll to the **REST API** section.
+2. Select the **.env** tab to view your credentials:
+   ```dotenv
+   UPSTASH_REDIS_REST_URL="https://<database-name>.upstash.io"
+   UPSTASH_REDIS_REST_TOKEN="<bearer-token>"
+   ```
+
+#### Step 3: Verify Connection via CLI / PowerShell
+Test your Upstash database directly from your local terminal:
+
+```powershell
+$URL = "https://<database-name>.upstash.io"
+$TOKEN = "<bearer-token>"
+
+# Test SET
+Invoke-RestMethod -Uri "$URL/set/smart_farming_test/connected" -Headers @{ Authorization = "Bearer $TOKEN" } -Method Post
+
+# Test GET
+Invoke-RestMethod -Uri "$URL/get/smart_farming_test" -Headers @{ Authorization = "Bearer $TOKEN" }
+# Expected result: connected
+```
+
+#### Step 4: Verify Python Integration Features
+Run the project verification script to validate all 5 platform integrations:
+```bash
+cd backend
+python scripts/verify_upstash_features.py
+```
+This verifies:
+1. REST client connectivity and ping.
+2. Phrase-level translation caching (`sf:trans:*`).
+3. SHA-256 prediction image deduplication (`sf:dedup:*`).
+4. 30-min weather response caching (`sf:weather:*`) and lazy cron locks (`sf:cron:last_weather_eval`).
+5. Dynamic ML threshold sync (`sf:config:thresholds`).
+
+---
+
+### 10.5 Cloud Run Service #2: `inference-service`
 
 The inference microservice loads the 7 model checkpoints and runs PyTorch CPU inference on demand.
 
@@ -1019,11 +1075,11 @@ gcloud run deploy inference-service \
 ```
 
 The service will output its private URL:
-`https://inference-service-17713614069.us-central1.run.app`
+`https://inference-service-<PROJECT_HASH>.<REGION>.run.app`
 
 ---
 
-### 10.5 Cloud Run Service #1: `smart-farming-backend`
+### 10.6 Cloud Run Service #1: `smart-farming-backend`
 
 The public API gateway coordinates authentication, database queries, weather enrichment, LLM recommendations, and inference forwarding.
 
@@ -1032,7 +1088,7 @@ To allow the backend to invoke the private `inference-service`, grant the Cloud 
 
 ```bash
 # Get Google Cloud Project Number
-PROJECT_NUM=$(gcloud projects describe gen-lang-client-0172102020 --format='value(projectNumber)')
+PROJECT_NUM=$(gcloud projects describe <YOUR_GCP_PROJECT_ID> --format='value(projectNumber)')
 
 # Grant roles/run.invoker to the default compute service account
 gcloud run services add-iam-policy-binding inference-service \
@@ -1064,28 +1120,30 @@ ENVIRONMENT=production,\
 DEBUG=False,\
 REQUIRE_REDIS=False,\
 STORAGE_BACKEND=gcs,\
-AWS_ACCESS_KEY_ID=GOOG1EZ3...,\
-AWS_SECRET_ACCESS_KEY=...,\
+AWS_ACCESS_KEY_ID=<YOUR_GCS_HMAC_ACCESS_KEY>,\
+AWS_SECRET_ACCESS_KEY=<YOUR_GCS_HMAC_SECRET_KEY>,\
 AWS_REGION=auto,\
 AWS_S3_BUCKET=smart-farming-data,\
 AWS_ENDPOINT_URL=https://storage.googleapis.com,\
-MODEL_SERVER_URL=https://inference-service-17713614069.us-central1.run.app,\
-DATABASE_URL=postgresql://sfuser:...@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require,\
-JWT_SECRET_KEY=...,\
-HF_TOKEN=hf_...,\
-OPENWEATHER_API=...,\
+MODEL_SERVER_URL=https://inference-service-<PROJECT_HASH>.<REGION>.run.app,\
+DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require,\
+UPSTASH_REDIS_REST_URL=https://<YOUR_UPSTASH_DB_NAME>.upstash.io,\
+UPSTASH_REDIS_REST_TOKEN=<YOUR_UPSTASH_REST_TOKEN>,\
+JWT_SECRET_KEY=<YOUR_JWT_SECRET_KEY>,\
+HF_TOKEN=<YOUR_HF_TOKEN>,\
+OPENWEATHER_API=<YOUR_OPENWEATHER_API_KEY>,\
 CORS_ORIGINS=https://smart-farming-dashboard.vercel.app,http://localhost:5173"
 ```
 
 Verify service health:
 ```bash
-curl https://smart-farming-backend-17713614069.us-central1.run.app/health
+curl https://smart-farming-backend-<PROJECT_HASH>.<REGION>.run.app/health
 # {"status":"ok","database":"connected","models":"ok"}
 ```
 
 ---
 
-### 10.6 Vercel Frontend Deployment (`smart-farming-dashboard`)
+### 10.7 Vercel Frontend Deployment (`smart-farming-dashboard`)
 
 The React SPA is deployed on Vercel's global Edge Network.
 
@@ -1116,14 +1174,14 @@ Vercel builds run on Linux. Verify all TypeScript file imports match the exact f
 3. Configure Environment Variables in Vercel:
    | Variable | Value |
    |---|---|
-   | `VITE_API_URL` | `https://smart-farming-backend-17713614069.us-central1.run.app` |
-   | `VITE_GOOGLE_MAPS_API_KEY` | `AIzaSy...` |
+   | `VITE_API_URL` | `https://smart-farming-backend-<PROJECT_HASH>.<REGION>.run.app` |
+   | `VITE_GOOGLE_MAPS_API_KEY` | `<YOUR_GOOGLE_MAPS_API_KEY>` |
    | `VITE_GOOGLE_MAPS_MAP_ID` | `DEMO_MAP_ID` |
 4. Click **Deploy**.
 
 ---
 
-### 10.7 Automated Continuous Deployment from GitHub
+### 10.8 Automated Continuous Deployment from GitHub
 
 To automatically deploy new code on every `git push origin main`:
 
@@ -1161,9 +1219,11 @@ Work through this checklist before going live.
 - [ ] Run **`alembic upgrade head`** before traffic switch.
 - [ ] Verify automated PostgreSQL backups in Render dashboard.
 
-### Redis & Execution Mode
+### Serverless Cache & Execution Mode
 
 - [ ] **Cloud Run Production:** Confirm **`REQUIRE_REDIS=False`** so services scale down to 0 instances when idle.
+- [ ] **Upstash Redis REST:** Configure **`UPSTASH_REDIS_REST_URL`** and **`UPSTASH_REDIS_REST_TOKEN`** for serverless caching.
+- [ ] Run **`python scripts/verify_upstash_features.py`** to confirm all 5 features pass (translation caching, deduplication, weather caching, cron locks, dynamic threshold sync).
 - [ ] **Docker Compose / VM:** Set **`REQUIRE_REDIS=True`** and ensure the `worker` container is healthy.
 
 ### Object Storage
@@ -1215,7 +1275,7 @@ docker compose logs --tail=100 frontend
 ### 12.2 Updating the Application
 
 #### Google Cloud Run
-Pushes to `main` will automatically build and deploy if GitHub continuous deployment is configured (see [Section 10.7](#107-automated-continuous-deployment-from-github)).
+Pushes to `main` will automatically build and deploy if GitHub continuous deployment is configured (see [Section 10.8](#108-automated-continuous-deployment-from-github)).
 To manually trigger a deployment:
 ```bash
 # Deploy Backend
@@ -1251,8 +1311,11 @@ docker compose ps
 | `relation "X" does not exist` on backend start | Database migrations not applied | Run `alembic upgrade head` pointing to `DATABASE_URL`. |
 | CORS error in browser | `CORS_ORIGINS` mismatch | Ensure `CORS_ORIGINS` matches the Vercel domain exactly (e.g. `https://smart-farming-dashboard.vercel.app` with no trailing slash). |
 | `HF_TOKEN` error in LLM endpoints | Token missing or invalid | Set a valid `HF_TOKEN` from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens). |
+| `UpstashRedisError: Unauthorized` | Invalid `UPSTASH_REDIS_REST_TOKEN` | Copy the bearer token from the Upstash REST API `.env` tab and update Cloud Run env vars. |
+| Translations falling back to synchronous / slow UI | Upstash credentials missing or unreachable | Verify `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set so pre-cached translations serve in <20ms. |
 
 ---
 
-*This guide covers version 1.x of the Smart Farming deployment.*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*
 

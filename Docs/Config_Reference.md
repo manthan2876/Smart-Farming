@@ -1,8 +1,13 @@
 # Configuration Reference — AI-Powered Smart Farming
 
-This document is the single source of truth for all runtime configuration in the Smart Farming platform. It covers the ML pipeline config file, backend and frontend environment variables, the model registry, and hot-reload behavior.
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
+
+This document is the single source of truth for all runtime configuration in the Smart Farming platform. It covers the ML pipeline config file, backend and frontend environment variables, the model registry, and hot-reload behavior.
 
 ## Table of Contents
 
@@ -164,7 +169,7 @@ One entry per supported crop. The key **must exactly match** the class label out
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy connection DSN. For Cloud Run / production, set to Render managed PostgreSQL (e.g., `postgresql://sfuser:pass@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require`). Normalized automatically in `session.py` to `postgresql+psycopg2://`. |
+| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy connection DSN. For Cloud Run / production, set to Render managed PostgreSQL (e.g., `postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require`). Normalized automatically in `session.py` to `postgresql+psycopg2://`. |
 
 ### Model Inference Server (Server 2)
 
@@ -219,7 +224,7 @@ The backend provides a unified, S3-compatible storage abstraction (`storage.py`)
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `STORAGE_BACKEND` | string | `local` | Storage driver. Options: `local`, `gcs`, or `s3`. |
-| `AWS_ACCESS_KEY_ID` | string | — | Access key ID. For Google Cloud Storage, use the **GCS HMAC Access ID** (format: `GOOG1E...`). |
+| `AWS_ACCESS_KEY_ID` | string | — | Access key ID. For Google Cloud Storage, use the **GCS HMAC Access ID** (format: `<YOUR_GCS_HMAC_ACCESS_KEY>`). |
 | `AWS_SECRET_ACCESS_KEY` | string | — | Secret access key. For Google Cloud Storage, use the **GCS HMAC Secret**. |
 | `AWS_REGION` | string | `us-east-1` | AWS region (or `auto` / `us-central1` for GCS). |
 | `AWS_S3_BUCKET` / `GCS_BUCKET` | string | `smart-farming-data` | Target bucket name. |
@@ -238,8 +243,8 @@ The backend provides a unified, S3-compatible storage abstraction (`storage.py`)
 | Variable | Type | Example / Default | Description |
 |---|---|---|---|
 | `VITE_API_URL` | string | `https://smart-farming-backend-xxx.run.app` | Base URL of the backend API, consumed by Axios client in `frontend/src/api/client.ts`. Default for local dev: `http://localhost:8000`. |
-| `VITE_GOOGLE_MAPS_API_KEY` | string | `AIzaSy...` | Google Maps JavaScript API key used for farm boundary geo-tagging, satellite field views, and soil moisture overlays in `FarmSettingsPage.tsx`. |
-| `VITE_GOOGLE_MAPS_MAP_ID` | string | `DEMO_MAP_ID` | Map ID for vector styling in Google Maps JavaScript API. |
+| `VITE_GOOGLE_MAPS_API_KEY` | string | `<YOUR_GOOGLE_MAPS_API_KEY>` | Google Maps JavaScript API key used for farm boundary geo-tagging, satellite field views, and soil moisture overlays in `FarmSettingsPage.tsx`. |
+| `VITE_GOOGLE_MAPS_MAP_ID` | string | `<YOUR_MAP_ID>` | Map ID for vector styling in Google Maps JavaScript API. |
 
 > [!NOTE]
 > Vite only exposes variables prefixed with `VITE_` to client-side bundles. Secrets must never be stored in frontend environment variables.
@@ -310,28 +315,34 @@ The platform supports partial runtime configuration updates without a full serve
 ### Hot-Reload Flow
 
 ```
-Client
+Admin Client
   │
   │  PUT /admin/config
   │  { "crop_routing_threshold": 0.65, "expert_escalation_cutoff": 0.75 }
   ▼
 API Process
-  ├─ Writes new values to config.yaml
-  ├─ Calls pipeline.reload_config()  ← reloads in the API worker
+  ├─ Writes new values to config.yaml & in-memory pipeline state
+  ├─ Sets "sf:config:thresholds" in Upstash Serverless Redis REST
+  │     │
+  │     ▼
+  │   All Cloud Run Backend & Inference Instances
+  │   (Read live "sf:config:thresholds" on next inference request)
+  │
   └─ Publishes event to Redis channel: config_reload_events
-                          │
-                          ▼
-              ARQ Worker Processes
-                ├─ Subscribe to config_reload_events
-                └─ Each worker calls pipeline.reload_config()
+        │
+        ▼
+    ARQ Worker Processes (Local / Docker Compose only)
+      ├─ Subscribed to config_reload_events
+      └─ Each worker calls pipeline.reload_config()
 ```
 
 > [!IMPORTANT]
 > The `PUT /admin/config` endpoint requires admin-level authentication. Unauthenticated or non-admin requests will be rejected with `403 Forbidden`.
 
-> [!WARNING]
-> If Redis is unavailable during a hot-reload, the API process will still update its own in-memory config and write to `config.yaml`, but **worker processes will not be notified**. Workers will pick up the new config only on their next restart. Set `REQUIRE_REDIS=True` in production to prevent this split-brain scenario.
+> [!NOTE]
+> In serverless Cloud Run deployments (`REQUIRE_REDIS=False`), threshold updates are persisted to Upstash Redis REST under key `sf:config:thresholds`. All autoscaled backend and inference instances dynamically read this key, ensuring instantaneous system-wide synchronization without requiring worker polling daemons or container restarts.
 
 ---
 
-*Last updated: 2026-09-22*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

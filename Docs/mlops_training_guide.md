@@ -1,8 +1,13 @@
 # MLOps Training Guide — Smart Farming
 
-This document explains how to reproduce a training run for either the **crop identifier** or the **disease classifier** models used by the Smart Farming backend.
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
+
+This document explains how to reproduce a training run for either the **crop identifier** or the **disease classifier** models used by the Smart Farming backend.
 
 ## Prerequisites
 
@@ -194,4 +199,9 @@ The script uses a deliberate two-phase approach to prevent catastrophic forgetti
 - [ ] Store `best.pth` and `labels.json` in version control or a model store.
 - [ ] Register the model via the `/admin/models/promote` endpoint to update `model_registry.json`.
 - [ ] Run the test evaluation (`eval` mode) before promoting to production.
+
+---
+
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*
 

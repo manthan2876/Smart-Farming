@@ -1,9 +1,9 @@
 # Smart Farming — Backend API Specification
 
-> **Version:** 1.0.0  
-> **Last Updated:** 2026-09-22  
-> **Base URL:** `http://localhost:8000`  
-> **Format:** REST/JSON, Multipart, WebSocket  
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
 
@@ -34,24 +34,24 @@
 
 ## 1. Overview
 
-The Smart Farming backend is an AI-powered crop disease detection and advisory platform. It exposes a REST API consumed by mobile and web clients. The core workflow is:
+The Smart Farming backend is an AI-powered crop disease detection and advisory platform. It exposes a REST API consumed by mobile and web clients. The platform operates in two modes:
 
-1. A farmer uploads a leaf image via `POST /predict`.
-2. The server validates the image and enqueues an ARQ background job.
-3. The AI pipeline runs multi-stage inference (crop ID → disease ID → severity → pest detection → LLM recommendation).
-4. The client tracks real-time progress over WebSocket and fetches the final result via `GET /predictions/{id}`.
-5. Optional expert review, feedback, and text-to-speech narration are available as follow-up actions.
+- **Serverless Production (Google Cloud Run):** Prediction requests run synchronously (`REQUIRE_REDIS=False`) to allow scaling to 0 instances when idle. Image deduplication (`sf:dedup:{hash}`), phrase translations (`sf:trans:{lang}:{hash}`), and weather (`sf:weather:{lat}:{lon}`) are cached via Upstash Serverless Redis REST.
+- **Asynchronous Task Queue (Local Dev / Dedicated Host):** `REQUIRE_REDIS=True` enqueues prediction jobs into ARQ, publishing real-time stage progress over WebSocket.
 
-### Technology Stack (for context)
+### Technology Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | FastAPI (Python) |
-| Auth | JWT (HS256), HttpOnly cookies |
-| Task Queue | ARQ (async Redis Queue) |
-| Storage | Object storage (presigned URLs) |
-| Real-time | WebSocket |
-| ML | EfficientNet-B0, custom models, HuggingFace LLM |
+| Layer | Technology | Deployment Details |
+|---|---|---|
+| **API Gateway** | FastAPI (Python 3.11) | Cloud Run Service #1 (`smart-farming-backend`, 512MiB, Public) |
+| **Inference Microservice** | FastAPI + PyTorch CPU | Cloud Run Service #2 (`inference-service`, 2GiB, Private OIDC) |
+| **Auth** | JWT (HS256) | Bearer tokens in headers, HttpOnly refresh cookies |
+| **Serverless Cache** | Upstash Redis REST | HTTPS Token Auth (`sf:*` namespace, sub-20ms latency) |
+| **Task Queue** | ARQ (async Redis Queue) | Active when `REQUIRE_REDIS=True` |
+| **Relational Database** | PostgreSQL 15+ | Render Managed PostgreSQL with SSL (`sslmode=require`) |
+| **Object Storage** | Google Cloud Storage | Multi-regional bucket `smart-farming-data` via S3 HMAC XML API |
+| **Real-time** | WebSocket | `/ws/predictions/{id}` |
+| **ML Models** | EfficientNet-B0/B2, YOLOv8 | Qwen3-4B Agronomist LLM via HuggingFace API |
 
 ---
 
@@ -2213,4 +2213,5 @@ Boundary fields accept a standard GeoJSON Polygon geometry object:
 
 ---
 
-*This document is maintained by the Smart Farming development team. For questions or updates, contact the backend team.*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

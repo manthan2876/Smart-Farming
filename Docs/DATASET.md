@@ -1,5 +1,12 @@
 # Dataset Documentation — Smart Farming
 
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
+
+---
+
 This document describes the datasets used to train the Smart Farming crop identifier, disease classifiers, and pest classifier: where the raw data came from, how it was renamed/merged, and how it was split for training.
 
 > **Note:** Section 2 lists every leaf/crop-disease dataset found in your browsing history, deduplicated by URL (and flagged where titles suggest likely-duplicate content). Where a class list or image count clearly matches your `dataset_descriptions.txt`, that's called out as the strongest candidate — but **you should confirm and delete the ones you didn't actually download** before publishing this doc, since several near-identical datasets exist per crop.
@@ -231,3 +238,8 @@ Per `mlops_training_guide.md`, production retraining pulls a **different** datas
 - Groundnut: `early_leaf_spot` + `late_leaf_spot` merged into single `Leaf Spot` class for the Field Closeup / disease_dataset set.
 - Cross-environment merges (Closed + Uncontrolled) were done per crop to reach the final `disease_dataset/` class list where classes overlapped (e.g. Cotton's `Bacterial Blight`, `Fusarium Wilt`, `Healthy` appear in both source environments and were combined).
 - Pepper Bell's class set intentionally combines Bell Pepper and Chili source datasets (see Section 2) into a single `Pepper Bell` label — a deliberate scope decision for this project, not a species mislabel.
+
+---
+
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

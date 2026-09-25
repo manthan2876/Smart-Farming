@@ -1,10 +1,13 @@
 # UI/UX Specification — AI-Powered Smart Farming
 
-> **Version:** 2.0 | **Last Updated:** 2026-09-22 | **Status:** Active (Tailwind CSS Migration)
->
-> This document is the canonical design reference for the frontend implementation. It supersedes the legacy `screen_specifications.md` and is versioned alongside the ongoing Tailwind CSS migration from CSS Modules.
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
+
+This document is the canonical design reference for the frontend implementation. It supersedes the legacy `screen_specifications.md` and documents the Tailwind CSS design system and Vercel edge deployment.
 
 ## Table of Contents
 
@@ -428,4 +431,5 @@ Crop and disease names are stored separately in `domain.ts` to support:
 
 ---
 
-*This document is maintained alongside the codebase. Update it whenever a new page, component, or UX flow is added or significantly changed.*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

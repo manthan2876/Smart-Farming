@@ -1,6 +1,12 @@
 # Smart Farming Functionality Status
 
-**Assessment date:** 2026-09-22  
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
+
+---
+
 **Scope:** Backend, web frontend, mobile client, model/inference services, scheduled jobs, and MLOps features currently present in this repository.
 
 This document describes what the project currently does, how complete each capability is, and what should be improved next. The status is based on the code that exists today, not only on the roadmap documents.
@@ -1446,3 +1452,8 @@ The web frontend is a functional multi-role application with a shared typed API 
 - [Screen specifications](screen_specifications.md)
 - [Dataset descriptions](dataset%20descriptions.txt)
 - [Weather research notes](research-notes_on_how-weather-affect-on-crop.txt)
+
+---
+
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*

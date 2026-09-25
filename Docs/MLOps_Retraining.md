@@ -1,7 +1,9 @@
 # MLOps & Retraining Guide — AI-Powered Smart Farming
 
-> **Last Updated:** 2026-09-22  
-> **Supersedes:** `Docs/mlops_training_guide.md`
+**Project:** AI-Powered Smart Farming  
+**Version:** 1.0  
+**Date:** September 2026  
+**Status:** Active / Production Reference  
 
 ---
 
@@ -529,4 +531,5 @@ The `migrate_to_s3.py` script handles:
 
 ---
 
-*This document is maintained by smart farming development team. For questions about the training pipeline, refer to `backend/scripts/train_eval.py` and the Admin API documentation.*
+*AI-Powered Smart Farming — Documentation*  
+*Last Updated: September 2026*
