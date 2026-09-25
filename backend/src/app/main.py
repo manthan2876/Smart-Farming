@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -133,8 +133,33 @@ _DATA_DIR.mkdir(parents=True, exist_ok=True)
 (_DATA_DIR / "uploads").mkdir(parents=True, exist_ok=True)
 (_DATA_DIR / "processed").mkdir(parents=True, exist_ok=True)
 
-app.mount("/data", StaticFiles(directory=str(_DATA_DIR.resolve())), name="data")
+@app.get("/data/{file_path:path}", include_in_schema=False)
+async def serve_data_file(file_path: str):
+    """Serve static asset from local disk or redirect to GCS/S3 presigned URL."""
+    clean_subpath = file_path.replace("\\", "/").strip("/")
+    local_file = (_DATA_DIR / clean_subpath).resolve()
+    try:
+        local_file.relative_to(_DATA_DIR.resolve())
+        if local_file.is_file():
+            return FileResponse(local_file)
+    except ValueError:
+        pass
+
+    backend_type = (os.getenv("STORAGE_BACKEND") or "local").lower()
+    if backend_type in ("s3", "gcs"):
+        try:
+            from app.core.storage import get_storage
+            from app.core.config import settings
+            storage = get_storage()
+            presigned_url = storage.get_url(clean_subpath, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+            return RedirectResponse(url=presigned_url, status_code=307)
+        except Exception:
+            pass
+
+    return JSONResponse(status_code=404, content={"detail": "File not found"})
+
 
 @app.get("/", include_in_schema=False)
 async def root():
     return {"message": "Smart Farming API", "docs": "/docs"}
+

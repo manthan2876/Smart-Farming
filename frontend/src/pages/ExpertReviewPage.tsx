@@ -48,7 +48,8 @@ export default function ExpertReviewPage() {
   if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted">Loading clinical review...</div>;
   if (!review) return <Card className="text-danger">Review not found</Card>;
 
-  const rawImage = getAssetUrl((review as any).raw_url || review.raw_path);
+  const rawImage = getAssetUrl(review.raw_url || review.raw_path);
+  const processedImage = getAssetUrl(review.processed_url || review.processed_path) || rawImage;
   const triggerReason = review.disease_conf < 0.7 ? "Confidence < 70% Threshold" : "Rule Engine Safety Trigger";
   const date = review.created_at ? new Date(review.created_at).toLocaleString() : "Unknown";
 
@@ -69,10 +70,11 @@ export default function ExpertReviewPage() {
             <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("visualModelEvidence")}</h3>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink"><span className="absolute left-2 top-2 z-10 rounded-sm bg-ink/80 px-2 py-1 text-xs text-white">{t("rawLeaf")}</span><img className="h-full w-full object-contain" src={rawImage} alt="Raw leaf" /></div>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink"><span className="absolute left-2 top-2 z-10 rounded-sm bg-ink/80 px-2 py-1 text-xs text-white">{t("gradcamHeatmap")}</span><img className="h-full w-full object-contain" src={rawImage} alt="Heatmap base" /><div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} /></div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink"><span className="absolute left-2 top-2 z-10 rounded-sm bg-ink/80 px-2 py-1 text-xs text-white">{t("gradcamHeatmap")}</span><img className="h-full w-full object-contain" src={processedImage} alt="Heatmap base" /><div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} /></div>
             </div>
             <label className="mt-5 flex items-center gap-3 text-sm text-muted">Opacity <input className="flex-1 accent-farmer-700" type="range" min="0" max="100" value={heatmapOpacity} onChange={event => setHeatmapOpacity(Number(event.target.value))} /><span>{heatmapOpacity}%</span></label>
           </Card>
+
 
           <Card>
             <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("modelTelemetryContext")}</h3>

@@ -1,4 +1,4 @@
-﻿import { request } from "./client";
+import { request } from "./client";
 
 export type ExpertQueueItem = {
   review_id: number;
@@ -21,6 +21,8 @@ export type ExpertReviewDetail = {
   internal_note: string | null;
   raw_path: string;
   processed_path: string | null;
+  raw_url?: string | null;
+  processed_url?: string | null;
   crop: string;
   disease: string;
   disease_conf: number;

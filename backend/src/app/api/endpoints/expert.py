@@ -1,10 +1,12 @@
 from __future__ import annotations
+from datetime import datetime, timezone
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_expert_role
 from app.core import get_session
+from app.core.config import settings
 from app.models import Prediction, ExpertReview, Alert, DatasetCandidate
 
 router = APIRouter(tags=["expert"])
@@ -62,6 +64,22 @@ async def get_expert_review(
     disease_conf = result_json.get("disease", {}).get("confidence") or pred.disease_conf
     severity_pct = result_json.get("severity", {}).get("percent") or pred.severity_pct
 
+    raw_path = pred.raw_path or (pred.image.raw_path if pred.image else None)
+    proc_path = pred.processed_path or (pred.image.processed_path if pred.image else None)
+
+    raw_url = None
+    processed_url = None
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("s3", "gcs"):
+        try:
+            from app.core.storage import get_storage
+            storage = get_storage()
+            if raw_path:
+                raw_url = storage.get_url(raw_path, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+            if proc_path:
+                processed_url = storage.get_url(proc_path, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+        except Exception as exc:
+            pass
+
     data = {
         "review_id": review.id,
         "prediction_id": review.prediction_id,
@@ -70,8 +88,10 @@ async def get_expert_review(
         "corrected_disease": review.corrected_disease,
         "farmer_guidance": review.farmer_guidance,
         "internal_note": review.internal_note,
-        "raw_path": pred.raw_path,
-        "processed_path": pred.processed_path,
+        "raw_path": raw_path,
+        "processed_path": proc_path,
+        "raw_url": raw_url,
+        "processed_url": processed_url,
         "crop": crop,
         "disease": disease,
         "disease_conf": disease_conf,
