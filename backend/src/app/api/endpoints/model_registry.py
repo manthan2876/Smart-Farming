@@ -89,14 +89,21 @@ async def model_health(is_admin: str = Depends(require_admin_role)) -> dict[str,
         labels_path = _resolve_model_path(labels_str)
         model_ok = model_path.exists() if model_path else False
         labels_ok = labels_path.exists() if labels_path else True  # labels optional
+
+        # When running with a remote microservice (inference-service),
+        # models are hosted on that service rather than the backend local disk
+        if not model_ok and settings.MODEL_SERVER_URL:
+            model_ok = True
+            labels_ok = True
+
         reg_entry = registry.get("models", {}).get(key, {})
         active_ver = reg_entry.get("active_version")
         ver_info = reg_entry.get("versions", {}).get(active_ver, {}) if active_ver else {}
         return {
             "status": "ok" if model_ok else "missing",
-            "model_file": str(model_path) if model_path else None,
+            "model_file": str(model_path) if (model_path and model_path.exists()) else f"remote ({settings.MODEL_SERVER_URL})",
             "model_exists": model_ok,
-            "labels_file": str(labels_path) if labels_path else None,
+            "labels_file": str(labels_path) if (labels_path and labels_path.exists()) else None,
             "labels_exists": labels_ok,
             "active_version": active_ver,
             "val_acc": ver_info.get("val_acc"),

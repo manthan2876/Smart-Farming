@@ -86,6 +86,9 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
 
 def create_app_engine(url: str | None = None):
     target_url = url or database_url()
+    # Normalize postgresql:// to postgresql+psycopg2:// if no driver is specified
+    if target_url.startswith("postgresql://"):
+        target_url = target_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     connect_args = get_db_connect_args(target_url)
     if target_url.startswith("sqlite"):
         return create_engine(target_url, connect_args=connect_args)

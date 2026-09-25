@@ -23,6 +23,7 @@ COPY src/ ./src/
 COPY alembic/ ./alembic/
 COPY alembic.ini .
 COPY config.yaml .
+COPY model_registry.json .
 
 # Cloud Run exposes port via $PORT
 EXPOSE 8080
