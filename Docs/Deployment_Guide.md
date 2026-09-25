@@ -13,7 +13,7 @@
    - 3.1 [Backend (FastAPI)](#31-backend-fastapi)
    - 3.2 [ARQ Worker](#32-arq-worker)
    - 3.3 [Frontend (React)](#33-frontend-react)
-4. [Docker Compose — Full Stack](#4-docker-compose--full-stack)
+4. [Docker Compose — Full Stack (Self-Hosted)](#4-docker-compose--full-stack-self-hosted)
    - 4.1 [Directory Structure](#41-directory-structure)
    - 4.2 [Environment File](#42-environment-file)
    - 4.3 [docker-compose.yml](#43-docker-composeyml)
@@ -22,29 +22,81 @@
    - 5.2 [Frontend Dockerfile](#52-frontend-dockerfile)
 6. [Nginx Configuration](#6-nginx-configuration)
 7. [Database Setup & Migrations](#7-database-setup--migrations)
-8. [MinIO Provisioning](#8-minio-provisioning)
+8. [MinIO Provisioning (Self-Hosted)](#8-minio-provisioning-self-hosted)
 9. [ML Model Placement](#9-ml-model-placement)
-10. [Production Checklist](#10-production-checklist)
-11. [Monitoring & Operations](#11-monitoring--operations)
-12. [Troubleshooting](#12-troubleshooting)
+10. [Production Cloud Deployment (Vercel & Google Cloud Run)](#10-production-cloud-deployment-vercel--google-cloud-run)
+    - 10.1 [Overview & Serverless Zero-Idle Strategy](#101-overview--serverless-zero-idle-strategy)
+    - 10.2 [Google Cloud Storage (GCS) Provisioning & HMAC Keys](#102-google-cloud-storage-gcs-provisioning--hmac-keys)
+    - 10.3 [Render PostgreSQL Database](#103-render-postgresql-database)
+    - 10.4 [Cloud Run Service #2: inference-service](#104-cloud-run-service-2-inference-service)
+    - 10.5 [Cloud Run Service #1: smart-farming-backend](#105-cloud-run-service-1-smart-farming-backend)
+    - 10.6 [Vercel Frontend Deployment (smart-farming-dashboard)](#106-vercel-frontend-deployment-smart-farming-dashboard)
+    - 10.7 [Automated Continuous Deployment from GitHub](#107-automated-continuous-deployment-from-github)
+11. [Production Checklist](#11-production-checklist)
+12. [Monitoring & Operations](#12-monitoring--operations)
+13. [Troubleshooting](#13-troubleshooting)
 
 ---
 
 ## 1. Architecture Overview
 
+The Smart Farming platform supports two deployment targets depending on your infrastructure requirements:
+
+### Target A: Serverless Cloud Production (Active Live Architecture)
+A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform, Vercel, and Render:
+
 ```
-                         ┌─────────────────────┐
+                            ┌────────────────────────┐
+                            │    Farmer / Client     │
+                            └───────────┬────────────┘
+                                        │ HTTPS
+                            ┌───────────▼────────────┐
+                            │   Vercel Edge Network  │
+                            │ React + Vite SPA (CDN) │
+                            └───────────┬────────────┘
+                                        │ HTTPS /api/
+                            ┌───────────▼────────────────────────┐
+                            │   Cloud Run Service #1: Backend    │
+                            │   (FastAPI · 512MiB · Public)      │
+                            │   REQUIRE_REDIS=False (Sync Exec)  │
+                            └──┬─────────────┬─────────────────┬─┘
+           GCP OIDC HTTPS Auth │             │ S3 HMAC XML API │ SSL
+               ┌───────────────┘             │                 │
+    ┌──────────▼───────────────┐     ┌───────▼────────┐  ┌─────▼──────────┐
+    │ Cloud Run Service #2:    │     │  Google Cloud  │  │ Render         │
+    │ inference-service        │     │  Storage (GCS) │  │ PostgreSQL     │
+    │ (PyTorch CPU · 2GiB)     │     │  Bucket: data  │  │ Managed DB     │
+    │ Private Ingress          │     └────────────────┘  └────────────────┘
+    └──────────────────────────┘
+```
+
+| Component | Cloud Provider | Specifications | Ingress / Access |
+|---|---|---|---|
+| **Frontend** | Vercel Edge | React 18 + Vite SPA, Tailwind CSS | Public HTTPS (`*.vercel.app`) |
+| **API Gateway** | Google Cloud Run (Service #1) | FastAPI, Python 3.11, 1 vCPU, 512 MiB RAM | Public HTTPS (`--allow-unauthenticated`) |
+| **ML Inference** | Google Cloud Run (Service #2) | FastAPI + PyTorch CPU, 2 vCPU, 2 GiB RAM | Private HTTPS (`--no-allow-unauthenticated`, GCP OIDC) |
+| **Object Storage** | Google Cloud Storage (GCS) | Multi-regional bucket (`smart-farming-data`) | S3 HMAC XML API (`signature_version="s3"`) |
+| **Database** | Render PostgreSQL | Managed PostgreSQL 15+ with SSL | Encrypted external SSL (`sslmode=require`) |
+| **External AI** | Hugging Face & OpenWeather | Qwen3-4B Agronomist LLM & Weather API | Outbound HTTPS |
+
+---
+
+### Target B: Self-Hosted Docker Compose (Local Dev / Single VM)
+A monolithic container stack with local MinIO object storage and Redis-backed ARQ workers:
+
+```
+                         ┌──────────────────────┐
                          │   Browser / Client   │
                          └────────┬─────────────┘
                                   │ HTTPS :443
                          ┌────────▼─────────────┐
-                         │   Nginx (Frontend)    │
-                         │  React SPA + Proxy    │
+                         │   Nginx (Frontend)   │
+                         │  React SPA + Proxy   │
                          └────────┬─────────────┘
                     /api/ │                │ /ws/
                  ┌─────────▼────┐  ┌──────▼──────────┐
-                 │  FastAPI     │  │  WebSocket       │
-                 │  Backend     │  │  (same process)  │
+                 │  FastAPI     │  │  WebSocket      │
+                 │  Backend     │  │  (same process) │
                  └──┬────┬──────┘  └─────────────────┘
                     │    │
           ┌─────────┘    └──────────┐
@@ -815,116 +867,339 @@ docker compose exec backend ls -lh /app/models/pest_classifier/
 
 ---
 
-## 10. Production Checklist
+## 10. Production Cloud Deployment (Vercel & Google Cloud Run)
+
+This section documents the live serverless production architecture deployed on **Google Cloud Platform (Cloud Run & Cloud Storage)**, **Vercel**, and **Render Managed PostgreSQL**.
+
+---
+
+### 10.1 Overview & Serverless Zero-Idle Strategy
+
+In production, the platform is decoupled into two independent microservices and two managed cloud services:
+
+```
+                            ┌────────────────────────┐
+                            │    Farmer / Client     │
+                            └───────────┬────────────┘
+                                        │ HTTPS
+                            ┌───────────▼────────────┐
+                            │   Vercel Edge Network  │
+                            │ React + Vite SPA (CDN) │
+                            └───────────┬────────────┘
+                                        │ HTTPS /api/
+                            ┌───────────▼────────────────────────┐
+                            │   Cloud Run Service #1: Backend    │
+                            │   (FastAPI · 512MiB · Public)      │
+                            │   REQUIRE_REDIS=False (Sync Exec)  │
+                            └──┬─────────────┬─────────────────┬─┘
+           GCP OIDC HTTPS Auth │             │ S3 HMAC XML API │ SSL
+               ┌───────────────┘             │                 │
+    ┌──────────▼───────────────┐     ┌───────▼────────┐  ┌─────▼──────────┐
+    │ Cloud Run Service #2:    │     │  Google Cloud  │  │ Render         │
+    │ inference-service        │     │  Storage (GCS) │  │ PostgreSQL     │
+    │ (PyTorch CPU · 2GiB)     │     │  Bucket: data  │  │ Managed DB     │
+    │ Private Ingress          │     └────────────────┘  └────────────────┘
+    └──────────────────────────┘
+```
+
+#### Why Decoupled Microservices?
+- **Memory & Resource Separation:** Heavy PyTorch and YOLO model weights (~1.5 GB in RAM) require a 2 GiB / 2 vCPU container. Serving all standard API requests (auth, weather, farm profiles, admin metrics) from a lightweight 512 MiB container keeps cold starts fast and resource usage minimal.
+- **Independent Scaling:** The API gateway can scale rapidly for high HTTP traffic, while the heavier inference service scales strictly according to ML compute demand.
+
+#### The Redis Scale-to-Zero Rationale
+- Standard ARQ workers run an infinite polling loop on Redis (`BLPOP`). On Cloud Run, active CPU threads prevent instances from ever scaling down to 0, running continuously 24 hours a day, 7 days a week.
+- Continuous 24/7 execution of even 1 instance burns through the entire monthly Google Cloud Run Always Free tier (~180,000 vCPU-seconds) in **under 2.5 days**.
+- By configuring **`REQUIRE_REDIS=False`**, the API gateway processes predictions **synchronously**:
+  1. The API receives the image upload and writes it to Google Cloud Storage.
+  2. It immediately invokes Cloud Run Service #2 (`inference-service`) via HTTPS with GCP OIDC Identity Tokens.
+  3. The result is saved to Render PostgreSQL and returned in the HTTP response.
+- When there are no user requests, **both Cloud Run services scale to 0 instances**, providing true **\$0 idle hosting cost**.
+
+---
+
+### 10.2 Google Cloud Storage (GCS) Provisioning & HMAC Keys
+
+Google Cloud Storage stores raw leaf scans, processed bounding boxes, Grad-CAM heatmaps, and TTS audio files.
+
+#### Step 1: Create the GCS Bucket
+Using Google Cloud Console or `gcloud`:
+
+```bash
+gcloud storage buckets create gs://smart-farming-data \
+  --project=gen-lang-client-0172102020 \
+  --location=us-central1 \
+  --default-storage-class=STANDARD \
+  --uniform-bucket-level-access
+```
+
+#### Step 2: Generate S3 Interoperability HMAC Keys
+1. In Google Cloud Console, navigate to **Cloud Storage** → **Settings** → **Interoperability**.
+2. Click **Create a key** for your user account or service account.
+3. Save the **Access Key** (format: `GOOG1E...`) and **Secret**.
+
+#### Step 3: Signature Version Configuration
+> [!IMPORTANT]
+> Google Cloud Storage's S3 XML API requires **SigV2** (`signature_version="s3"`). AWS SigV4 chunked payload signing fails on GCS with `SignatureDoesNotMatch`.
+> The backend `src/app/core/storage.py` automatically applies `signature_version="s3"` whenever `STORAGE_BACKEND=gcs` or `AWS_ENDPOINT_URL` contains `storage.googleapis.com`.
+
+#### Step 4: Verify GCS Connectivity
+Run the verification script from the backend directory:
+
+```bash
+cd backend
+python scripts/verify_gcs_storage.py
+```
+
+Expected output:
+```
+[GCS Test] Uploading test object... SUCCESS
+[GCS Test] Generating Presigned URL... SUCCESS
+[GCS Test] Verifying HTTP GET from Presigned URL... HTTP 200 OK
+[GCS Test] Deleting test object... SUCCESS
+All GCS tests passed!
+```
+
+---
+
+### 10.3 Render PostgreSQL Database
+
+Render provides a managed PostgreSQL 15+ database with automated backups and encrypted SSL connections.
+
+1. **Provision Database:** In Render Dashboard, click **New +** → **PostgreSQL**. Select the nearest region (e.g., Singapore or US).
+2. **Copy External Connection URL:**
+   ```
+   postgresql://sfuser:<PASSWORD>@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require
+   ```
+3. **Run Alembic Migrations:**
+   Run migrations against Render PostgreSQL before deploying new backend code:
+   ```bash
+   cd backend
+   DATABASE_URL="postgresql://sfuser:<PASSWORD>@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require" \
+   alembic upgrade head
+   ```
+
+---
+
+### 10.4 Cloud Run Service #2: `inference-service`
+
+The inference microservice loads the 7 model checkpoints and runs PyTorch CPU inference on demand.
+
+#### System Dependencies & Dockerfile
+The inference service requires Debian OpenCV and X11 libraries:
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 libxcb1 libx11-6 libxext6 libxrender1 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+
+COPY . .
+EXPOSE 8001
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+```
+
+#### Deploy Command
+Deploy with **private ingress** (`--no-allow-unauthenticated`) so only authorized GCP services can call it:
+
+```bash
+gcloud run deploy inference-service \
+  --source . \
+  --region us-central1 \
+  --platform managed \
+  --memory 2Gi \
+  --cpu 2 \
+  --min-instances 0 \
+  --max-instances 3 \
+  --timeout 120 \
+  --no-allow-unauthenticated
+```
+
+The service will output its private URL:
+`https://inference-service-17713614069.us-central1.run.app`
+
+---
+
+### 10.5 Cloud Run Service #1: `smart-farming-backend`
+
+The public API gateway coordinates authentication, database queries, weather enrichment, LLM recommendations, and inference forwarding.
+
+#### Step 1: Grant IAM Invoker Permissions to Service #1
+To allow the backend to invoke the private `inference-service`, grant the Cloud Run Invoker role to its service account:
+
+```bash
+# Get Google Cloud Project Number
+PROJECT_NUM=$(gcloud projects describe gen-lang-client-0172102020 --format='value(projectNumber)')
+
+# Grant roles/run.invoker to the default compute service account
+gcloud run services add-iam-policy-binding inference-service \
+  --region=us-central1 \
+  --member="serviceAccount:${PROJECT_NUM}-compute@developer.gserviceaccount.com" \
+  --role="roles/run.invoker"
+```
+
+#### Step 2: Ensure Model Registry is Packaged
+In `backend/Dockerfile`, ensure `model_registry.json` is included:
+```dockerfile
+COPY model_registry.json .
+```
+When `MODEL_SERVER_URL` is set, `GET /admin/models/health` reads accuracy metrics and versions from `model_registry.json` without needing heavy `.pth` checkpoint files inside this container.
+
+#### Step 3: Deploy Command
+```bash
+gcloud run deploy smart-farming-backend \
+  --source . \
+  --region us-central1 \
+  --platform managed \
+  --memory 512Mi \
+  --cpu 1 \
+  --min-instances 0 \
+  --max-instances 5 \
+  --allow-unauthenticated \
+  --set-env-vars="\
+ENVIRONMENT=production,\
+DEBUG=False,\
+REQUIRE_REDIS=False,\
+STORAGE_BACKEND=gcs,\
+AWS_ACCESS_KEY_ID=GOOG1EZ3...,\
+AWS_SECRET_ACCESS_KEY=...,\
+AWS_REGION=auto,\
+AWS_S3_BUCKET=smart-farming-data,\
+AWS_ENDPOINT_URL=https://storage.googleapis.com,\
+MODEL_SERVER_URL=https://inference-service-17713614069.us-central1.run.app,\
+DATABASE_URL=postgresql://sfuser:...@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require,\
+JWT_SECRET_KEY=...,\
+HF_TOKEN=hf_...,\
+OPENWEATHER_API=...,\
+CORS_ORIGINS=https://smart-farming-dashboard.vercel.app,http://localhost:5173"
+```
+
+Verify service health:
+```bash
+curl https://smart-farming-backend-17713614069.us-central1.run.app/health
+# {"status":"ok","database":"connected","models":"ok"}
+```
+
+---
+
+### 10.6 Vercel Frontend Deployment (`smart-farming-dashboard`)
+
+The React SPA is deployed on Vercel's global Edge Network.
+
+#### Step 1: SPA Rewrites (`frontend/vercel.json`)
+To prevent `404 Not Found` errors when refreshing deep URLs (e.g., `/dashboard`, `/predict/123`), create `frontend/vercel.json`:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+#### Step 2: Linux Case-Sensitivity Verification
+Vercel builds run on Linux. Verify all TypeScript file imports match the exact file casing on disk (e.g. `import Sidebar from "./Sidebar";` matching `src/components/Sidebar.tsx`).
+
+#### Step 3: Configure Project Settings in Vercel
+1. Import repository `manthan2876/Smart-Farming` in Vercel.
+2. Configure build settings:
+   - **Framework Preset:** Vite
+   - **Root Directory:** `frontend`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+3. Configure Environment Variables in Vercel:
+   | Variable | Value |
+   |---|---|
+   | `VITE_API_URL` | `https://smart-farming-backend-17713614069.us-central1.run.app` |
+   | `VITE_GOOGLE_MAPS_API_KEY` | `AIzaSy...` |
+   | `VITE_GOOGLE_MAPS_MAP_ID` | `DEMO_MAP_ID` |
+4. Click **Deploy**.
+
+---
+
+### 10.7 Automated Continuous Deployment from GitHub
+
+To automatically deploy new code on every `git push origin main`:
+
+#### Setting Up Cloud Run GitHub Integration via Cloud Build:
+1. In Google Cloud Console, navigate to **Cloud Run**.
+2. Select `smart-farming-backend` and click **Set up continuous deployment** (or **Edit & Deploy New Revision** → Deploy from repository).
+3. Connect your GitHub account and select repository `manthan2876/Smart-Farming`.
+4. Set branch: `^main$`.
+5. Select Build Configuration:
+   - **Build Type:** Dockerfile
+   - **Source location:** `/backend/Dockerfile`
+6. Click **Save**. Google Cloud creates an automated Cloud Build trigger. Every push to `main` now automatically triggers a Docker build and rolls out a new revision with zero downtime.
+7. Repeat the same setup for `inference-service` with source location `/inference_service/Dockerfile`.
+
+---
+
+## 11. Production Checklist
 
 Work through this checklist before going live.
 
 ### Security
 
-- [ ] **Change `SECRET_KEY`** — Generate with:
+- [ ] **Change `SECRET_KEY` & `JWT_SECRET_KEY`** — Generate random 256-bit hex keys:
   ```bash
   python -c "import secrets; print(secrets.token_hex(32))"
   ```
-- [ ] **Change `JWT_SECRET_KEY`** — Generate a separate value with the same command above.
 - [ ] **Set `ENVIRONMENT=production`** and **`DEBUG=False`** in the backend environment.
-- [ ] **Set `CORS_ORIGINS`** to your exact frontend domain (no wildcard `*` in production).
-- [ ] **Change MinIO credentials** — Replace `minioadmin` / `minioadmin` with strong credentials.
-- [ ] **Add `.env` to `.gitignore`** — Verify with `git status` that secrets are not tracked.
-- [ ] **Enable HTTPS** — See [Section 11.1](#111-tlsssl-certificates).
+- [ ] **Set `CORS_ORIGINS`** to your exact frontend domain(s) (e.g. `https://smart-farming-dashboard.vercel.app`).
+- [ ] **Secure Ingress on Inference Service** — Ensure `--no-allow-unauthenticated` is set on `inference-service`.
+- [ ] **Verify `.gitignore`** — Ensure all `.env`, `.pem`, and credentials files are untracked.
 
 ### Database
 
-- [ ] Use **PostgreSQL** (not SQLite) — confirm `DATABASE_URL` starts with `postgresql://`.
-- [ ] Run **`alembic upgrade head`** before the first backend start and after every deploy.
-- [ ] Schedule **automated PostgreSQL backups** (e.g., `pg_dump` via cron or a managed backup service).
-- [ ] Test a **restore from backup** before go-live.
+- [ ] Use **Render Managed PostgreSQL** with SSL (`sslmode=require`).
+- [ ] Run **`alembic upgrade head`** before traffic switch.
+- [ ] Verify automated PostgreSQL backups in Render dashboard.
 
-### Redis / ARQ Worker
+### Redis & Execution Mode
 
-- [ ] Set **`REQUIRE_REDIS=True`** in the backend environment so the app refuses to start without Redis.
-- [ ] Ensure the **ARQ Worker** container is running and healthy (`docker compose ps`).
-- [ ] Configure **automatic worker restart** — the `restart: unless-stopped` in docker-compose handles this.
-- [ ] Consider using **supervisor** or **systemd** if running without Docker, to restart the worker on crash.
+- [ ] **Cloud Run Production:** Confirm **`REQUIRE_REDIS=False`** so services scale down to 0 instances when idle.
+- [ ] **Docker Compose / VM:** Set **`REQUIRE_REDIS=True`** and ensure the `worker` container is healthy.
 
-### Storage
+### Object Storage
 
-- [ ] **Provision the S3 / MinIO bucket** — See [Section 8](#8-minio-provisioning).
-- [ ] Set **`S3_PRESIGNED_EXPIRY_SECONDS`** to an appropriate value (e.g., `3600` for 1 hour).
-- [ ] Schedule **MinIO / S3 volume backups** if using MinIO locally.
+- [ ] Google Cloud Storage bucket `smart-farming-data` created in `us-central1`.
+- [ ] GCS HMAC keys active with `STORAGE_BACKEND=gcs` and `signature_version="s3"`.
+- [ ] Verified upload, read, and signed URL generation via `scripts/verify_gcs_storage.py`.
 
 ### External API Keys
 
-- [ ] **`HF_TOKEN`** — Required for Hugging Face LLM-based crop recommendations.
-- [ ] **`GOOGLE_TTS_API_KEY`** — Required for Text-to-Speech features.
-- [ ] **`GOOGLE_TRANSLATION_API_KEY`** — Required for multilingual translation features.
+- [ ] **`HF_TOKEN`** — Hugging Face token for Qwen3-4B Agronomist LLM recommendations.
+- [ ] **`OPENWEATHER_API`** — OpenWeatherMap key for live ambient weather data.
+- [ ] **`VITE_GOOGLE_MAPS_API_KEY`** — Google Maps JS API key for interactive farm geo-boundaries.
 
-### ML Models
+### Frontend (Vercel)
 
-- [ ] All model `.pth` / `.pt` files are present in `backend/models/` on the host.
-- [ ] Verified the mount with `docker compose exec backend ls -lh /app/models/`.
-
-### Nginx / TLS
-
-- [ ] `nginx.conf` is in place at the project root.
-- [ ] SSL certificate files are available in the `ssl_certs` volume.
-- [ ] HTTP→HTTPS redirect is working.
-- [ ] `client_max_body_size` is set to at least **15M** (matches any backend upload limit).
-
-### Observability
-
-- [ ] Set up **log rotation** for uvicorn / Nginx logs.
-- [ ] Set up **health check monitoring** (e.g., UptimeRobot, Grafana, or a cron pinging `/health`).
-- [ ] Review Docker container logs after first startup for any errors.
+- [ ] `frontend/vercel.json` SPA rewrite rule present.
+- [ ] `VITE_API_URL` points to live Cloud Run backend URL.
+- [ ] Production build succeeds without TypeScript errors (`tsc -b && vite build`).
 
 ---
 
-## 11. Monitoring & Operations
+## 12. Monitoring & Operations
 
-### 11.1 TLS/SSL Certificates
+### 12.1 Viewing Logs
 
-#### Option A — Let's Encrypt (Certbot, recommended for public servers)
-
+#### Cloud Run Logs (Production)
 ```bash
-# Install Certbot on the host
-sudo apt install certbot
+# Stream logs from the main backend
+gcloud run services logs tail smart-farming-backend --region=us-central1
 
-# Obtain a certificate (standalone mode — temporarily stop Nginx if running on :80)
-sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
-
-# Certificates are saved to: /etc/letsencrypt/live/yourdomain.com/
-# Copy them into the ssl_certs Docker volume:
-sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem \
-        $(docker volume inspect sfnet_ssl_certs --format '{{.Mountpoint}}')/fullchain.pem
-sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem \
-        $(docker volume inspect sfnet_ssl_certs --format '{{.Mountpoint}}')/privkey.pem
-
-# Restart the frontend container to pick up the new certs
-docker compose restart frontend
+# Stream logs from the inference microservice
+gcloud run services logs tail inference-service --region=us-central1
 ```
 
-Set up auto-renewal:
-
-```bash
-# Add to root crontab (crontab -e)
-0 3 1 * * certbot renew --quiet && \
-  cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem /var/lib/docker/volumes/sfnet_ssl_certs/_data/ && \
-  cp /etc/letsencrypt/live/yourdomain.com/privkey.pem  /var/lib/docker/volumes/sfnet_ssl_certs/_data/ && \
-  docker compose -f /path/to/project/docker-compose.yml restart frontend
-```
-
-#### Option B — Self-signed (development / internal only)
-
-```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout privkey.pem \
-  -out fullchain.pem \
-  -subj "/CN=localhost"
-```
-
----
-
-### 11.2 Viewing Logs
-
+#### Docker Compose Logs (Self-Hosted)
 ```bash
 # All services, follow mode
 docker compose logs -f
@@ -933,91 +1208,51 @@ docker compose logs -f
 docker compose logs --tail=100 backend
 docker compose logs --tail=100 worker
 docker compose logs --tail=100 frontend
-
-# PostgreSQL slow query log (inside container)
-docker compose exec postgres psql -U sfuser -d smartfarming \
-  -c "SELECT query, calls, mean_exec_time FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;"
 ```
 
 ---
 
-### 11.3 Scaling the Backend
+### 12.2 Updating the Application
 
+#### Google Cloud Run
+Pushes to `main` will automatically build and deploy if GitHub continuous deployment is configured (see [Section 10.7](#107-automated-continuous-deployment-from-github)).
+To manually trigger a deployment:
 ```bash
-# Scale backend to 3 replicas (requires a load balancer in front)
-docker compose up --scale backend=3 -d
+# Deploy Backend
+cd backend
+gcloud run deploy smart-farming-backend --source . --region us-central1
+
+# Deploy Inference
+cd ../inference_service
+gcloud run deploy inference-service --source . --region us-central1
 ```
 
-For robust horizontal scaling, use Docker Swarm or Kubernetes instead of `docker compose`.
-
----
-
-### 11.4 Updating the Application
-
+#### Docker Compose
 ```bash
-# 1. Pull the latest code
 git pull origin main
-
-# 2. Rebuild images
 docker compose build
-
-# 3. Restart services with new images (migrations applied automatically in CMD)
 docker compose up -d
-
-# 4. Verify all containers are running and healthy
 docker compose ps
 ```
 
 ---
 
-### 11.5 ARQ Worker — Crash Recovery (Without Docker)
-
-If running without Docker (bare-metal / VM), use one of the following to keep the worker alive:
-
-**Using systemd:**
-
-```ini
-# /etc/systemd/system/smartfarming-worker.service
-[Unit]
-Description=Smart Farming ARQ Worker
-After=network.target redis.service
-
-[Service]
-User=ubuntu
-WorkingDirectory=/srv/smart-farming/backend
-ExecStart=/srv/smart-farming/backend/.venv/bin/python -m arq src.app.worker.WorkerSettings
-Restart=always
-RestartSec=5
-EnvironmentFile=/srv/smart-farming/.env
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable smartfarming-worker
-sudo systemctl start  smartfarming-worker
-sudo systemctl status smartfarming-worker
-```
-
----
-
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 | Symptom | Likely Cause | Fix |
-|---------|-------------|-----|
-| `relation "X" does not exist` on backend start | Migrations not applied | Run `alembic upgrade head` or check the CMD entrypoint |
-| Worker picks up no jobs | Redis not reachable from worker container | Verify `REDIS_URL` and check `docker compose ps` for Redis health |
-| `S3` / MinIO `NoSuchBucket` error | Bucket not provisioned | Run the `mc mb` commands in [Section 8.2](#82-provision-the-bucket) |
-| Frontend shows blank page / 404 on refresh | SPA routing not configured | Verify `try_files $uri $uri/ /index.html;` is in Nginx config |
-| WebSocket connection drops immediately | Nginx not forwarding Upgrade headers | Ensure the `/ws/` location block has `Upgrade` and `Connection` headers set |
-| `CORS` error in browser | `CORS_ORIGINS` mismatch | Set `CORS_ORIGINS` exactly to the frontend origin (no trailing slash) |
-| ML inference returns `FileNotFoundError` | Model file missing or wrong path | Verify `backend/models/` is populated and the volume mount is correct |
-| `HF_TOKEN` error in LLM endpoints | Token not set or invalid | Set a valid `HF_TOKEN` from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
-| Container exits immediately after start | Missing required env var | Check `docker compose logs <service>` for the exact error |
-| MinIO console unreachable at `:9001` | Port not exposed or firewall rule | Verify `ports: "9001:9001"` in compose and open port in server firewall |
+|---|---|---|
+| `SignatureDoesNotMatch` on GCS upload | AWS SigV4 chunking used on GCS XML API | Set `STORAGE_BACKEND=gcs` or configure `signature_version="s3"` in botocore client. |
+| `ImportError: libGL.so.1` or `libxcb.so.1` in inference service | Missing Debian system libraries in Docker image | Add `libgl1 libglib2.0-0 libxcb1 libx11-6 libxext6 libxrender1` to `apt-get install` in Dockerfile. |
+| Cloud Run container terminated with exit code `137` (OOM) | Memory limit exceeded during PyTorch model loading | Increase memory allocation to at least `2Gi` on `inference-service`. |
+| `403 Forbidden` calling `inference-service` from backend | Missing IAM invoker permission | Add `roles/run.invoker` binding for the compute service account on `inference-service`. |
+| Vercel returns `404 Not Found` on page refresh | Missing SPA client-side routing rewrites | Add `frontend/vercel.json` with rewrite rule `{"source": "/(.*)", "destination": "/index.html"}`. |
+| `Cannot find module './SideBar'` during Vercel build | Case-sensitivity mismatch between Git/Linux and Windows | Fix filename or import casing (e.g., `Sidebar.tsx` vs `SideBar.tsx`). |
+| Cloud Run instance never scales to 0 | Persistent Redis polling active | Set `REQUIRE_REDIS=False` to switch to serverless synchronous execution. |
+| `relation "X" does not exist` on backend start | Database migrations not applied | Run `alembic upgrade head` pointing to `DATABASE_URL`. |
+| CORS error in browser | `CORS_ORIGINS` mismatch | Ensure `CORS_ORIGINS` matches the Vercel domain exactly (e.g. `https://smart-farming-dashboard.vercel.app` with no trailing slash). |
+| `HF_TOKEN` error in LLM endpoints | Token missing or invalid | Set a valid `HF_TOKEN` from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens). |
 
 ---
 
-*This guide covers version 1.x of the Smart Farming deployment. For questions or issues, refer to the project repository or contact the DevOps lead.*
+*This guide covers version 1.x of the Smart Farming deployment.*
+

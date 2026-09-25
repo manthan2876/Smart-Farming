@@ -137,13 +137,13 @@ One entry per supported crop. The key **must exactly match** the class label out
 | `processed_dir` | string | `data/processed/` | Directory (relative to `backend/`) for OpenCV-processed images and Grad-CAM heatmaps. |
 
 > [!NOTE]
-> When `STORAGE_BACKEND=s3`, these directories are used as temporary local staging areas before upload to S3. See [`STORAGE_BACKEND`](#storage-1) in the environment variables section.
+> When `STORAGE_BACKEND=s3` or `STORAGE_BACKEND=gcs`, these directories are used as temporary local staging areas before upload. See [`STORAGE_BACKEND`](#storage) in the environment variables section.
 
 ---
 
 ## 2. Environment Variables — Backend
 
-**Location:** `.env` or `backend/.env`
+**Location:** `.env` or `backend/.env` (or Google Cloud Run environment variables)
 
 > [!CAUTION]
 > Never commit `.env` files to version control. Values marked **CHANGE IN PRODUCTION** must be replaced with strong, randomly generated secrets before any public or production deployment.
@@ -153,31 +153,43 @@ One entry per supported crop. The key **must exactly match** the class label out
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `SECRET_KEY` | string | `dev-secret-key-change-me` | **⚠ CHANGE IN PRODUCTION.** Primary JWT signing key. |
-| `JWT_SECRET_KEY` | string | `dev-secret-key-change-me` | Alias for `SECRET_KEY`. Both must be set to the same value. |
+| `JWT_SECRET_KEY` | string | `dev-secret-key-change-me` | Alias for `SECRET_KEY`. Both can be set to the same value. |
 | `ALGORITHM` | string | `HS256` | JWT signing algorithm. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | int | `30` | Access token lifetime in minutes. |
-| `ENVIRONMENT` | string | `development` | Set to `production` to enable security guards (disables debug auth, enforces HTTPS redirects, etc.). |
-| `DEBUG` | bool | `True` | When `True`, enables the `X-User-ID` header fallback authentication (development only). **Must be `False` in production.** |
-| `CORS_ORIGINS` | string | `http://localhost:5173,...` | Comma-separated list of allowed CORS origins. |
+| `ENVIRONMENT` | string | `development` | Set to `production` in live deployments to enforce security policies and production origins. |
+| `DEBUG` | bool | `True` | When `True`, enables `X-User-ID` header fallback authentication for local development. **Must be `False` in production.** |
+| `CORS_ORIGINS` | string | `http://localhost:5173,...` | Comma-separated list of allowed frontend origins (e.g. `https://smart-farming-dashboard.vercel.app,http://localhost:5173`). |
 
 ### Database
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy database URL. Use `postgresql://user:pass@host/db` for staging and production. |
+| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy connection DSN. For Cloud Run / production, set to Render managed PostgreSQL (e.g., `postgresql://sfuser:pass@ep-xyz.singapore-postgres.render.com/smartfarming?sslmode=require`). Normalized automatically in `session.py` to `postgresql+psycopg2://`. |
+
+### Model Inference Server (Server 2)
+
+Used in decoupled microservices architectures (such as Google Cloud Run):
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `MODEL_SERVER_URL` | string | `http://127.0.0.1:8001` | URL of the dedicated PyTorch inference microservice (Cloud Run Service #2, e.g. `https://inference-service-<id>.<region>.run.app`). When configured, the main backend forwards image prediction requests to this service over HTTP/HTTPS with GCP OIDC authentication. |
+| `MODEL_SERVER_TIMEOUT` | int | `60` | HTTP request timeout in seconds when calling the inference server. |
 
 ### Redis & Job Queue
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `REDIS_URL` | string | `redis://127.0.0.1:6379` | Redis connection URL used by the ARQ job queue and the config hot-reload pub/sub channel. |
-| `REQUIRE_REDIS` | bool | `False` | If `True`, the application **fails to start** when Redis is unreachable. Recommended `True` in production. |
+| `REDIS_URL` | string | `redis://127.0.0.1:6379` | Redis connection URL used by the ARQ job queue and config hot-reload pub/sub channel. |
+| `REQUIRE_REDIS` | bool | `False` | Determines whether the backend requires Redis to run.<br>• **Cloud Run Production:** Must be **`False`**. Persistent ARQ polling workers prevent scale-to-zero and exhaust monthly free-tier quotas. With `REQUIRE_REDIS=False`, predictions run synchronously via HTTP to the inference service, allowing Cloud Run to scale to **0 instances** when idle.<br>• **Docker Compose / VM:** Can be set to `True` when running persistent background ARQ worker containers. |
 
-### File Uploads
+### File Uploads & Local Paths
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `UPLOAD_MAX_BYTES` | int | `10485760` | Maximum upload file size in bytes. Default is 10 MB (10 × 1024²). |
+| `BACKEND_ROOT` | Path | Auto | Root directory of the backend repository. |
+| `CONFIG_PATH` | Path | `config.yaml` | Path to pipeline `config.yaml`. |
+| `DATA_ROOT` | Path | `data/` | Root directory for local file storage. |
 
 ### ML Inference Thresholds (Fallback)
 
@@ -188,37 +200,47 @@ These are used as fallback values only when `config.yaml` cannot be loaded. The 
 | `CROP_CONFIDENCE_THRESHOLD` | float | `0.7` | Fallback for `thresholds.crop_confidence`. |
 | `DISEASE_CONFIDENCE_THRESHOLD` | float | `0.7` | Fallback for `thresholds.disease_confidence`. |
 
-### External APIs
+### External AI & Cloud Services
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `GOOGLE_TTS_API_KEY` | string | `""` | Google Cloud Text-to-Speech API key. Leave empty to disable TTS features. |
-| `GOOGLE_TRANSLATION_API_KEY` | string | `""` | Google Cloud Translation API key. Leave empty to disable translation features. |
-| `HF_TOKEN` | string | **required** | HuggingFace API token. Must have inference provider permissions. The app will not function without this. |
+| `HF_TOKEN` | string | **required** | HuggingFace user access token with read permissions. Used for the Qwen3-4B Agronomist LLM recommendation engine. |
+| `OPENWEATHER_API` | string | `""` | OpenWeatherMap API key used to enrich disease diagnostics with live ambient temperature, humidity, and rainfall. |
+| `GEMINI_API_KEY` | string | `""` | Google Gemini API key used for multimodal agronomist advisory fallback and multilingual translations. |
+| `GOOGLE_TTS_API_KEY` | string | `""` | Google Cloud Text-to-Speech API key for Gujarati, Hindi, and English voice synthesis. |
+| `GOOGLE_TRANSLATION_API_KEY` | string | `""` | Google Cloud Translation API key for dynamic advisory localization. |
 
-### Storage
+### Object Storage (AWS S3 & Google Cloud Storage)
+
+The backend provides a unified, S3-compatible storage abstraction (`storage.py`) supporting local disk, Google Cloud Storage (GCS), and AWS S3 / MinIO.
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `STORAGE_BACKEND` | string | `local` | Storage driver. `local` uses the filesystem paths from `config.yaml`. `s3` uploads to AWS S3 or a MinIO-compatible endpoint. |
-| `AWS_ACCESS_KEY_ID` | string | — | AWS / MinIO access key. Required when `STORAGE_BACKEND=s3`. |
-| `AWS_SECRET_ACCESS_KEY` | string | — | AWS / MinIO secret key. Required when `STORAGE_BACKEND=s3`. |
-| `AWS_REGION` | string | `us-east-1` | AWS region for the S3 bucket. |
-| `AWS_S3_BUCKET` | string | `smart-farming-data-...` | S3 bucket name. Required when `STORAGE_BACKEND=s3`. |
-| `S3_PRESIGNED_EXPIRY_SECONDS` | int | `900` | Expiry duration (in seconds) for generated presigned S3 URLs. Default is 15 minutes. |
+| `STORAGE_BACKEND` | string | `local` | Storage driver. Options: `local`, `gcs`, or `s3`. |
+| `AWS_ACCESS_KEY_ID` | string | — | Access key ID. For Google Cloud Storage, use the **GCS HMAC Access ID** (format: `GOOG1E...`). |
+| `AWS_SECRET_ACCESS_KEY` | string | — | Secret access key. For Google Cloud Storage, use the **GCS HMAC Secret**. |
+| `AWS_REGION` | string | `us-east-1` | AWS region (or `auto` / `us-central1` for GCS). |
+| `AWS_S3_BUCKET` / `GCS_BUCKET` | string | `smart-farming-data` | Target bucket name. |
+| `AWS_ENDPOINT_URL` | string | — | S3 endpoint override. For Google Cloud Storage, set to `https://storage.googleapis.com`. |
+| `S3_PRESIGNED_EXPIRY_SECONDS` | int | `900` | Expiration lifetime in seconds for signed download URLs (default: 15 minutes). |
+
+> [!NOTE]
+> When `STORAGE_BACKEND=gcs` or `AWS_ENDPOINT_URL` contains `storage.googleapis.com`, the storage client automatically enforces `signature_version="s3"` (SigV2) to match Google Cloud Storage XML API interoperability specifications.
 
 ---
 
 ## 3. Environment Variables — Frontend
 
-**Location:** `frontend/.env`
+**Location:** `frontend/.env` (Local) or **Vercel Project Environment Variables** (Production)
 
-| Variable | Description | Default |
-|---|---|---|
-| `VITE_API_BASE_URL` | Base URL of the backend API, used by all frontend API calls. Change to the deployed backend URL in staging/production. | `http://localhost:8000` |
+| Variable | Type | Example / Default | Description |
+|---|---|---|---|
+| `VITE_API_URL` | string | `https://smart-farming-backend-xxx.run.app` | Base URL of the backend API, consumed by Axios client in `frontend/src/api/client.ts`. Default for local dev: `http://localhost:8000`. |
+| `VITE_GOOGLE_MAPS_API_KEY` | string | `AIzaSy...` | Google Maps JavaScript API key used for farm boundary geo-tagging, satellite field views, and soil moisture overlays in `FarmSettingsPage.tsx`. |
+| `VITE_GOOGLE_MAPS_MAP_ID` | string | `DEMO_MAP_ID` | Map ID for vector styling in Google Maps JavaScript API. |
 
 > [!NOTE]
-> Vite only exposes variables prefixed with `VITE_` to client-side code. Do not store secrets in `frontend/.env`.
+> Vite only exposes variables prefixed with `VITE_` to client-side bundles. Secrets must never be stored in frontend environment variables.
 
 ---
 
@@ -226,7 +248,13 @@ These are used as fallback values only when `config.yaml` cannot be loaded. The 
 
 **Location:** `backend/model_registry.json`
 
-Tracks promoted model versions for each task. This file is **managed automatically** by the `POST /admin/models/promote` endpoint — do not edit it manually unless you understand the promotion workflow.
+Tracks promoted model versions, checkpoints, and validation metrics for each task.
+
+### Decoupled Microservices Behavior (Cloud Run)
+
+In production, heavy model weights (`.pth`, `.pt`) are housed inside Cloud Run Service #2 (`inference-service`), not the main backend container.
+- When `MODEL_SERVER_URL` is set, the Model Registry endpoint (`GET /admin/models/health`) recognizes that inference is delegated to the remote service.
+- It validates healthy connectivity and displays active model versions, validation accuracies, and promotion history loaded directly from `model_registry.json`.
 
 ### Structure
 

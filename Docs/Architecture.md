@@ -42,9 +42,9 @@ The system is architected around four core tenets:
 | Tenet | Implementation |
 |---|---|
 | **Accuracy** | Multi-model ensemble (EfficientNet-B0 → B2 → YOLOv8) with uncertainty escalation to human experts |
-| **Responsiveness** | Asynchronous ARQ job queue + Redis pub/sub WebSocket streaming keeps the UI live during pipeline execution |
+| **Serverless Scalability** | Decoupled microservices on Google Cloud Run scaling to zero (512MiB API Gateway + 2GiB Inference Service) |
 | **Traceability** | Every prediction carries a `provenance` block capturing exact model versions, config hash, and pipeline timing |
-| **Extensibility** | Config-driven model routing, hot-reload support, storage-agnostic interface, and a built-in MLOps retraining loop |
+| **Extensibility** | Config-driven model routing, hot-reload support, storage-agnostic interface (GCS/S3/local), and built-in MLOps |
 
 ---
 
@@ -52,42 +52,39 @@ The system is architected around four core tenets:
 
 ```mermaid
 flowchart TD
-    subgraph CLIENT["🌐 Client Layer"]
-        SPA["React + TypeScript SPA\nVite · Tailwind CSS\ni18n: EN / HI / GU\nRoles: Farmer · Expert · Admin"]
+    subgraph CLIENT["🌐 Client Layer (Vercel)"]
+        SPA["React + TypeScript SPA (Vercel)\nVite · Tailwind CSS · SPA Rewrites\ni18n: EN / HI / GU\nRoles: Farmer · Expert · Admin"]
     end
 
-    subgraph GATEWAY["⚙️ API Gateway — FastAPI :8000"]
-        API["FastAPI · uvicorn\nCORS · Rate Limiting (slowapi)\nJWT Auth · Static Mount /data"]
-    end
+    subgraph GCP["☁️ Google Cloud Platform (us-central1)"]
+        subgraph GATEWAY["⚙️ Cloud Run Service #1: Main Backend"]
+            API["FastAPI · uvicorn (512MiB / 1 vCPU)\nPublic Ingress · CORS · Rate Limiting (slowapi)\nJWT Auth · GCS S3-compatible client\nREQUIRE_REDIS=False (Sync Execution)"]
+        end
 
-    subgraph QUEUE["📬 Async Job Queue"]
-        REDIS["Redis\nARQ Worker\nPub/Sub Events"]
-    end
+        subgraph INFERENCE["🧠 Cloud Run Service #2: Model Inference"]
+            INF["FastAPI + PyTorch CPU (2GiB / 2 vCPU)\nPrivate Ingress (GCP OIDC Auth)\n7x Preloaded Models (Crop, Disease, Pest)"]
+        end
 
-    subgraph PIPELINE["🤖 ML Pipeline (8 Stages)"]
-        P1["1 · Preprocessing\nOpenCV blur/lighting/leaf detection"]
-        P2["2 · Crop ID\nEfficientNet-B0"]
-        P3["3 · Decision Routing\nConfig-driven per-crop model map"]
-        P4["4 · Disease Classification\nEfficientNet-B2 per crop"]
-        P5["5 · Severity Estimation\nHSV contour heuristic"]
-        P6["6 · Pest Detection\nYOLOv8-cls"]
-        P7["7 · Weather Enrichment\nOpenWeatherMap API"]
-        P8["8 · Recommendation\nQwen3 via HuggingFace / nscale"]
-        P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8
+        subgraph OBJ["🪣 Object Storage"]
+            GCS["Google Cloud Storage\nBucket: smart-farming-data\nPresigned URLs (AES-256)"]
+        end
     end
 
     subgraph PERSIST["🗄️ Persistence Layer"]
-        DB["PostgreSQL / SQLite"]
-        OBJ["MinIO / AWS S3"]
+        DB["Render PostgreSQL\nManaged DB (sslmode=require)"]
     end
 
-    SPA -- "HTTPS / WebSocket" --> GATEWAY
-    GATEWAY -- "REST / WS" --> SPA
-    GATEWAY -- "ARQ Enqueue" --> QUEUE
-    QUEUE -- "run_pipeline()" --> PIPELINE
-    PIPELINE -- "ORM writes" --> DB
-    PIPELINE -- "file I/O" --> OBJ
-    GATEWAY -- "ORM reads" --> DB
+    subgraph EXTERNAL["🌍 External AI Services"]
+        HF["HuggingFace Inference API\n(Qwen3-4B Agronomist)"]
+        OWM["OpenWeather API"]
+    end
+
+    SPA -- "HTTPS REST" --> API
+    API -- "OIDC IdToken HTTPS" --> INF
+    API -- "S3 HMAC XML API" --> GCS
+    API -- "asyncpg / psycopg2 SSL" --> DB
+    API -- "REST" --> HF
+    API -- "REST" --> OWM
 ```
 
 ---
@@ -120,7 +117,20 @@ The FastAPI application is the single ingress for all client traffic.
 | **Static Files** | `/data` → `backend/data/` (processed images, exports) |
 | **Lifespan** | DB init, ARQ pool init, APScheduler start, weather cron bootstrap |
 
-### 3.3 Async Job Queue
+### 3.3 Execution Model & Job Queue
+
+The platform supports two deployment execution modes depending on infrastructure constraints:
+
+#### Mode A: Serverless Synchronous Microservices (Cloud Run Production — Active)
+In Cloud Run, persistent background polling workers (like ARQ) would consume the entire monthly Always Free quota in ~2 days. To allow both services to scale to **0 instances** when idle, `REQUIRE_REDIS=False` is set:
+1. `POST /predict` receives the leaf upload.
+2. Synchronous validation & quality check run immediately.
+3. The image is saved to **Google Cloud Storage** (`smart-farming-data`).
+4. Main Backend invokes **Cloud Run Service #2 (`inference-service`)** synchronously over HTTPS using GCP OIDC Identity Tokens.
+5. The full prediction result, provenance block, and GCS presigned URLs are committed to Render PostgreSQL and returned in the HTTP response.
+
+#### Mode B: Asynchronous Queue (Dedicated Host / Local Development)
+When Redis is provisioned and `REQUIRE_REDIS=True`:
 
 ```mermaid
 sequenceDiagram
@@ -151,29 +161,32 @@ sequenceDiagram
     A-->>C: Full result JSON
 ```
 
-- **Fallback:** WebSocket handler also polls DB every **3 seconds** in case Redis pub/sub drops a message.
 - **Prediction lifecycle:** `processing` → `ready` | `failed` | `pending_expert_review` → `verified` | `rescan_requested`
 
 ### 3.4 ML Pipeline
 
-The pipeline is a linear, context-passing chain of 8 specialised stages. Each stage reads from and writes back to a shared `context` dict; failures in any stage set its status to `failed` and allow the orchestrator to propagate graceful degradation.
+The pipeline is a linear, context-passing chain of 8 specialised stages. In production, Stages 1 through 6 run inside **Service #2 (`inference-service`)**, while Weather (Stage 7) and LLM Recommendation (Stage 8) are coordinated by **Service #1 (`smart-farming-backend`)**.
 
 ```mermaid
 flowchart LR
     IMG["📷 Raw Image"] --> S1
 
-    subgraph PIPE["Pipeline Orchestrator — pipeline.py"]
+    subgraph INF["Service #2 (Cloud Run Inference)"]
         S1["Stage 1\nPreprocessing\nOpenCV"]
         S2["Stage 2\nCrop ID\nEfficientNet-B0"]
         S3["Stage 3\nDecision Routing\nconfig.yaml"]
         S4["Stage 4\nDisease Class\nEfficientNet-B2"]
         S5["Stage 5\nSeverity\nHSV Contour"]
         S6["Stage 6\nPest Detection\nYOLOv8-cls"]
+    end
+
+    subgraph BK["Service #1 (Cloud Run Backend)"]
         S7["Stage 7\nWeather\nOpenWeatherMap"]
         S8["Stage 8\nRecommendation\nQwen3 LLM"]
     end
 
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6
+    S6 -->|JSON Context| S7 --> S8
     S8 --> RES["📋 Prediction Result\n+ Provenance Block"]
 ```
 
@@ -195,10 +208,10 @@ flowchart LR
 
 | Store | Purpose | Implementation |
 |---|---|---|
-| **Relational DB** | All structured data (users, farms, predictions, feedback) | PostgreSQL (prod) · SQLite (dev/test) |
-| **Object Store** | Raw uploads, processed images | MinIO (self-hosted) · AWS S3 (cloud) |
+| **Relational DB** | All structured data (users, farms, predictions, feedback) | Render PostgreSQL (`sslmode=require`) · SQLite (dev/test) |
+| **Object Store** | Raw uploads, processed images, audio files | Google Cloud Storage (`smart-farming-data` via S3 HMAC API) · AWS S3 · Local |
 
-The storage interface (`storage.py`) is fully abstracted — switching between `local`, `minio`, or `s3` backends is a single environment variable change (`STORAGE_BACKEND`).
+The storage interface (`storage.py`) is fully abstracted — switching between `local`, `gcs`, or `s3` backends is a single environment variable change (`STORAGE_BACKEND`).
 
 ---
 
@@ -706,40 +719,44 @@ All user-visible strings are loaded from locale JSON files. The active locale is
 
 ```mermaid
 flowchart LR
-    subgraph DEV["Development"]
-        UVICORN["uvicorn --reload\nPort 8000"]
-        VITE["vite dev server\nPort 5173 (proxy → 8000)"]
-        SQLITE["SQLite"]
+    subgraph DEV["Local Development"]
+        UVICORN["uvicorn backend :8000"]
+        VITE["vite dev server :5173"]
+        SQLITE["SQLite (dev_database.db)"]
         LOCAL_S["Local filesystem\nbackend/data/"]
-        REDIS_D["Redis (Docker)"]
     end
 
-    subgraph PROD["Production"]
-        NGINX["Nginx\nReverse proxy\nSSL termination"]
-        GUNICORN["uvicorn workers\n(behind gunicorn or supervisor)"]
-        PG["PostgreSQL"]
-        S3P["AWS S3 / MinIO"]
-        REDIS_P["Redis (managed)"]
+    subgraph PROD["Production Environment"]
+        VERCEL["Vercel Edge Network\nReact SPA (smart-farming-dashboard)"]
+        CR_BACKEND["Cloud Run Service #1\nsmart-farming-backend\n(FastAPI · 512MiB · Public)"]
+        CR_INFER["Cloud Run Service #2\ninference-service\n(PyTorch CPU · 2GiB · Private)"]
+        GCS_STORE["Google Cloud Storage\nBucket: smart-farming-data"]
+        RENDER_PG["Render PostgreSQL\nManaged DB (SSL)"]
     end
 
-    NGINX --> GUNICORN
-    GUNICORN --> PG
-    GUNICORN --> S3P
-    GUNICORN --> REDIS_P
+    VERCEL -->|HTTPS REST| CR_BACKEND
+    CR_BACKEND -->|GCP OIDC Auth| CR_INFER
+    CR_BACKEND -->|S3 HMAC API| GCS_STORE
+    CR_BACKEND -->|SSL| RENDER_PG
 ```
 
-### Environment Configuration
+### Environment Configuration (Production Cloud Run)
 
-| Variable | Purpose |
+| Variable | Value / Purpose |
 |---|---|
-| `DATABASE_URL` | SQLAlchemy DSN (postgres or sqlite) |
-| `STORAGE_BACKEND` | `local` \| `s3` |
-| `S3_BUCKET` / `S3_ENDPOINT` | S3 or MinIO endpoint |
-| `REDIS_URL` | ARQ + pub/sub connection |
-| `SECRET_KEY` | JWT signing key |
-| `OPENWEATHERMAP_API_KEY` | Weather enrichment |
-| `HF_API_KEY` / `NSCALE_API_KEY` | LLM recommendation provider |
-| `CORS_ORIGINS` | Allowed frontend origins |
+| `DATABASE_URL` | Render PostgreSQL DSN (`postgresql://...singapore-postgres.render.com/...?sslmode=require`) |
+| `STORAGE_BACKEND` | `gcs` (Google Cloud Storage) |
+| `AWS_ACCESS_KEY_ID` | GCS HMAC Access ID (`GOOG1E...`) |
+| `AWS_SECRET_ACCESS_KEY` | GCS HMAC Secret Key |
+| `AWS_REGION` | `auto` |
+| `AWS_S3_BUCKET` | `smart-farming-data` |
+| `AWS_ENDPOINT_URL` | `https://storage.googleapis.com` |
+| `MODEL_SERVER_URL` | Cloud Run Service #2 URL (`https://inference-service-...us-central1.run.app`) |
+| `REQUIRE_REDIS` | `False` (bypasses persistent worker polling; enables scale-to-zero) |
+| `JWT_SECRET_KEY` | Production JWT signing key (HS256) |
+| `OPENWEATHER_API` | OpenWeatherMap API key |
+| `HF_TOKEN` | HuggingFace Inference API token (Qwen3-4B Agronomist) |
+| `CORS_ORIGINS` | `https://smart-farming-dashboard.vercel.app,http://localhost:5173` |
 
 ---
 
