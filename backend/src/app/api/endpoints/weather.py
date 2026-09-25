@@ -116,28 +116,27 @@ async def weather(
     redis_key = f"weather:{cache_key}"
     now = time.time()
 
-    # 1. Try Redis cache for multi-worker consistency
+    # 1. Try Upstash Redis REST cache (15ms latency, serverless compatible)
     try:
-        import redis, json
-        r = redis.from_url(settings.REDIS_URL, socket_timeout=1.5)
-        cached_str = r.get(redis_key)
-        if cached_str:
-            data = json.loads(cached_str)
-            translations = data.get("translations") or {}
+        from app.core.redis_rest import redis_rest
+        cached_data = await redis_rest.get(f"sf:weather:{cache_key}")
+        if cached_data and isinstance(cached_data, dict):
+            translations = cached_data.get("translations") or {}
             if target_code != "en" and target_code not in translations:
-                base_advisory = data.get("advisory", "")
+                base_advisory = cached_data.get("advisory", "")
                 if base_advisory:
                     try:
                         translated = await translate_text(base_advisory, target_code)
                         translations[target_code] = translated
-                        data["translations"] = translations
-                        r.setex(redis_key, _CACHE_TTL_SECONDS, json.dumps(data))
+                        cached_data["translations"] = translations
+                        await redis_rest.set(f"sf:weather:{cache_key}", cached_data, ex=_CACHE_TTL_SECONDS)
                     except Exception:
                         pass
-            data["translated_advisory"] = translations.get(target_code, data.get("advisory", ""))
-            return _json_safe(data)
-    except Exception:
-        pass
+            cached_data["translated_advisory"] = translations.get(target_code, cached_data.get("advisory", ""))
+            cached_data["cached"] = True
+            return _json_safe(cached_data)
+    except Exception as exc:
+        logger.debug("Upstash Redis REST weather cache lookup failed: %s", exc)
 
     # 2. Return from in-memory cache if fresh
     if cache_key in _WEATHER_CACHE:
@@ -237,11 +236,19 @@ async def weather(
     }
     _WEATHER_CACHE[cache_key] = (now, result_payload)
     try:
-        import redis, json
-        r = redis.from_url(settings.REDIS_URL, socket_timeout=1.5)
-        r.setex(redis_key, _CACHE_TTL_SECONDS, json.dumps(_json_safe(result_payload)))
+        from app.core.redis_rest import redis_rest
+        await redis_rest.set(f"sf:weather:{cache_key}", _json_safe(result_payload), ex=_CACHE_TTL_SECONDS)
+        
+        # Lazy proactive weather risk evaluation (Serverless cron alternative)
+        last_eval = await redis_rest.get("sf:cron:last_weather_eval")
+        if not last_eval or (now - float(last_eval)) > (6 * 3600):
+            await redis_rest.set("sf:cron:last_weather_eval", now, ex=6 * 3600)
+            from app.services.weather.proactive import evaluate_weather_risks
+            import asyncio
+            asyncio.create_task(asyncio.to_thread(evaluate_weather_risks))
     except Exception:
         pass
     return _json_safe(result_payload)
+
 
 

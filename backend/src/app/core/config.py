@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     GCS_BUCKET: str | None = Field(default=None)
     S3_PRESIGNED_EXPIRY_SECONDS: int = 900
 
+    # Upstash Serverless Redis REST
+    UPSTASH_REDIS_REST_URL: str | None = Field(default=None)
+    UPSTASH_REDIS_REST_TOKEN: str | None = Field(default=None)
+
     # Environment and Security
     ENVIRONMENT: str = Field(default="development")
     DEBUG: bool = Field(default=True)

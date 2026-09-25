@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
@@ -245,6 +246,7 @@ async def _validate_preprocessing_remote(
 @limiter.limit('20/minute')
 async def predict(
     request: Request,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     location: str = Form(default="Unknown"),
     lat: float = Form(default=52.2297),
@@ -299,7 +301,17 @@ async def predict(
         upload_path = _UPLOAD_DIR / filename
         relative_image_path = storage_relative_path(upload_path)
 
-        # Save to active storage backend (Local disk or AWS S3)
+        # 1. Fast Upstash Redis REST deduplication check (sub-20ms)
+        try:
+            from app.core.redis_rest import redis_rest
+            cached_dedup = await redis_rest.get(f"sf:dedup:{hash_val}")
+            if cached_dedup and isinstance(cached_dedup, dict) and cached_dedup.get("status", {}).get("pipeline") == "completed":
+                cached_dedup["cached"] = True
+                return cached_dedup
+        except Exception:
+            pass
+
+        # Save to active storage backend (Local disk or AWS S3 / GCS)
         from app.core.storage import get_storage
         storage = get_storage()
         storage.save(image_bytes, f"uploads/{filename}", content_type=file.content_type)
@@ -357,7 +369,29 @@ async def predict(
 
             public_res["prediction_id"] = new_pred.id
             public_res["job_id"] = None
-            return _enrich_image_urls(public_res)
+            final_res = _enrich_image_urls(public_res)
+
+            # Save in Upstash Redis REST dedup cache (24h TTL)
+            try:
+                from app.core.redis_rest import redis_rest
+                await redis_rest.set(f"sf:dedup:{hash_val}", final_res, ex=86400)
+            except Exception:
+                pass
+
+            # Pre-translate Hindi & Gujarati in background thread without blocking farmer
+            canonical_rec = context.get("recommendation", {})
+            if canonical_rec and isinstance(canonical_rec, dict):
+                rec_fields = {k: v.strip() for k, v in canonical_rec.items() if isinstance(v, str) and v.strip()}
+                if rec_fields:
+                    from app.core.arq import enqueue_translation_sync
+                    background_tasks.add_task(
+                        enqueue_translation_sync,
+                        "prediction",
+                        new_pred.id,
+                        rec_fields,
+                    )
+
+            return final_res
 
         # Fast synchronous image quality check via model service before enqueuing
         await _validate_preprocessing_remote(image_bytes, file.filename or filename, file.content_type or "image/jpeg")
@@ -510,6 +544,7 @@ async def prediction_detail(
 @limiter.limit('20/minute')
 async def rescan_prediction(
     request: Request,
+    background_tasks: BackgroundTasks,
     prediction_id: int,
     file: UploadFile = File(...),
     plot_id: int | None = Form(default=None),
@@ -597,7 +632,22 @@ async def rescan_prediction(
 
             public_res["prediction_id"] = new_pred.id
             public_res["job_id"] = None
-            return _enrich_image_urls(public_res)
+            final_res = _enrich_image_urls(public_res)
+
+            # Pre-translate Hindi & Gujarati in background thread without blocking farmer
+            canonical_rec = context.get("recommendation", {})
+            if canonical_rec and isinstance(canonical_rec, dict):
+                rec_fields = {k: v.strip() for k, v in canonical_rec.items() if isinstance(v, str) and v.strip()}
+                if rec_fields:
+                    from app.core.arq import enqueue_translation_sync
+                    background_tasks.add_task(
+                        enqueue_translation_sync,
+                        "prediction",
+                        new_pred.id,
+                        rec_fields,
+                    )
+
+            return final_res
 
         # Fast synchronous image quality check via model service before enqueuing
         await _validate_preprocessing_remote(image_bytes, file.filename or filename, file.content_type or "image/jpeg")

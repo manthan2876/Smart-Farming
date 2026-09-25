@@ -40,7 +40,18 @@ _CONFIG_PATH = _find_config_path()
 def _load_config(config_path: Path | None = None) -> dict[str, Any]:
     target = config_path or _find_config_path()
     with open(target, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f) or {}
+
+    # Check Upstash Redis REST for dynamic threshold overrides across serverless instances
+    try:
+        from app.core.redis_rest import redis_rest
+        overrides = redis_rest.get_sync("sf:config:thresholds")
+        if overrides and isinstance(overrides, dict):
+            cfg.setdefault("thresholds", {}).update(overrides)
+    except Exception:
+        pass
+
+    return cfg
 
 
 _CONFIG: dict[str, Any] = _load_config()

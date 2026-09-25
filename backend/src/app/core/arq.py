@@ -64,7 +64,29 @@ async def enqueue_translation(
             logger.error("Failed to enqueue translation job to Redis: %s", exc)
             raise
     else:
-        logger.error("Cannot enqueue translation job: ARQ Redis pool is not connected.")
+        # Serverless / In-process execution (Cloud Run without 24/7 worker)
+        # Runs in thread pool with Upstash Redis REST caching without blocking the event loop
+        import asyncio
+        from app.core.session import _session_factory
+        from app.services.translation.manager import process_entity_translation_sync
+
+        def _run_sync():
+            db = _session_factory()()
+            try:
+                return process_entity_translation_sync(
+                    session=db,
+                    entity_type=entity_type,
+                    entity_id=str(entity_id),
+                    fields=fields,
+                    name_fields=name_fields or [],
+                )
+            except Exception as e:
+                logger.warning("In-process translation fallback error for %s #%s: %s", entity_type, entity_id, e)
+            finally:
+                db.close()
+
+        logger.info("Executing translation in background thread (serverless mode) for %s #%s", entity_type, entity_id)
+        return await asyncio.to_thread(_run_sync)
 
 
 def enqueue_translation_sync(

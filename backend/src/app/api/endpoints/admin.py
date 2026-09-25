@@ -433,11 +433,13 @@ async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require
     except Exception as exc:
         pass
 
-    # Publish Redis pub/sub reload event for worker processes
+    # Publish to Upstash Redis REST for serverless multi-instance sync
     try:
-        import redis
-        r = redis.from_url(settings.REDIS_URL)
-        r.publish("config_reload_events", json.dumps({"event": "reload_config", "updated_at": datetime.now(timezone.utc).isoformat()}))
+        from app.core.redis_rest import redis_rest
+        await redis_rest.set(
+            "sf:config:thresholds",
+            data.get("thresholds", {}),
+        )
     except Exception:
         pass
         

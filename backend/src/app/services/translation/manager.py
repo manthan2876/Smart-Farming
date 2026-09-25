@@ -62,11 +62,23 @@ def process_entity_translation_sync(
                 continue
 
             try:
-                if is_name:
-                    translated_val = transliterate_name(clean_text, lang)
+                # 1. Check Upstash Redis REST string cache first (15ms hit)
+                from app.core.redis_rest import redis_rest
+                trans_cache_key = f"sf:trans:{lang}:{src_hash}"
+                cached_val = redis_rest.get_sync(trans_cache_key)
+
+                if cached_val:
+                    translated_val = cached_val
+                    logger.debug("Upstash Redis REST cache hit for %s -> %s", field_name, lang)
                 else:
-                    batch_res = translate_batch_google_sync([clean_text], lang)
-                    translated_val = batch_res[0] if batch_res else clean_text
+                    if is_name:
+                        translated_val = transliterate_name(clean_text, lang)
+                    else:
+                        batch_res = translate_batch_google_sync([clean_text], lang)
+                        translated_val = batch_res[0] if batch_res else clean_text
+
+                    if translated_val and translated_val != clean_text:
+                        redis_rest.set_sync(trans_cache_key, translated_val, ex=86400 * 60)
 
                 if existing:
                     existing.translated_text = translated_val

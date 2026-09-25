@@ -179,8 +179,10 @@ Used in decoupled microservices architectures (such as Google Cloud Run):
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `REDIS_URL` | string | `redis://127.0.0.1:6379` | Redis connection URL used by the ARQ job queue and config hot-reload pub/sub channel. |
-| `REQUIRE_REDIS` | bool | `False` | Determines whether the backend requires Redis to run.<br>• **Cloud Run Production:** Must be **`False`**. Persistent ARQ polling workers prevent scale-to-zero and exhaust monthly free-tier quotas. With `REQUIRE_REDIS=False`, predictions run synchronously via HTTP to the inference service, allowing Cloud Run to scale to **0 instances** when idle.<br>• **Docker Compose / VM:** Can be set to `True` when running persistent background ARQ worker containers. |
+| `UPSTASH_REDIS_REST_URL` | string | `None` | Upstash Serverless Redis REST endpoint URL (e.g. `https://<db-id>.upstash.io`). Powers high-speed translation caching, 30-min weather response caching, prediction deduplication, and dynamic admin threshold sync. 100% serverless over HTTPS. |
+| `UPSTASH_REDIS_REST_TOKEN` | string | `None` | Upstash Serverless Redis REST full-access bearer token. |
+| `REDIS_URL` | string | `redis://127.0.0.1:6379` | Legacy Redis connection URL used by the local Docker ARQ job queue. |
+| `REQUIRE_REDIS` | bool | `False` | Determines whether the backend requires local TCP Redis to run.<br>• **Cloud Run Production:** Must be **`False`**. Persistent ARQ polling workers prevent scale-to-zero and exhaust monthly free-tier quotas. With `REQUIRE_REDIS=False`, predictions run synchronously via HTTP to the inference service, allowing Cloud Run to scale to **0 instances** when idle.<br>• **Docker Compose / VM:** Can be set to `True` when running persistent background ARQ worker containers. |
 
 ### File Uploads & Local Paths
 

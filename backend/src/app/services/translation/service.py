@@ -122,16 +122,45 @@ async def translate_batch_hf_fallback(texts: list[str], target_lang: str) -> lis
 
 
 async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
-    """Translate a list of texts into target_lang, using Google Cloud Translation API with HF fallback."""
+    """Translate a list of texts into target_lang, using Upstash Redis REST caching with Google/HF fallbacks."""
     target_code = normalize_language_code(target_lang)
-    if target_code == "en":
+    if target_code == "en" or not texts:
         return texts
 
-    try:
-        return await translate_batch_google(texts, target_code)
-    except Exception as exc:
-        logger.warning("Google translation failed (%s), falling back to HF translation...", exc)
-        return await translate_batch_hf_fallback(texts, target_code)
+    import hashlib
+    from app.core.redis_rest import redis_rest
+
+    results: list[str | None] = [None] * len(texts)
+    missing_indices: list[int] = []
+    missing_texts: list[str] = []
+
+    for idx, text in enumerate(texts):
+        if not text or not text.strip():
+            results[idx] = text
+            continue
+        h = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
+        cache_key = f"sf:trans:{target_code}:{h}"
+        cached = await redis_rest.get(cache_key)
+        if cached:
+            results[idx] = cached
+        else:
+            missing_indices.append(idx)
+            missing_texts.append(text)
+
+    if missing_texts:
+        try:
+            translated_missing = await translate_batch_google(missing_texts, target_code)
+        except Exception as exc:
+            logger.warning("Google translation failed (%s), falling back to HF translation...", exc)
+            translated_missing = await translate_batch_hf_fallback(missing_texts, target_code)
+
+        for idx, trans_text, orig_text in zip(missing_indices, translated_missing, missing_texts):
+            results[idx] = trans_text
+            if trans_text and trans_text != orig_text:
+                h = hashlib.sha256(orig_text.strip().encode("utf-8")).hexdigest()
+                await redis_rest.set(f"sf:trans:{target_code}:{h}", trans_text, ex=86400 * 60)
+
+    return [r if r is not None else "" for r in results]
 
 
 async def translate_text(text: str, target_lang: str) -> str:
