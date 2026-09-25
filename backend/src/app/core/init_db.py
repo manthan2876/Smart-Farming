@@ -196,6 +196,7 @@ def initialize_database() -> None:
         alembic_ini_path = settings.BACKEND_ROOT / "alembic.ini"
         if alembic_ini_path.exists():
             alembic_config = Config(str(alembic_ini_path))
+            alembic_config.set_main_option("script_location", str(settings.BACKEND_ROOT / "alembic"))
             command.upgrade(alembic_config, "head")
     except Exception as exc:
         print(f"[InitDB] Alembic migration note: {exc}")

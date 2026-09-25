@@ -10,6 +10,7 @@ from app.models.alert import Alert
 from app.models.plot import Plot
 from app.models.expertReview import ExpertReview
 from app.models.translation import EntityTranslation
+from app.models.mlopsRun import MlopsRun
 
 __all__ = [
     "DatasetCandidate",
@@ -23,4 +24,5 @@ __all__ = [
     "Plot",
     "ExpertReview",
     "EntityTranslation",
+    "MlopsRun",
 ]

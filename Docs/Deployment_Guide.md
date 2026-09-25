@@ -29,7 +29,7 @@
 10. [Production Cloud Deployment (Vercel & Google Cloud Run)](#10-production-cloud-deployment-vercel--google-cloud-run)
     - 10.1 [Overview & Serverless Zero-Idle Strategy](#101-overview--serverless-zero-idle-strategy)
     - 10.2 [Google Cloud Storage (GCS) Provisioning & HMAC Keys](#102-google-cloud-storage-gcs-provisioning--hmac-keys)
-    - 10.3 [Render PostgreSQL Database](#103-render-postgresql-database)
+    - 10.3 [Supabase PostgreSQL Database](#103-supabase-postgresql-database)
     - 10.4 [Upstash Serverless Redis REST Provisioning](#104-upstash-serverless-redis-rest-provisioning)
     - 10.5 [Cloud Run Service #2: inference-service](#105-cloud-run-service-2-inference-service)
     - 10.6 [Cloud Run Service #1: smart-farming-backend](#106-cloud-run-service-1-smart-farming-backend)
@@ -46,7 +46,7 @@
 The Smart Farming platform supports two deployment targets depending on your infrastructure requirements:
 
 ### Target A: Serverless Cloud Production (Active Live Architecture)
-A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform, Vercel, Render, and Upstash:
+A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform, Vercel, Supabase, and Upstash:
 
 ```
                             ┌────────────────────────┐
@@ -66,9 +66,9 @@ A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform
            GCP OIDC HTTPS Auth │           │ S3 HMAC   │ SSL     │ HTTPS Token
                ┌───────────────┘           │ XML API   │         │
     ┌──────────▼───────────────┐   ┌───────▼──────┐  ┌─▼───────┐ ┌▼──────────────┐
-    │ Cloud Run Service #2:    │   │ Google Cloud │  │ Render  │ │ Upstash       │
+    │ Cloud Run Service #2:    │   │ Google Cloud │  │ Supabase│ │ Upstash       │
     │ inference-service        │   │ Storage (GCS)│  │ Postgres│ │ Redis REST    │
-    │ (PyTorch CPU · 2GiB)     │   │ Bucket: data │  │ Managed │ │ Serverless    │
+    │ (PyTorch CPU · 2GiB)     │   │ Bucket: data │  │ Pooler  │ │ Serverless    │
     │ Private Ingress          │   └──────────────┘  └─────────┘ └───────────────┘
     └──────────────────────────┘
 ```
@@ -79,7 +79,7 @@ A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform
 | **API Gateway** | Google Cloud Run (Service #1) | FastAPI, Python 3.11, 1 vCPU, 512 MiB RAM | Public HTTPS (`--allow-unauthenticated`) |
 | **ML Inference** | Google Cloud Run (Service #2) | FastAPI + PyTorch CPU, 2 vCPU, 2 GiB RAM | Private HTTPS (`--no-allow-unauthenticated`, GCP OIDC) |
 | **Object Storage** | Google Cloud Storage (GCS) | Multi-regional bucket (`smart-farming-data`) | S3 HMAC XML API (`signature_version="s3"`) |
-| **Database** | Render PostgreSQL | Managed PostgreSQL 15+ with SSL | Encrypted external SSL (`sslmode=require`) |
+| **Database** | Supabase PostgreSQL | Managed PostgreSQL 15+ with SSL | Encrypted external SSL (`sslmode=require`) |
 | **Serverless Cache** | Upstash Redis REST | Serverless Redis (HTTPS Token Auth) | Outbound HTTPS REST (`sf:*` namespace) |
 | **External AI** | Hugging Face & OpenWeather | Qwen3-4B Agronomist LLM & Weather API | Outbound HTTPS |
 
@@ -873,7 +873,7 @@ docker compose exec backend ls -lh /app/models/pest_classifier/
 
 ## 10. Production Cloud Deployment (Vercel & Google Cloud Run)
 
-This section documents the live serverless production architecture deployed on **Google Cloud Platform (Cloud Run & Cloud Storage)**, **Vercel**, and **Render Managed PostgreSQL**.
+This section documents the live serverless production architecture deployed on **Google Cloud Platform (Cloud Run & Cloud Storage)**, **Vercel**, and **Supabase Managed PostgreSQL**.
 
 ---
 
@@ -899,9 +899,9 @@ In production, the platform is decoupled into two independent microservices and 
            GCP OIDC HTTPS Auth │           │ S3 HMAC   │ SSL     │ HTTPS Token
                ┌───────────────┘           │ XML API   │         │
     ┌──────────▼───────────────┐   ┌───────▼──────┐  ┌─▼───────┐ ┌▼──────────────┐
-    │ Cloud Run Service #2:    │   │ Google Cloud │  │ Render  │ │ Upstash       │
+    │ Cloud Run Service #2:    │   │ Google Cloud │  │ Supabase│ │ Upstash       │
     │ inference-service        │   │ Storage (GCS)│  │ Postgres│ │ Redis REST    │
-    │ (PyTorch CPU · 2GiB)     │   │ Bucket: data │  │ Managed │ │ Serverless    │
+    │ (PyTorch CPU · 2GiB)     │   │ Bucket: data │  │ Pooler  │ │ Serverless    │
     │ Private Ingress          │   └──────────────┘  └─────────┘ └───────────────┘
     └──────────────────────────┘
 ```
@@ -916,8 +916,8 @@ In production, the platform is decoupled into two independent microservices and 
 - By configuring **`REQUIRE_REDIS=False`**, the API gateway processes predictions **synchronously**:
   1. The API receives the image upload and writes it to Google Cloud Storage.
   2. It immediately invokes Cloud Run Service #2 (`inference-service`) via HTTPS with GCP OIDC Identity Tokens.
-  3. The result is saved to Render PostgreSQL and returned in the HTTP response.
-- When there are no user requests, **both Cloud Run services scale to 0 instances**, providing true **\$0 idle hosting cost**.
+  3. The result is saved to Supabase PostgreSQL and returned in the HTTP response.
+- When there are no user requests, **both Cloud Run services scale to 0 instances**, providing true **$0 idle hosting cost**.
 
 ---
 
@@ -965,21 +965,32 @@ All GCS tests passed!
 
 ---
 
-### 10.3 Render PostgreSQL Database
+### 10.3 Supabase PostgreSQL Database
 
-Render provides a managed PostgreSQL 15+ database with automated backups and encrypted SSL connections.
+Supabase provides a managed PostgreSQL 15+ database with automated backups, point-in-time recovery, and an integrated connection pooler (Supavisor).
 
-1. **Provision Database:** In Render Dashboard, click **New +** → **PostgreSQL**. Select the nearest region (e.g., Singapore or US).
-2. **Copy External Connection URL:**
+1. **Provision Project:** In Supabase Dashboard, create a new project and select the closest AWS region to your Cloud Run deployment (e.g., `ap-south-1` Mumbai or `us-east-1` N. Virginia).
+2. **Retrieve Connection String (Pooler - Session Mode):**
+   Go to **Project Settings** → **Database** → **Connection string** → **URI**. Select **Session Mode** (port `5432`):
    ```
-   postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require
+   postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require
    ```
-3. **Run Alembic Migrations:**
-   Run migrations against Render PostgreSQL before deploying new backend code:
+   > **Note on Special Characters:** If your database password contains characters such as `@`, `:`, or `/`, ensure it is URL-encoded (e.g. `@` becomes `%40`) in the `DATABASE_URL` DSN string.
+   >
+   > **Session Pooler Port (`5432`):** Always use port `5432` for backend migrations and SQLAlchemy pooling. The Supabase pooler provides seamless IPv4 and IPv6 compatibility across all cloud container runtimes and local developer machines.
+
+3. **Initialize Schema & Migrations:**
+   Run migrations and schema initialization against Supabase:
    ```bash
    cd backend
-   DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require" \
-   alembic upgrade head
+   DATABASE_URL="postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require" \
+   python -m app.core.init_db
+   ```
+   Or migrate directly from an existing PostgreSQL database:
+   ```bash
+   python backend/scripts/migrate_render_to_supabase.py \
+     --source "postgresql://<SOURCE_USER>:<SOURCE_PASSWORD>@<SOURCE_HOST>/<SOURCE_DB>?sslmode=require" \
+     --target "postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require"
    ```
 
 ---
@@ -1215,9 +1226,9 @@ Work through this checklist before going live.
 
 ### Database
 
-- [ ] Use **Render Managed PostgreSQL** with SSL (`sslmode=require`).
-- [ ] Run **`alembic upgrade head`** before traffic switch.
-- [ ] Verify automated PostgreSQL backups in Render dashboard.
+- [ ] Use **Supabase Managed PostgreSQL** (Session Pooler port `5432`) with SSL (`sslmode=require`).
+- [ ] Run **`python -m app.core.init_db`** / **`alembic upgrade head`** before traffic switch.
+- [ ] Verify automated PostgreSQL backups in Supabase dashboard.
 
 ### Serverless Cache & Execution Mode
 

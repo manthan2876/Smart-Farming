@@ -48,7 +48,7 @@ The Smart Farming backend is an AI-powered crop disease detection and advisory p
 | **Auth** | JWT (HS256) | Bearer tokens in headers, HttpOnly refresh cookies |
 | **Serverless Cache** | Upstash Redis REST | HTTPS Token Auth (`sf:*` namespace, sub-20ms latency) |
 | **Task Queue** | ARQ (async Redis Queue) | Active when `REQUIRE_REDIS=True` |
-| **Relational Database** | PostgreSQL 15+ | Render Managed PostgreSQL with SSL (`sslmode=require`) |
+| **Relational Database** | PostgreSQL 15+ | Supabase Managed PostgreSQL with SSL (`sslmode=require`) |
 | **Object Storage** | Google Cloud Storage | Multi-regional bucket `smart-farming-data` via S3 HMAC XML API |
 | **Real-time** | WebSocket | `/ws/predictions/{id}` |
 | **ML Models** | EfficientNet-B0/B2, YOLOv8 | Qwen3-4B Agronomist LLM via HuggingFace API |

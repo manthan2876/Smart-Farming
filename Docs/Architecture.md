@@ -71,7 +71,7 @@ flowchart TD
     end
 
     subgraph PERSIST["🗄️ Persistence & State Layer"]
-        DB["Render PostgreSQL\nManaged DB (sslmode=require)"]
+        DB["Supabase PostgreSQL\nManaged DB (Session Pooler / SSL)"]
         UPSTASH["Upstash Serverless Redis REST\nHTTPS Token Auth\n• Translation Cache (en/hi/gu)\n• Image Dedup Cache (SHA-256)\n• Dynamic ML Threshold Sync\n• Lazy Weather Cron Locks"]
     end
 
@@ -132,7 +132,7 @@ In Cloud Run, persistent background polling workers (like ARQ) would consume the
 5. Main Backend invokes **Cloud Run Service #2 (`inference-service`)** synchronously over HTTPS using GCP OIDC Identity Tokens.
 6. Weather enrichment and LLM advisory recommendations are generated.
 7. FastAPI `BackgroundTasks` automatically pre-translates the advisory into Hindi (`hi`) and Gujarati (`gu`), populating Upstash Redis REST cache (`sf:trans:{lang}:{hash}`) asynchronously without holding up the HTTP response.
-8. The full prediction result, provenance block, and GCS presigned URLs are committed to Render PostgreSQL and returned in the HTTP response.
+8. The full prediction result, provenance block, and GCS presigned URLs are committed to Supabase PostgreSQL and returned in the HTTP response.
 
 #### Mode B: Asynchronous Queue (Dedicated Host / Local Development)
 When Redis is provisioned and `REQUIRE_REDIS=True`:
@@ -213,7 +213,7 @@ flowchart LR
 
 | Store | Purpose | Implementation |
 |---|---|---|
-| **Relational DB** | All structured data (users, farms, predictions, feedback) | Render PostgreSQL (`sslmode=require`) · SQLite (dev/test) |
+| **Relational DB** | All structured data (users, farms, predictions, feedback) | Supabase PostgreSQL (`sslmode=require`) · SQLite (dev/test) |
 | **Object Store** | Raw uploads, processed images, audio files | Google Cloud Storage (`smart-farming-data` via S3 HMAC API) · AWS S3 · Local |
 | **Serverless Cache & State** | Sub-20ms translation caching, prediction dedup, dynamic thresholds, weather caching & lazy cron locks | Upstash Serverless Redis REST (`UPSTASH_REDIS_REST_URL` via HTTPS token auth) |
 
@@ -571,7 +571,7 @@ flowchart TD
     subgraph SYNC["Cloud Run Production (REQUIRE_REDIS=False)"]
         H1["Invoke Cloud Run Service #2\nHTTPS + GCP OIDC Token"]
         H2["Enrich Weather + Qwen3 LLM"]
-        H3["Commit to Render PostgreSQL\nstatus = ready | pending_expert_review"]
+        H3["Commit to Supabase PostgreSQL\nstatus = ready | pending_expert_review"]
         H4["FastAPI BackgroundTasks\nPre-cache Hindi & Gujarati in Upstash"]
         H5["Return 200 OK + full result JSON"]
     end
@@ -662,7 +662,7 @@ flowchart LR
 | Job / Mechanism | Trigger | Implementation / Purpose |
 |---|---|---|
 | `weather_cron` | Every 30 min (APScheduler / Request) | Proactively fetches weather for all registered farms, cached in Upstash Redis REST (`sf:weather:{lat}:{lon}`) for 30 minutes |
-| `proactive_alerts` | After each `weather_cron` | Evaluates agronomic thresholds and inserts `Alert` records into Render PostgreSQL |
+| `proactive_alerts` | After each `weather_cron` | Evaluates agronomic thresholds and inserts `Alert` records into Supabase PostgreSQL |
 | `serverless_cron_lock` | Upstash Redis REST | Atomically manages `sf:cron:last_weather_eval` timestamp to prevent duplicate alert evaluations across autoscaled instances |
 | `dynamic_threshold_sync` | Admin `PUT /admin/config` | Updates `sf:config:thresholds` in Upstash Redis REST, allowing all Cloud Run instances to instantly pick up threshold changes without worker restarts |
 
@@ -746,14 +746,14 @@ flowchart LR
         CR_BACKEND["Cloud Run Service #1\nsmart-farming-backend\n(FastAPI · 512MiB · Public)"]
         CR_INFER["Cloud Run Service #2\ninference-service\n(PyTorch CPU · 2GiB · Private)"]
         GCS_STORE["Google Cloud Storage\nBucket: smart-farming-data"]
-        RENDER_PG["Render PostgreSQL\nManaged DB (SSL)"]
+        SUPABASE_PG["Supabase PostgreSQL\nManaged DB (Session Pooler / SSL)"]
         UPSTASH_REDIS["Upstash Serverless Redis REST\n(Token Auth · HTTPS)"]
     end
 
     VERCEL -->|HTTPS REST| CR_BACKEND
     CR_BACKEND -->|GCP OIDC Auth| CR_INFER
     CR_BACKEND -->|S3 HMAC API| GCS_STORE
-    CR_BACKEND -->|SSL| RENDER_PG
+    CR_BACKEND -->|SSL| SUPABASE_PG
     CR_BACKEND -->|HTTPS REST| UPSTASH_REDIS
 ```
 
@@ -761,7 +761,7 @@ flowchart LR
 
 | Variable | Value / Purpose |
 |---|---|
-| `DATABASE_URL` | Render PostgreSQL DSN (`postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require`) |
+| `DATABASE_URL` | Supabase PostgreSQL DSN (`postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require`) |
 | `STORAGE_BACKEND` | `gcs` (Google Cloud Storage) |
 | `AWS_ACCESS_KEY_ID` | GCS HMAC Access ID (`<YOUR_GCS_HMAC_ACCESS_KEY>`) |
 | `AWS_SECRET_ACCESS_KEY` | GCS HMAC Secret Key (`<YOUR_GCS_HMAC_SECRET_KEY>`) |
@@ -812,7 +812,7 @@ flowchart LR
 
 - Cloud Run instances scale automatically from 0 up to configured maximum instances based on incoming request concurrency.
 - Storage backend is swappable (local → GCS/S3) without code changes.
-- Persistence is fully managed via Render PostgreSQL (with connection pooling) and Upstash Serverless Redis REST (stateless HTTPS connections).
+- Persistence is fully managed via Supabase PostgreSQL (with connection pooling) and Upstash Serverless Redis REST (stateless HTTPS connections).
 
 ---
 

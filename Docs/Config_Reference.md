@@ -169,7 +169,7 @@ One entry per supported crop. The key **must exactly match** the class label out
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy connection DSN. For Cloud Run / production, set to Render managed PostgreSQL (e.g., `postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require`). Normalized automatically in `session.py` to `postgresql+psycopg2://`. |
+| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy connection DSN. For Cloud Run / production, set to Supabase managed PostgreSQL (e.g., `postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require`). Normalized automatically in `session.py` to `postgresql+psycopg2://`. |
 
 ### Model Inference Server (Server 2)
 
