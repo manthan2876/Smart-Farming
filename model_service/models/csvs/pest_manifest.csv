@@ -1,3 +1,547 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:fd4c43234ca43cf2cdd52703af25055aa2545baf277a361109128e80c8631533
-size 70728
+filepath,crop,disease_raw,environment,phash,pest
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_01.jpg,Cotton,A,uncontrolled,9e87c71fe05503a6,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_02.jpg,Cotton,A,uncontrolled,b51654024ab8ff9d,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_03.jpg,Cotton,A,uncontrolled,80e83dad15975daa,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_04.jpg,Cotton,A,uncontrolled,c38c3ffec0b0e883,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_05.jpg,Cotton,A,uncontrolled,cb159558d46d5655,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_06.jpg,Cotton,A,uncontrolled,861ef761f3c3a068,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_07.jpg,Cotton,A,uncontrolled,80fd2fc87384791e,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_08.jpg,Cotton,A,uncontrolled,f0c3ce3da38e2549,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_09.jpg,Cotton,A,uncontrolled,d2de61b4164bb545,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_10.jpg,Cotton,A,uncontrolled,b0d11b2352d37796,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_11.jpg,Cotton,A,uncontrolled,d6e832c53ff2c007,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_12.jpg,Cotton,A,uncontrolled,ccced8991886b23f,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_13.jpg,Cotton,A,uncontrolled,f24c43f1dc873827,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_14.jpg,Cotton,A,uncontrolled,bd2d0e4869701e9f,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_15.jpg,Cotton,A,uncontrolled,b6defa8a1f4682a0,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_16.jpg,Cotton,A,uncontrolled,ee1c9badfcd080c1,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_18.jpg,Cotton,A,uncontrolled,d87b6f2ca34c1447,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_19.jpg,Cotton,A,uncontrolled,9c1d51b59ba22aab,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_20.jpg,Cotton,A,uncontrolled,c952c4301de7f09f,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_21.jpg,Cotton,A,uncontrolled,82aad508ad53ec77,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_22.jpg,Cotton,A,uncontrolled,90f81f82e6436e5e,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_23.jpg,Cotton,A,uncontrolled,9f5b3db534606251,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_24.jpg,Cotton,A,uncontrolled,c43e2afa5ad01af2,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_25.jpg,Cotton,A,uncontrolled,d9450d9c39966db8,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_26.jpg,Cotton,A,uncontrolled,c5e96ea39e4c6432,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_27.jpg,Cotton,A,uncontrolled,bc785cc1e3aca623,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_28.jpg,Cotton,A,uncontrolled,e62fc7458e1ca8c3,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_29.jpg,Cotton,A,uncontrolled,cedd56cd06874cc1,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_30.jpg,Cotton,A,uncontrolled,901be7ba75326a23,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_31.jpg,Cotton,A,uncontrolled,96bd0b62bba98455,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_32.jpg,Cotton,A,uncontrolled,80b7115457375f1e,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_33.jpg,Cotton,A,uncontrolled,c0d44e81bdf3ab4a,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_34.jpg,Cotton,A,uncontrolled,d81973f62c51312f,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_35.jpg,Cotton,A,uncontrolled,b3f3a0a0e4fd9581,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_37.jpg,Cotton,A,uncontrolled,d41d6918c57f9a2c,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_38.jpg,Cotton,A,uncontrolled,d52c009ff201fcaf,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_39.jpg,Cotton,A,uncontrolled,bbb1c2044efee870,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_40.jpg,Cotton,A,uncontrolled,b0263478cd5b5367,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_41.jpg,Cotton,A,uncontrolled,ae07ff1ff07c0042,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\A\CLUE_A_42.jpg,Cotton,A,uncontrolled,800f0ae2fe5e167b,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_01.jpg,Cotton,AW,uncontrolled,aa65bb6a405a5b96,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_02.jpg,Cotton,AW,uncontrolled,d25e4c3b26cc3936,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_03.jpg,Cotton,AW,uncontrolled,f69308ea8accda87,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_04.jpg,Cotton,AW,uncontrolled,95f52ac1d53ad2c1,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_05.jpg,Cotton,AW,uncontrolled,c469e736da896c32,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_06.jpg,Cotton,AW,uncontrolled,952ffaa7c4d0126c,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_07.jpg,Cotton,AW,uncontrolled,94cf6b1865d97264,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_08.jpg,Cotton,AW,uncontrolled,abcd663135d29349,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_09.jpg,Cotton,AW,uncontrolled,cbf89c2671c72c91,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_10.jpg,Cotton,AW,uncontrolled,a1c1902fed36987e,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_11.jpg,Cotton,AW,uncontrolled,982bfe5418b58769,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_12.jpg,Cotton,AW,uncontrolled,c229777720c36397,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_13.jpg,Cotton,AW,uncontrolled,9f3a38216d9cd326,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_14.jpg,Cotton,AW,uncontrolled,9e8e6bda803dcad0,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_15.jpg,Cotton,AW,uncontrolled,e198c6679ba7d118,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_16.jpg,Cotton,AW,uncontrolled,d2aab664a49d49e3,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_17.jpg,Cotton,AW,uncontrolled,d74fc46061870f2f,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_18.jpg,Cotton,AW,uncontrolled,f9868c71e30cc99d,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_19.jpg,Cotton,AW,uncontrolled,cf8d47cf05c47419,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_20.jpg,Cotton,AW,uncontrolled,d5833172c74d15ea,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_21.jpg,Cotton,AW,uncontrolled,f9b6e481e73d0702,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_22.jpg,Cotton,AW,uncontrolled,830dbe37964ab92c,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_23.jpg,Cotton,AW,uncontrolled,80f903f9fe07f04c,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_24.jpg,Cotton,AW,uncontrolled,b356d7392b60ecc0,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_25.jpg,Cotton,AW,uncontrolled,e99010e459db76d9,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_26.jpg,Cotton,AW,uncontrolled,d0ee631b1af3c438,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_27.jpg,Cotton,AW,uncontrolled,81197df5c043c7e6,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_28.jpg,Cotton,AW,uncontrolled,ff9c94609ae181f8,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_29.jpg,Cotton,AW,uncontrolled,ef6a9516c10f8879,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_30.jpg,Cotton,AW,uncontrolled,8b6ac75cb495781a,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_31.jpg,Cotton,AW,uncontrolled,853d7ad1224b96ae,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_32.jpg,Cotton,AW,uncontrolled,d5e1c90fbe00f685,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_33.jpg,Cotton,AW,uncontrolled,f2d55a35cc9c5324,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_34.jpg,Cotton,AW,uncontrolled,a08659f33cdc3ce1,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_35.jpg,Cotton,AW,uncontrolled,80b89fe793899c9a,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_36.jpg,Cotton,AW,uncontrolled,f22b8d19b346b42b,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_37.jpg,Cotton,AW,uncontrolled,e26a9ab288b9e62d,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_38.jpg,Cotton,AW,uncontrolled,aee881177ae965c4,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_39.jpg,Cotton,AW,uncontrolled,c1ef24b692ba5b48,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\CLUE\AW\CLUE_AW_40.jpg,Cotton,AW,uncontrolled,ef81e036984fe6b0,Army Worm
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_01.jpg,Pepper Bell,A,uncontrolled,96dc286f6c9219bc,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_02.jpg,Pepper Bell,A,uncontrolled,894fd293f3e05847,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_03.jpg,Pepper Bell,A,uncontrolled,b0bf6eb01be39904,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_04.jpg,Pepper Bell,A,uncontrolled,c18e685fa61d5a3c,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_05.jpg,Pepper Bell,A,uncontrolled,e4df2c31c103fb86,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_06.jpg,Pepper Bell,A,uncontrolled,c3bb4f74b698284a,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_07.jpg,Pepper Bell,A,uncontrolled,b59b858bb8c0535e,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_08.jpg,Pepper Bell,A,uncontrolled,afc32b6b04bf5290,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_09.jpg,Pepper Bell,A,uncontrolled,f8f147cc41caea64,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_10.jpg,Pepper Bell,A,uncontrolled,ff9b19d04bdd0421,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_11.jpg,Pepper Bell,A,uncontrolled,8cc9fae2b41c7d12,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_12.jpg,Pepper Bell,A,uncontrolled,a3d3a44ed59471b4,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_13.jpg,Pepper Bell,A,uncontrolled,bebcd8b2866d8107,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_14.jpg,Pepper Bell,A,uncontrolled,adc96b29a05ee117,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_15.jpg,Pepper Bell,A,uncontrolled,d3f93f7004d2a42d,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_16.jpg,Pepper Bell,A,uncontrolled,b79f199858e058b6,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_17.jpg,Pepper Bell,A,uncontrolled,fdd052d4c1a6a6ca,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_18.jpg,Pepper Bell,A,uncontrolled,dea8027ec61115fd,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_19.jpg,Pepper Bell,A,uncontrolled,9aeaf4713c0f3078,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_20.jpg,Pepper Bell,A,uncontrolled,edc71958a0df4709,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_21.jpg,Pepper Bell,A,uncontrolled,ded8e09cb2ce13a1,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_22.jpg,Pepper Bell,A,uncontrolled,c0aac672aa2df68b,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_23.jpg,Pepper Bell,A,uncontrolled,8d6a1366762626dd,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\A\PBUE_A_24.jpg,Pepper Bell,A,uncontrolled,f9609e07cad0fe82,Aphid
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_01.jpg,Pepper Bell,LM,uncontrolled,fcd06168c694a59f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_02.jpg,Pepper Bell,LM,uncontrolled,9c6becb41646c371,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_03.jpg,Pepper Bell,LM,uncontrolled,f11fc119f4f90f08,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_04.jpg,Pepper Bell,LM,uncontrolled,c4da6e686cb5b624,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_05.jpg,Pepper Bell,LM,uncontrolled,e9e283c964353e0f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_06.jpg,Pepper Bell,LM,uncontrolled,cbf72d8db48da180,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_07.jpg,Pepper Bell,LM,uncontrolled,f9cc82c824a7e6f1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_08.jpg,Pepper Bell,LM,uncontrolled,efb3b0e4891d2a68,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_09.jpg,Pepper Bell,LM,uncontrolled,e38796a1631ee362,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_10.jpg,Pepper Bell,LM,uncontrolled,c0bb0ffa607bd122,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_11.jpg,Pepper Bell,LM,uncontrolled,84f615e06f637583,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_12.jpg,Pepper Bell,LM,uncontrolled,aa81fcb8158fe742,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_13.jpg,Pepper Bell,LM,uncontrolled,92bcd0e5accd8c8d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\LM\PBUE_LM_14.jpg,Pepper Bell,LM,uncontrolled,8fd3ad70e46055a9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\SM\PBUE_SM_1.jpg,Pepper Bell,SM,uncontrolled,f048af5f04df3c81,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\T\PBUE_T_1.jpg,Pepper Bell,T,uncontrolled,f281c31fb3574929,Thrips
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\T\PBUE_T_2.jpg,Pepper Bell,T,uncontrolled,fa3eb460d31646d1,Thrips
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\PBUE\T\PBUE_T_3.jpg,Pepper Bell,T,uncontrolled,a7e5ad08d82bd534,Thrips
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_03.jpg,Tomato,SM,closed,84d819bdfb0f4a26,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_05.jpg,Tomato,SM,closed,d4d62e525e783171,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_06.jpg,Tomato,SM,closed,dec0029cf4ec3ac7,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_07.jpg,Tomato,SM,closed,d41b1b4e599aa335,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_08.jpg,Tomato,SM,closed,9862386e61bcd759,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_09.jpg,Tomato,SM,closed,d216e7250f3e5e90,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_10.jpg,Tomato,SM,closed,9bc130be3e966899,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_12.jpg,Tomato,SM,closed,8d1f4e2d2bc85a69,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_13.jpg,Tomato,SM,closed,d566403f3ec0acab,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_14.jpg,Tomato,SM,closed,d4972c601bf22dcb,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_15.jpg,Tomato,SM,closed,d64b35b70b9249a5,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_16.jpg,Tomato,SM,closed,a0963ee163b71ccc,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_17.jpg,Tomato,SM,closed,d4943b6b62f3c298,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_18.jpg,Tomato,SM,closed,8a177ee934a613e2,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_19.jpg,Tomato,SM,closed,c0a52f8fdc0f1333,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_20.jpg,Tomato,SM,closed,8d8305c673bb73c2,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_21.jpg,Tomato,SM,closed,8a656738a4d70d1f,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_22.jpg,Tomato,SM,closed,95858b3e0fd6287c,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_23.jpg,Tomato,SM,closed,9a846fb2bb4e052d,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_24.jpg,Tomato,SM,closed,89e13b95e8cfa0e1,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_25.jpg,Tomato,SM,closed,a218a72ddd34f8b4,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_26.jpg,Tomato,SM,closed,8c213f03ed9bfc48,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_27.jpg,Tomato,SM,closed,d4902ddf13e705c6,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_28.jpg,Tomato,SM,closed,8fc4345eb8c9cc96,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_29.jpg,Tomato,SM,closed,9b5ea2466d8d470b,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_30.jpg,Tomato,SM,closed,b8c5633a7d841b27,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_31.jpg,Tomato,SM,closed,ca8472fcc1239ef1,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_32.jpg,Tomato,SM,closed,932e2e56948dcb53,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_33.jpg,Tomato,SM,closed,cac40fff2cc63528,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_34.jpg,Tomato,SM,closed,d4231bedb981b44d,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_35.jpg,Tomato,SM,closed,b6d439b605da3e82,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_36.jpg,Tomato,SM,closed,de542dc836c91ae3,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_37.jpg,Tomato,SM,closed,e4e4ac9272cf2999,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_38.jpg,Tomato,SM,closed,de07e50fa03d8671,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_39.jpg,Tomato,SM,closed,f22049d2d187b5bd,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_40.jpg,Tomato,SM,closed,dded25b24a11c4ab,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_41.jpg,Tomato,SM,closed,81977ec9b8ae584a,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_42.jpg,Tomato,SM,closed,d39af4cd164c3652,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_43.jpg,Tomato,SM,closed,8f9f289f9013d664,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_44.jpg,Tomato,SM,closed,c5d2251ffa6c1896,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_45.jpg,Tomato,SM,closed,c18ebcf2409bea66,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_46.jpg,Tomato,SM,closed,d28d34cf3963ace0,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_47.jpg,Tomato,SM,closed,e2b2ecc85d4e40cf,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_48.jpg,Tomato,SM,closed,96d0726afabe1854,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_49.jpg,Tomato,SM,closed,d9a5608b6d68e49e,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_50.jpg,Tomato,SM,closed,e5c69ed8982b9338,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_51.jpg,Tomato,SM,closed,ebc236d840f025f7,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_52.jpg,Tomato,SM,closed,89a24d78726971d7,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\SM\TLUE_SM_53.jpg,Tomato,SM,closed,f1af8454cf62c631,Spider Mite
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_376.jpg,Tomato,LM,closed,c4fb2e22abda600f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_377.jpg,Tomato,LM,closed,cdac37d658534a49,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_378.jpg,Tomato,LM,closed,91165e6e2a3871ed,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_379.jpg,Tomato,LM,closed,950c7d6b74e8c0ab,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_380.jpg,Tomato,LM,closed,cd7f21b4d1c80f25,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_381.jpg,Tomato,LM,closed,c6c747b03a0ef0ce,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_382.jpg,Tomato,LM,closed,d0b86ad275fa2a29,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_383.jpg,Tomato,LM,closed,df10e5cfa9476412,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_384.jpg,Tomato,LM,closed,d4c8ecc773733224,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_385.jpg,Tomato,LM,closed,d995745ae2a828e7,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_386.jpg,Tomato,LM,closed,fb7de06051a3ce11,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_001.jpg,Tomato,LM,closed,811d67914dedec92,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_002.jpg,Tomato,LM,closed,da05b4e34b7de103,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_003.jpg,Tomato,LM,closed,b322cc6c33996766,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_004.jpg,Tomato,LM,closed,e6b6499949b6629c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_005.jpg,Tomato,LM,closed,b333cc4c64cc3367,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_006.jpg,Tomato,LM,closed,b38bcd2c2cc33399,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_007.jpg,Tomato,LM,closed,c68654b4ac4b6b2f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_008.jpg,Tomato,LM,closed,d7470aec646c6d92,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_009.jpg,Tomato,LM,closed,9786699093c36e9d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_010.jpg,Tomato,LM,closed,f8a7069a0bcc65cd,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_011.jpg,Tomato,LM,closed,c50bc3b787838f83,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_012.jpg,Tomato,LM,closed,83415abc3e53ae5a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_013.jpg,Tomato,LM,closed,cf01612f9d304f1f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_014.jpg,Tomato,LM,closed,a5c925cecaf3e4c0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_015.jpg,Tomato,LM,closed,816f3cd00cfd13f8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_016.jpg,Tomato,LM,closed,a936c6dbd2613c15,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_017.jpg,Tomato,LM,closed,c48e576cb21bc966,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_018.jpg,Tomato,LM,closed,90f67e60782e617c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_019.jpg,Tomato,LM,closed,f98ef1161971cc23,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_020.jpg,Tomato,LM,closed,b681c38fc3b59c94,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_021.jpg,Tomato,LM,closed,c1e69e92a199de26,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_022.jpg,Tomato,LM,closed,9b472a752576d151,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_023.jpg,Tomato,LM,closed,fc9555e39b46308c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_024.jpg,Tomato,LM,closed,fbc0d099364bd037,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_025.jpg,Tomato,LM,closed,f5a0ea1dc4b60b39,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_026.jpg,Tomato,LM,closed,e23fe2328792be30,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_027.jpg,Tomato,LM,closed,f4c875d7e4302cd1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_028.jpg,Tomato,LM,closed,968d62e5d95262b5,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_029.jpg,Tomato,LM,closed,cc4f02d3cbd3079a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_030.jpg,Tomato,LM,closed,dd996243a43e4e55,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_031.jpg,Tomato,LM,closed,b161cb9ade30cf12,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_032.jpg,Tomato,LM,closed,b54c093d6b59531e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_033.jpg,Tomato,LM,closed,e39c78d7d00b3887,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_034.jpg,Tomato,LM,closed,e703ef0e869a0756,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_035.jpg,Tomato,LM,closed,a3b587213a9760bb,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_036.jpg,Tomato,LM,closed,eac2956c1d69d21d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_037.jpg,Tomato,LM,closed,a07ac0f263737539,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_038.jpg,Tomato,LM,closed,f802c3e15e4b3db8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_039.jpg,Tomato,LM,closed,abaf840d4ca56575,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_040.jpg,Tomato,LM,closed,928d9f7c40136b5b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_041.jpg,Tomato,LM,closed,e7299dd6c1341571,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_042.jpg,Tomato,LM,closed,919a97889dcdad54,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_043.jpg,Tomato,LM,closed,fac2f989613cace0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_044.jpg,Tomato,LM,closed,e81a8fa88f0771e5,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_045.jpg,Tomato,LM,closed,f074401a1e8de9df,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_046.jpg,Tomato,LM,closed,b1fdc86256a1a9c9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_047.jpg,Tomato,LM,closed,e4a89db703b4ec8c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_048.jpg,Tomato,LM,closed,b44b03b0e8ad3e97,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_049.jpg,Tomato,LM,closed,adf7ca00c85e18be,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_050.jpg,Tomato,LM,closed,ff69c38160ae3f04,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_051.jpg,Tomato,LM,closed,e0abd83c3f742545,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_052.jpg,Tomato,LM,closed,a2d9db1f592169b0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_053.jpg,Tomato,LM,closed,f8df8b0f3a44061d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_054.jpg,Tomato,LM,closed,fd3a6ea239142c69,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_056.jpg,Tomato,LM,closed,e1b19f4bcccc161c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_057.jpg,Tomato,LM,closed,94886a377f9a8ac5,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_058.jpg,Tomato,LM,closed,c8f70ab837ca49f0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_059.jpg,Tomato,LM,closed,80e53f87b495151f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_060.jpg,Tomato,LM,closed,dd6b703e9364d0c4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_061.jpg,Tomato,LM,closed,d5bd6a663cc021d3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_062.jpg,Tomato,LM,closed,9e2d60742762f1b9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_063.jpg,Tomato,LM,closed,92a49bdb24bea14e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_064.jpg,Tomato,LM,closed,94b8037eb90f6b07,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_065.jpg,Tomato,LM,closed,aea3b131ce064e6d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_067.jpg,Tomato,LM,closed,c1d13e8618fb67a4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_069.jpg,Tomato,LM,closed,c40ff764cc3ab740,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_070.jpg,Tomato,LM,closed,8879b0dd42827fdc,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_071.jpg,Tomato,LM,closed,b1f362a642ce3f82,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_072.jpg,Tomato,LM,closed,ede970a34b86c293,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_073.jpg,Tomato,LM,closed,b9fb699984e0188f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_074.jpg,Tomato,LM,closed,b946624de70ce1e3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_075.jpg,Tomato,LM,closed,bbb0d11b816d876c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_076.jpg,Tomato,LM,closed,d09d69823fd713c1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_077.jpg,Tomato,LM,closed,80d50fa195b63f63,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_078.jpg,Tomato,LM,closed,969425a1e71a99d7,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_079.jpg,Tomato,LM,closed,deb620cc5d9624e9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_080.jpg,Tomato,LM,closed,9b067fcb4ae928a1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_081.jpg,Tomato,LM,closed,95066aeec79435e4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_082.jpg,Tomato,LM,closed,d99928c6dde26661,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_083.jpg,Tomato,LM,closed,d7287c4c59b58729,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_084.jpg,Tomato,LM,closed,afe1292b3d94b1b0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_085.jpg,Tomato,LM,closed,c2604fb2092f9f1f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_086.jpg,Tomato,LM,closed,ccbcb67ab921a542,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_087.jpg,Tomato,LM,closed,b12e2cc89dead4b8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_088.jpg,Tomato,LM,closed,bcae5202dd677704,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_089.jpg,Tomato,LM,closed,b358bc27dc9e0178,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_090.jpg,Tomato,LM,closed,b2c2e4473bb1ce1c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_091.jpg,Tomato,LM,closed,b00f705daa69b65a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_092.jpg,Tomato,LM,closed,ac2357542b2af25e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_093.jpg,Tomato,LM,closed,f74164c53bc92d16,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_094.jpg,Tomato,LM,closed,8eb60e3da5e991c4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_095.jpg,Tomato,LM,closed,b7b7926a17d90432,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_096.jpg,Tomato,LM,closed,e4564ba0f37926d1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_097.jpg,Tomato,LM,closed,b48870b16f4f4d39,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_098.jpg,Tomato,LM,closed,c3953943292d3f9c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_099.jpg,Tomato,LM,closed,ebc7d5ba0aac0e24,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_100.jpg,Tomato,LM,closed,83352fd0106c7bcf,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_101.jpg,Tomato,LM,closed,ba9ef3894197c684,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_102.jpg,Tomato,LM,closed,abb8546bb50a3cd4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_103.jpg,Tomato,LM,closed,aaf086de5c25e519,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_104.jpg,Tomato,LM,closed,9aea682483967c5f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_105.jpg,Tomato,LM,closed,cb316e11edcb1b11,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_106.jpg,Tomato,LM,closed,c62dbb4397698929,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_107.jpg,Tomato,LM,closed,ead49661e7982b31,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_108.jpg,Tomato,LM,closed,dde33220e01e3aeb,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_109.jpg,Tomato,LM,closed,f4f4348aeb20a5b6,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_110.jpg,Tomato,LM,closed,b8739066a1e2f3e4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_111.jpg,Tomato,LM,closed,896678adc64b39a6,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_112.jpg,Tomato,LM,closed,b4bffbdad05800c8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_113.jpg,Tomato,LM,closed,f4af0986a26747a3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_114.jpg,Tomato,LM,closed,e5fa8e846caf0391,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_115.jpg,Tomato,LM,closed,fa3bfe92110583c9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_116.jpg,Tomato,LM,closed,a3b33642cc97a8f1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_117.jpg,Tomato,LM,closed,aac11691f56f2647,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_118.jpg,Tomato,LM,closed,aa71e141f18bab95,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_119.jpg,Tomato,LM,closed,8a8b64d5d55c5c66,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_120.jpg,Tomato,LM,closed,cb2470deb941c3e6,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_121.jpg,Tomato,LM,closed,f281170fbc5ce896,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_122.jpg,Tomato,LM,closed,c17cbfb059f9b001,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_123.jpg,Tomato,LM,closed,989d3a60f1706da7,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_124.jpg,Tomato,LM,closed,9694c2fbe869ed20,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_125.jpg,Tomato,LM,closed,af2c1ebed083c1cc,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_126.jpg,Tomato,LM,closed,d0f0b2b7b7a62c24,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_127.jpg,Tomato,LM,closed,bf47d02093f6d126,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_128.jpg,Tomato,LM,closed,b5c86a3e7d167806,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_129.jpg,Tomato,LM,closed,d610f090c69f57f8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_130.jpg,Tomato,LM,closed,baf4f74f4e60400b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_131.jpg,Tomato,LM,closed,bf9fd150caccac20,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_132.jpg,Tomato,LM,closed,e8d0561fa76a58e2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_133.jpg,Tomato,LM,closed,ed91fe33c22da068,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_134.jpg,Tomato,LM,closed,fe0480195fb85f9c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_135.jpg,Tomato,LM,closed,fa8f3a1074d7cc06,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_136.jpg,Tomato,LM,closed,e8a58b249f571c17,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_137.jpg,Tomato,LM,closed,8eb94af4e350b866,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_138.jpg,Tomato,LM,closed,80e07ba6bc5d86d9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_139.jpg,Tomato,LM,closed,9263f1dd771b0c06,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_140.jpg,Tomato,LM,closed,b3b7c20997c2691d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_141.jpg,Tomato,LM,closed,8f4b25e00c7c94bf,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_142.jpg,Tomato,LM,closed,cbdc109b4c302f7b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_143.jpg,Tomato,LM,closed,dd736ce8a21aa586,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_144.jpg,Tomato,LM,closed,d40b893f38b11f78,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_145.jpg,Tomato,LM,closed,adee7844e69886f0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_146.jpg,Tomato,LM,closed,8f64792631c743cd,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_147.jpg,Tomato,LM,closed,dd671341b44e97d0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_149.jpg,Tomato,LM,closed,df7e21b4a234c2d8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_150.jpg,Tomato,LM,closed,f5f88aea2b06a874,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_151.jpg,Tomato,LM,closed,d7f83ecb29831886,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_152.jpg,Tomato,LM,closed,a46b78d04c86abf9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_153.jpg,Tomato,LM,closed,d40dda745b77032a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_154.jpg,Tomato,LM,closed,ca24eb760b3af10d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_155.jpg,Tomato,LM,closed,d4c3ef29240b1d6e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_156.jpg,Tomato,LM,closed,c8406d99d5e7e962,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_157.jpg,Tomato,LM,closed,ee8f1a6925164ae5,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_159.jpg,Tomato,LM,closed,d0f86d505e27269e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_160.jpg,Tomato,LM,closed,e4d360f2176e4ce4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_161.jpg,Tomato,LM,closed,fbcc090fc4c83637,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_162.jpg,Tomato,LM,closed,98646dbb7672ac24,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_163.jpg,Tomato,LM,closed,bfc258c67d40b21e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_164.jpg,Tomato,LM,closed,b9954784c5d38dac,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_165.jpg,Tomato,LM,closed,a6e53b0ac0fa8ec3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_166.jpg,Tomato,LM,closed,82943f977f794241,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_167.jpg,Tomato,LM,closed,95adc5f56b1c3086,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_168.jpg,Tomato,LM,closed,c17fc2c360cd9f05,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_169.jpg,Tomato,LM,closed,81d83d0d609ee7b3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_171.jpg,Tomato,LM,closed,aedb34076d95182d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_172.jpg,Tomato,LM,closed,d45868a17dc7f04e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_173.jpg,Tomato,LM,closed,d88869ec7de022d7,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_174.jpg,Tomato,LM,closed,c9ed3e666021e1e9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_175.jpg,Tomato,LM,closed,f34ca768e7911698,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_176.jpg,Tomato,LM,closed,9605316abb65b669,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_177.jpg,Tomato,LM,closed,bbc0f4986547c933,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_178.jpg,Tomato,LM,closed,bb6470a3dc6589d2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_179.jpg,Tomato,LM,closed,cb903cda9ad5529a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_181.jpg,Tomato,LM,closed,a1269e9961669e9b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_182.jpg,Tomato,LM,closed,e6cc99339966668c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_183.jpg,Tomato,LM,closed,e666999966668c99,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_184.jpg,Tomato,LM,closed,b331cc4e3331ccce,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_185.jpg,Tomato,LM,closed,e6999964669b9964,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_186.jpg,Tomato,LM,closed,e6d6997164cc2633,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_187.jpg,Tomato,LM,closed,e4739b8e2431c3ce,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_188.jpg,Tomato,LM,closed,b1c9ce64719b9664,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_190.jpg,Tomato,LM,closed,80ff93606d92936d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_192.jpg,Tomato,LM,closed,b039cf962c6993b2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_194.jpg,Tomato,LM,closed,b333cccc3233c966,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_195.jpg,Tomato,LM,closed,9c885b927c383dd9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_196.jpg,Tomato,LM,closed,993c50be38a53aab,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_197.jpg,Tomato,LM,closed,a29acea8bc7135a3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_198.jpg,Tomato,LM,closed,a11f367155c7d8d0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_199.jpg,Tomato,LM,closed,a13f7461d64f94b0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_200.jpg,Tomato,LM,closed,d8c109167f3b74e8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_201.jpg,Tomato,LM,closed,c0623f984c39976f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_202.jpg,Tomato,LM,closed,acc835388e8e6afc,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_203.jpg,Tomato,LM,closed,80bee9c08bd856eb,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_204.jpg,Tomato,LM,closed,acb3c30c9f27e192,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_205.jpg,Tomato,LM,closed,d5d75cee031bf080,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_206.jpg,Tomato,LM,closed,af618738c6d83a27,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_207.jpg,Tomato,LM,closed,a60aa6b9bec41d65,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_208.jpg,Tomato,LM,closed,c0504ba96d49ed7d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_209.jpg,Tomato,LM,closed,a47ae2b293ff0a12,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_210.jpg,Tomato,LM,closed,80cd3337c0cf3cf8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_211.jpg,Tomato,LM,closed,fd81d90b8c3d4953,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_212.jpg,Tomato,LM,closed,8555389553e92ec7,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_213.jpg,Tomato,LM,closed,a87761e18c85f0be,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_214.jpg,Tomato,LM,closed,8892718af6dbdc98,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_215.jpg,Tomato,LM,closed,fc03dea1d01cf2d4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_216.jpg,Tomato,LM,closed,c0cb2f8026b3f3b9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_217.jpg,Tomato,LM,closed,9e150c4ea23f7768,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_218.jpg,Tomato,LM,closed,816b44963da79bc9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_219.jpg,Tomato,LM,closed,d4c76f12467fc822,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_220.jpg,Tomato,LM,closed,d6c93728a572a27a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_221.jpg,Tomato,LM,closed,a2e3aa8c2075777c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_222.jpg,Tomato,LM,closed,c25b7a0aa3db4f42,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_223.jpg,Tomato,LM,closed,f58238b7d1f04539,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_224.jpg,Tomato,LM,closed,9f38a54aaa15c2f6,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_225.jpg,Tomato,LM,closed,ca4770bc8750a9f9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_226.jpg,Tomato,LM,closed,b92d2c66c7a2d692,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_227.jpg,Tomato,LM,closed,93d44eb2a931556b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_228.jpg,Tomato,LM,closed,9cf16e7e01a71ac4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_229.jpg,Tomato,LM,closed,f3c30f501b0cfe32,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_230.jpg,Tomato,LM,closed,de056f423f371630,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_231.jpg,Tomato,LM,closed,fce860d3c2747d42,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_232.jpg,Tomato,LM,closed,aaefd430691037ce,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_233.jpg,Tomato,LM,closed,e1518caf8dd45c9c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_234.jpg,Tomato,LM,closed,e358967519661d36,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_235.jpg,Tomato,LM,closed,eb1dc0d1472aa4d7,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_236.jpg,Tomato,LM,closed,ad1dc57807394af1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_237.jpg,Tomato,LM,closed,b52dc9300e5b6cec,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_238.jpg,Tomato,LM,closed,bf0fd3340b228da5,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_239.jpg,Tomato,LM,closed,a0df90614b272fdc,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_240.jpg,Tomato,LM,closed,b16dc3e4b4b6930a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_241.jpg,Tomato,LM,closed,b06dcb2e35b4b4b0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_242.jpg,Tomato,LM,closed,fb5acad30a8a912e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_243.jpg,Tomato,LM,closed,fe93823cbc60e147,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_244.jpg,Tomato,LM,closed,fe4cc50797f710c0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_245.jpg,Tomato,LM,closed,a3a5da8e86498ced,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_246.jpg,Tomato,LM,closed,8107c0de6cfc33b3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_247.jpg,Tomato,LM,closed,b72d8f32d8e0e0b4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_248.jpg,Tomato,LM,closed,b727c03bc7b89311,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_249.jpg,Tomato,LM,closed,ffc095279a369a60,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_250.jpg,Tomato,LM,closed,ef2d84419a4aab9e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_251.jpg,Tomato,LM,closed,b1d393499c4c9ee4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_252.jpg,Tomato,LM,closed,b630c0cbdf64e4e4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_253.jpg,Tomato,LM,closed,bff0cb103fc0d807,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_254.jpg,Tomato,LM,closed,bfc0f38cc0991c37,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_255.jpg,Tomato,LM,closed,cc573d36b4c8c8e2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_256.jpg,Tomato,LM,closed,ab30d0cb6de4d22b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_257.jpg,Tomato,LM,closed,f8418f38d133a6b6,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_258.jpg,Tomato,LM,closed,f87a81c35e9c9871,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_259.jpg,Tomato,LM,closed,fa3f83c0b0d8ccd2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_260.jpg,Tomato,LM,closed,b6b2f86980f983e1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_261.jpg,Tomato,LM,closed,b3c1cf0e3c317127,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_262.jpg,Tomato,LM,closed,fec0b53a604f98b1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_263.jpg,Tomato,LM,closed,ec6c4b9b910dc959,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_264.jpg,Tomato,LM,closed,b2cf8d3e21b7009b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_265.jpg,Tomato,LM,closed,f2948d7976ce4930,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_266.jpg,Tomato,LM,closed,e83a8f8575305d47,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_267.jpg,Tomato,LM,closed,9b09c4e7331b893e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_268.jpg,Tomato,LM,closed,b499d1cd86c64fc2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_269.jpg,Tomato,LM,closed,ffc8841f52610f8d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_270.jpg,Tomato,LM,closed,a03fdbc0ee0cb332,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_271.jpg,Tomato,LM,closed,b98638e38e39c63c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_272.jpg,Tomato,LM,closed,e4999b674c649963,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_273.jpg,Tomato,LM,closed,9b1b0cc4c2f3731d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_274.jpg,Tomato,LM,closed,c94b5292b6ecba92,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_275.jpg,Tomato,LM,closed,b62ec170ce330f33,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_276.jpg,Tomato,LM,closed,8b135d8f69e26583,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_277.jpg,Tomato,LM,closed,b2976d72c78383a1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_278.jpg,Tomato,LM,closed,fd5e65964f8040ad,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_279.jpg,Tomato,LM,closed,9dd978b6666e8481,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_280.jpg,Tomato,LM,closed,ee9dc4c2d08ecb19,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_281.jpg,Tomato,LM,closed,ffcd3613241c3bc0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_282.jpg,Tomato,LM,closed,d5e7689fa0609566,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_283.jpg,Tomato,LM,closed,eb2bacf0d001eb53,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_284.jpg,Tomato,LM,closed,8dda8b964ba63271,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_285.jpg,Tomato,LM,closed,c35837e32d833b1c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_286.jpg,Tomato,LM,closed,9cc309b87385653f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_287.jpg,Tomato,LM,closed,a5fa4b852c096abe,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_288.jpg,Tomato,LM,closed,b5b0431755d90e8f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_289.jpg,Tomato,LM,closed,cc668c95c2b5f2d8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_290.jpg,Tomato,LM,closed,b4887c612b675e3a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_291.jpg,Tomato,LM,closed,f0fcfc09080ba7f4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_292.jpg,Tomato,LM,closed,ff9f406122ef03c4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_293.jpg,Tomato,LM,closed,d2797d2f4166ab40,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_294.jpg,Tomato,LM,closed,c5a1b507ca1adc5b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_296.jpg,Tomato,LM,closed,fcdccf07c36030aa,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_297.jpg,Tomato,LM,closed,c51a7e0cf1af2839,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_298.jpg,Tomato,LM,closed,cfe1b38e9b362070,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_299.jpg,Tomato,LM,closed,cd76ba0ad89a1dc4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_300.jpg,Tomato,LM,closed,e3f6c3b08e1e40da,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_301.jpg,Tomato,LM,closed,9aa56a1e1f4f118e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_302.jpg,Tomato,LM,closed,a28d57596c0bbc96,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_303.jpg,Tomato,LM,closed,ad56f0a9cea53158,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_304.jpg,Tomato,LM,closed,9bc6751f07c838b2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_305.jpg,Tomato,LM,closed,8aaa3197c963363e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_306.jpg,Tomato,LM,closed,b8d43ecb610e3947,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_307.jpg,Tomato,LM,closed,a0ffd3886f053632,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_308.jpg,Tomato,LM,closed,dac96536c23397c8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_309.jpg,Tomato,LM,closed,c34379e06f43e236,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_310.jpg,Tomato,LM,closed,907b1ce0f801ef8f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_311.jpg,Tomato,LM,closed,9daf685a0bb485a5,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_312.jpg,Tomato,LM,closed,c0db24c97b62d237,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_313.jpg,Tomato,LM,closed,ef8419b2f31f1ca0,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_314.jpg,Tomato,LM,closed,8669e98ca995d794,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_315.jpg,Tomato,LM,closed,94997cb1a98ec336,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_316.jpg,Tomato,LM,closed,82aa3bbde81dc51c,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_317.jpg,Tomato,LM,closed,96199ee6d136c82e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_318.jpg,Tomato,LM,closed,faa38392929c969e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_319.jpg,Tomato,LM,closed,fe7cd0a8cad0a38a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_320.jpg,Tomato,LM,closed,f52995bb42d01a6d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_321.jpg,Tomato,LM,closed,cc397a936d160d36,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_322.jpg,Tomato,LM,closed,c4be0fc47f922447,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_323.jpg,Tomato,LM,closed,8e1e1836f9f05956,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_324.jpg,Tomato,LM,closed,dfaea493d0589a2a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_325.jpg,Tomato,LM,closed,938cab057ce43de2,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_326.jpg,Tomato,LM,closed,d1b4ae427d1231af,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_327.jpg,Tomato,LM,closed,b00160c75cb17f6f,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_328.jpg,Tomato,LM,closed,fee0279f010594f9,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_329.jpg,Tomato,LM,closed,c26c7b2eb48e8791,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_330.jpg,Tomato,LM,closed,ebf39393f0851c48,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_331.jpg,Tomato,LM,closed,9f6938d650c4a5ae,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_332.jpg,Tomato,LM,closed,d9b6166a6c566a32,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_333.jpg,Tomato,LM,closed,9b26670facc53495,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_334.jpg,Tomato,LM,closed,d768a8878dba86b1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_335.jpg,Tomato,LM,closed,eb9d200d55a832fb,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_336.jpg,Tomato,LM,closed,86bde4f0618b3707,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_337.jpg,Tomato,LM,closed,8ae5fee68035851e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_338.jpg,Tomato,LM,closed,dba173938b5662a8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_339.jpg,Tomato,LM,closed,94da62d2cf134a6d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_340.jpg,Tomato,LM,closed,9066c9d26d256f71,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_341.jpg,Tomato,LM,closed,906e4c713e1f39b1,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_342.jpg,Tomato,LM,closed,9c771e1a1a972399,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_343.jpg,Tomato,LM,closed,99bd4e4c525ba0b3,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_344.jpg,Tomato,LM,closed,8c62ab4ebd93c334,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_345.jpg,Tomato,LM,closed,bdb940f6d232f0c4,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_346.jpg,Tomato,LM,closed,a1d14d339f8acaac,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_347.jpg,Tomato,LM,closed,c8f13086b89f93bc,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_348.jpg,Tomato,LM,closed,828938834d72f3fe,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_349.jpg,Tomato,LM,closed,c2c8d4b0a7626eed,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_350.jpg,Tomato,LM,closed,808d3eeeba14c8fa,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_351.jpg,Tomato,LM,closed,f5f918e870526e61,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_352.jpg,Tomato,LM,closed,85bf66d3b12c1694,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_353.jpg,Tomato,LM,closed,bae472b262ba4f82,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_354.jpg,Tomato,LM,closed,e59528a735a272f8,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_355.jpg,Tomato,LM,closed,c4813f2ef238bc8b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_356.jpg,Tomato,LM,closed,b0bc4dc3648c33bb,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_357.jpg,Tomato,LM,closed,d1db729d2dc44c16,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_358.jpg,Tomato,LM,closed,dcbf607097218a76,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_359.jpg,Tomato,LM,closed,d56062c3cb0f3e5a,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_360.jpg,Tomato,LM,closed,cb9a61d13ae91c74,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_361.jpg,Tomato,LM,closed,d8d407593969d535,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_362.jpg,Tomato,LM,closed,ee03b421dfb8d02d,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_363.jpg,Tomato,LM,closed,dca91b9369665f01,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_364.jpg,Tomato,LM,closed,8eb37bc4053ae24e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_365.jpg,Tomato,LM,closed,d15469434f8d6c5e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_366.jpg,Tomato,LM,closed,e8fb07a6ccc1c899,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_367.jpg,Tomato,LM,closed,8f1f689e748324d5,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_368.jpg,Tomato,LM,closed,95573c24b48d2b6b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_369.jpg,Tomato,LM,closed,8de9252632a7b31e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_370.jpg,Tomato,LM,closed,816118934f37ccfb,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_371.jpg,Tomato,LM,closed,c2ea6faf36461318,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_372.jpg,Tomato,LM,closed,c4862e4f95b58f13,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_373.jpg,Tomato,LM,closed,d4e53a7c68c9c21e,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_374.jpg,Tomato,LM,closed,dd8a7a354a45728b,Leaf Miner
+Z:\Projects\Smart-Farming\Datasets\final_combined_datasets\TLUE\LM\TLUE_LM_375.jpg,Tomato,LM,closed,c6cb31c325d947b4,Leaf Miner

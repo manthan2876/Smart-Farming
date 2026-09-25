@@ -7,4 +7,6 @@ __pycache__
 .git
 .gitignore
 *.log
-
+models/csvs/
+models/matrixes/
+models/pest_classifier/training/

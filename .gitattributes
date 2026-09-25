@@ -82,8 +82,17 @@
 *.wav filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 
-# Specific repository model and dataset directories
+# Specific repository dataset directories
 "Datasets/**" filter=lfs diff=lfs merge=lfs -text
 "datasets/**" filter=lfs diff=lfs merge=lfs -text
-"models/**" filter=lfs diff=lfs merge=lfs -text
-"model_service/models/**" filter=lfs diff=lfs merge=lfs -text
+
+# Dedicated model inference microservice: keep models & labels directly in Git
+# All model checkpoints are under 32MB (< 100MB GitHub limit).
+# Direct tracking allows Google Cloud Build to clone actual model weights & labels without Git LFS auth.
+model_service/models/** -filter -diff -merge
+model_service/models/*.pth binary -filter -diff -merge
+model_service/models/*.pt binary -filter -diff -merge
+model_service/models/pest_classifier/*.pt binary -filter -diff -merge
+model_service/models/*.json text eol=lf diff -filter -merge
+model_service/models/csvs/* text eol=lf diff -filter -merge
+model_service/models/matrixes/* binary -filter -diff -merge

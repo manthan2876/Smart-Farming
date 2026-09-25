@@ -94,16 +94,29 @@ def run_vision_pipeline(image_bgr: np.ndarray, filename: str = "upload.jpg") -> 
     def _exec_stage(stage_name: str, fn, *args, **kwargs):
         t0 = time.perf_counter()
         context["status"][stage_name] = "processing"
-        res = fn(*args, **kwargs)
-        duration_ms = round((time.perf_counter() - t0) * 1000)
-        curr_status = context["status"].get(stage_name, "processing")
-        if curr_status == "processing":
-            context["status"][stage_name] = "completed"
-        context["stages"][stage_name] = {
-            "status": context["status"][stage_name],
-            "duration_ms": duration_ms,
-        }
-        return res
+        try:
+            res = fn(*args, **kwargs)
+            duration_ms = round((time.perf_counter() - t0) * 1000)
+            curr_status = context["status"].get(stage_name, "processing")
+            if curr_status == "processing":
+                context["status"][stage_name] = "completed"
+            context["stages"][stage_name] = {
+                "status": context["status"][stage_name],
+                "duration_ms": duration_ms,
+            }
+            return res
+        except Exception as exc:
+            duration_ms = round((time.perf_counter() - t0) * 1000)
+            context["status"][stage_name] = "failed"
+            context["stages"][stage_name] = {
+                "status": "failed",
+                "duration_ms": duration_ms,
+                "error": str(exc),
+            }
+            context.setdefault("notes", []).append(f"Stage '{stage_name}' encountered an error: {exc}")
+            import logging
+            logging.getLogger(__name__).error(f"Stage '{stage_name}' failed: {exc}", exc_info=True)
+            return context
 
     # 1. Preprocessing
     context = _exec_stage("preprocessing", _PREPROCESSOR.process, context)

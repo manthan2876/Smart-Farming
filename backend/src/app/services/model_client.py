@@ -63,18 +63,6 @@ async def call_model_service(
             detail=f"Model Inference Server is unreachable at {settings.MODEL_SERVER_URL}. Please ensure Server 2 is running on port 8001.",
         )
 
-
-async def execute_remote_vision_pipeline(
-    context: dict,
-    image_bytes: bytes,
-    filename: str,
-    content_type: str = "image/jpeg",
-) -> dict:
-    """
-    Send image to Server 2 and merge the vision results into the pipeline context.
-    """
-    cv_result = await call_model_service(image_bytes, filename, content_type)
-
 def merge_and_save_cv_result(context: dict, cv_result: dict, filename: str) -> dict:
     """
     Merges CV results from model_service into pipeline context and persists
