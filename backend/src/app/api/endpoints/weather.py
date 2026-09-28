@@ -238,14 +238,6 @@ async def weather(
     try:
         from app.core.redis_rest import redis_rest
         await redis_rest.set(f"sf:weather:{cache_key}", _json_safe(result_payload), ex=_CACHE_TTL_SECONDS)
-        
-        # Lazy proactive weather risk evaluation (Serverless cron alternative)
-        last_eval = await redis_rest.get("sf:cron:last_weather_eval")
-        if not last_eval or (now - float(last_eval)) > (6 * 3600):
-            await redis_rest.set("sf:cron:last_weather_eval", now, ex=6 * 3600)
-            from app.services.weather.proactive import evaluate_weather_risks
-            import asyncio
-            asyncio.create_task(asyncio.to_thread(evaluate_weather_risks))
     except Exception:
         pass
     return _json_safe(result_payload)

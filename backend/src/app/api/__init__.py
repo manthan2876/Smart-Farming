@@ -18,6 +18,7 @@ from app.api.endpoints.crops import router as crops_router
 from app.api.endpoints.health import router as health_router
 from app.api.endpoints.admin import router as admin_router
 from app.api.endpoints.expert import router as expert_router
+from app.api.endpoints.internal_cron import router as internal_cron_router
 
 __all__ = [
     "get_current_user",
@@ -38,4 +39,6 @@ __all__ = [
     "health_router",
     "admin_router",
     "expert_router",
+    "internal_cron_router",
 ]
+

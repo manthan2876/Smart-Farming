@@ -47,10 +47,75 @@ class Settings(BaseSettings):
     UPSTASH_REDIS_REST_URL: str | None = Field(default=None)
     UPSTASH_REDIS_REST_TOKEN: str | None = Field(default=None)
 
+    # Upstash QStash (Serverless Scheduled Crons & Webhooks)
+    QSTASH_REGION: str = Field(default="US_EAST_1")
+    QSTASH_URL: str | None = Field(default=None)
+    QSTASH_TOKEN: str | None = Field(default=None)
+    QSTASH_CURRENT_SIGNING_KEY: str | None = Field(default=None)
+    QSTASH_NEXT_SIGNING_KEY: str | None = Field(default=None)
+
+    EU_CENTRAL_1_QSTASH_URL: str | None = Field(default=None)
+    EU_CENTRAL_1_QSTASH_TOKEN: str | None = Field(default=None)
+    EU_CENTRAL_1_QSTASH_CURRENT_SIGNING_KEY: str | None = Field(default=None)
+    EU_CENTRAL_1_QSTASH_NEXT_SIGNING_KEY: str | None = Field(default=None)
+
+    US_EAST_1_QSTASH_URL: str | None = Field(default=None)
+    US_EAST_1_QSTASH_TOKEN: str | None = Field(default=None)
+    US_EAST_1_QSTASH_CURRENT_SIGNING_KEY: str | None = Field(default=None)
+    US_EAST_1_QSTASH_NEXT_SIGNING_KEY: str | None = Field(default=None)
+
+    CRON_SECRET: str | None = Field(default=None)
+
     # Environment and Security
     ENVIRONMENT: str = Field(default="development")
     DEBUG: bool = Field(default=True)
     JWT_SECRET_KEY: str = Field(default="dev-secret-key-change-me")
+
+    @property
+    def primary_qstash_url(self) -> str:
+        url = self.QSTASH_URL
+        if not url:
+            if self.QSTASH_REGION.upper() == "US_EAST_1" and self.US_EAST_1_QSTASH_URL:
+                url = self.US_EAST_1_QSTASH_URL
+            elif self.QSTASH_REGION.upper() == "EU_CENTRAL_1" and self.EU_CENTRAL_1_QSTASH_URL:
+                url = self.EU_CENTRAL_1_QSTASH_URL
+            elif self.US_EAST_1_QSTASH_URL:
+                url = self.US_EAST_1_QSTASH_URL
+            elif self.EU_CENTRAL_1_QSTASH_URL:
+                url = self.EU_CENTRAL_1_QSTASH_URL
+            else:
+                url = "https://qstash.upstash.io/v2"
+        clean = (url or "").rstrip("/")
+        if not clean.endswith("/v2"):
+            clean = f"{clean}/v2"
+        return clean
+
+    @property
+    def primary_qstash_token(self) -> str:
+        if self.QSTASH_TOKEN:
+            return self.QSTASH_TOKEN
+        if self.QSTASH_REGION.upper() == "US_EAST_1" and self.US_EAST_1_QSTASH_TOKEN:
+            return self.US_EAST_1_QSTASH_TOKEN
+        if self.QSTASH_REGION.upper() == "EU_CENTRAL_1" and self.EU_CENTRAL_1_QSTASH_TOKEN:
+            return self.EU_CENTRAL_1_QSTASH_TOKEN
+        if self.US_EAST_1_QSTASH_TOKEN:
+            return self.US_EAST_1_QSTASH_TOKEN
+        if self.EU_CENTRAL_1_QSTASH_TOKEN:
+            return self.EU_CENTRAL_1_QSTASH_TOKEN
+        return ""
+
+    @property
+    def all_qstash_signing_keys(self) -> list[str]:
+        """Returns all configured QStash signing keys across primary and secondary regions."""
+        keys = [
+            self.QSTASH_CURRENT_SIGNING_KEY,
+            self.QSTASH_NEXT_SIGNING_KEY,
+            self.EU_CENTRAL_1_QSTASH_CURRENT_SIGNING_KEY,
+            self.EU_CENTRAL_1_QSTASH_NEXT_SIGNING_KEY,
+            self.US_EAST_1_QSTASH_CURRENT_SIGNING_KEY,
+            self.US_EAST_1_QSTASH_NEXT_SIGNING_KEY,
+        ]
+        return [k.strip() for k in keys if k and k.strip()]
 
     model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
 

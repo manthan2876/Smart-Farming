@@ -778,21 +778,11 @@ def _terminal_event(prediction: Any) -> dict[str, Any] | None:
 async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
     await websocket.accept()
 
-    import redis.asyncio as aioredis
-
+    import asyncio
+    from app.core.events import prediction_hub
     from app.core.session import _session_factory
     from app.models import Prediction
 
-    redis_url = urlparse(settings.REDIS_URL)
-    redis_client = aioredis.Redis(
-        host=redis_url.hostname or "127.0.0.1",
-        port=redis_url.port or 6379,
-        password=redis_url.password,
-        db=int(redis_url.path.lstrip("/") or 0),
-        decode_responses=True,
-    )
-    pubsub = redis_client.pubsub()
-    channel = f"prediction_status:{prediction_id}"
     db = None
 
     def load_prediction():
@@ -801,8 +791,6 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
         return db.query(Prediction).filter(Prediction.id == prediction_id).first()
 
     try:
-        # Subscribe BEFORE reading the DB snapshot so no event can fall in the gap between them.
-        await pubsub.subscribe(channel)
         db = _session_factory()()
 
         existing = load_prediction()
@@ -831,16 +819,19 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
                 })
 
         last_db_check = time.monotonic()
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if message:
-                data = json.loads(message["data"])
-                await websocket.send_json(data)
-                if data.get("stage") in {"completed", "failed"} or data.get("status") == "failed":
-                    break
+        hub_stream = prediction_hub.subscribe(prediction_id)
 
-            # Redis pub/sub is fire-and-forget: if an event was lost (or the worker died) the DB
-            # is still the source of truth, so re-check it periodically.
+        while True:
+            try:
+                # Wait for the next in-memory broadcast (< 1ms when emitted)
+                event = await asyncio.wait_for(hub_stream.__anext__(), timeout=1.0)
+                await websocket.send_json(event)
+                if event.get("stage") in {"completed", "failed"} or event.get("status") == "failed":
+                    break
+            except asyncio.TimeoutError:
+                pass
+
+            # Fallback DB check in case an event was committed without a live broadcaster
             if time.monotonic() - last_db_check >= _WS_DB_RECHECK_SECONDS:
                 last_db_check = time.monotonic()
                 current = load_prediction()
@@ -855,15 +846,6 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
     finally:
         if db is not None:
             db.close()
-        try:
-            await pubsub.unsubscribe(channel)
-            await pubsub.aclose()
-        except Exception:
-            pass
-        try:
-            await redis_client.aclose()
-        except Exception:
-            pass
         try:
             await websocket.close()
         except Exception:

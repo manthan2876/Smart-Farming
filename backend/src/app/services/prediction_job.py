@@ -4,13 +4,11 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from urllib.parse import urlparse
-
-import redis
 
 from app import pipeline as _pipeline
 from app.context import create_context
 from app.core.config import settings
+from app.core.events import prediction_hub
 from app.core.paths import resolve_storage_path
 from app.core.session import _session_factory
 from app.crud.expert_review import ensure_expert_review
@@ -37,17 +35,6 @@ def _public_result(context: dict) -> dict:
     return _json_safe(public_context)
 
 
-def _redis_client() -> redis.Redis:
-    redis_url = urlparse(settings.REDIS_URL)
-    return redis.Redis(
-        host=redis_url.hostname or "127.0.0.1",
-        port=redis_url.port or 6379,
-        password=redis_url.password,
-        db=int(redis_url.path.lstrip("/") or 0),
-        decode_responses=True,
-    )
-
-
 def _as_float(value) -> float | None:
     """Coerce numpy / Decimal scalars to a plain float so DB drivers never choke on them."""
     if value is None:
@@ -71,7 +58,6 @@ def run_prediction_job(
     plot_id: int | None = None,
 ) -> None:
     db = _session_factory()()
-    redis_client = _redis_client()
     job_start_time = time.perf_counter()
     current_stage = "initialization"
     current_stage_t0 = time.perf_counter()
@@ -98,14 +84,12 @@ def run_prediction_job(
         if data:
             payload["data"] = data
         try:
-            # _json_safe: stage payloads come straight from the ML context and may contain
-            # numpy scalars/arrays, which plain json.dumps rejects.
-            redis_client.publish(
-                f"prediction_status:{prediction_id}",
-                json.dumps(_json_safe(payload)),
+            # Broadcast to in-memory real-time WebSocket subscriber hub (< 1ms latency)
+            prediction_hub.publish_sync(
+                prediction_id,
+                _json_safe(payload),
             )
         except Exception:
-            # WARNING (not debug) so a dropped live event is visible in the worker log.
             logger.warning(
                 "Unable to publish status for prediction %s stage '%s'",
                 prediction_id,
@@ -482,5 +466,4 @@ def run_prediction_job(
         push_status("failed", "failed", err_msg, fail_duration_ms)
         raise
     finally:
-        redis_client.close()
         db.close()

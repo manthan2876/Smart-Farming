@@ -29,23 +29,20 @@ from app.api import (
     health_router,
     admin_router,
     expert_router,
+    internal_cron_router,
 )
 from app.utils import configure_logging
 
 configure_logging()
 
 from contextlib import asynccontextmanager
-from app.core.scheduler import start_scheduler, shutdown_scheduler
-from app.services.weather_cron import start_weather_cron
 from app.core.arq import init_arq, close_arq
 from app.core.init_db import initialize_database
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     initialize_database()
-    start_scheduler()
     app.state.arq_pool = await init_arq()
-    start_weather_cron()
     try:
         from app.api.endpoints.tts import sync_existing_audio_to_storage
         sync_existing_audio_to_storage()
@@ -53,7 +50,6 @@ async def lifespan(app: FastAPI):
         pass
     yield
     await close_arq()
-    shutdown_scheduler()
 
 
 app = FastAPI(
@@ -123,6 +119,8 @@ app.include_router(health_router)
 app.include_router(alerts_router)
 app.include_router(admin_router)
 app.include_router(expert_router)
+app.include_router(internal_cron_router)
+app.include_router(internal_cron_router, prefix="/api/v1")
 
 # Mount static storage directories for uploaded and processed images
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
