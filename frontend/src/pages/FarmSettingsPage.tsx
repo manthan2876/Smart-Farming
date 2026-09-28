@@ -501,7 +501,7 @@ export default function FarmSettingsPage() {
         animate={{ opacity: 1, y: 0 }}
       >
         {successMessage && (
-          <div className="mb-5 flex items-center gap-3 rounded-sm border border-farmer-200 bg-farmer-50 p-3 text-sm font-semibold text-farmer-800">
+          <div className="mb-5 flex items-center gap-3 rounded-sm border border-farmer-200 bg-farmer-50 p-3 text-sm font-semibold text-farmer-800 dark:border-farmer-800 dark:bg-farmer-900/60 dark:text-farmer-200">
             <CheckCircle2 size={18} />
             <span>{t("farmUpdatedSuccess")}</span>
           </div>
@@ -521,17 +521,17 @@ export default function FarmSettingsPage() {
 
         <Input label={t("cropHistory")} type="text" value={cropHistory} onChange={(e) => setCropHistory(e.target.value)} placeholder="e.g. Cotton, Groundnut, Wheat" />
 
-        <div className="rounded-sm border border-farmer-200 bg-farmer-50 p-4">
+        <div className="rounded-sm border border-farmer-200 bg-farmer-50 p-4 dark:border-farmer-800 dark:bg-farmer-900/60">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-display text-xl text-farmer-800">{t("farmBoundary")}</h3>
-              <p className="mt-1 text-xs text-muted">{t("farmBoundaryDesc")}</p>
+              <h3 className="font-display text-xl text-farmer-800 dark:text-farmer-200">{t("farmBoundary")}</h3>
+              <p className="mt-1 text-xs text-muted dark:text-farmer-100/80">{t("farmBoundaryDesc")}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => openBoundaryDialog("farm")} className="rounded-sm border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink">
+              <button type="button" onClick={() => openBoundaryDialog("farm")} className="rounded-sm border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-canvas transition-colors">
                 {farmBoundary.length >= 3 ? t("editBoundary") : t("createBoundary")}
               </button>
-              {farmBoundary.length > 0 && <button type="button" onClick={() => setFarmBoundary([])} className="rounded-sm border border-red-200 px-3 py-2 text-xs font-semibold text-danger">{t("clearBoundary")}</button>}
+              {farmBoundary.length > 0 && <button type="button" onClick={() => setFarmBoundary([])} className="rounded-sm border border-red-200 px-3 py-2 text-xs font-semibold text-danger dark:border-red-900/60 dark:bg-red-950/40 dark:text-rose-300 hover:bg-red-50 dark:hover:bg-red-950/70 transition-colors">{t("clearBoundary")}</button>}
             </div>
           </div>
         </div>

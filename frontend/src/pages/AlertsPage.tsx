@@ -195,7 +195,7 @@ export default function AlertsPage() {
                           markReadMutation.mutate(alert.id);
                         }
                       }}
-                      className="inline-flex items-center gap-1 rounded-sm border border-line bg-surface px-3 py-2 text-xs font-semibold text-farmer-800 hover:bg-canvas"
+                      className="inline-flex items-center gap-1 rounded-sm border border-line bg-surface px-3 py-2 text-xs font-semibold text-farmer-800 hover:bg-canvas dark:text-farmer-300 dark:hover:text-farmer-200 dark:border-farmer-700/60 dark:hover:bg-farmer-900/60 transition-colors"
                     >
                       {t("viewScan")} <ArrowRight size={14} />
                     </Link>
