@@ -6,11 +6,70 @@
 
 @layer base {
   :root {
-    color: #24352d;
-    background: #f5f2eb;
+    --color-canvas: 245 242 235;
+    --color-surface: 255 255 255;
+    --color-ink: 36 53 45;
+    --color-muted: 107 119 111;
+    --color-line: 227 230 223;
+
+    --color-farmer-50: 242 247 231;
+    --color-farmer-100: 228 239 199;
+    --color-farmer-200: 207 227 157;
+    --color-farmer-700: 61 93 42;
+    --color-farmer-800: 48 74 41;
+    --color-farmer-900: 38 61 43;
+
+    --color-expert-50: 240 245 244;
+    --color-expert-100: 220 233 231;
+    --color-expert-500: 75 119 115;
+    --color-expert-700: 49 87 83;
+
+    --color-admin-50: 255 247 232;
+    --color-admin-100: 252 232 186;
+    --color-admin-500: 193 132 40;
+    --color-admin-700: 129 87 29;
+
+    --shadow-soft: 0 2px 10px rgba(36, 53, 45, 0.05);
+    --shadow-card: 0 10px 30px rgba(36, 53, 45, 0.08);
+    --shadow-lift: 0 18px 45px rgba(36, 53, 45, 0.12);
+
+    color: rgb(var(--color-ink));
+    background-color: rgb(var(--color-canvas));
     font-family: "Figtree", "DM Sans", ui-sans-serif, system-ui, sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
+    color-scheme: light;
+  }
+
+  .dark {
+    --color-canvas: 18 26 21;
+    --color-surface: 26 38 31;
+    --color-ink: 237 244 239;
+    --color-muted: 150 168 156;
+    --color-line: 43 60 50;
+
+    --color-farmer-50: 24 38 29;
+    --color-farmer-100: 220 238 226;
+    --color-farmer-200: 184 217 141;
+    --color-farmer-700: 46 76 38;
+    --color-farmer-800: 28 45 33;
+    --color-farmer-900: 19 31 23;
+
+    --color-expert-50: 25 41 39;
+    --color-expert-100: 215 235 233;
+    --color-expert-500: 95 155 150;
+    --color-expert-700: 130 190 185;
+
+    --color-admin-50: 45 36 21;
+    --color-admin-100: 250 230 190;
+    --color-admin-500: 225 165 70;
+    --color-admin-700: 245 195 110;
+
+    --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --shadow-lift: 0 18px 45px rgba(0, 0, 0, 0.6);
+
+    color-scheme: dark;
   }
 
   *,
@@ -23,9 +82,10 @@
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
-    background: #f5f2eb;
-    color: #24352d;
+    background-color: rgb(var(--color-canvas));
+    color: rgb(var(--color-ink));
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   button,
@@ -43,11 +103,76 @@
     outline: 3px solid rgba(111, 150, 54, 0.45);
     outline-offset: 2px;
   }
+
+  /* Sleek modern scrollbars matching theme */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--color-muted) / 0.3) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--color-muted) / 0.3);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--color-muted) / 0.55);
+  }
+
+  ::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 @layer components {
   .font-display {
     font-family: "Fraunces", "Newsreader", Georgia, serif;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--color-muted) / 0.35) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--color-muted) / 0.3);
+    border-radius: 9999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--color-muted) / 0.6);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 }
 

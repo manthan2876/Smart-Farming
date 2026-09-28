@@ -165,21 +165,21 @@ const handleSubmit = async (e: React.FormEvent) => {
         <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
           {/* File Upload Box */}
           <Card padding="md">
-            <label className={`flex min-h-[25rem] cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-farmer-700 bg-farmer-50 text-center transition hover:border-farmer-500 hover:bg-farmer-100 ${previewUrl ? "p-0" : "p-8"}`}>
+            <label className={`flex min-h-[25rem] cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-farmer-700 bg-farmer-50 text-center transition hover:border-farmer-500 hover:bg-farmer-100 dark:border-farmer-600/70 dark:bg-farmer-950/60 dark:hover:border-farmer-400 dark:hover:bg-farmer-900/60 ${previewUrl ? "p-0" : "p-8"}`}>
               {previewUrl ? (
                 <div className="group relative h-full min-h-[25rem] w-full">
                   <img src={previewUrl} alt="Leaf Preview" className="h-full min-h-[25rem] w-full object-contain" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-ink/55 text-white opacity-0 transition group-hover:opacity-100">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white opacity-0 transition group-hover:opacity-100 backdrop-blur-[2px]">
                     <Camera size={24} />
                     <span className="mt-2 text-sm font-semibold">{t("replaceImage")}</span>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <Upload size={48} className="mx-auto text-farmer-700" />
-                  <h3 className="mt-5 font-display text-xl text-ink">{t("uploadLeafImage")}</h3>
-                  <p className="mt-2 text-sm text-muted">{t("supportedFormats")}</p>
-                  <span className="mt-5 inline-flex rounded-sm border border-farmer-700 px-4 py-2 text-sm font-semibold text-farmer-800">{t("browseFiles")}</span>
+                  <Upload size={48} className="mx-auto text-farmer-700 dark:text-farmer-300" />
+                  <h3 className="mt-5 font-display text-xl text-ink dark:text-farmer-100">{t("uploadLeafImage")}</h3>
+                  <p className="mt-2 text-sm text-muted dark:text-farmer-200/70">{t("supportedFormats")}</p>
+                  <span className="mt-5 inline-flex rounded-sm border border-farmer-700 bg-farmer-100/60 px-4 py-2 text-sm font-semibold text-farmer-800 transition-colors dark:border-farmer-400 dark:bg-farmer-800/80 dark:text-farmer-100 dark:hover:bg-farmer-700 shadow-sm">{t("browseFiles")}</span>
                 </div>
               )}
               <input type="file" accept="image/*" onChange={handleFileChange} hidden />
@@ -187,12 +187,12 @@ const handleSubmit = async (e: React.FormEvent) => {
           </Card>
 
           {/* Telemetry Parameters */}
-          <Card className="!border-farmer-900 !bg-farmer-900 text-white" padding="lg">
+          <Card className="!border-farmer-800 !bg-farmer-900 text-farmer-100 shadow-card" padding="lg">
             <h3 className="font-display text-2xl text-farmer-200">{t("diagnosticTelemetry")}</h3>
             
             <div className="mt-7 space-y-5">
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-white/75" htmlFor="scan-plot">
+                <label className="block text-sm font-semibold text-farmer-200" htmlFor="scan-plot">
                   {t("farm")} / {t("plotOptional")}
                 </label>
                 <Select 
@@ -203,30 +203,59 @@ const handleSubmit = async (e: React.FormEvent) => {
                   theme="dark"
                 />
               </div>
-            <label className='block space-y-2'>
-              <span className="block text-sm font-semibold text-white/75">{t("location")}</span>
-              <Input leadingIcon={<MapPin size={16} />} 
-                  type="text" 
-                  value={location} 
-                  onChange={(e) => setLocation(e.target.value)} 
-                  className="border-white/20 bg-white/10 text-white placeholder:text-white/50 focus:border-farmer-300 focus:ring-farmer-300/20"
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-farmer-200" htmlFor="scan-location">
+                {t("location")}
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-farmer-200">
+                  <MapPin size={16} />
+                </span>
+                <input
+                  id="scan-location"
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Enter farm location..."
                   required
+                  className="min-h-11 w-full rounded-sm border border-farmer-700/60 bg-farmer-950/40 pl-10 pr-3 text-sm text-farmer-100 placeholder:text-farmer-300/40 transition hover:border-farmer-500/60 focus:border-farmer-400 focus:outline-none focus:ring-4 focus:ring-farmer-400/20"
                 />
-            </label>
+              </div>
+            </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <label className="block space-y-2">
-                <span className="block text-sm font-semibold text-white/75">{t("latitude")}</span>
-                <Input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
-              </label>
-              <label className="block space-y-2">
-                <span className="block text-sm font-semibold text-white/75">{t("longitude")}</span>
-                <Input type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
-              </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-farmer-200" htmlFor="scan-lat">
+                  {t("latitude")}
+                </label>
+                <input
+                  id="scan-lat"
+                  type="number"
+                  step="any"
+                  value={lat}
+                  onChange={(e) => setLat(e.target.value)}
+                  required
+                  className="min-h-11 w-full rounded-sm border border-farmer-700/60 bg-farmer-950/40 px-3 text-sm text-farmer-100 placeholder:text-farmer-300/40 transition hover:border-farmer-500/60 focus:border-farmer-400 focus:outline-none focus:ring-4 focus:ring-farmer-400/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-farmer-200" htmlFor="scan-lon">
+                  {t("longitude")}
+                </label>
+                <input
+                  id="scan-lon"
+                  type="number"
+                  step="any"
+                  value={lon}
+                  onChange={(e) => setLon(e.target.value)}
+                  required
+                  className="min-h-11 w-full rounded-sm border border-farmer-700/60 bg-farmer-950/40 px-3 text-sm text-farmer-100 placeholder:text-farmer-300/40 transition hover:border-farmer-500/60 focus:border-farmer-400 focus:outline-none focus:ring-4 focus:ring-farmer-400/20"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-white/75" htmlFor="scan-language">
+              <label className="flex items-center gap-2 text-sm font-semibold text-farmer-200" htmlFor="scan-language">
                 <Globe size={16} /> {t("recommendationLanguage")}
               </label>
               <Select 
@@ -240,7 +269,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
             <Button 
               type="submit" 
-              className="mt-2 w-full bg-farmer-300 text-ink hover:bg-farmer-200" 
+              className="mt-2 w-full bg-farmer-400 font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors" 
               disabled={loading || !file}
             >
               {loading ? (

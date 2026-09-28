@@ -48,14 +48,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <header className="flex flex-col gap-6 rounded-lg bg-farmer-900 p-7 text-white shadow-card sm:p-10 lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-6 rounded-lg border border-farmer-800 bg-farmer-900 p-7 text-farmer-100 shadow-card sm:p-10 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="font-display text-3xl text-farmer-200 sm:text-4xl">{t("greeting")}, {user?.name || "Farmer"}!</h1>
-          <p className="mt-3 max-w-2xl leading-7 text-white/70">{t("scanCtaCopy")}</p>
+          <p className="mt-3 max-w-2xl leading-7 text-farmer-100/90">{t("scanCtaCopy")}</p>
         </div>
         <div>
           <Link to="/scan">
-            <Button className="bg-farmer-300 text-ink hover:bg-farmer-200">
+            <Button className="bg-farmer-400 font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors">
             <Scan size={18} /> {t("scanCta")}
             </Button>
           </Link>
@@ -72,7 +72,7 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between gap-4">
             <h3 className="flex items-center gap-2 font-display text-xl text-ink"><CloudSun className="text-expert-500" size={20} /> {t("liveWeather")}</h3>
-            <Link to="/weather" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900">{t("details")} <ArrowRight size={14} /></Link>
+            <Link to="/weather" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200">{t("details")} <ArrowRight size={14} /></Link>
           </div>
           {weather ? (
             <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
@@ -98,7 +98,7 @@ export default function DashboardPage() {
           transition={{ delay: 0.2 }}
         >
           <div>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Activity className="text-farmer-700" size={20} /> {t("farmStatus")}</h3>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Activity className="text-farmer-700 dark:text-emerald-400" size={20} /> {t("farmStatus")}</h3>
           </div>
           <div className="mt-8 grid gap-5 sm:grid-cols-2">
             <div className="rounded-sm bg-canvas p-4">
@@ -121,7 +121,7 @@ export default function DashboardPage() {
       >
         <div className="flex items-center justify-between gap-4">
           <h3 className="font-display text-xl text-ink">{t("recentDiagnostics")}</h3>
-          <Link to="/history" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900">{t("viewAll")} <ArrowRight size={14} /></Link>
+          <Link to="/history" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200 transition-colors">{t("viewAll")} <ArrowRight size={14} /></Link>
         </div>
         
         {history.length === 0 ? (

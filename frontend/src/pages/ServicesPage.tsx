@@ -20,57 +20,57 @@ export default function ServicesPage() {
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8 lg:pb-24">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-farmer-100 text-farmer-700"><ScanSearch size={24} /></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><ScanSearch size={24} /></div>
             <h3 className="mt-6 font-display text-xl text-ink">Intelligent Disease Diagnosis</h3>
             <p>Fast, objective disease identification before visual symptoms spread. Detects exact leaf damage percentage and flags visible pests instantly.</p>
           </motion.div>
           <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-farmer-100 text-farmer-700"><Map size={24} /></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Map size={24} /></div>
             <h3 className="mt-6 font-display text-xl text-ink">Explainable AI (XAI)</h3>
             <p>Eliminate the black-box nature of deep learning. View Grad-CAM attention heatmaps to verify the diagnosis is based on actual foliage lesions.</p>
           </motion.div>
           <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-farmer-100 text-farmer-700"><Activity size={24} /></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Activity size={24} /></div>
             <h3 className="mt-6 font-display text-xl text-ink">Context-Aware Advisory</h3>
             <p>Practical guidance adapted to current weather conditions. Receive step-by-step action plans spanning treatment, prevention, and monitoring.</p>
           </motion.div>
           <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-farmer-100 text-farmer-700"><ShieldCheck size={24} /></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><ShieldCheck size={24} /></div>
             <h3 className="mt-6 font-display text-xl text-ink">Plot-Level Health Tracking</h3>
             <p>Track condition progression over time. Identify chronic hot-spots across specific acreage rather than treating the farm uniformly.</p>
           </motion.div>
           <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-farmer-100 text-farmer-700"><Bell size={24} /></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Bell size={24} /></div>
             <h3 className="mt-6 font-display text-xl text-ink">Proactive Risk Alerts</h3>
             <p>Continuous monitoring of regional meteorological indicators to warn farmers before fungal or bacterial outbreaks occur.</p>
           </motion.div>
           <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-farmer-100 text-farmer-700"><Users size={24} /></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Users size={24} /></div>
             <h3 className="mt-6 font-display text-xl text-ink">Expert Verification (HITL)</h3>
             <p>Low-confidence predictions are automatically flagged for review by agricultural experts, ensuring safe and reliable chemical advice.</p>
           </motion.div>
         </div>
       </section>
 
-      <section className="bg-farmer-900 px-5 py-16 text-white sm:px-8 lg:py-20">
+      <section className="border-y border-farmer-800 bg-farmer-900 px-5 py-16 text-farmer-100 sm:px-8 lg:py-20">
         <div className="mx-auto max-w-7xl">
-        <h2 className="font-display text-3xl">How We Deliver</h2>
+        <h2 className="font-display text-3xl text-farmer-200">How We Deliver</h2>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="border-l border-farmer-500 pl-4">
-            <h4>[01] Preprocessing Validation</h4>
-            <p>OpenCV filters out blurry or non-foliage images to save compute.</p>
+          <div className="border-l-2 border-farmer-400 pl-4">
+            <h4 className="font-semibold text-farmer-200">[01] Preprocessing Validation</h4>
+            <p className="mt-2 text-sm text-farmer-100/90">OpenCV filters out blurry or non-foliage images to save compute.</p>
           </div>
-          <div className="border-l border-farmer-500 pl-4">
-            <h4>[02] Multi-Stage Neural Pipeline</h4>
-            <p>Crop-specific routing using EfficientNet and YOLO detection.</p>
+          <div className="border-l-2 border-farmer-400 pl-4">
+            <h4 className="font-semibold text-farmer-200">[02] Multi-Stage Neural Pipeline</h4>
+            <p className="mt-2 text-sm text-farmer-100/90">Crop-specific routing using EfficientNet and YOLO detection.</p>
           </div>
-          <div className="border-l border-farmer-500 pl-4">
-            <h4>[03] Contextual LLM Advisory</h4>
-            <p>Generating region-aware plans tailored to weather.</p>
+          <div className="border-l-2 border-farmer-400 pl-4">
+            <h4 className="font-semibold text-farmer-200">[03] Contextual LLM Advisory</h4>
+            <p className="mt-2 text-sm text-farmer-100/90">Generating region-aware plans tailored to weather.</p>
           </div>
-          <div className="border-l border-farmer-500 pl-4">
-            <h4>[04] Expert Guardrails</h4>
-            <p>Deterministic safety checks prevent speculative recommendations.</p>
+          <div className="border-l-2 border-farmer-400 pl-4">
+            <h4 className="font-semibold text-farmer-200">[04] Expert Guardrails</h4>
+            <p className="mt-2 text-sm text-farmer-100/90">Deterministic safety checks prevent speculative recommendations.</p>
           </div>
         </div></div>
       </section>
@@ -93,11 +93,11 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <section className="bg-ink px-5 py-16 text-center text-white sm:px-8 lg:py-20">
-        <h2 className="font-display text-3xl">Ready to transform your farm?</h2>
+      <section className="border-t border-farmer-800 bg-farmer-900 px-5 py-16 text-center text-farmer-100 sm:px-8 lg:py-20">
+        <h2 className="font-display text-3xl text-farmer-200">Ready to transform your farm?</h2>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/auth/register" className="rounded-sm bg-farmer-300 px-5 py-3 text-sm font-bold text-ink hover:bg-farmer-200">Create Farm Account</Link>
-          <Link to="/scan" className="rounded-sm border border-farmer-300 px-5 py-3 text-sm font-bold text-farmer-200 hover:bg-farmer-900">Scan Your First Crop</Link>
+          <Link to="/auth/register" className="rounded-sm bg-farmer-400 px-5 py-3 text-sm font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors">Create Farm Account</Link>
+          <Link to="/scan" className="rounded-sm border border-farmer-400 px-5 py-3 text-sm font-bold text-farmer-200 hover:bg-farmer-800 transition-colors">Scan Your First Crop</Link>
         </div>
       </section>
     </div>

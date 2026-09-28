@@ -69,10 +69,10 @@ export default function ExpertReviewPage() {
           <Card>
             <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("visualModelEvidence")}</h3>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink"><span className="absolute left-2 top-2 z-10 rounded-sm bg-ink/80 px-2 py-1 text-xs text-white">{t("rawLeaf")}</span><img className="h-full w-full object-contain" src={rawImage} alt="Raw leaf" /></div>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-sm bg-ink"><span className="absolute left-2 top-2 z-10 rounded-sm bg-ink/80 px-2 py-1 text-xs text-white">{t("gradcamHeatmap")}</span><img className="h-full w-full object-contain" src={processedImage} alt="Heatmap base" /><div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} /></div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950"><span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("rawLeaf")}</span><img className="h-full w-full object-contain" src={rawImage} alt="Raw leaf" /></div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950"><span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("gradcamHeatmap")}</span><img className="h-full w-full object-contain" src={processedImage} alt="Heatmap base" /><div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} /></div>
             </div>
-            <label className="mt-5 flex items-center gap-3 text-sm text-muted">Opacity <input className="flex-1 accent-farmer-700" type="range" min="0" max="100" value={heatmapOpacity} onChange={event => setHeatmapOpacity(Number(event.target.value))} /><span>{heatmapOpacity}%</span></label>
+            <label className="mt-5 flex items-center gap-3 text-sm text-muted">Opacity <input className="flex-1 accent-farmer-700 dark:accent-farmer-400" type="range" min="0" max="100" value={heatmapOpacity} onChange={event => setHeatmapOpacity(Number(event.target.value))} /><span>{heatmapOpacity}%</span></label>
           </Card>
 
 
@@ -87,7 +87,7 @@ export default function ExpertReviewPage() {
 
         <Card>
           <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("expertDecisionGuidance")}</h3>
-          <fieldset className="mt-6"><legend className="mb-3 text-sm font-semibold text-ink">{t("diagnosticVerdict")}</legend><div className="space-y-2">{actions.map(option => <label className={`flex cursor-pointer items-center gap-3 rounded-sm border p-3 text-sm ${action === option ? "border-farmer-500 bg-farmer-50 font-semibold" : "border-line"}`} key={option}><input type="radio" name="verdict" checked={action === option} onChange={() => setAction(option)} />{option === "Approve" ? t("approve") : option === "Override / Correct Findings" ? t("overrideFindings") : t("requestRescan")}</label>)}</div></fieldset>
+          <fieldset className="mt-6"><legend className="mb-3 text-sm font-semibold text-ink">{t("diagnosticVerdict")}</legend><div className="space-y-2">{actions.map(option => <label className={`flex cursor-pointer items-center gap-3 rounded-sm border p-3 text-sm transition-colors ${action === option ? "border-farmer-500 bg-farmer-50 font-semibold text-ink dark:border-farmer-400 dark:bg-farmer-900/40" : "border-line text-ink hover:bg-canvas"}`} key={option}><input type="radio" name="verdict" checked={action === option} onChange={() => setAction(option)} className="accent-farmer-600 dark:accent-farmer-400" />{option === "Approve" ? t("approve") : option === "Override / Correct Findings" ? t("overrideFindings") : t("requestRescan")}</label>)}</div></fieldset>
           {action === "Override / Correct Findings" && (
             <div className="mt-6 space-y-4">
               <div className="space-y-2">
@@ -113,7 +113,7 @@ export default function ExpertReviewPage() {
               <label className="block space-y-2 text-sm font-semibold text-ink">
                 {t("correctedSeverity")}
                 <input
-                  className="min-h-11 w-full rounded-sm border border-line px-3 font-normal"
+                  className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 font-normal text-ink focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500"
                   value={correctedSeverity}
                   onChange={(event) => setCorrectedSeverity(event.target.value)}
                   placeholder="Affected percentage"
@@ -122,7 +122,14 @@ export default function ExpertReviewPage() {
             </div>
           )}
           <div className="mt-7 space-y-4"><h4 className="text-sm font-semibold text-ink">{t("farmerGuidance")}</h4><Input label={t("immediateAction")} value={immediateAction} onChange={event => setImmediateAction(event.target.value)} /><Input label={t("treatmentDosage")} value={treatment} onChange={event => setTreatment(event.target.value)} /></div>
-          <div className="mt-7 space-y-4"><h4 className="text-sm font-semibold text-ink">{t("internalAudit")}</h4><label className="flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={addToRetraining} onChange={event => setAddToRetraining(event.target.checked)} /> {t("flagRetraining")}</label><textarea className="min-h-24 w-full rounded-sm border border-line p-3 text-sm" placeholder="Notes for model retraining team..." value={internalNote} onChange={event => setInternalNote(event.target.value)} /></div>
+          <div className="mt-7 space-y-4">
+            <h4 className="text-sm font-semibold text-ink">{t("internalAudit")}</h4>
+            <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+              <input type="checkbox" checked={addToRetraining} onChange={event => setAddToRetraining(event.target.checked)} className="h-4 w-4 rounded border-line accent-farmer-600 dark:accent-farmer-400" />
+              <span>{t("flagRetraining")}</span>
+            </label>
+            <textarea className="min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink placeholder:text-muted focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500" placeholder="Notes for model retraining team..." value={internalNote} onChange={event => setInternalNote(event.target.value)} />
+          </div>
           <div className="mt-8 flex gap-3 border-t border-line pt-5"><Button variant="secondary" className="flex-1" onClick={() => navigate("/admin/expert")}>{t("cancel")}</Button><Button className="flex-1" onClick={() => mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending ? t("submitting") : t("submitReview")}</Button></div>
         </Card>
       </div>

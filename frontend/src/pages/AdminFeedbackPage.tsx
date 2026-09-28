@@ -42,7 +42,7 @@ export default function AdminFeedbackPage() {
                 <p className="mt-2 text-sm text-muted">{t("farmerVerdict")}: <Badge tone={fb.is_correct ? "success" : "danger"}>{fb.is_correct ? t("correctVerdict") : t("incorrectVerdict")}</Badge></p>
                 <p className="mt-1 text-xs text-muted">{t("reviewStatus")}: {fb.review_status === "pending" || !fb.review_status ? t("pending") : fb.review_status}</p>
               </div>
-              <div className="border-l-2 border-farmer-300 pl-4 text-sm leading-6 text-muted">
+              <div className="border-l-2 border-farmer-300 dark:border-farmer-600 pl-4 text-sm leading-6 text-muted">
                 <strong className="text-ink">{t("note")}:</strong> {fb.farmer_note || t("noFarmerNote")}
               </div>
               <div className="flex gap-2 lg:justify-end">
@@ -52,7 +52,7 @@ export default function AdminFeedbackPage() {
                 >
                   {t("confirm")}
                 </Button>
-                <Button size="sm" variant="secondary" className="border-danger text-danger"
+                <Button size="sm" variant="secondary" className="border-danger text-danger dark:border-red-500 dark:text-red-400"
                   onClick={() => mutation.mutate({ id: fb.id, status: 'rejected' })}
                   disabled={mutation.isPending}
                 >

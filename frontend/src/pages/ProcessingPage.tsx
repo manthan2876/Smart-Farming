@@ -339,10 +339,14 @@ export default function ProcessingPage() {
     icon: React.ReactNode,
     detail: React.ReactNode
   ) => (
-    <div className={`flex items-start gap-4 transition-opacity sm:gap-6 ${isUnlocked ? "opacity-100" : "opacity-40"}`}>
+    <div className={`flex items-start gap-4 transition-opacity sm:gap-6 ${isUnlocked ? "opacity-100" : "opacity-40 dark:opacity-30"}`}>
       <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-          isComplete ? "bg-farmer-600 text-white" : isUnlocked ? "bg-expert-100 text-expert-700" : "bg-canvas text-muted"
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors ${
+          isComplete
+            ? "bg-farmer-600 text-white dark:bg-emerald-600 dark:text-white shadow-soft"
+            : isUnlocked
+            ? "bg-expert-100 text-expert-700 dark:bg-cyan-950/80 dark:text-cyan-300 dark:border dark:border-cyan-800"
+            : "bg-canvas text-muted border border-line"
         }`}
       >
         {isComplete ? <Check size={22} /> : icon || stageNumber}
@@ -360,7 +364,7 @@ export default function ProcessingPage() {
   // we already hold data (or while the WebSocket is still delivering events) is not fatal.
   if (error && !prediction) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center text-danger">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center text-danger dark:text-rose-400">
         <h2 className="font-display text-2xl">Error Loading Status</h2>
         <p className="mt-2 text-sm text-muted">Something went wrong. Please check your network connection.</p>
         <Button variant="secondary" className="mt-5" onClick={() => navigate("/dashboard")}>
@@ -375,7 +379,7 @@ export default function ProcessingPage() {
       <div className="mx-auto max-w-3xl py-4 sm:py-8">
         <Card padding="lg">
           <div className="text-center">
-            <AlertCircle size={48} className="mx-auto text-danger" />
+            <AlertCircle size={48} className="mx-auto text-danger dark:text-rose-400" />
             <h2 className="mt-6 font-display text-2xl text-ink">Analysis Failed</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted">{failure}</p>
             <Button variant="secondary" className="mt-6" onClick={() => navigate("/dashboard")}>
@@ -391,11 +395,11 @@ export default function ProcessingPage() {
     <div className="mx-auto max-w-3xl py-4 sm:py-8">
       <Card padding="lg">
         <div className="text-center">
-          <Loader2 size={48} className="mx-auto animate-spin text-farmer-600" />
+          <Loader2 size={48} className="mx-auto animate-spin text-farmer-600 dark:text-emerald-400" />
           <h2 className="mt-6 font-display text-2xl text-ink">Running AI Pipeline</h2>
           <p className="mt-2 text-sm text-muted">Analyzing your crop and generating diagnostics in real-time...</p>
           {liveMessage && !stages.pipeline && (
-            <p className="mt-2 text-xs font-medium text-expert-700" aria-live="polite">
+            <p className="mt-2 text-xs font-medium text-expert-700 dark:text-cyan-300" aria-live="polite">
               {liveMessage}
             </p>
           )}
@@ -410,7 +414,7 @@ export default function ProcessingPage() {
             isCropDone,
             isCropDone ? null : CROP_ICONS[activeCropIdx],
             isCropDone ? (
-              <span className="font-semibold text-farmer-700">Detected: {cropText}</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Detected: {cropText}</span>
             ) : (
               "Scanning species..."
             )
@@ -421,9 +425,9 @@ export default function ProcessingPage() {
             "Disease Classification",
             isCropDone || isDiseaseDone,
             isDiseaseDone,
-            isCropDone ? <Loader2 size={22} className="animate-spin text-farmer-600" /> : null,
+            isCropDone ? <Loader2 size={22} className="animate-spin text-farmer-600 dark:text-emerald-400" /> : null,
             isDiseaseDone ? (
-              <span className="font-semibold text-farmer-700">Identified: {diseaseText}</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Identified: {diseaseText}</span>
             ) : isCropDone ? (
               <span className="inline-flex items-center gap-2 text-muted">
                 <span className="h-2 w-24 animate-pulse rounded-full bg-line" />
@@ -439,9 +443,9 @@ export default function ProcessingPage() {
             "Pest Detection",
             isDiseaseDone || isPestDone,
             isPestDone,
-            isDiseaseDone ? <Loader2 size={22} className="animate-spin text-farmer-600" /> : null,
+            isDiseaseDone ? <Loader2 size={22} className="animate-spin text-farmer-600 dark:text-emerald-400" /> : null,
             isPestDone ? (
-              <span className="font-semibold text-farmer-700">Result: {pestText || "No Pests Detected"}</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Result: {pestText || "No Pests Detected"}</span>
             ) : isDiseaseDone ? (
               <span className="inline-flex items-center gap-2 text-muted">
                 <span className="h-2 w-24 animate-pulse rounded-full bg-line" />
@@ -457,11 +461,11 @@ export default function ProcessingPage() {
             "Advisory Generation",
             isPestDone || isAdvisoryDone,
             isAdvisoryDone,
-            isPestDone ? <Sparkles size={22} className="animate-pulse text-expert-600" /> : null,
+            isPestDone ? <Sparkles size={22} className="animate-pulse text-expert-600 dark:text-cyan-400" /> : null,
             isAdvisoryDone ? (
-              <span className="font-semibold text-farmer-700">Advisory Ready.</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Advisory Ready.</span>
             ) : isPestDone ? (
-              <span className="inline-flex items-center gap-2 text-expert-700">
+              <span className="inline-flex items-center gap-2 text-expert-700 dark:text-cyan-300">
                 <Sparkles size={18} className="animate-pulse" />
                 Synthesizing expert recommendations...
               </span>

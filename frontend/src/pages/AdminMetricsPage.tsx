@@ -142,28 +142,28 @@ export default function AdminMetricsPage() {
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("farmerFieldAccuracy")}</h3>
-          <div className={`mt-3 font-display text-3xl ${data.accuracy > 85 ? "text-farmer-700" : "text-danger"}`}>
+          <div className={`mt-3 font-display text-3xl ${data.accuracy > 85 ? "text-farmer-700 dark:text-emerald-400" : "text-danger dark:text-rose-400"}`}>
             {typeof data.accuracy === "number" ? data.accuracy.toFixed(1) : data.accuracy}%
           </div>
           <p className="mt-1 text-xs text-muted">{t("farmerFieldValidationSignals")}</p>
         </Card>
         <Card>
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("specialistValidatedAccuracy")}</h3>
-          <div className="mt-3 font-display text-3xl text-expert-700">
+          <div className="mt-3 font-display text-3xl text-expert-700 dark:text-cyan-400">
             {data.expert_metrics?.validated_accuracy != null ? `${data.expert_metrics.validated_accuracy}%` : t("pendingData")}
           </div>
           <p className="mt-1 text-xs text-muted">{data.expert_metrics?.overrides || 0} {t("agronomistOverrides")}</p>
         </Card>
         <Card>
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("pipelineFailureRate")}</h3>
-          <div className={`mt-3 font-display text-3xl ${(data.failures?.failure_rate || 0) > 5 ? "text-danger" : "text-farmer-700"}`}>
+          <div className={`mt-3 font-display text-3xl ${(data.failures?.failure_rate || 0) > 5 ? "text-danger dark:text-rose-400" : "text-farmer-700 dark:text-emerald-400"}`}>
             {data.failures?.failure_rate !== undefined ? `${data.failures.failure_rate.toFixed(1)}%` : "0.0%"}
           </div>
           <p className="mt-1 text-xs text-muted">{data.failures?.total_failed || 0} {t("failedScans")}</p>
         </Card>
         <Card>
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("degradedFallbackSignals")}</h3>
-          <div className="mt-3 font-display text-3xl text-amber-600">
+          <div className="mt-3 font-display text-3xl text-amber-600 dark:text-amber-400">
             {(data.fallbacks?.recommendation_fallbacks || 0) + (data.fallbacks?.weather_fallbacks || 0)}
           </div>
           <p className="mt-1 text-xs text-muted">{data.fallbacks?.recommendation_fallbacks || 0} {t("aiFallbacks")}, {data.fallbacks?.weather_fallbacks || 0} {t("weatherOffline")}</p>
@@ -175,28 +175,28 @@ export default function AdminMetricsPage() {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("avgConfidence7d")}</h3>
-            <div className={`mt-3 font-display text-3xl ${(data.drift.avg_disease_confidence_7d || 1) < 0.7 ? "text-amber-600" : "text-farmer-700"}`}>
+            <div className={`mt-3 font-display text-3xl ${(data.drift.avg_disease_confidence_7d || 1) < 0.7 ? "text-amber-600 dark:text-amber-400" : "text-farmer-700 dark:text-emerald-400"}`}>
               {data.drift.avg_disease_confidence_7d != null ? `${(data.drift.avg_disease_confidence_7d * 100).toFixed(1)}%` : "N/A"}
             </div>
             <p className="mt-1 text-xs text-muted">{t("avg30d")} {data.drift.avg_disease_confidence_30d != null ? `${(data.drift.avg_disease_confidence_30d * 100).toFixed(1)}%` : "N/A"}</p>
           </Card>
           <Card>
             <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("lowConfidenceRate7d")}</h3>
-            <div className={`mt-3 font-display text-3xl ${(data.drift.low_confidence_rate_7d || 0) > 20 ? "text-danger" : "text-ink"}`}>
+            <div className={`mt-3 font-display text-3xl ${(data.drift.low_confidence_rate_7d || 0) > 20 ? "text-danger dark:text-rose-400" : "text-ink"}`}>
               {data.drift.low_confidence_rate_7d != null ? `${data.drift.low_confidence_rate_7d.toFixed(1)}%` : "N/A"}
             </div>
             <p className="mt-1 text-xs text-muted">{t("predictionsBelowThreshold")}</p>
           </Card>
           <Card>
             <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("retrainingCandidates")}</h3>
-            <div className={`mt-3 font-display text-3xl ${(data.drift.retraining_candidates || 0) > 50 ? "text-amber-600" : "text-ink"}`}>
+            <div className={`mt-3 font-display text-3xl ${(data.drift.retraining_candidates || 0) > 50 ? "text-amber-600 dark:text-amber-400" : "text-ink"}`}>
               {data.drift.retraining_candidates ?? 0}
             </div>
             <p className="mt-1 text-xs text-muted">{t("pendingDatasetCandidates")}</p>
           </Card>
           <Card>
             <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("expertCorrectionRate")}</h3>
-            <div className={`mt-3 font-display text-3xl ${(data.drift.expert_correction_rate || 0) > 30 ? "text-danger" : "text-farmer-700"}`}>
+            <div className={`mt-3 font-display text-3xl ${(data.drift.expert_correction_rate || 0) > 30 ? "text-danger dark:text-rose-400" : "text-farmer-700 dark:text-emerald-400"}`}>
               {data.drift.expert_correction_rate != null ? `${data.drift.expert_correction_rate.toFixed(1)}%` : "N/A"}
             </div>
             <p className="mt-1 text-xs text-muted">{t("reviewsCorrections")}</p>
@@ -253,8 +253,8 @@ export default function AdminMetricsPage() {
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
               modelHealth.overall_status === "healthy"
-                ? "bg-green-100 text-green-700"
-                : "bg-amber-100 text-amber-700"
+                ? "bg-green-100 text-green-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800"
             }`}>
               {modelHealth.overall_status === "healthy" ? t("healthy") : modelHealth.overall_status}
             </span>
@@ -272,12 +272,12 @@ export default function AdminMetricsPage() {
               </thead>
               <tbody>
                 {Object.entries(modelHealth.models as Record<string, any>).map(([key, m]) => (
-                  <tr key={key} className="border-b last:border-0">
+                  <tr key={key} className="border-b border-line last:border-0">
                     <td className="py-2 pr-4 font-medium text-ink">{modelNameMap[key] || key.replace(/_/g, " ")}</td>
                     <td className="py-2 pr-4 text-muted">{m.active_version ?? "—"}</td>
                     <td className="py-2 pr-4">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        m.status === "ok" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                        m.status === "ok" ? "bg-green-50 text-green-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800" : "bg-red-50 text-red-700 dark:bg-rose-950/80 dark:text-rose-300 dark:border dark:border-rose-800"
                       }`}>
                         {m.status === "ok" ? "✓ OK" : "✗ Missing"}
                       </span>
@@ -365,9 +365,33 @@ export default function AdminMetricsPage() {
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("trainValTestSplit")}</label>
             <div className="flex gap-2">
-              <input type="number" min={0} max={100} className="w-full rounded-md border border-gray-200 px-2 py-2 text-sm" placeholder={t("train")} value={exportTrain} onChange={e => setExportTrain(Number(e.target.value))} />
-              <input type="number" min={0} max={100} className="w-full rounded-md border border-gray-200 px-2 py-2 text-sm" placeholder={t("val")} value={exportVal} onChange={e => setExportVal(Number(e.target.value))} />
-              <input type="number" min={0} max={100} className="w-full rounded-md border border-gray-200 px-2 py-2 text-sm" placeholder={t("test")} value={exportTest} onChange={e => setExportTest(Number(e.target.value))} />
+              <input
+                type="number"
+                min={0}
+                max={100}
+                className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
+                placeholder={t("train")}
+                value={exportTrain}
+                onChange={e => setExportTrain(Number(e.target.value))}
+              />
+              <input
+                type="number"
+                min={0}
+                max={100}
+                className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
+                placeholder={t("val")}
+                value={exportVal}
+                onChange={e => setExportVal(Number(e.target.value))}
+              />
+              <input
+                type="number"
+                min={0}
+                max={100}
+                className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
+                placeholder={t("test")}
+                value={exportTest}
+                onChange={e => setExportTest(Number(e.target.value))}
+              />
             </div>
             <p className="mt-1 text-xs text-muted">{t("mustSum100")}. {t("current")}: {exportTrain + exportVal + exportTest}</p>
           </div>

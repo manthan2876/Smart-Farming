@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 export default function PublicNav() {
   return (
@@ -12,6 +13,7 @@ export default function PublicNav() {
         <Link className="transition-colors hover:text-farmer-700" to="/about">About</Link>
         <Link className="transition-colors hover:text-farmer-700" to="/services">Services</Link>
         <Link className="transition-colors hover:text-farmer-700" to="/crops">Supported Crops</Link>
+        <ThemeToggle />
         <Link className="rounded-sm bg-farmer-700 px-4 py-2.5 text-white shadow-soft transition-colors hover:bg-farmer-800" to="/auth/login">Sign In</Link>
       </div>
     </nav>

@@ -140,10 +140,10 @@ export default function WeatherPage() {
         <Link to="/dashboard"><Button variant="secondary" size="sm">{t("backToDashboard")}</Button></Link>
       </div>
 
-      <div className="flex flex-col justify-between gap-8 rounded-lg bg-farmer-900 p-7 text-white shadow-card sm:flex-row sm:items-center sm:p-10">
+      <div className="flex flex-col justify-between gap-8 rounded-lg border border-farmer-800 bg-farmer-900 p-7 text-farmer-100 shadow-card sm:flex-row sm:items-center sm:p-10">
         <div>
           <h2 className="font-display text-6xl text-farmer-200">{temp}</h2>
-          <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-white/70">
+          <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-farmer-100/90">
             {conditionTranslated.toUpperCase()} • {user?.location || t("farmLocation")}
           </p>
         </div>
@@ -163,23 +163,23 @@ export default function WeatherPage() {
         </Card>
         <Card className="text-center">
           <h4 className="text-xs font-bold uppercase tracking-wide text-muted">{t("status")}</h4>
-          <p className="mt-3 font-display text-3xl text-farmer-700">{t("active")}</p>
+          <p className="mt-3 font-display text-3xl text-farmer-700 dark:text-emerald-400 font-semibold">{t("active")}</p>
         </Card>
       </div>
 
-      <Card className="border-farmer-200 bg-farmer-50" padding="lg">
+      <Card className="border-farmer-200 bg-farmer-50 dark:border-farmer-800 dark:bg-farmer-900/60 shadow-card" padding="lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h3 className="font-display text-2xl text-farmer-900">{t("agronomicWeatherAdvisory")}</h3>
+            <h3 className="font-display text-2xl text-farmer-900 dark:text-farmer-200">{t("agronomicWeatherAdvisory")}</h3>
             {isTranslating && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-farmer-700">
+              <span className="inline-flex items-center gap-1.5 text-xs text-farmer-700 dark:text-farmer-300">
                 <Loader2 size={12} className="animate-spin" /> {t("translating")}
               </span>
             )}
           </div>
           <AudioButton text={activeAdvisory} />
         </div>
-        <p className="mt-4 leading-7 text-muted whitespace-pre-wrap">
+        <p className="mt-4 leading-7 text-muted dark:text-farmer-100/90 whitespace-pre-wrap">
           {activeAdvisory}
         </p>
       </Card>

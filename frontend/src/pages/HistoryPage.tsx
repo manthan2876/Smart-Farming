@@ -63,7 +63,7 @@ export default function HistoryPage() {
           </div>
           <div className="space-y-2 sm:w-60">
             <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="history-crop-filter">
-              <Filter size={15} className="text-farmer-700" />
+              <Filter size={15} className="text-farmer-700 dark:text-farmer-300" />
               <span>{t("crop")}</span>
             </label>
             <Select 
@@ -80,10 +80,10 @@ export default function HistoryPage() {
         </Card>
 
         {isLoading ? (
-          <Card className="flex items-center justify-center gap-3 text-sm text-muted"><div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" /><p>{t("loadingRecords")}</p></Card>
+          <Card className="flex items-center justify-center gap-3 text-sm text-muted"><div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700 dark:border-t-farmer-300" /><p>{t("loadingRecords")}</p></Card>
         ) : filteredScans.length === 0 ? (
           <Card className="flex flex-col items-center text-center" padding="lg">
-            <History className="text-farmer-700" size={48} />
+            <History className="text-farmer-700 dark:text-farmer-300" size={48} />
             <h3 className="mt-5 font-display text-xl text-ink">{t("noHistoryFound")}</h3>
             <p className="mt-2 text-sm text-muted">{t("noHistoryDesc")}</p>
             <Link to="/scan" className="mt-5"><Button size="sm">{t("runNewScan")}</Button></Link>
@@ -122,7 +122,7 @@ export default function HistoryPage() {
                       <td className="px-5 py-4 text-muted">{scan.request_id ? `ID: ${scan.request_id.slice(0, 8)}...` : "N/A"}</td>
                       <td className="px-5 py-4">
                         {recordId ? (
-                          <Link to={`/predictions/${recordId}`} className="inline-flex items-center gap-1 font-semibold text-farmer-700 hover:text-farmer-900">
+                          <Link to={`/predictions/${recordId}`} className="inline-flex items-center gap-1 font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200 transition-colors">
                             {t("viewScan")} <ArrowRight size={14} />
                           </Link>
                         ) : (

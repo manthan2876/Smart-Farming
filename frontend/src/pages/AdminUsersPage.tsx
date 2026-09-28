@@ -130,7 +130,7 @@ export default function AdminUsersPage() {
             <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("farmers")}</h3>
             <Sprout size={18} className="text-farmer-600" />
           </div>
-          <div className="mt-3 font-display text-3xl text-farmer-700">
+          <div className="mt-3 font-display text-3xl text-farmer-700 dark:text-farmer-300">
             {users.filter((u) => u.role === "farmer").length}
           </div>
           <p className="mt-1 text-xs text-muted">{t("activeOnPage")}</p>
@@ -138,9 +138,9 @@ export default function AdminUsersPage() {
         <Card>
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("fieldExperts")}</h3>
-            <GraduationCap size={18} className="text-purple-600" />
+            <GraduationCap size={18} className="text-purple-600 dark:text-purple-400" />
           </div>
-          <div className="mt-3 font-display text-3xl text-purple-700">
+          <div className="mt-3 font-display text-3xl text-purple-700 dark:text-purple-400">
             {users.filter((u) => u.role === "expert").length}
           </div>
           <p className="mt-1 text-xs text-muted">{t("activeOnPage")}</p>
@@ -148,9 +148,9 @@ export default function AdminUsersPage() {
         <Card>
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{t("administrators")}</h3>
-            <ShieldCheck size={18} className="text-admin-600" />
+            <ShieldCheck size={18} className="text-admin-600 dark:text-amber-400" />
           </div>
-          <div className="mt-3 font-display text-3xl text-admin-700">
+          <div className="mt-3 font-display text-3xl text-admin-700 dark:text-amber-400">
             {users.filter((u) => u.role === "admin").length}
           </div>
           <p className="mt-1 text-xs text-muted">{t("protectedTier")}</p>
@@ -234,14 +234,14 @@ export default function AdminUsersPage() {
                     <tr key={u.id} className="hover:bg-canvas/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-farmer-100 font-bold text-farmer-800">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-farmer-100 font-bold text-farmer-800 dark:bg-farmer-900/80 dark:text-farmer-200 dark:border dark:border-farmer-700">
                             {u.name ? u.name.charAt(0).toUpperCase() : "U"}
                           </div>
                           <div>
                             <div className="font-semibold text-ink flex items-center gap-2">
                               {u.name || "Unnamed User"}
                               {u.id === currentUser?.id && (
-                                <span className="rounded bg-farmer-100 px-1.5 py-0.2 text-[0.65rem] font-bold text-farmer-800">
+                                <span className="rounded bg-farmer-100 px-1.5 py-0.2 text-[0.65rem] font-bold text-farmer-800 dark:bg-farmer-900/80 dark:text-farmer-200 dark:border dark:border-farmer-700">
                                   You
                                 </span>
                               )}
@@ -256,18 +256,18 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          className={`inline-flex whitespace-nowrap items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
                             u.role === "admin"
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 dark:border dark:border-blue-800/80"
                               : u.role === "expert"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-emerald-100 text-emerald-800"
+                              ? "bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 dark:border dark:border-purple-800/80"
+                              : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/80"
                           }`}
                         >
                           {u.role === "admin" && <ShieldCheck size={13} />}
                           {u.role === "expert" && <GraduationCap size={13} />}
                           {u.role === "farmer" && <Sprout size={13} />}
-                          <span className="capitalize">{u.role === "admin" ? t("roleAdmin") : u.role === "expert" ? t("roleExpert") : t("roleFarmer")}</span>
+                          <span className="capitalize whitespace-nowrap">{u.role === "admin" ? t("roleAdmin") : u.role === "expert" ? t("roleExpert") : t("roleFarmer")}</span>
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
                           variant="secondary"
                           size="sm"
                           onClick={() => handleOpenRoleModal(u)}
-                          className="text-xs font-semibold"
+                          className="text-xs font-semibold whitespace-nowrap min-w-max"
                         >
                           {t("changeRole")}
                         </Button>
@@ -348,7 +348,7 @@ export default function AdminUsersPage() {
             </div>
 
             {isSelf && (
-              <div className="flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200">
+              <div className="flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/80">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>
                   <strong>Self-Demotion Lockout Guard:</strong> You cannot demote your own account from Administrator. 
@@ -384,14 +384,14 @@ export default function AdminUsersPage() {
             </div>
 
             {actionError && (
-              <div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-xs text-red-700 border border-red-200">
+              <div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-xs text-red-700 border border-red-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/80">
                 <AlertCircle size={15} className="shrink-0" />
                 <span>{actionError}</span>
               </div>
             )}
 
             {actionSuccess && (
-              <div className="flex items-center gap-2 rounded-md bg-emerald-50 p-3 text-xs text-emerald-700 border border-emerald-200">
+              <div className="flex items-center gap-2 rounded-md bg-emerald-50 p-3 text-xs text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/80">
                 <CheckCircle2 size={15} className="shrink-0" />
                 <span>{actionSuccess}</span>
               </div>

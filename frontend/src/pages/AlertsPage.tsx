@@ -45,7 +45,7 @@ export default function AlertsPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header Banner */}
-      <header className="flex flex-col gap-5 rounded-lg bg-farmer-900 p-7 text-white shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10">
+      <header className="flex flex-col gap-5 rounded-lg border border-farmer-800 bg-farmer-900 p-7 text-farmer-100 shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="font-display text-3xl text-farmer-200 sm:text-4xl">{t("farmAlertsTitle")}</h1>
@@ -55,13 +55,13 @@ export default function AlertsPage() {
               </span>
             )}
           </div>
-          <p className="mt-3 max-w-2xl leading-7 text-white/70">
+          <p className="mt-3 max-w-2xl leading-7 text-farmer-100/90">
             {t("farmAlertsSubtitle")}
           </p>
         </div>
         {unreadCount > 0 && (
           <Button
-            className="bg-farmer-300 text-ink hover:bg-farmer-200"
+            className="bg-farmer-400 font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors"
             onClick={() => markAllMutation.mutate()}
             disabled={markAllMutation.isPending}
           >
@@ -145,7 +145,7 @@ export default function AlertsPage() {
                       isExpert
                         ? "bg-expert-100 text-expert-700"
                         : isCritical
-                        ? "bg-red-100 text-danger"
+                        ? "bg-red-100 text-danger dark:bg-red-950/60 dark:text-red-300"
                         : "bg-farmer-100 text-farmer-800"
                     }`}
                   >

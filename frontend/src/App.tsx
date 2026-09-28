@@ -22,6 +22,7 @@ import AlertsPage from "./pages/AlertsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { getApiUrl } from "./api/client";
 
 
@@ -32,8 +33,9 @@ function ExternalRedirect({ to }: { to: string }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <Routes>
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
@@ -67,5 +69,6 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
+  </ThemeProvider>
   );
 }

@@ -14,10 +14,12 @@ import {
   Database,
   Cloud,
   Sprout,
-  FolderArchive
+  FolderArchive,
+  Sun
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Card, Input, Select } from "../components/ui";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function SettingsPage() {
   const { user, token, language, units, setLanguage, setUnits, t } = useAuth();
@@ -150,6 +152,21 @@ export default function SettingsPage() {
         <h1 className="flex items-center gap-3 font-display text-3xl text-ink sm:text-4xl"><SettingsIcon size={28} className="text-farmer-700" /> {t("settings")}</h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">{t("settingsSubtitle")}</p>
       </div>
+
+      <Card>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink">
+              <Sun size={20} className="text-farmer-700" />
+              <span>Appearance & Theme</span>
+            </h3>
+            <p className="mt-2 text-sm text-muted">
+              Choose between light, dark, or automatic system theme.
+            </p>
+          </div>
+          <ThemeToggle variant="segmented" />
+        </div>
+      </Card>
 
       <Card>
         <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Globe size={20} className="text-farmer-700" /> {t("languagePreferences")}</h3>
@@ -310,14 +327,14 @@ export default function SettingsPage() {
             {configSaved && <span className="ml-4 inline-flex items-center gap-1 text-sm font-semibold text-farmer-700"><CheckCircle2 size={16} /> {t("saved")}</span>}
           </motion.div>
 
-          <motion.div className="rounded-md border border-red-200 bg-red-50 p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h3 className="flex items-center gap-2 font-display text-xl text-danger"><AlertTriangle size={20} /> {t("dangerZone")}</h3>
+          <motion.div className="rounded-md border border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/30 p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h3 className="flex items-center gap-2 font-display text-xl text-danger dark:text-red-400"><AlertTriangle size={20} /> {t("dangerZone")}</h3>
             
             <div className="mt-6 flex flex-wrap gap-3">
               <Button type="button" variant="danger" onClick={() => setShowDeleteModal(true)}>
                 <Trash2 size={16} /> {t("clearPredictions")}
               </Button>
-              <Button type="button" variant="secondary" className="border-danger text-danger" onClick={handlePurgeBlobs}>
+              <Button type="button" variant="secondary" className="border-danger text-danger dark:border-red-500 dark:text-red-400" onClick={handlePurgeBlobs}>
                 <Trash2 size={16} /> {t("purgeBlobs")}
               </Button>
             </div>
@@ -326,7 +343,7 @@ export default function SettingsPage() {
       )}
 
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-md bg-surface p-6 shadow-lift">
             <h3 className="font-display text-xl text-danger">{t("confirmPurge")}</h3>
             <p className="mt-2 text-sm text-muted">{t("typeDeleteBelow")}</p>

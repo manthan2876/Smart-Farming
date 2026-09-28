@@ -568,7 +568,7 @@ export default function FarmSettingsPage() {
                   }
                 }}
                 disabled={deletePlotMutation.isPending}
-                className="rounded-sm bg-red-50 p-2 text-danger hover:bg-red-100"
+                className="rounded-sm border border-red-200/80 bg-red-50 p-2 text-danger hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors"
               >
                 <Trash2 size={18} />
               </button>
@@ -581,8 +581,8 @@ export default function FarmSettingsPage() {
           )}
         </div>
 
-        <form onSubmit={handleCreatePlot} className="mt-8 rounded-sm border border-dashed border-farmer-300 bg-farmer-50 p-5">
-          <h3 className="font-display text-xl text-farmer-800">{t("addNewPlot")}</h3>
+        <form onSubmit={handleCreatePlot} className="mt-8 rounded-sm border border-dashed border-farmer-300 bg-farmer-50 dark:border-farmer-700 dark:bg-farmer-900/40 p-5">
+          <h3 className="font-display text-xl text-farmer-800 dark:text-farmer-200">{t("addNewPlot")}</h3>
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
             <Input label={t("plotName")} type="text" value={newPlotName} onChange={e => setNewPlotName(e.target.value)} placeholder="e.g. North Field" required />
             <Input label={t("currentCrop")} type="text" value={newPlotCrop} onChange={e => setNewPlotCrop(e.target.value)} placeholder="e.g. Cotton" />
@@ -615,20 +615,20 @@ export default function FarmSettingsPage() {
                   <button
                     type="button"
                     onClick={() => setMapLayer('satellite')}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold ${mapLayer === 'satellite' ? 'bg-ink text-white' : 'bg-canvas text-muted'}`}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-colors ${mapLayer === 'satellite' ? 'bg-farmer-600 text-white dark:bg-farmer-500 dark:text-farmer-950 font-bold shadow-xs' : 'bg-canvas text-muted hover:text-ink hover:bg-surface'}`}
                   >
                     <Satellite size={13} /> {t("satellite")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setMapLayer('street')}
-                    className={`inline-flex items-center gap-1 border-l border-line px-3 py-1.5 text-xs font-semibold ${mapLayer === 'street' ? 'bg-ink text-white' : 'bg-canvas text-muted'}`}
+                    className={`inline-flex items-center gap-1 border-l border-line px-3 py-1.5 text-xs font-semibold transition-colors ${mapLayer === 'street' ? 'bg-farmer-600 text-white dark:bg-farmer-500 dark:text-farmer-950 font-bold shadow-xs' : 'bg-canvas text-muted hover:text-ink hover:bg-surface'}`}
                   >
                     <MapIcon size={13} /> {t("street")}
                   </button>
                 </div>
                 {newPlotGeometry.length > 0 && (
-                  <button type="button" onClick={() => setNewPlotGeometry([])} className="inline-flex items-center gap-1 rounded-sm border border-red-200 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-red-50">
+                  <button type="button" onClick={() => setNewPlotGeometry([])} className="inline-flex items-center gap-1 rounded-sm border border-red-200 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/40">
                     <RotateCcw size={13} /> {t("clear")}
                   </button>
                 )}

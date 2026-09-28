@@ -172,16 +172,16 @@ export default function PredictionResultPage() {
     const isFallback = rawRec.is_fallback === true;
     const masked = (predictionData.status as any)?.mask_advisory === true || ((predictionData.status as any)?.expert_review === "pending" && !recommendation.immediate_action);
     if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">Advisory Masked (Review Required)</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">To ensure farm safety, AI treatment recommendations are held until an expert verifies the diagnosis.</p></Card>;
-    if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl"><CheckCircle2 size={22} /> Specialist Verified Advisory Plan</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5"><h4 className="font-semibold text-farmer-800">Agronomist Guidance</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
+    if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl text-ink dark:text-cyan-200"><CheckCircle2 size={22} className="text-cyan-400" /> Specialist Verified Advisory Plan</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/40"><h4 className="font-semibold text-farmer-800 dark:text-emerald-300">Agronomist Guidance</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800 dark:text-emerald-100">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
     if (!Object.keys(recommendation).length) return null;
     const advisoryText = [recommendation.immediate_action, recommendation.action, recommendation.fertilizer, recommendation.treatment, recommendation.pesticide, recommendation.prevention, recommendation.prevention_tips, recommendation.monitoring, recommendation.irrigation].filter(Boolean).join(". ");
     const sections = [
-      [t("immediateAction"), recommendation.immediate_action || recommendation.action || recommendation.fertilizer, "border-red-200 bg-red-50 text-danger"],
-      [t("treatmentGuidance"), recommendation.treatment || recommendation.pesticide, "border-farmer-200 bg-farmer-50 text-farmer-800"],
-      [t("preventionStrategy"), recommendation.prevention || recommendation.prevention_tips, "border-expert-100 bg-expert-50 text-expert-700"],
-      [t("monitoringPlan"), recommendation.monitoring || recommendation.irrigation, "border-line bg-canvas text-muted"],
+      [t("immediateAction"), recommendation.immediate_action || recommendation.action || recommendation.fertilizer, "border-red-200 bg-red-50 text-danger dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"],
+      [t("treatmentGuidance"), recommendation.treatment || recommendation.pesticide, "border-farmer-200 bg-farmer-50 text-farmer-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200"],
+      [t("preventionStrategy"), recommendation.prevention || recommendation.prevention_tips, "border-expert-100 bg-expert-50 text-expert-700 dark:border-cyan-800/60 dark:bg-cyan-950/40 dark:text-cyan-200"],
+      [t("monitoringPlan"), recommendation.monitoring || recommendation.irrigation, "border-line bg-canvas text-muted dark:border-line dark:bg-surface/60 dark:text-farmer-100/90"],
     ];
-    return <Card className="mt-6 bg-farmer-900 text-white" padding="lg">
+    return <Card className="mt-6 border border-farmer-800 bg-farmer-900 text-farmer-100 shadow-card" padding="lg">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-2xl text-farmer-200">{isFallback ? t("standardAdvisory") : t("aiAdvisoryPlan")}</h3>
@@ -192,7 +192,7 @@ export default function PredictionResultPage() {
       </div>
       {isFallback && <div className="mt-4 rounded-sm border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-200 leading-5">Note: Live AI generation was unavailable. Safety-validated standard agricultural treatment rules are displayed above.</div>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div>
-      <p className="mt-5 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger"><strong>{t("important")}:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
+      <p className="mt-5 border-l-4 border-danger bg-red-50 dark:bg-red-950/40 p-3 text-xs leading-5 text-danger dark:text-red-300"><strong>{t("important")}:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
     </Card>;
   };
 

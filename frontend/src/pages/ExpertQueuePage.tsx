@@ -18,12 +18,12 @@ export default function ExpertQueuePage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex flex-col gap-5 rounded-lg bg-expert-700 p-7 text-white shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10">
+      <div className="flex flex-col gap-5 rounded-lg border border-expert-500/30 bg-[#163834] p-7 shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10 dark:border-cyan-900/60 dark:bg-[#091a18]">
         <div>
-          <h1 className="font-display text-3xl text-white sm:text-4xl">{t("expertTriageQueue")}</h1>
-          <p className="mt-3 text-white/70">{t("expertTriageSubtitle")}</p>
+          <h1 className="font-display text-3xl text-cyan-200 dark:text-cyan-300 sm:text-4xl">{t("expertTriageQueue")}</h1>
+          <p className="mt-3 text-cyan-100/90 dark:text-cyan-100/85">{t("expertTriageSubtitle")}</p>
         </div>
-        <AlertCircle className="text-expert-100" size={48} />
+        <AlertCircle className="text-cyan-300 dark:text-cyan-400" size={48} />
       </div>
 
       <motion.div
@@ -40,8 +40,8 @@ export default function ExpertQueuePage() {
         ) : error ? (
           <p className="mt-5 text-sm text-danger">{t("failedLoadQueue")}</p>
         ) : queue.length === 0 ? (
-          <div className="mt-5 flex flex-col items-center rounded-sm bg-farmer-50 p-8 text-center text-sm text-muted">
-            <CheckCircle className="text-farmer-700" size={40} />
+          <div className="mt-5 flex flex-col items-center rounded-sm bg-farmer-50 dark:bg-farmer-900/40 p-8 text-center text-sm text-muted border border-line">
+            <CheckCircle className="text-farmer-700 dark:text-farmer-300" size={40} />
             <p className="mt-3">{t("queueEmpty")}</p>
           </div>
         ) : (
@@ -64,7 +64,7 @@ export default function ExpertQueuePage() {
                       </Badge>
                     </td>
                     <td>
-                      <Link to={`/admin/expert/${item.review_id}`} className="inline-flex items-center gap-1 font-semibold text-expert-700 hover:text-expert-500">
+                      <Link to={`/admin/expert/${item.review_id}`} className="inline-flex items-center gap-1 font-semibold text-expert-700 hover:text-expert-500 dark:text-cyan-400 dark:hover:text-cyan-300">
                         {t("review")} <ArrowRight size={14} />
                       </Link>
                     </td>
