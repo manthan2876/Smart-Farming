@@ -7,8 +7,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from "recharts";
-import { Loader2, Download } from "lucide-react";
-import { Card, Button } from "../components/ui";
+import { Loader2, Download, Filter, Sprout, Image, FileText } from "lucide-react";
+import { Card, Button, Select } from "../components/ui";
 import { translateCrop, translateDisease } from "../i18n/domain";
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -310,33 +310,57 @@ export default function AdminMetricsPage() {
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("cropFilter")}</label>
-            <select className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm" value={exportCrop} onChange={e => setExportCrop(e.target.value)}>
-              <option value="All Crops">{t("allCrops")}</option>
-              {CROP_OPTIONS.slice(1).map(c => <option key={c} value={c}>{translateCrop(c, language)}</option>)}
-            </select>
+            <Select
+              value={exportCrop}
+              onChange={(val) => setExportCrop(val)}
+              theme="admin"
+              leadingIcon={<Sprout size={14} className="text-admin-600" />}
+              options={[
+                { value: "All Crops", label: t("allCrops") },
+                ...CROP_OPTIONS.slice(1).map((c) => ({ value: c, label: translateCrop(c, language) })),
+              ]}
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("statusFilter")}</label>
-            <select className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm" value={exportStatus} onChange={e => setExportStatus(e.target.value)}>
-              <option value="Any">{t("any")}</option>
-              <option value="pending_review">{t("pendingReview")}</option>
-              <option value="added_to_dataset">{t("addedToDataset")}</option>
-              <option value="rejected">{t("rejected")}</option>
-            </select>
+            <Select
+              value={exportStatus}
+              onChange={(val) => setExportStatus(val)}
+              theme="admin"
+              leadingIcon={<Filter size={14} className="text-admin-600" />}
+              options={[
+                { value: "Any", label: t("any") },
+                { value: "pending_review", label: t("pendingReview") },
+                { value: "added_to_dataset", label: t("addedToDataset") },
+                { value: "rejected", label: t("rejected") },
+              ]}
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("imageTarget")}</label>
-            <select className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm" value={exportImageTarget} onChange={e => setExportImageTarget(e.target.value as any)}>
-              <option value="preprocessed">{t("preprocessedImg")}</option>
-              <option value="raw">{t("rawImg")}</option>
-            </select>
+            <Select
+              value={exportImageTarget}
+              onChange={(val) => setExportImageTarget(val as any)}
+              theme="admin"
+              leadingIcon={<Image size={14} className="text-admin-600" />}
+              options={[
+                { value: "preprocessed", label: t("preprocessedImg") },
+                { value: "raw", label: t("rawImg") },
+              ]}
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("format")}</label>
-            <select className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm" value={exportFormat} onChange={e => setExportFormat(e.target.value as any)}>
-              <option>PyTorch Folder</option>
-              <option>JSON Manifest</option>
-            </select>
+            <Select
+              value={exportFormat}
+              onChange={(val) => setExportFormat(val as any)}
+              theme="admin"
+              leadingIcon={<FileText size={14} className="text-admin-600" />}
+              options={[
+                { value: "PyTorch Folder", label: "PyTorch Folder" },
+                { value: "JSON Manifest", label: "JSON Manifest" },
+              ]}
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("trainValTestSplit")}</label>

@@ -5,7 +5,7 @@ import { ArrowLeft, CloudSun, History, MapPin, ShieldAlert } from "lucide-react"
 import { useAuth } from "../context/AuthContext";
 import { getExpertReview, submitExpertReview } from "../api/expert";
 import { getAssetUrl } from "../api/client";
-import { Badge, Button, Card, Input } from "../components/ui";
+import { Badge, Button, Card, Input, Select } from "../components/ui";
 
 const actions = ["Approve", "Override / Correct Findings", "Request Rescan"] as const;
 type ReviewAction = (typeof actions)[number];
@@ -88,7 +88,39 @@ export default function ExpertReviewPage() {
         <Card>
           <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("expertDecisionGuidance")}</h3>
           <fieldset className="mt-6"><legend className="mb-3 text-sm font-semibold text-ink">{t("diagnosticVerdict")}</legend><div className="space-y-2">{actions.map(option => <label className={`flex cursor-pointer items-center gap-3 rounded-sm border p-3 text-sm ${action === option ? "border-farmer-500 bg-farmer-50 font-semibold" : "border-line"}`} key={option}><input type="radio" name="verdict" checked={action === option} onChange={() => setAction(option)} />{option === "Approve" ? t("approve") : option === "Override / Correct Findings" ? t("overrideFindings") : t("requestRescan")}</label>)}</div></fieldset>
-          {action === "Override / Correct Findings" && <div className="mt-6 space-y-4"><label className="block space-y-2 text-sm font-semibold text-ink">{t("correctedDisease")}<select className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 font-normal" value={correctedDisease} onChange={event => setCorrectedDisease(event.target.value)}><option value="">Select Disease...</option><option>Early Blight</option><option>Late Blight</option><option>Fusarium Wilt</option><option>Nutrient Deficiency</option></select></label><label className="block space-y-2 text-sm font-semibold text-ink">{t("correctedSeverity")}<input className="min-h-11 w-full rounded-sm border border-line px-3 font-normal" value={correctedSeverity} onChange={event => setCorrectedSeverity(event.target.value)} placeholder="Affected percentage" /></label></div>}
+          {action === "Override / Correct Findings" && (
+            <div className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-ink" htmlFor="corrected-disease">
+                  {t("correctedDisease")}
+                </label>
+                  <Select
+                    id="corrected-disease"
+                    value={correctedDisease}
+                    onChange={(val) => setCorrectedDisease(val)}
+                    theme="expert"
+                    leadingIcon={<ShieldAlert size={15} className="text-expert-700" />}
+                    placeholder="Select Disease..."
+                    options={[
+                      { value: "", label: "Select Disease..." },
+                      { value: "Early Blight", label: "Early Blight" },
+                      { value: "Late Blight", label: "Late Blight" },
+                      { value: "Fusarium Wilt", label: "Fusarium Wilt" },
+                      { value: "Nutrient Deficiency", label: "Nutrient Deficiency" },
+                    ]}
+                  />
+              </div>
+              <label className="block space-y-2 text-sm font-semibold text-ink">
+                {t("correctedSeverity")}
+                <input
+                  className="min-h-11 w-full rounded-sm border border-line px-3 font-normal"
+                  value={correctedSeverity}
+                  onChange={(event) => setCorrectedSeverity(event.target.value)}
+                  placeholder="Affected percentage"
+                />
+              </label>
+            </div>
+          )}
           <div className="mt-7 space-y-4"><h4 className="text-sm font-semibold text-ink">{t("farmerGuidance")}</h4><Input label={t("immediateAction")} value={immediateAction} onChange={event => setImmediateAction(event.target.value)} /><Input label={t("treatmentDosage")} value={treatment} onChange={event => setTreatment(event.target.value)} /></div>
           <div className="mt-7 space-y-4"><h4 className="text-sm font-semibold text-ink">{t("internalAudit")}</h4><label className="flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={addToRetraining} onChange={event => setAddToRetraining(event.target.checked)} /> {t("flagRetraining")}</label><textarea className="min-h-24 w-full rounded-sm border border-line p-3 text-sm" placeholder="Notes for model retraining team..." value={internalNote} onChange={event => setInternalNote(event.target.value)} /></div>
           <div className="mt-8 flex gap-3 border-t border-line pt-5"><Button variant="secondary" className="flex-1" onClick={() => navigate("/admin/expert")}>{t("cancel")}</Button><Button className="flex-1" onClick={() => mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending ? t("submitting") : t("submitReview")}</Button></div>

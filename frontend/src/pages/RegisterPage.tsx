@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { UserPlus, Sprout } from "lucide-react";
+import { UserPlus, Sprout, Globe } from "lucide-react";
 import { motion } from "motion/react";
-import { Button, Input } from "../components/ui";
+import { Button, Input, Select } from "../components/ui";
 
 import { getDefaultRouteForRole } from "../lib/routes";
 
@@ -56,14 +56,22 @@ export default function RegisterPage() {
               </div>
               <Input id="register-password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               <div className="grid gap-5 sm:grid-cols-2">
-                <label className="block space-y-2" htmlFor="register-language">
-                  <span className="block text-sm font-semibold text-ink">Language</span>
-                  <select id="register-language" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Gujarati">Gujarati</option>
-                  </select>
-                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="register-language">
+                    <Globe size={15} className="text-farmer-700" />
+                    <span>Language</span>
+                  </label>
+                  <Select
+                    id="register-language"
+                    value={language}
+                    onChange={(val) => setLanguage(val)}
+                    options={[
+                      { value: "English", label: "English" },
+                      { value: "Hindi", label: "Hindi" },
+                      { value: "Gujarati", label: "Gujarati" },
+                    ]}
+                  />
+                </div>
                 <Input id="register-location" label="Location" type="text" value={location} onChange={(e) => setLocation(e.target.value)} required />
               </div>
 

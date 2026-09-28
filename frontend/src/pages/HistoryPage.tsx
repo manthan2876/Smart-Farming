@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
-import { History, ArrowRight, Filter, Search } from "lucide-react";
+import { History, ArrowRight, Filter, Search, Sprout } from "lucide-react";
 import { motion } from "motion/react";
-import { Badge, Button, Card, Input, Table } from "../components/ui";
+import { Badge, Button, Card, Input, Select, Table } from "../components/ui";
 import { translateCrop, translateDisease, translateSeverityBucket } from "../i18n/domain";
 
 interface PredictionRecord {
@@ -61,19 +61,22 @@ export default function HistoryPage() {
           <div className="flex-1">
             <Input id="history-search" label={t("searchRecords")} leadingIcon={<Search size={18} />} type="text" placeholder={t("searchPlaceholder")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          <label className="block space-y-2 sm:w-56" htmlFor="history-crop-filter">
-            <span className="flex items-center gap-2 text-sm font-semibold text-ink"><Filter size={16} /> {t("crop")}</span>
-            <select 
+          <div className="space-y-2 sm:w-60">
+            <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="history-crop-filter">
+              <Filter size={15} className="text-farmer-700" />
+              <span>{t("crop")}</span>
+            </label>
+            <Select 
               id="history-crop-filter"
               value={filterCrop} 
-              onChange={(e) => setFilterCrop(e.target.value)}
-              className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100"
-            >
-              {uniqueCrops.map((crop, idx) => (
-                <option key={idx} value={crop}>{crop === "All" ? t("all") : translateCrop(crop, language)}</option>
-              ))}
-            </select>
-          </label>
+              onChange={(val) => setFilterCrop(val)}
+              options={uniqueCrops.map((crop) => ({
+                value: crop,
+                label: crop === "All" ? t("all") : translateCrop(crop, language),
+                icon: crop === "All" ? <Filter size={14} className="text-muted" /> : <Sprout size={14} className="text-farmer-600 shrink-0" />,
+              }))}
+            />
+          </div>
         </Card>
 
         {isLoading ? (

@@ -7,7 +7,7 @@ import { Upload, Camera, MapPin, Globe, AlertCircle, Loader2 } from "lucide-reac
 import { motion } from "motion/react";
 import imageCompression from 'browser-image-compression';
 import { get, set, update } from 'idb-keyval';
-import { Button, Card, Input } from "../components/ui";
+import { Button, Card, Input, Select } from "../components/ui";
 import { request } from "../api/client";
 import { translateCrop } from "../i18n/domain";
 
@@ -31,6 +31,21 @@ export default function ScanPage() {
   });
   
   const plots = farmData?.plots || [];
+
+  const plotOptions = [
+    { value: "", label: t("noPlotGeneralScan") },
+    ...plots.map((p: any) => ({
+      value: p.id,
+      label: `${p.name} ${p.crop ? `(${translateCrop(p.crop, appLanguage)})` : ""}`,
+    })),
+  ];
+
+  const languageOptions = [
+    { value: "English", label: "English" },
+    { value: "Hindi", label: "हिन्दी (Hindi)" },
+    { value: "Gujarati", label: "ગુજરાતી (Gujarati)" },
+  ];
+
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,47 +191,52 @@ const handleSubmit = async (e: React.FormEvent) => {
             <h3 className="font-display text-2xl text-farmer-200">{t("diagnosticTelemetry")}</h3>
             
             <div className="mt-7 space-y-5">
-              <label className="block space-y-2" htmlFor="scan-plot">
-                <span className="block text-sm font-semibold text-white/75">{t("farm")} / {t("plotOptional")}</span>
-              <select 
-                id="scan-plot"
-                value={plotId || ""} 
-                onChange={(e) => setPlotId(e.target.value ? Number(e.target.value) : undefined)} 
-                className="min-h-11 w-full rounded-sm border border-white/20 bg-white/10 px-3 text-sm text-white focus:border-farmer-300 focus:outline-none focus:ring-4 focus:ring-farmer-300/20"
-              >
-                <option value="">{t("noPlotGeneralScan")}</option>
-                {plots.map((p: any) => (
-                  <option key={p.id} value={p.id}>{p.name} {p.crop ? `(${translateCrop(p.crop, appLanguage)})` : ""}</option>
-                ))}
-              </select>
-              </label>
-
-            <Input label={t("location")} leadingIcon={<MapPin size={16} />} 
-                type="text" 
-                value={location} 
-                onChange={(e) => setLocation(e.target.value)} 
-                className="border-white/20 bg-white/10 text-white placeholder:text-white/50 focus:border-farmer-300 focus:ring-farmer-300/20"
-                required
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-white/75" htmlFor="scan-plot">
+                  {t("farm")} / {t("plotOptional")}
+                </label>
+                <Select 
+                  id="scan-plot"
+                  value={plotId ?? ""} 
+                  onChange={(val) => setPlotId(val ? Number(val) : undefined)} 
+                  options={plotOptions}
+                  theme="dark"
+                />
+              </div>
+            <label className='block space-y-2'>
+              <span className="block text-sm font-semibold text-white/75">{t("location")}</span>
+              <Input leadingIcon={<MapPin size={16} />} 
+                  type="text" 
+                  value={location} 
+                  onChange={(e) => setLocation(e.target.value)} 
+                  className="border-white/20 bg-white/10 text-white placeholder:text-white/50 focus:border-farmer-300 focus:ring-farmer-300/20"
+                  required
+                />
+            </label>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <Input label={t("latitude")} type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
-              <Input label={t("longitude")} type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
+              <label className="block space-y-2">
+                <span className="block text-sm font-semibold text-white/75">{t("latitude")}</span>
+                <Input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
+              </label>
+              <label className="block space-y-2">
+                <span className="block text-sm font-semibold text-white/75">{t("longitude")}</span>
+                <Input type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} className="border-white/20 bg-white/10 text-white focus:border-farmer-300 focus:ring-farmer-300/20" required />
+              </label>
             </div>
 
-            <label className="block space-y-2" htmlFor="scan-language">
-              <span className="flex items-center gap-2 text-sm font-semibold text-white/75"><Globe size={16} /> {t("recommendationLanguage")}</span>
-              <select 
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold text-white/75" htmlFor="scan-language">
+                <Globe size={16} /> {t("recommendationLanguage")}
+              </label>
+              <Select 
                 id="scan-language"
                 value={language} 
-                onChange={(e) => setLanguage(e.target.value)} 
-                className="min-h-11 w-full rounded-sm border border-white/20 bg-white/10 px-3 text-sm text-white focus:border-farmer-300 focus:outline-none focus:ring-4 focus:ring-farmer-300/20"
-              >
-                <option value="English">English</option>
-                <option value="Hindi">हिन्दी (Hindi)</option>
-                <option value="Gujarati">ગુજરાતી (Gujarati)</option>
-              </select>
-            </label>
+                onChange={(val) => setLanguage(val)} 
+                options={languageOptions}
+                theme="dark"
+              />
+            </div>
 
             <Button 
               type="submit" 

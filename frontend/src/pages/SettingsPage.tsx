@@ -12,10 +12,12 @@ import {
   Sliders,
   CheckCircle2,
   Database,
-  Cloud
+  Cloud,
+  Sprout,
+  FolderArchive
 } from "lucide-react";
 import { motion } from "motion/react";
-import { Button, Card, Input } from "../components/ui";
+import { Button, Card, Input, Select } from "../components/ui";
 
 export default function SettingsPage() {
   const { user, token, language, units, setLanguage, setUnits, t } = useAuth();
@@ -34,7 +36,7 @@ export default function SettingsPage() {
 
   // MLOps
   const [exportFilters, setExportFilters] = useState({ expert: true, farmer: true });
-  const [exportCrop, setExportCrop] = useState("All Crops");
+  const [exportCrop, setExportCrop] = useState("All Crops (Tomato, Cotton, Potato)");
   const [exportFormat, setExportFormat] = useState("PyTorch Folder");
   const [exportImage, setExportImage] = useState("preprocessed");
   const [splitTrain, setSplitTrain] = useState(70);
@@ -154,21 +156,37 @@ export default function SettingsPage() {
         <p className="mt-2 text-sm text-muted">{t("languageSubtitle")}</p>
         
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
-          <label className="block space-y-2" htmlFor="settings-language">
-            <span className="block text-sm font-semibold text-ink">{t("interfaceLanguage")}</span>
-            <select id="settings-language" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={lang} onChange={e => setLang(e.target.value as any)}>
-              <option value="English">English</option>
-              <option value="Gujarati">ગુજરાતી (Gujarati)</option>
-              <option value="Hindi">हिन्दी (Hindi)</option>
-            </select>
-          </label>
-          <label className="block space-y-2" htmlFor="settings-units">
-            <span className="block text-sm font-semibold text-ink">{t("units")}</span>
-            <select id="settings-units" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100" value={unitPref} onChange={e => setUnitPref(e.target.value as any)}>
-              <option value="Metric">{t("metric")}</option>
-              <option value="Imperial">{t("imperial")}</option>
-            </select>
-          </label>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="settings-language">
+              <Globe size={15} className="text-farmer-700" />
+              <span>{t("interfaceLanguage")}</span>
+            </label>
+            <Select 
+              id="settings-language"
+              value={lang} 
+              onChange={(val) => setLang(val as any)}
+              options={[
+                { value: "English", label: "English" },
+                { value: "Gujarati", label: "ગુજરાતી (Gujarati)" },
+                { value: "Hindi", label: "हिन्दी (Hindi)" },
+              ]}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="settings-units">
+              <Sliders size={15} className="text-farmer-700" />
+              <span>{t("units")}</span>
+            </label>
+            <Select 
+              id="settings-units"
+              value={unitPref} 
+              onChange={(val) => setUnitPref(val as any)}
+              options={[
+                { value: "Metric", label: "Metric (ha, °C, km/h)" },
+                { value: "Imperial", label: "Imperial (acres, °F, mph)" },
+              ]}
+            />
+          </div>
         </div>
 
         <div className="mt-6 flex items-center gap-3">
@@ -207,16 +225,40 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <label className="block space-y-2" htmlFor="export-crop"><span className="block text-sm font-semibold text-ink">{t("targetCrop")}</span><select id="export-crop" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm" value={exportCrop} onChange={e => setExportCrop(e.target.value)}>
-                  <option>All Crops (Tomato, Cotton, Potato)</option>
-                  <option>Cotton</option>
-                  <option>Tomato</option>
-                </select></label>
-              <label className="block space-y-2" htmlFor="export-format"><span className="block text-sm font-semibold text-ink">{t("archiveFormat")}</span><select id="export-format" className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm" value={exportFormat} onChange={e => setExportFormat(e.target.value)}>
-                  <option>PyTorch Folder</option>
-                  <option>COCO Bounding Boxes</option>
-                  <option>JSON Manifest</option>
-                </select></label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="export-crop">
+                  <Sprout size={15} className="text-expert-700" />
+                  <span>{t("targetCrop")}</span>
+                </label>
+                <Select 
+                  id="export-crop"
+                  value={exportCrop} 
+                  onChange={(val) => setExportCrop(val)}
+                  theme="expert"
+                  options={[
+                    { value: "All Crops (Tomato, Cotton, Potato)", label: "All Crops (Tomato, Cotton, Potato)" },
+                    { value: "Cotton", label: "Cotton", icon: <Sprout size={14} className="text-expert-600 shrink-0" /> },
+                    { value: "Tomato", label: "Tomato", icon: <Sprout size={14} className="text-expert-600 shrink-0" /> },
+                  ]}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="export-format">
+                  <FolderArchive size={15} className="text-expert-700" />
+                  <span>{t("archiveFormat")}</span>
+                </label>
+                <Select 
+                  id="export-format"
+                  value={exportFormat} 
+                  onChange={(val) => setExportFormat(val)}
+                  theme="expert"
+                  options={[
+                    { value: "PyTorch Folder", label: "PyTorch Folder", sublabel: "Class-based folder structure" },
+                    { value: "COCO Bounding Boxes", label: "COCO Bounding Boxes", sublabel: "instances.json format" },
+                    { value: "JSON Manifest", label: "JSON Manifest", sublabel: "Full telemetry & predictions" },
+                  ]}
+                />
+              </div>
             </div>
 
             <div className="mt-6">

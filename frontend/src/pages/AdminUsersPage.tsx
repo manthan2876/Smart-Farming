@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { getAdminUsers, updateUserRole } from "../api/admin";
 import { AdminUser } from "../api/types";
-import { Card, Button, Input, Modal, Badge } from "../components/ui";
+import { Card, Button, Input, Modal, Badge, Select } from "../components/ui";
 import { 
   Users, 
   ShieldCheck, 
@@ -173,20 +173,22 @@ export default function AdminUsersPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter size={16} className="text-muted" />
-            <select
+            <Select
               value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
+              onChange={(val) => {
+                setRoleFilter(val);
                 setPage(0);
               }}
-              className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-farmer-600 focus:outline-none"
-            >
-              <option value="all">{t("allRoles")}</option>
-              <option value="farmer">{t("farmers")}</option>
-              <option value="expert">{t("fieldExperts")}</option>
-              <option value="admin">{t("administrators")}</option>
-            </select>
+              theme="admin"
+              leadingIcon={<Filter size={15} className="text-admin-700" />}
+              options={[
+                { value: "all", label: t("allRoles") },
+                { value: "farmer", label: t("farmers"), icon: <Sprout size={14} className="text-farmer-600 shrink-0" /> },
+                { value: "expert", label: t("fieldExperts"), icon: <GraduationCap size={14} className="text-expert-700 shrink-0" /> },
+                { value: "admin", label: t("administrators"), icon: <ShieldCheck size={14} className="text-admin-700 shrink-0" /> },
+              ]}
+              className="min-w-[160px]"
+            />
           </div>
         </div>
       </Card>
@@ -357,16 +359,17 @@ export default function AdminUsersPage() {
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-ink">Select New Role</label>
-              <select
+              <Select
                 value={newRole}
-                onChange={(e) => setNewRole(e.target.value as "farmer" | "expert" | "admin")}
+                onChange={(val) => setNewRole(val as "farmer" | "expert" | "admin")}
                 disabled={isSelf && newRole === "admin"}
-                className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-farmer-600 focus:outline-none"
-              >
-                <option value="farmer">Farmer / Grower (Field Diagnostics & Farm Management)</option>
-                <option value="expert">Field Expert / Specialist (Agronomy Queue & Overrides)</option>
-                <option value="admin">Administrator (Full Platform Control & Model Gates)</option>
-              </select>
+                theme="admin"
+                options={[
+                  { value: "farmer", label: "Farmer / Grower (Field Diagnostics & Farm Management)", icon: <Sprout size={14} className="text-farmer-600 shrink-0" /> },
+                  { value: "expert", label: "Field Expert / Specialist (Agronomy Queue & Overrides)", icon: <GraduationCap size={14} className="text-expert-700 shrink-0" /> },
+                  { value: "admin", label: "Administrator (Full Platform Control & Model Gates)", icon: <ShieldCheck size={14} className="text-admin-700 shrink-0" /> },
+                ]}
+              />
             </div>
 
             <div>
