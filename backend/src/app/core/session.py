@@ -32,11 +32,32 @@ else:
     load_dotenv()
 
 
+def sanitize_db_url(url: str | None) -> str:
+    """Safely sanitize database URLs, auto-encoding special characters (like '@') in passwords."""
+    if not url:
+        return "sqlite:///./dev_database.db"
+    clean = url.strip().strip("'\"")
+    if "://" not in clean:
+        return clean
+    scheme, remainder = clean.split("://", 1)
+    if "@" not in remainder:
+        return clean
+    userinfo, _, hostinfo = remainder.rpartition("@")
+    if ":" in userinfo:
+        user, pwd = userinfo.split(":", 1)
+        import urllib.parse
+        clean_pwd = urllib.parse.quote(urllib.parse.unquote(pwd), safe="")
+        clean_user = urllib.parse.quote(urllib.parse.unquote(user), safe=".")
+        return f"{scheme}://{clean_user}:{clean_pwd}@{hostinfo}"
+    return clean
+
+
 def database_url() -> str:
-    return os.getenv(
+    raw = os.getenv(
         "DATABASE_URL",
         "sqlite:///./dev_database.db",
     )
+    return sanitize_db_url(raw)
 
 
 def get_db_connect_args(url: str) -> dict[str, Any]:
@@ -85,7 +106,7 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
 
 
 def create_app_engine(url: str | None = None):
-    target_url = url or database_url()
+    target_url = sanitize_db_url(url or database_url())
     # Normalize postgresql:// to postgresql+psycopg2:// or postgresql+psycopg:// depending on installed driver
     if target_url.startswith("postgresql://"):
         try:

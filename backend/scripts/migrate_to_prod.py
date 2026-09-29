@@ -42,7 +42,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core import Base
 from app.core.config import settings
-from app.core.session import create_app_engine
+from app.core.session import create_app_engine, sanitize_db_url
 import app.models  # Register all models with Base.metadata
 
 
@@ -59,17 +59,18 @@ def get_target_prod_url(cli_target: str | None = None) -> str:
         print("\n[ERROR] Production database URL not found.")
         print("Please provide --target or set PROD_DATABASE_URL in backend/.env or your environment.")
         sys.exit(1)
-    return target.strip()
+    return sanitize_db_url(target)
 
 
 def get_local_source_url(cli_source: str | None = None) -> str:
     """Resolve local development database URL."""
-    return (
+    source = (
         cli_source
         or os.getenv("LOCAL_DATABASE_URL")
         or os.getenv("DATABASE_URL")
         or "sqlite:///./dev_database.db"
-    ).strip()
+    )
+    return sanitize_db_url(source)
 
 
 def verify_connection(url: str, label: str = "Database") -> bool:
