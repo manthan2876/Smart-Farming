@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     DATABASE_URL: str = Field(default="sqlite:///./dev_database.db")
+    PROD_DATABASE_URL: str | None = Field(default=None)
     REQUIRE_REDIS: bool = False
     LOCAL_REDIS_URL: str = "redis://localhost:6379"
     UPSTASH_REDIS_URL: str | None = Field(default=None)

@@ -1,0 +1,78 @@
+name: Production Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Select Migration Action'
+        required: true
+        type: choice
+        default: 'schema_only'
+        options:
+          - 'schema_only'
+          - 'seed'
+          - 'check'
+          - 'sync_data'
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/alembic/**'
+      - 'backend/src/app/models/**'
+      - 'backend/scripts/migrate_to_prod.py'
+
+jobs:
+  migrate:
+    name: Run Database Migration
+    runs-on: ubuntu-latest
+    # Run if manually triggered via UI OR if commit message contains [migrate-db]
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[migrate-db]')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Execute Migration Script
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          if [ -z "$PROD_DATABASE_URL" ]; then
+            echo "::error::PROD_DATABASE_URL secret is not configured in GitHub Repository Secrets!"
+            echo "Please go to: Repository Settings -> Secrets and variables -> Actions -> New repository secret -> PROD_DATABASE_URL"
+            exit 1
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ACTION="${{ github.event.inputs.action }}"
+          else
+            ACTION="schema_only"
+          fi
+
+          echo "========================================================"
+          echo "Executing Database Action: $ACTION"
+          echo "Triggered By: ${{ github.event_name }}"
+          echo "========================================================"
+
+          if [ "$ACTION" = "schema_only" ]; then
+            python backend/scripts/migrate_to_prod.py --schema-only --yes
+          elif [ "$ACTION" = "seed" ]; then
+            python backend/scripts/migrate_to_prod.py --seed --yes
+          elif [ "$ACTION" = "check" ]; then
+            python backend/scripts/migrate_to_prod.py --check
+          elif [ "$ACTION" = "sync_data" ]; then
+            python backend/scripts/migrate_to_prod.py --sync-data --yes
+          else
+            echo "::error::Unknown action: $ACTION"
+            exit 1
+          fi
+
