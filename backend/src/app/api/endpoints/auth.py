@@ -1,24 +1,34 @@
 from __future__ import annotations
 
+import secrets
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from app.core.limiter import limiter
-from fastapi import Depends, HTTPException, status, Response, Request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
-from app.api.deps import hash_password, verify_password, create_token_pair, decode_token
+from app.api.deps import hash_password, verify_password, create_token_pair, decode_token, get_current_user
+from app.core import get_session
+from app.core.config import settings
+from app.models import User
 from app.schemas import (
     AuthResponse,
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
+    MessageResponse,
+    ProfileResponse,
     RefreshRequest,
     RegisterRequest,
-    ProfileResponse
+    ResetPasswordRequest,
 )
 from app.crud import (
     create_user,
     find_user_by_identifier,
+    create_password_reset_token,
+    get_valid_password_reset_token,
+    mark_token_used,
 )
-from app.core import get_session
+from app.services.email import send_reset_password_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -39,23 +49,21 @@ def _profile(user) -> ProfileResponse:
         farm_area_acres=farm.area_acres if farm else None,
     )
 
-from app.core.config import settings
-from app.api.deps import get_current_user
-from pydantic import BaseModel, Field
 
-class ChangePasswordRequest(BaseModel):
-    old_password: str
-    new_password: str = Field(..., min_length=8, description="New password, minimum 8 characters")
-
-
-@router.post("/change-password", status_code=200)
+@router.post("/change-password", response_model=MessageResponse, status_code=200)
+@limiter.limit("5/minute")
 async def change_password(
+    request: Request,
     payload: ChangePasswordRequest,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
-) -> dict[str, str]:
+) -> MessageResponse:
     """Change password for the authenticated user."""
-    from app.models import User
+    if payload.new_password == payload.old_password:
+        raise HTTPException(
+            status_code=400,
+            detail="New password cannot be the same as your current password.",
+        )
     user = session.get(User, user_id)
     if not user or not user.password_hash:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -64,7 +72,64 @@ async def change_password(
     user.password_hash = hash_password(payload.new_password)
     session.add(user)
     session.commit()
-    return {"status": "success", "message": "Password changed successfully."}
+    return MessageResponse(status="success", message="Password changed successfully.")
+
+
+@router.post("/forgot-password", response_model=MessageResponse, status_code=200)
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+) -> MessageResponse:
+    """
+    Request a password reset link.
+    Anti-enumeration protection: always returns the same generic message.
+    """
+    target_email = payload.email.strip().lower()
+    user = session.query(User).filter(User.email.ilike(target_email)).first()
+    if user and user.email:
+        raw_token = secrets.token_urlsafe(32)
+        create_password_reset_token(
+            session, user_id=user.id, raw_token=raw_token, expires_in_minutes=15
+        )
+        background_tasks.add_task(send_reset_password_email, email_to=user.email, token=raw_token)
+
+    return MessageResponse(
+        status="success",
+        message="If an account with that email exists, a password reset link has been sent to your email address.",
+    )
+
+
+@router.post("/reset-password", response_model=MessageResponse, status_code=200)
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    payload: ResetPasswordRequest,
+    session: Session = Depends(get_session),
+) -> MessageResponse:
+    """
+    Reset password using a valid, non-expired, single-use token.
+    """
+    token_record = get_valid_password_reset_token(session, payload.token)
+    if not token_record:
+        raise HTTPException(
+            status_code=400,
+            detail="Password reset token is invalid or has expired. Please request a new link.",
+        )
+    user = session.get(User, token_record.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    user.password_hash = hash_password(payload.new_password)
+    mark_token_used(session, token_record)
+    session.add(user)
+    session.commit()
+    return MessageResponse(
+        status="success",
+        message="Password has been reset successfully. You can now log in.",
+    )
 
 
 def _cookie_secure() -> bool:

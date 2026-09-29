@@ -3,7 +3,18 @@ from app.schemas.prediction import PredictionRequest, PredictionResponse
 from app.schemas.health import ErrorResponse, HealthResponse
 from app.schemas.feedback import FeedbackRequest, FeedbackResponse, FeedbackReviewRequest
 from app.schemas.crop import CropListResponse
-from app.schemas.user import AuthResponse, ProfileResponse, ProfileUpdateRequest, RefreshRequest, RegisterRequest, LoginRequest
+from app.schemas.user import (
+    AuthResponse,
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    LoginRequest,
+    MessageResponse,
+    ProfileResponse,
+    ProfileUpdateRequest,
+    RefreshRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+)
 from app.schemas.farm import FarmRequest, FarmResponse, PlotRequest, PlotResponse
 
 __all__ = [
@@ -12,5 +23,6 @@ __all__ = [
     "FeedbackRequest", "FeedbackResponse", "FeedbackReviewRequest",
     "CropListResponse",
     "AuthResponse", "ProfileResponse", "ProfileUpdateRequest", "RefreshRequest", "RegisterRequest", "LoginRequest",
+    "ChangePasswordRequest", "ForgotPasswordRequest", "ResetPasswordRequest", "MessageResponse",
     "FarmRequest", "FarmResponse", "PlotRequest", "PlotResponse"
     ]

@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogIn, Sprout } from "lucide-react";
+import { LogIn, Sprout, CheckCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Input } from "../components/ui";
 import { getDefaultRouteForRole } from "../lib/routes";
 import ThemeToggle from "../components/ThemeToggle";
 
 export default function LoginPage() {
+  const [searchParams] = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "success";
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAuthenticated, signIn } = useAuth();
+  const { user, isAuthenticated, signIn, t } = useAuth();
 
   // If already authenticated, redirect to role's designated landing route
   useEffect(() => {
@@ -52,6 +54,13 @@ export default function LoginPage() {
             <h2 className="font-display text-3xl text-ink sm:text-4xl">Welcome Back</h2>
             <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-muted">[ACCESS YOUR ACCOUNT]</p>
 
+            {resetSuccess && (
+              <div className="mt-6 flex items-center gap-2 rounded-sm border border-farmer-200 bg-farmer-50 p-3 text-sm font-medium text-farmer-800 dark:border-farmer-900/50 dark:bg-farmer-950/40 dark:text-farmer-300">
+                <CheckCircle2 size={18} className="shrink-0 text-farmer-600" />
+                <span>{t("passwordResetSuccess")}</span>
+              </div>
+            )}
+
             {error && <div className="mt-6 rounded-sm border border-red-100 bg-red-50 p-3 text-sm text-danger dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">{error}</div>}
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -61,12 +70,27 @@ export default function LoginPage() {
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="farmer@example.com"
                   required />
-              <Input id="login-password" label="Password"
-                  type="password" 
-                  value={password} 
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-ink" htmlFor="login-password">
+                    Password
+                  </label>
+                  <Link
+                    to="/auth/forgot-password"
+                    className="text-xs font-semibold text-farmer-700 hover:underline dark:text-farmer-300"
+                  >
+                    {t("forgotPassword")}
+                  </Link>
+                </div>
+                <Input
+                  id="login-password"
+                  type="password"
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  required />
+                  required
+                />
+              </div>
               <Button type="submit" disabled={loading} className="mt-2 w-full">
                 <LogIn size={17} />
                 {loading ? "Authenticating..." : "Sign In"}

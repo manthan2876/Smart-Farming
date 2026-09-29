@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { request } from "../api/client";
 import { exportDataset } from "../api/admin";
+import { changePassword } from "../api/auth";
 import { 
   AlertTriangle, 
   Trash2, 
@@ -15,7 +16,9 @@ import {
   Cloud,
   Sprout,
   FolderArchive,
-  Sun
+  Sun,
+  KeyRound,
+  ShieldCheck
 } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Card, Input, Select } from "../components/ui";
@@ -30,6 +33,14 @@ export default function SettingsPage() {
   const [lang, setLang] = useState(language);
   const [unitPref, setUnitPref] = useState(units);
   const [prefSaved, setPrefSaved] = useState(false);
+
+  // Security / Password
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdError, setPwdError] = useState("");
+  const [pwdSuccess, setPwdSuccess] = useState(false);
 
   // Danger Zone
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -219,6 +230,94 @@ export default function SettingsPage() {
           </Button>
           {prefSaved && <span className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700"><CheckCircle2 size={16} /> {t("savedSuccess")}</span>}
         </div>
+      </Card>
+
+      {/* Security & Password */}
+      <Card>
+        <h3 className="flex items-center gap-2 font-display text-xl text-ink">
+          <ShieldCheck size={20} className="text-farmer-700 dark:text-farmer-300" /> {t("securitySettings")}
+        </h3>
+        <p className="mt-2 text-sm text-muted">{t("securitySubtitle")}</p>
+
+        {pwdError && (
+          <div className="mt-4 rounded-sm border border-red-100 bg-red-50 p-3 text-sm text-danger dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+            {pwdError}
+          </div>
+        )}
+
+        <form 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setPwdError("");
+            setPwdSuccess(false);
+
+            if (newPwd.length < 8) {
+              setPwdError(t("passwordTooShort"));
+              return;
+            }
+            if (newPwd !== confirmPwd) {
+              setPwdError(t("passwordsDoNotMatch"));
+              return;
+            }
+
+            setPwdLoading(true);
+            try {
+              await changePassword(currentPwd, newPwd, token!);
+              setPwdSuccess(true);
+              setCurrentPwd("");
+              setNewPwd("");
+              setConfirmPwd("");
+              setTimeout(() => setPwdSuccess(false), 4000);
+            } catch (err: any) {
+              setPwdError(err.message || "Failed to change password. Please check your current password.");
+            } finally {
+              setPwdLoading(false);
+            }
+          }} 
+          className="mt-6 space-y-4"
+        >
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Input
+              id="settings-current-pwd"
+              label={t("currentPassword")}
+              type="password"
+              value={currentPwd}
+              onChange={(e) => setCurrentPwd(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+            <Input
+              id="settings-new-pwd"
+              label={t("newPassword")}
+              type="password"
+              value={newPwd}
+              onChange={(e) => setNewPwd(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+            <Input
+              id="settings-confirm-pwd"
+              label={t("confirmNewPassword")}
+              type="password"
+              value={confirmPwd}
+              onChange={(e) => setConfirmPwd(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <div className="mt-4 flex items-center gap-3">
+            <Button type="submit" disabled={pwdLoading}>
+              <KeyRound size={16} />
+              {pwdLoading ? t("updatingPassword") : t("changePassword")}
+            </Button>
+            {pwdSuccess && (
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 dark:text-farmer-300">
+                <CheckCircle2 size={16} /> {t("passwordChangedSuccess")}
+              </span>
+            )}
+          </div>
+        </form>
       </Card>
 
       {isAdmin && (

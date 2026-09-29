@@ -4,6 +4,8 @@ import AboutPage from "./pages/AboutPage";
 import ServicesPage from "./pages/ServicesPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import DashboardPage from "./pages/DashboardPage";
 import ScanPage from "./pages/ScanPage";
 import PredictionResultPage from "./pages/PredictionResultPage";
@@ -42,6 +44,8 @@ export default function App() {
       <Route path="/services" element={<ServicesPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/register" element={<RegisterPage />} />
+      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route path="/crops" element={<CropsPage />} />
       <Route path="/docs" element={<ExternalRedirect to={`${getApiUrl()}/docs`} />} />
 

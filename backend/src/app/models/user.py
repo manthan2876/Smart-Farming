@@ -32,3 +32,6 @@ class User(Base):
     expert_reviews: Mapped[list["ExpertReview"]] = relationship(
         back_populates="expert", foreign_keys="ExpertReview.expert_id"
     )
+    reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(
+        "PasswordResetToken", back_populates="user", cascade="all, delete-orphan"
+    )
