@@ -67,6 +67,7 @@ def create_or_update_schedule(
     destination_url: str,
     cron_expression: str,
     retries: int = 3,
+    failure_callback: str | None = None,
 ) -> bool:
     endpoint = f"{settings.primary_qstash_url}/schedules/{destination_url}"
     headers = get_qstash_headers()
@@ -75,9 +76,13 @@ def create_or_update_schedule(
         "Upstash-Retries": str(retries),
         "Content-Type": "application/json",
     })
+    if failure_callback:
+        headers["Upstash-Failure-Callback"] = failure_callback
     print(f"\n[INFO] Registering Schedule:")
     print(f"       Destination : {destination_url}")
     print(f"       Expression  : {cron_expression}")
+    if failure_callback:
+        print(f"       DLQ / Alert : {failure_callback}")
 
     try:
         resp = httpx.post(endpoint, headers=headers, timeout=10.0)
@@ -102,6 +107,11 @@ def main():
         "--base-url",
         type=str,
         help="Base URL of your deployed FastAPI server (e.g. https://smart-farming-api.a.run.app)",
+    )
+    parser.add_argument(
+        "--failure-callback",
+        type=str,
+        help="Optional custom DLQ failure callback URL (defaults to <base-url>/api/v1/internal/cron/failure-callback)",
     )
     parser.add_argument(
         "--list",
@@ -138,16 +148,17 @@ def main():
         return
 
     base = args.base_url.rstrip("/")
+    dlq_url = args.failure_callback or f"{base}/api/v1/internal/cron/failure-callback"
 
     # Schedule 1: Weather Risks (06:00, 12:00, 18:00 UTC)
     weather_url = f"{base}/api/v1/internal/cron/weather-risks"
     weather_cron = "0 6,12,18 * * *"
-    create_or_update_schedule(weather_url, weather_cron)
+    create_or_update_schedule(weather_url, weather_cron, failure_callback=dlq_url)
 
     # Schedule 2: Orphaned Blob Purge (Sundays at 03:00 UTC)
     blob_url = f"{base}/api/v1/internal/cron/purge-blobs"
     blob_cron = "0 3 * * 0"
-    create_or_update_schedule(blob_url, blob_cron)
+    create_or_update_schedule(blob_url, blob_cron, failure_callback=dlq_url)
 
     print("\n" + "=" * 65)
     print("  QSTASH SCHEDULE SYNC COMPLETE!")

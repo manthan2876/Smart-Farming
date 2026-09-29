@@ -1,6 +1,7 @@
 from pathlib import Path
+from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from dotenv import load_dotenv
@@ -13,8 +14,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     DATABASE_URL: str = Field(default="sqlite:///./dev_database.db")
-    REDIS_URL: str = "redis://127.0.0.1:6379"
     REQUIRE_REDIS: bool = False
+    LOCAL_REDIS_URL: str = "redis://localhost:6379"
+    UPSTASH_REDIS_URL: str | None = Field(default=None)
+    REDIS_URL: str = ""
+    ARQ_POLL_DELAY: float | None = Field(default=None)
     UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024
     CROP_CONFIDENCE_THRESHOLD: float = 0.7
     DISEASE_CONFIDENCE_THRESHOLD: float = 0.7
@@ -116,6 +120,33 @@ class Settings(BaseSettings):
             self.US_EAST_1_QSTASH_NEXT_SIGNING_KEY,
         ]
         return [k.strip() for k in keys if k and k.strip()]
+
+    @model_validator(mode="after")
+    def resolve_redis_url(self) -> "Settings":
+        # 1. Resolve Upstash Redis TLS DSN if not explicitly set
+        if not self.UPSTASH_REDIS_URL and self.UPSTASH_REDIS_REST_URL and self.UPSTASH_REDIS_REST_TOKEN:
+            host = urlparse(self.UPSTASH_REDIS_REST_URL).hostname
+            if host:
+                self.UPSTASH_REDIS_URL = f"rediss://default:{self.UPSTASH_REDIS_REST_TOKEN}@{host}:6379"
+
+        # 2. Select active REDIS_URL based on REQUIRE_REDIS toggle:
+        #    REQUIRE_REDIS=True  -> Local Docker Redis instance (LOCAL_REDIS_URL)
+        #    REQUIRE_REDIS=False -> Upstash Cloud Redis instance (UPSTASH_REDIS_URL)
+        if self.REQUIRE_REDIS:
+            local_target = self.LOCAL_REDIS_URL or "redis://localhost:6379"
+            if self.REDIS_URL and any(h in self.REDIS_URL for h in ("127.0.0.1", "localhost")):
+                pass
+            else:
+                self.REDIS_URL = local_target
+        else:
+            if self.UPSTASH_REDIS_URL:
+                self.REDIS_URL = self.UPSTASH_REDIS_URL
+            elif self.REDIS_URL and not any(h in self.REDIS_URL for h in ("127.0.0.1", "localhost")):
+                pass
+            else:
+                self.REDIS_URL = self.LOCAL_REDIS_URL or "redis://localhost:6379"
+
+        return self
 
     model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
 

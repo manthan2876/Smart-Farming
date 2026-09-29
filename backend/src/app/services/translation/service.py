@@ -127,6 +127,7 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
     if target_code == "en" or not texts:
         return texts
 
+    import asyncio
     import hashlib
     from app.core.redis_rest import redis_rest
 
@@ -134,18 +135,24 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
     missing_indices: list[int] = []
     missing_texts: list[str] = []
 
+    # Prepare keys for single batch lookup
+    items_to_lookup: list[tuple[int, str, str]] = []
     for idx, text in enumerate(texts):
         if not text or not text.strip():
             results[idx] = text
-            continue
-        h = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
-        cache_key = f"sf:trans:{target_code}:{h}"
-        cached = await redis_rest.get(cache_key)
-        if cached:
-            results[idx] = cached
         else:
-            missing_indices.append(idx)
-            missing_texts.append(text)
+            h = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
+            items_to_lookup.append((idx, f"sf:trans:{target_code}:{h}", text))
+
+    if items_to_lookup:
+        keys = [item[1] for item in items_to_lookup]
+        cached_values = await redis_rest.mget(keys)
+        for (idx, _, text), cached in zip(items_to_lookup, cached_values):
+            if cached:
+                results[idx] = cached
+            else:
+                missing_indices.append(idx)
+                missing_texts.append(text)
 
     if missing_texts:
         try:
@@ -154,11 +161,15 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
             logger.warning("Google translation failed (%s), falling back to HF translation...", exc)
             translated_missing = await translate_batch_hf_fallback(missing_texts, target_code)
 
+        cache_tasks = []
         for idx, trans_text, orig_text in zip(missing_indices, translated_missing, missing_texts):
             results[idx] = trans_text
             if trans_text and trans_text != orig_text:
                 h = hashlib.sha256(orig_text.strip().encode("utf-8")).hexdigest()
-                await redis_rest.set(f"sf:trans:{target_code}:{h}", trans_text, ex=86400 * 60)
+                cache_tasks.append(redis_rest.set(f"sf:trans:{target_code}:{h}", trans_text, ex=86400 * 60))
+
+        if cache_tasks:
+            await asyncio.gather(*cache_tasks, return_exceptions=True)
 
     return [r if r is not None else "" for r in results]
 

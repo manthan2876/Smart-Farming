@@ -11,25 +11,17 @@ arq_pool = None
 
 async def init_arq():
     global arq_pool
-    if not getattr(settings, "REQUIRE_REDIS", False):
-        logger.info("REQUIRE_REDIS is False; skipping ARQ Redis pool initialization.")
-        arq_pool = None
-        return None
-
-    parsed = urlparse(settings.REDIS_URL)
-    redis_settings = RedisSettings(
-        host=parsed.hostname or "127.0.0.1",
-        port=parsed.port or 6379,
-        password=parsed.password,
-        database=int(parsed.path.lstrip("/") or 0),
-    )
     try:
+        redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
         arq_pool = await create_pool(redis_settings)
-    except Exception:
+        mode = "Local Docker Redis" if settings.REQUIRE_REDIS else "Upstash Cloud Redis"
+        logger.info("Initialized ARQ pool [%s: %s]", mode, redis_settings.host)
+    except Exception as exc:
         arq_pool = None
-        if settings.REQUIRE_REDIS:
+        if getattr(settings, "REQUIRE_REDIS", False):
+            logger.error("Failed to connect to required local Redis (%s): %s", settings.REDIS_URL, exc)
             raise
-        logger.warning("Redis is unavailable; continuing without the ARQ job pool.")
+        logger.warning("Redis is unavailable (%s); continuing without the ARQ job pool.", exc)
     return arq_pool
 
 async def close_arq():

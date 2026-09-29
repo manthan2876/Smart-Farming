@@ -1160,6 +1160,7 @@ gcloud run deploy smart-farming-backend \
   --cpu 1 \
   --min-instances 0 \
   --max-instances 5 \
+  --session-affinity \
   --allow-unauthenticated \
   --set-env-vars="\
 ENVIRONMENT=production,\
@@ -1180,6 +1181,10 @@ HF_TOKEN=<YOUR_HF_TOKEN>,\
 OPENWEATHER_API=<YOUR_OPENWEATHER_API_KEY>,\
 CORS_ORIGINS=https://smart-farming-dashboard.vercel.app,http://localhost:5173"
 ```
+
+> [!TIP]
+> **Why `--session-affinity` matters:**
+> Cloud Run session affinity ensures that all requests and live WebSocket streaming connections (`/api/v1/predict/ws/{prediction_id}`) from the same client session are routed to the identical container instance. In addition, `PredictionStatusHub` automatically mirrors the latest stage state to Upstash Redis REST, guaranteeing seamless reconnection recovery even if an instance restarts.
 
 Verify service health:
 ```bash

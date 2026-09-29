@@ -89,7 +89,18 @@ async def on_startup(ctx):
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     logging.getLogger("smart-farming").setLevel(logging.INFO)
-    logger.info("Prediction worker started")
+    mode = "Local Docker Redis" if settings.REQUIRE_REDIS else "Upstash Cloud Redis"
+    target = urlparse(settings.REDIS_URL).hostname or settings.REDIS_URL
+    logger.info("Prediction worker started [%s: %s]", mode, target)
+
+
+def _get_worker_redis_settings() -> RedisSettings:
+    url = getattr(settings, "REDIS_URL", None) or "redis://127.0.0.1:6379"
+    try:
+        return RedisSettings.from_dsn(url)
+    except Exception as exc:
+        logger.warning("Could not parse REDIS_URL '%s' (%s); falling back to default.", url, exc)
+        return RedisSettings(host="127.0.0.1", port=6379)
 
 
 class WorkerSettings:
@@ -98,7 +109,6 @@ class WorkerSettings:
     max_jobs = 2
     job_timeout = 900
     max_tries = 3
-    redis_settings = RedisSettings(
-        host=urlparse(settings.REDIS_URL).hostname or "127.0.0.1",
-        port=urlparse(settings.REDIS_URL).port or 6379,
-    )
+    # When connected to Upstash Cloud Redis, poll every 3.0s to conserve command quota; 0.5s for local Docker
+    poll_delay = getattr(settings, "ARQ_POLL_DELAY", None) or (3.0 if not settings.REQUIRE_REDIS else 0.5)
+    redis_settings = _get_worker_redis_settings()

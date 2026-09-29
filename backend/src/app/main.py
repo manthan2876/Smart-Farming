@@ -49,6 +49,11 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
     yield
+    try:
+        from app.core.redis_rest import redis_rest
+        await redis_rest.aclose()
+    except Exception:
+        pass
     await close_arq()
 
 

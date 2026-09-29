@@ -151,3 +151,42 @@ async def trigger_purge_blobs(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Blob purge error: {exc}",
         )
+
+
+@router.post("/failure-callback")
+async def trigger_failure_callback(
+    request: Request,
+    verified: bool = Depends(verify_qstash_signature),
+) -> dict[str, Any]:
+    """Invoked by Upstash QStash Dead Letter Queue (DLQ) when a scheduled job exhausts retries.
+
+    Logs critical alerts and stores the failure details in Redis REST for administrative auditing.
+    """
+    body_bytes = await request.body()
+    try:
+        import json
+        body_json = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+    except Exception:
+        body_json = {"raw": body_bytes.decode("utf-8", errors="replace")}
+
+    logger.critical(
+        "QSTASH CRON FAILURE ALERT (DLQ): A scheduled background job failed all retries! Payload: %s",
+        body_json,
+    )
+
+    # Store latest failure in Redis REST for 7 days
+    try:
+        from app.core.redis_rest import redis_rest
+        failure_record = {
+            "timestamp": time.time(),
+            "payload": body_json,
+        }
+        await redis_rest.set(f"sf:dlq:cron:{int(time.time())}", failure_record, ex=86400 * 7)
+    except Exception as exc:
+        logger.warning("Could not persist DLQ failure event to Redis REST: %s", exc)
+
+    return {
+        "status": "recorded",
+        "message": "Failure callback processed and logged.",
+        "timestamp": time.time(),
+    }
