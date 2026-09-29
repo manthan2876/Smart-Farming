@@ -155,6 +155,41 @@ A monolithic container stack with local MinIO object storage and Redis-backed AR
 > [!IMPORTANT]
 > Ensure the production server has at least **4 GB RAM** and **20 GB disk** before starting. ML model files can be 200 MB–1 GB each.
 
+### Required Environment Variables
+
+The table below lists all environment variables that must be configured for a complete production deployment. Variables marked **✅ (prod)** are required for the Cloud Run production target; **self-hosted** variables are for Docker Compose only.
+
+| Variable | Description | Required |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Supabase or local) | ✅ |
+| `SECRET_KEY` | Application-level secret (32+ char hex) | ✅ |
+| `JWT_SECRET_KEY` | JWT signing secret (32+ char hex) | ✅ |
+| `ENVIRONMENT` | Runtime mode: `development` \| `production` | ✅ |
+| `STORAGE_BACKEND` | Storage driver: `local` \| `gcs` \| `s3` | ✅ |
+| `AWS_ACCESS_KEY_ID` | GCS HMAC access key (production) or MinIO root user (self-hosted) | ✅ |
+| `AWS_SECRET_ACCESS_KEY` | GCS HMAC secret key (production) or MinIO root password (self-hosted) | ✅ |
+| `AWS_REGION` | GCS region (`auto`) or AWS/MinIO region | ✅ |
+| `AWS_S3_BUCKET` | GCS bucket name (e.g. `smart-farming-data`) or S3/MinIO bucket | ✅ |
+| `AWS_ENDPOINT_URL` | `https://storage.googleapis.com` for GCS; MinIO URL for self-hosted | ✅ |
+| `HF_TOKEN` | Hugging Face bearer token for Qwen3-4B Agronomist LLM | ✅ |
+| `OPENWEATHER_API` | OpenWeatherMap API key for live weather data | ✅ |
+| `CORS_ORIGINS` | Comma-separated allowed frontend origins | ✅ |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST base URL | ✅ (cloud) |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST bearer token | ✅ (cloud) |
+| `REQUIRE_REDIS` | `True` (Docker/VM with ARQ worker) \| `False` (Cloud Run, sync mode) | ✅ |
+| `MODEL_SERVER_URL` | Private HTTPS URL of Cloud Run `inference-service` | ✅ (cloud) |
+| `QSTASH_TOKEN` | QStash bearer token for publishing scheduled cron jobs (required for production cron scheduling) | ✅ (prod) |
+| `QSTASH_URL` | QStash API base URL (e.g. `https://qstash.upstash.io`) | ✅ (prod) |
+| `QSTASH_REGION` | QStash region identifier | ✅ (prod) |
+| `QSTASH_CURRENT_SIGNING_KEY` | Current signing key for verifying incoming QStash webhook requests | ✅ (prod) |
+| `QSTASH_NEXT_SIGNING_KEY` | Next signing key used during key-rotation events | ✅ (prod) |
+| `CRON_SECRET` | Shared secret protecting the internal cron endpoint (`/api/v1/internal-cron/*`) | ✅ (prod) |
+| `GOOGLE_TTS_API_KEY` | Google Cloud Text-to-Speech API key | ✅ (prod) |
+| `GOOGLE_TRANSLATION_API_KEY` | Google Cloud Translation API key | ✅ (prod) |
+| `GEMINI_API_KEY` | Google Gemini API key (advisory fallback + translation) | ✅ (prod) |
+| `REDIS_URL` | Standard Redis URL (`redis://…`) — self-hosted / ARQ worker only | self-hosted |
+| `DEBUG` | `True` \| `False` | optional |
+
 ---
 
 ## 3. Development Setup (Without Docker)

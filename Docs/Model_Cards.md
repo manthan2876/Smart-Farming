@@ -4,6 +4,7 @@
 **Version:** 1.0  
 **Date:** September 2026  
 **Status:** Active / Production Reference  
+**Last Verified Against Codebase:** September 2026  
 
 ---
 
@@ -505,7 +506,7 @@ Every recommendation response (both LLM-generated and fallback) appends the foll
 
 ## Pipeline Architecture Overview
 
-The five models/components above operate as a sequential inference pipeline triggered by a single leaf image upload:
+The five models/components above operate as a sequential inference pipeline triggered by a single leaf image upload. After Model 2 (Disease Classifier) completes, **Model 3 (Pest Classifier) and Model 4 (Severity Estimator) run as parallel branches** before their results are merged for the final recommendation step.
 
 ```
 User Image
@@ -524,6 +525,7 @@ User Image
 │  → Disease label + prob.    │  Routed by router.py + config.yaml
 └────────────┬────────────────┘
              │
+             │   [Parallel Branches]
              ├──────────────────────────────────┐
              ▼                                  ▼
 ┌─────────────────────────┐      ┌────────────────────────────┐
@@ -531,12 +533,12 @@ User Image
 │ YOLOv8-cls              │      │ OpenCV HSV+LAB heuristic   │
 │ → pests list + probs    │      │ → severity_percent + label │
 └────────────┬────────────┘      └──────────────┬─────────────┘
-             │                                  │
+             │   [Results merged]               │
              └──────────────┬───────────────────┘
                             ▼
              ┌──────────────────────────────┐
-             │ Model 5: Recommendation LLM  │  Qwen3-4B-Instruct
-             │ Qwen/Qwen3-4B-Instruct-2507  │  + Weather + Location
+             │ Model 5: Recommendation LLM  │  Qwen/Qwen3-4B-Instruct-2507
+             │ via HuggingFace nscale        │  + Weather + Location
              │ → {immediate_action,         │
              │     treatment, prevention,   │
              │     monitoring}              │

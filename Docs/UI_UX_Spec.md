@@ -42,28 +42,29 @@ This document is the canonical design reference for the frontend implementation.
 
 ### 2.1 Public Routes _(no authentication required)_
 
-| Route       | Page Component    | Purpose                                                                 |
-|-------------|-------------------|-------------------------------------------------------------------------|
-| `/`         | `LandingPage`     | Product intro: hero section, how-it-works, features, trust/partnership section |
-| `/login`    | `LoginPage`       | Email or phone + password login form                                    |
-| `/register` | `RegisterPage`    | Multi-step registration including farm profile setup                    |
-| `/about`    | `AboutPage`       | Project background and team information                                 |
-| `/services` | `ServicesPage`    | Feature showcase and capability overview                                |
+| Route           | Page Component    | Purpose                                                                 |
+|-----------------|-------------------|-------------------------------------------------------------------------|
+| `/`             | `LandingPage`     | Product intro: hero section, how-it-works, features                    |
+| `/auth/login`   | `LoginPage`       | Email or phone + password login form                                    |
+| `/auth/register`| `RegisterPage`    | Multi-step registration                                                 |
+| `/about`        | `AboutPage`       | Project background and team information                                 |
+| `/services`     | `ServicesPage`    | Feature showcase and capability overview                                |
+| `/crops`        | `CropsPage`       | Supported crops catalogue (also accessible without auth)                |
+| `/docs`         | External redirect | Redirects to backend Swagger UI at `{API_URL}/docs`                    |
 
 ### 2.2 Farmer Routes _(accessible by `farmer`, `expert`, `admin` roles)_
 
-| Route             | Page Component        | Purpose                                                                                                     |
-|-------------------|-----------------------|-------------------------------------------------------------------------------------------------------------|
-| `/dashboard`      | `DashboardPage`       | Personalised welcome, recent scan summary cards, quick-action shortcuts                                     |
-| `/scan`           | `ScanPage`            | Upload a leaf photo; select output language; detect or manually enter location                              |
-| `/processing`     | `ProcessingPage`      | Live WebSocket progress tracker showing each pipeline stage                                                 |
-| `/results/:id`    | `PredictionResultPage`| Full diagnosis: crop ID, disease card, severity heatmap, pest list, weather strip, tabbed recommendations, audio TTS, feedback, expert-review request |
-| `/history`        | `HistoryPage`         | Paginated scan history; filters by crop, disease, date range, plot                                          |
-| `/farm`           | `FarmSettingsPage`    | Farm details, boundary map, plot management                                                                 |
-| `/weather`        | `WeatherPage`         | Current conditions + proactive alerts for the farm location                                                 |
-| `/crops`          | `CropsPage`           | Supported crops catalogue with disease information                                                          |
-| `/alerts`         | `AlertsPage`          | Notification inbox — expert review completions, weather risk events                                         |
-| `/settings`       | `SettingsPage`        | Language preference, password change, profile details                                                       |
+| Route                         | Page Component        | Purpose                                                                                                     |
+|-------------------------------|-----------------------|-------------------------------------------------------------------------------------------------------------|
+| `/dashboard`                  | `DashboardPage`       | Personalised welcome, recent scan summary cards                                                             |
+| `/scan`                       | `ScanPage`            | Upload a leaf photo; select output language                                                                 |
+| `/predictions/:id/processing` | `ProcessingPage`      | Live pipeline progress tracker                                                                              |
+| `/predictions/:id`            | `PredictionResultPage`| Full diagnosis results                                                                                      |
+| `/history`                    | `HistoryPage`         | Paginated scan history                                                                                      |
+| `/farm/settings`              | `FarmSettingsPage`    | Farm details, boundary map, plot management                                                                 |
+| `/weather`                    | `WeatherPage`         | Current conditions + proactive alerts                                                                       |
+| `/alerts`                     | `AlertsPage`          | Notification inbox                                                                                          |
+| `/settings`                   | `SettingsPage`        | Language preference, password change                                                                        |
 
 ### 2.3 Expert Routes _(accessible by `expert`, `admin` roles)_
 

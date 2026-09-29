@@ -48,10 +48,15 @@ The Smart Farming backend is an AI-powered crop disease detection and advisory p
 | **Auth** | JWT (HS256) | Bearer tokens in headers, HttpOnly refresh cookies |
 | **Serverless Cache** | Upstash Redis REST | HTTPS Token Auth (`sf:*` namespace, sub-20ms latency) |
 | **Task Queue** | ARQ (async Redis Queue) | Active when `REQUIRE_REDIS=True` |
+| **Scheduled Crons** | QStash | Upstash QStash — serverless scheduled crons and webhooks (production) |
 | **Relational Database** | PostgreSQL 15+ | Supabase Managed PostgreSQL with SSL (`sslmode=require`) |
+| **Entity Translations** | Supabase PostgreSQL table | Pre-computed multilingual translations (`entity_translations`) |
 | **Object Storage** | Google Cloud Storage | Multi-regional bucket `smart-farming-data` via S3 HMAC XML API |
 | **Real-time** | WebSocket | `/ws/predictions/{id}` |
 | **ML Models** | EfficientNet-B0/B2, YOLOv8 | Qwen3-4B Agronomist LLM via HuggingFace API |
+| **Text-to-Speech** | Google Cloud TTS | Audio narration in English, Hindi, and Gujarati (`GOOGLE_TTS_API_KEY`) |
+| **Translation** | Google Cloud Translation | Dynamic advisory localization |
+| **Advisory Fallback** | Gemini API | Google AI — multimodal advisory fallback when primary LLM is unavailable |
 
 ---
 
@@ -159,6 +164,8 @@ All error responses follow the structure:
 ---
 
 ## 5. Auth Endpoints (`/auth`)
+
+> **Note — Profile Routes:** User profile endpoints are **not** under `/auth`. Use `GET /profile` to retrieve the authenticated user's profile and `PATCH /profile` to update it.
 
 ### 5.1 Register User
 
@@ -395,7 +402,10 @@ Updates the authenticated user's password.
 
 ## 6. Prediction Endpoints
 
-The prediction pipeline is asynchronous. Submitting `POST /predict` enqueues an ARQ job and returns immediately. Clients should track progress via WebSocket and fetch results via `GET /predictions/{id}`.
+The prediction pipeline runs in one of two modes depending on the `REQUIRE_REDIS` environment variable:
+
+- **`REQUIRE_REDIS=False` (default / production on Cloud Run):** The pipeline runs **synchronously**. `POST /predict` blocks until the full result is ready and returns it directly in the response.
+- **`REQUIRE_REDIS=True` (ARQ / local dev):** The pipeline is **asynchronous**. `POST /predict` enqueues an ARQ job and returns an immediate `200` placeholder. Clients should track progress via WebSocket and fetch results via `GET /predictions/{id}`.
 
 ### 6.1 Submit Prediction
 
@@ -403,21 +413,23 @@ The prediction pipeline is asynchronous. Submitting `POST /predict` enqueues an 
 POST /predict
 ```
 
-Uploads a leaf image for AI-based crop disease analysis. Validates the image before enqueuing the processing job.
+Uploads a leaf image for AI-based crop disease analysis.
 
 **Authentication:** Bearer token required.  
 **Rate Limit:** 20 requests / minute.  
 **Content-Type:** `multipart/form-data`
 
-#### Image Validation Rules
+#### Image Validation Pipeline
 
-| Check | Rule |
+Validation and processing steps occur in the following order:
+
+| Step | Rule |
 |---|---|
-| File type | JPEG, PNG, or WebP only (validated by magic bytes) |
-| File size | Maximum 10 MB |
-| Blur | Image must not be excessively blurry |
-| Lighting | Image must have adequate exposure |
-| Leaf presence | At least one leaf-like region must be detectable |
+| 1. File size | Maximum 10 MB |
+| 2. Magic-byte check | JPEG, PNG, or WebP only — validated via `PIL.Image.verify()` before saving |
+| 3. Deduplication | Upstash Redis REST lookup at `sf:dedup:{hash_val}` — rejects duplicate submissions |
+| 4. GCS upload | Original image saved to Cloud Storage |
+| 5. Blur / lighting / leaf | Image must not be blurry, must have adequate exposure, and contain a detectable leaf region |
 
 #### Form Fields
 
@@ -425,10 +437,12 @@ Uploads a leaf image for AI-based crop disease analysis. Validates the image bef
 |---|---|---|---|
 | `file` | file | ✅ | Leaf image (JPEG / PNG / WebP, max 10 MB) |
 | `location` | string | ❌ | Human-readable location string |
-| `lat` | float | ❌ | Latitude for weather correlation |
-| `lon` | float | ❌ | Longitude for weather correlation |
+| `lat` | float | ❌ | Latitude for weather correlation. Defaults to `52.2297` (Warsaw) when omitted — a known dev artifact |
+| `lon` | float | ❌ | Longitude for weather correlation. Defaults to `21.0122` (Warsaw) when omitted |
 | `language` | string | ❌ | Override user's default language for this result |
 | `plot_id` | integer | ❌ | Associate scan with a specific farm plot |
+
+> **Background translation:** After a successful prediction, Hindi and Gujarati translations of recommendations are queued via `FastAPI BackgroundTasks` and stored in the `entity_translations` table.
 
 #### Example Request
 
@@ -460,7 +474,11 @@ Gujarati
 ------FormBoundary--
 ```
 
-#### Example Response `200 OK` (Immediate Placeholder)
+#### Response: `REQUIRE_REDIS=False` — `200 OK` (Full Synchronous Result)
+
+When the server runs in the default synchronous mode, the **complete prediction result** is returned immediately (same schema as `GET /predictions/{id}`). See [Section 6.2](#62-get-prediction-result) for the full response schema.
+
+#### Response: `REQUIRE_REDIS=True` — `200 OK` (Async Placeholder)
 
 ```json
 {
@@ -485,9 +503,9 @@ Gujarati
 
 | Status | Condition |
 |---|---|
-| `400 Bad Request` | Blurry image, bad lighting, or no leaf detected |
+| `400 Bad Request` | Blurry image, bad lighting, no leaf detected, or duplicate submission |
 | `413 Content Too Large` | Image exceeds 10 MB |
-| `415 Unsupported Media Type` | Not a JPEG/PNG/WebP image |
+| `415 Unsupported Media Type` | Magic-byte check failed — not a valid JPEG/PNG/WebP |
 
 ---
 
@@ -501,6 +519,20 @@ GET /predictions/{prediction_id}
 Returns the full prediction result for a completed or in-progress scan. Both paths are equivalent aliases.
 
 **Authentication:** Bearer token required (own predictions only, unless `expert` or `admin`).
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `lang` | string | Optional. Language code for localized recommendations: `en`, `hi`, or `gu`. Falls back to `Accept-Language` header, then the user's profile language. |
+
+> **Side effects:** Calling this endpoint automatically marks any unread alerts linked to this prediction as read.
+
+#### Headers (Optional)
+
+| Header | Description |
+|---|---|
+| `Accept-Language` | Used for language preference when `lang` query param is absent (e.g., `hi`, `gu`, `en`) |
 
 #### Path Parameters
 
@@ -573,19 +605,34 @@ Returns the full prediction result for a completed or in-progress scan. Both pat
       }
     }
   },
+  "result": {
+    "translations": {
+      "hi": {
+        "immediate_action": "...",
+        "treatment": "..."
+      },
+      "gu": {
+        "immediate_action": "...",
+        "treatment": "..."
+      }
+    }
+  },
   "historical_images": [],
   "expert_review_data": null,
   "follow_up": null
 }
 ```
 
-#### Rescan-specific Fields
+> **Self-healing:** If the processed/annotated image is missing from storage, the server regenerates it on-the-fly before returning the response.
+
+#### Special Response Fields
 
 | Field | Present When | Description |
 |---|---|---|
 | `historical_images` | Prediction is a rescan | Array of parent prediction summaries (chain) |
 | `expert_review_data` | Expert has verified the prediction | Expert review details and corrections |
 | `follow_up` | A newer rescan exists | Summary of the latest child prediction |
+| `result.translations` | Pre-computed translations exist | Dict of language codes (`hi`, `gu`) to localized recommendation fields, sourced from `entity_translations` table |
 
 ---
 
@@ -1771,7 +1818,7 @@ Marks a specific alert as read.
 POST /tts/generate
 ```
 
-Generates an audio narration of the prediction diagnosis and recommendation in the user's preferred language. The resulting audio file is stored and accessible via the media endpoints.
+Generates an audio narration from text using the Google Cloud Text-to-Speech API (`GOOGLE_TTS_API_KEY`). Supports English, Hindi, and Gujarati. If the Google Cloud TTS API is unavailable, the server falls back to basic audio synthesis. The resulting audio file is stored and returned as a presigned URL or a local path (depending on deployment mode), and is also accessible via the media endpoints.
 
 **Authentication:** Bearer token required.
 
@@ -1779,12 +1826,16 @@ Generates an audio narration of the prediction diagnosis and recommendation in t
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `prediction_id` | integer | ✅ | The prediction to narrate |
+| `text` | string | ✅ | The text to synthesize into speech |
+| `language` | string | ✅ | Target language code: `en`, `hi`, or `gu` |
+| `prediction_id` | integer | ❌ | If provided, associates the audio with this prediction and stores it as its TTS media asset |
 
 #### Example Request
 
 ```json
 {
+  "text": "Remove and dispose of heavily infected leaves immediately to prevent spread.",
+  "language": "hi",
   "prediction_id": 42
 }
 ```
@@ -1794,11 +1845,14 @@ Generates an audio narration of the prediction diagnosis and recommendation in t
 ```json
 {
   "prediction_id": 42,
-  "audio_url": "https://storage.example.com/predictions/42/audio.mp3?...",
+  "audio_url": "https://storage.example.com/predictions/42/audio.mp3?X-Amz-Expires=900&...",
   "duration_seconds": 47,
-  "language": "Gujarati"
+  "language": "hi",
+  "provider": "google_cloud_tts"
 }
 ```
+
+> **Fallback:** When `provider` is `"basic_synthesis"`, the Google Cloud TTS API was unavailable and a basic synthesized audio file was returned instead.
 
 ---
 
@@ -1807,10 +1861,10 @@ Generates an audio narration of the prediction diagnosis and recommendation in t
 ### 16.1 Translate Text
 
 ```
-POST /translate
+POST /translation
 ```
 
-Translates arbitrary text into the authenticated user's preferred language. Used by the client for dynamic content not covered by static i18n.
+Translates text between languages using the Google Cloud Translation API. Used for dynamic advisory localization not covered by pre-computed `entity_translations`.
 
 **Authentication:** Bearer token required.
 
@@ -1838,6 +1892,89 @@ Translates arbitrary text into the authenticated user's preferred language. Used
   "target_language": "Gujarati"
 }
 ```
+
+---
+
+### 16.2 Get Cached Prediction Translation
+
+```
+GET /predictions/{prediction_id}/translation?lang=hi
+```
+
+Returns a pre-cached translation for the specified prediction from the `entity_translations` table. This is faster than the dynamic `POST /translation` endpoint because translations are pre-computed in the background after each prediction.
+
+**Authentication:** Bearer token required.
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `prediction_id` | integer | The prediction whose translation to retrieve |
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `lang` | string | ✅ Target language code: `hi` (Hindi) or `gu` (Gujarati) |
+
+#### Example Response `200 OK`
+
+```json
+{
+  "prediction_id": 42,
+  "lang": "hi",
+  "translations": {
+    "immediate_action": "...",
+    "treatment": "...",
+    "prevention": "...",
+    "monitoring": "..."
+  }
+}
+```
+
+#### Error Responses
+
+| Status | Condition |
+|---|---|
+| `404 Not Found` | No pre-computed translation exists for this prediction and language yet |
+
+---
+
+## 16.5 Internal Cron Endpoint
+
+### 16.5.1 Weather Risk Evaluation (Cron Webhook)
+
+```
+POST /internal-cron/weather-risk
+POST /api/v1/internal-cron/weather-risk
+```
+
+Triggers the proactive weather risk evaluation job for all registered farms. This endpoint is called on a schedule by **QStash** (Upstash serverless cron) in production. It is protected by the `CRON_SECRET` header and should not be called directly by clients.
+
+**Authentication:** `CRON_SECRET` header (not a Bearer token).  
+**Caller:** QStash on schedule.
+
+#### Request Headers
+
+| Header | Value |
+|---|---|
+| `CRON_SECRET` | Must match the server's configured `CRON_SECRET` environment variable |
+
+#### Example Response `200 OK`
+
+```json
+{
+  "detail": "Weather risk evaluation triggered",
+  "farms_evaluated": 312,
+  "alerts_created": 8
+}
+```
+
+#### Error Responses
+
+| Status | Condition |
+|---|---|
+| `401 Unauthorized` | Missing or invalid `CRON_SECRET` header |
 
 ---
 
@@ -2011,18 +2148,25 @@ WebSocket /ws/predictions/{prediction_id}
 
 Streams real-time pipeline progress events for a prediction. Connect immediately after `POST /predict` to receive live stage updates.
 
-**Authentication:** Pass the access token as a query parameter:
+**Authentication:** The prediction's ownership is verified via an initial database lookup when the WebSocket connection is established. No access token is passed in the URL.
 
 ```
-ws://localhost:8000/ws/predictions/42?token=<access_token>
+ws://host/ws/predictions/42
 ```
+
+#### Event Delivery — Mode Differences
+
+| Mode | Mechanism |
+|---|---|
+| **`REQUIRE_REDIS=False` (sync / default)** | WebSocket endpoint still works, but stage events are driven by **DB polling** (every ~3 seconds). The pipeline has already completed synchronously, so the socket typically delivers a single "completed" event after the poll. |
+| **`REQUIRE_REDIS=True` (ARQ / async)** | Stage events are published to Redis pub/sub channels as the ARQ worker progresses. The WebSocket streams these events in real time. |
 
 #### Connection Flow
 
 ```
 Client                              Server
   |                                   |
-  |--- WS Connect (token in query) -->|
+  |--- WS Connect ------------------->|
   |<-- Connected (handshake) ---------|
   |<-- Event: preprocessing started--|
   |<-- Event: preprocessing done ----|

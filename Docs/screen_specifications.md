@@ -3,7 +3,20 @@
 **Project:** AI-Powered Smart Farming  
 **Version:** 1.0  
 **Date:** September 2026  
-**Status:** Active / Production Reference  
+**Status:** ⚠️ SUPERSEDED — See [`UI_UX_Spec.md`](UI_UX_Spec.md)  
+
+> [!WARNING]
+> This document is a **legacy design-phase specification** and is no longer the authoritative UI reference. It has been superseded by [`UI_UX_Spec.md`](UI_UX_Spec.md), which documents the current Tailwind CSS design system, actual React routes, component API, i18n strategy, and role-access matrix as implemented.
+>
+> Notable discrepancies vs. current implementation:
+> - Routes use `/auth/login` and `/auth/register` (not `/login` and `/register`)
+> - Processing route is `/predictions/:id/processing` (not `/processing`)
+> - Results route is `/predictions/:id` (not `/results/:id` or `/result/:id`)
+> - Farm settings route is `/farm/settings` (not `/farm`)
+> - Expert pages are at `/admin/expert` and `/admin/expert/:id`
+> - Admin-only: `/admin/metrics`, `/admin/users`; Expert+Admin: `/admin/feedback`, `/admin/expert`
+>
+> This file is kept for historical reference only.
 
 ---
 

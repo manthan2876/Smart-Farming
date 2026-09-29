@@ -1,4 +1,4 @@
-Smart-Farming/ (98966 files)
+Smart-Farming/ (98985 files)
     ├── Datasets/ (98459 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
@@ -277,7 +277,7 @@ Smart-Farming/ (98966 files)
         ├── smart_farming_roadmap.pdf
         ├── smart_farming_roadmap_stage10_plus.pdf
         ├── smart_farming_roadmap_v2.pdf
-    ├── backend/ (114 files)
+    ├── backend/ (127 files)
         ├── alembic/ (2 files)
             ├── versions/ (1 files)
                 ├── 0001_add_feedback_review_fields.py
@@ -288,23 +288,34 @@ Smart-Farming/ (98966 files)
             ├── dependency_links.txt
             ├── requires.txt
             ├── top_level.txt
-        ├── data/ (6 files)
-            ├── audio/ (2 files)
+        ├── data/ (12 files)
+            ├── audio/ (4 files)
+                ├── 3195df5b2fd52926b649e57d74b54dbe87eb8bd91aa8591bafbdac648a0c1c66.mp3
                 ├── 6dcc7bc959c23c0b7d2aeaab1e9cb3996f5c1e363fcf9245ad3292c028a7aa2c.mp3
                 ├── d07762cb505c39c554a9a4e235ee447858573a5250711752a6c3982e249c7d46.mp3
-            ├── processed/ (2 files)
+                ├── f1ede4688c740437cbe9b5ca99bcbceee404a4560f5275f94df8dc1c14963f83.mp3
+            ├── processed/ (4 files)
                 ├── 4b8d76092c74ea448ec5831fa2c7b44b5fc4d0e8330e20065e1975c74212f03e.jpg
                 ├── a0ec0cc715ac06831ef73c2930c9305d08127f9cc74d0a4020b2041a31d0a66b.jpg
-            ├── uploads/ (2 files)
+                ├── a95b482ea5e36cff7f5b9ec6f81b67d81efa2bcf214d20195d66e6a8311a62ed.jpg
+                ├── bf415de97004ebf47a7199b6d3cac923f01b2be6fe15a94fdf355e2037ef24ec.jpg
+            ├── uploads/ (4 files)
                 ├── 4b8d76092c74ea448ec5831fa2c7b44b5fc4d0e8330e20065e1975c74212f03e.jpg
                 ├── a0ec0cc715ac06831ef73c2930c9305d08127f9cc74d0a4020b2041a31d0a66b.jpg
-        ├── scripts/ (2 files)
+                ├── a95b482ea5e36cff7f5b9ec6f81b67d81efa2bcf214d20195d66e6a8311a62ed.jpg
+                ├── bf415de97004ebf47a7199b6d3cac923f01b2be6fe15a94fdf355e2037ef24ec.jpg
+        ├── scripts/ (7 files)
+            ├── migrate_render_to_supabase.py
             ├── migrate_to_s3.py
+            ├── setup_qstash_schedules.py
             ├── train_eval.py
-        ├── src/ (82 files)
-            ├── app/ (82 files)
-                ├── api/ (19 files)
-                    ├── endpoints/ (17 files)
+            ├── verify_gcs_storage.py
+            ├── verify_qstash_and_events.py
+            ├── verify_upstash_features.py
+        ├── src/ (83 files)
+            ├── app/ (83 files)
+                ├── api/ (20 files)
+                    ├── endpoints/ (18 files)
                         ├── __init__.py
                         ├── admin.py
                         ├── alerts.py
@@ -315,6 +326,7 @@ Smart-Farming/ (98966 files)
                         ├── feedback.py
                         ├── health.py
                         ├── history.py
+                        ├── internal_cron.py
                         ├── mlops.py
                         ├── model_registry.py
                         ├── predict.py
@@ -324,15 +336,16 @@ Smart-Farming/ (98966 files)
                         ├── weather.py
                     ├── __init__.py
                     ├── deps.py
-                ├── core/ (11 files)
+                ├── core/ (12 files)
                     ├── __init__.py
                     ├── arq.py
                     ├── config.py
                     ├── database.py
+                    ├── events.py
                     ├── init_db.py
                     ├── limiter.py
                     ├── paths.py
-                    ├── scheduler.py
+                    ├── redis_rest.py
                     ├── security.py
                     ├── session.py
                     ├── storage.py
@@ -370,7 +383,7 @@ Smart-Farming/ (98966 files)
                     ├── user.py
                 ├── scripts/ (1 files)
                     ├── backfill_translations.py
-                ├── services/ (15 files)
+                ├── services/ (14 files)
                     ├── rag/ (2 files)
                         ├── __init__.py
                         ├── retriever.py
@@ -389,7 +402,6 @@ Smart-Farming/ (98966 files)
                     ├── __init__.py
                     ├── model_client.py
                     ├── prediction_job.py
-                    ├── weather_cron.py
                 ├── utils/ (3 files)
                     ├── __init__.py
                     ├── json_utils.py
@@ -415,12 +427,13 @@ Smart-Farming/ (98966 files)
             ├── test_observability.py
             ├── test_pipeline.py
             ├── test_storage.py
+        ├── .dockerignore
         ├── .env
         ├── .env.example
+        ├── Dockerfile
         ├── alembic.ini
         ├── config.yaml
-        ├── count.py
-        ├── folder_tree.txt
+        ├── dev_database.db
         ├── model_registry.json
         ├── package-lock.json
         ├── pyproject.toml
@@ -432,11 +445,11 @@ Smart-Farming/ (98966 files)
         ├── processed/ (2 files)
             ├── aphids_tomato.jpeg
             ├── media_1789974766831.jpg
-    ├── frontend/ (71 files)
+    ├── frontend/ (75 files)
         ├── public/ (2 files)
             ├── aphids_tomato.jpeg
             ├── favicon.svg
-        ├── src/ (55 files)
+        ├── src/ (58 files)
             ├── api/ (9 files)
                 ├── admin.ts
                 ├── alerts.ts
@@ -447,22 +460,25 @@ Smart-Farming/ (98966 files)
                 ├── farm.ts
                 ├── predictions.ts
                 ├── types.ts
-            ├── components/ (12 files)
-                ├── ui/ (7 files)
+            ├── components/ (14 files)
+                ├── ui/ (8 files)
                     ├── Badge.tsx
                     ├── Button.tsx
                     ├── Card.tsx
                     ├── Input.tsx
                     ├── Modal.tsx
+                    ├── Select.tsx
                     ├── Table.tsx
                     ├── index.ts
                 ├── Appshell.tsx
                 ├── ProtectedRoute.tsx
                 ├── PublicNav.tsx
-                ├── SideBar.tsx
+                ├── Sidebar.tsx
+                ├── ThemeToggle.tsx
                 ├── Toast.tsx
-            ├── context/ (1 files)
+            ├── context/ (2 files)
                 ├── AuthContext.tsx
+                ├── ThemeContext.tsx
             ├── hooks/ (2 files)
                 ├── usePredict.ts
                 ├── useToast.ts
@@ -512,6 +528,7 @@ Smart-Farming/ (98966 files)
         ├── tsconfig.json
         ├── tsconfig.node.json
         ├── tsconfig.node.tsbuildinfo
+        ├── vercel.json
         ├── vite.config.d.ts
         ├── vite.config.js
         ├── vite.config.ts
@@ -746,7 +763,7 @@ Smart-Farming/ (98966 files)
         ├── pubspec.lock
         ├── pubspec.yaml
         ├── smart_farming_mobile.iml
-    ├── model_service/ (60 files)
+    ├── model_service/ (62 files)
         ├── models/ (48 files)
             ├── csvs/ (7 files)
                 ├── cotton_disease_manifest.csv
@@ -813,6 +830,8 @@ Smart-Farming/ (98966 files)
                 ├── severity.py
             ├── loader.py
             ├── pipeline.py
+        ├── .dockerignore
+        ├── Dockerfile
         ├── config.yaml
         ├── main.py
         ├── requirements.txt

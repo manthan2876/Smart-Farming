@@ -189,6 +189,19 @@ Used in decoupled microservices architectures (such as Google Cloud Run):
 | `REDIS_URL` | string | `redis://127.0.0.1:6379` | Legacy Redis connection URL used by the local Docker ARQ job queue. |
 | `REQUIRE_REDIS` | bool | `False` | Determines whether the backend requires local TCP Redis to run.<br>• **Cloud Run Production:** Must be **`False`**. Persistent ARQ polling workers prevent scale-to-zero and exhaust monthly free-tier quotas. With `REQUIRE_REDIS=False`, predictions run synchronously via HTTP to the inference service, allowing Cloud Run to scale to **0 instances** when idle.<br>• **Docker Compose / VM:** Can be set to `True` when running persistent background ARQ worker containers. |
 
+### QStash (Serverless Cron)
+
+Upstash QStash is used for durable, serverless cron scheduling in Cloud Run production environments — replacing ARQ polling workers that would otherwise prevent scale-to-zero.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `QSTASH_REGION` | string | `US_EAST_1` | QStash region (e.g., `US_EAST_1`). |
+| `QSTASH_URL` | string | `None` | Upstash QStash API base URL (e.g., `https://qstash-us-east-1.upstash.io/v2`). |
+| `QSTASH_TOKEN` | string | `None` | QStash bearer token for publishing scheduled jobs. |
+| `QSTASH_CURRENT_SIGNING_KEY` | string | `None` | Current signing key for verifying incoming QStash webhook requests. |
+| `QSTASH_NEXT_SIGNING_KEY` | string | `None` | Next signing key used during key rotation to maintain zero-downtime verification. |
+| `CRON_SECRET` | string | `None` | Shared secret for verifying internal cron webhook requests delivered from QStash. |
+
 ### File Uploads & Local Paths
 
 | Variable | Type | Default | Description |
@@ -341,6 +354,9 @@ API Process
 
 > [!NOTE]
 > In serverless Cloud Run deployments (`REQUIRE_REDIS=False`), threshold updates are persisted to Upstash Redis REST under key `sf:config:thresholds`. All autoscaled backend and inference instances dynamically read this key, ensuring instantaneous system-wide synchronization without requiring worker polling daemons or container restarts.
+
+> [!NOTE]
+> In production, the `internal-cron` endpoint (`POST /internal/cron/weather-risk`) acts as a QStash webhook receiver. QStash publishes to this endpoint on schedule, triggering server-side weather risk evaluation without a persistent polling worker. When `PUT /admin/config` updates thresholds, the new values are written to `sf:config:thresholds` in Upstash Redis REST and are picked up by the next cron invocation automatically.
 
 ---
 

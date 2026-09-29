@@ -36,6 +36,8 @@
 
 > [!CAUTION]
 > **Production guard:** The server refuses to start if `JWT_SECRET_KEY` is left at its default value. This prevents accidental deployment with an insecure secret.
+>
+> **Note:** `DEBUG=True` is required for local development. When `DEBUG=True` is set, the default JWT key is also permitted, so the startup guard described above is not enforced in that mode.
 
 ---
 
@@ -66,7 +68,7 @@ X-User-ID: <user_id>
 ```
 
 > [!WARNING]
-> The `X-User-ID` header bypass is **only** active when `DEBUG=true`. It must never be reachable in production. This header is accepted as a convenience during local development and testing.
+> The `X-User-ID` header bypass is **only** active when the `DEBUG=True` environment variable is set. It must never be reachable in production. This header is accepted as a convenience during local development and testing.
 
 ---
 
@@ -124,6 +126,9 @@ admin
 | **Feedback** | View all farmer feedback | `GET /admin/feedback` |
 | **Feedback** | Mark farmer feedback as reviewed | `POST /feedback/{id}/review` |
 | **Media** | Access media for any prediction **in their review queue** (status: `pending` or `verified`) | `/media/*` |
+
+> [!NOTE]
+> **Frontend vs. backend routes:** The expert pages are mounted on the frontend at `/admin/expert` (queue list) and `/admin/expert/:id` (review detail). The backend API routes they call remain `/expert/queue` and `/expert/reviews/{id}` as shown in the table above.
 
 ---
 
@@ -237,6 +242,7 @@ A prediction moves through the following statuses from upload to final resolutio
 |---|---|
 | `processing` | Image received; AI model inference is running |
 | `ready` | Inference complete; result available to farmer |
+| `completed` | Inference complete; synonym for `ready`; used by synchronous execution mode |
 | `failed` | Inference encountered an error |
 | `pending_expert_review` | Flagged for agronomist review (low confidence or explicit request) |
 | `verified` | Expert has reviewed and confirmed or corrected the result |

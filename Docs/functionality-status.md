@@ -26,16 +26,25 @@ This document describes what the project currently does, how complete each capab
 
 ## Executive Summary
 
-The core AI diagnosis pipeline runs end-to-end via the ARQ background worker with full per-stage event publishing:
+The core AI diagnosis pipeline supports two execution modes controlled by `REQUIRE_REDIS`:
+
+**Default / Serverless mode (`REQUIRE_REDIS=False`):**
 
 1. The user uploads a JPEG, PNG, or WebP leaf image via `POST /predict`.
-2. The backend validates, hashes, and saves the file. A synchronous quality check runs immediately; user-readable error messages are returned for blur, lighting, and no-leaf failures.
-3. The prediction job is enqueued into ARQ; a placeholder DB record and `prediction_id` are returned immediately.
-4. The ARQ worker runs the 9-stage pipeline: preprocessing → crop identification → decision routing → disease classification → severity estimation → pest detection → weather → recommendation → persistence. Each stage publishes a Redis live event and writes an intermediate DB snapshot.
+2. The backend validates the content-type and extension, verifies the file bytes with PIL `Image.verify()` (magic-byte check), hashes the image, and checks the Upstash Redis REST dedup cache (`sf:dedup:{hash}`, 24 h TTL). A cached completed result is returned immediately.
+3. The image is saved to the active storage backend (local disk + GCS in production).
+4. `run_pipeline()` is called **synchronously** in the request: calls the model service (Cloud Run Service #2) via HTTPS with OIDC auth, runs the 8-stage pipeline (preprocessing → crop identification → decision routing → disease classification → severity estimation → pest detection → weather → recommendation), then persists to PostgreSQL.
 5. A RAG retriever injects verified agronomic safety guidelines (pesticide bans, PHI constraints) into the LLM prompt.
-6. If the requested language is not English, the recommendation is auto-translated via Google Cloud Translation API with an LLM fallback, and cached permanently in `prediction.result["translations"]`.
-7. If disease or crop confidence is below the configured threshold, `ensure_expert_review()` automatically creates a pending expert-review record in the same transaction.
-8. The final result is stored in PostgreSQL and available via REST and WebSocket.
+6. The completed result is saved to Upstash Redis REST dedup cache and returned immediately in the same HTTP response. `FastAPI BackgroundTasks` pre-translates the recommendation into Hindi and Gujarati, storing them in the `entity_translations` table for instant future lookups.
+7. If disease or crop confidence is below the configured threshold, `ensure_expert_review()` automatically creates a pending expert-review record.
+
+**ARQ worker mode (`REQUIRE_REDIS=True`):**
+
+1–3. Same upload, validation, and storage steps as above.
+4. The prediction job is enqueued into ARQ; a placeholder DB record and `prediction_id` are returned immediately (202-style response).
+5. The ARQ worker runs the pipeline; each stage publishes a Redis pub/sub event for WebSocket streaming. The `POST /predict` response is a placeholder with `status.pipeline: "processing"`.
+
+**Scheduled crons (production):** QStash (`QSTASH_TOKEN`, `QSTASH_URL`) delivers webhook calls to `/api/v1/internal-cron/weather-risk` (verified with `CRON_SECRET`) for proactive weather-risk alert generation.
 
 The mobile application has been fully rebuilt from a prototype to a working farmer-facing client: full JWT authentication, farm/plot management, weather with TTS, alerts, feedback, expert-review escalation, on-demand translation, and a cloud TTS service with on-device fallback — all orchestrated by a 5-screen bottom-navigation shell (`FarmerShell`).
 
@@ -61,31 +70,32 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 - `POST /predict` accepts JPEG, PNG, and WebP via multipart form upload.
 - `settings.UPLOAD_MAX_BYTES` enforces a server-side file size limit (default 10 MB).
-- The file content is SHA-256 hashed; identical image bytes reuse the same filename on disk, and a completed prediction for the same file and plot can be returned from cache.
+- **File bytes are independently verified:** PIL `Image.verify()` (magic-byte / header decode check) runs before the file is persisted. Malformed files with a valid extension are rejected with `400 Bad Request`.
+- The file content is SHA-256 hashed; identical image bytes reuse the same filename on disk.
+- A completed prediction for the same file and same plot is returned from the Upstash Redis REST dedup cache (24 h TTL) without re-running the pipeline.
 - Files are saved under `backend/data/uploads` via `core/paths.py`; all path logic runs through `resolve_storage_path()`, which prevents path traversal outside the configured storage root.
-- A synchronous preprocessing check runs before the ARQ job is enqueued; user-readable rejection reasons (including actual sharpness and brightness scores) are returned for `failed_blur`, `failed_lighting`, and `failed_no_leaf`.
-- If the ARQ pool is unavailable, a `503` is returned immediately and the prediction record is marked failed.
-- Content-type headers are validated (`_ALLOWED_CONTENT_TYPES`).
+- In `REQUIRE_REDIS=False` mode (default), a synchronous model-service call runs the full pipeline within the request and returns the completed result immediately. In `REQUIRE_REDIS=True` (ARQ) mode, a quality pre-check runs synchronously before enqueuing; user-readable rejection reasons are returned for `failed_blur`, `failed_lighting`, and `failed_no_leaf`.
+- Content-type headers are validated (`_ALLOWED_CONTENT_TYPES`); extension-based fallback handles clients that omit content-type.
 
 **Known gaps:**
 
-- File content is not independently verified (only content-type and extension are checked). A malformed file with a valid extension can pass initial validation.
-- No idempotency key for two simultaneous identical requests arriving in parallel.
+- No idempotency key for two simultaneous identical requests arriving in parallel (race condition window between dedup check and prediction insert).
+- Default lat/lon fallback is Warsaw (52.2297, 21.0122) — a dev artifact; unset clients produce geographically incorrect weather data.
 - Upload metadata such as device model, capture time, or GPS EXIF is not extracted or stored.
 
 **Relevant code:**
 
-- [predict.py](../backend/src/app/api/endpoints/predict.py) — upload handler, quality pre-check, ARQ enqueue
+- [predict.py](../backend/src/app/api/endpoints/predict.py) — upload handler, PIL validation, dedup cache, sync pipeline or ARQ enqueue
 - [preprocessing/service.py](../backend/src/app/services/preprocessing/service.py) — blur/lighting/leaf detection
 - [core/paths.py](../backend/src/app/core/paths.py) — path resolution and traversal protection
 - [core/config.py](../backend/src/app/core/config.py) — upload size and storage roots
 
 **What to improve:**
 
-- Validate file bytes with a magic-number or image-decode check before persisting.
-- Add idempotency protection for concurrent duplicate uploads.
-- Surface content-type rejection as a clear user message.
-- Add tests for oversized files, wrong content-type, duplicate concurrent uploads, and missing ARQ.
+- Add idempotency protection for concurrent duplicate uploads (dedup check → insert race window).
+- Resolve Warsaw default lat/lon — require clients to send location or improve GPS fallback.
+- Surface content-type rejection as a clear user-facing message on the scan page.
+- Add tests for oversized files, wrong content-type, duplicate concurrent uploads.
 
 ---
 
@@ -108,7 +118,6 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **Known gaps:**
 
-- Quality thresholds are embedded in service logic and must be changed in code, not config.
 - No labeled test set for calibrating thresholds against real farmer photos.
 - No separate heatmap or attribution artifact is produced; the processed image is the only artifact.
 - Decoder/memory failures from malformed images are not explicitly handled.
@@ -118,9 +127,11 @@ The web frontend is a functional multi-role application with a shared typed API 
 - [preprocessing/service.py](../backend/src/app/services/preprocessing/service.py)
 - [preprocessing/leaf_isolator.py](../backend/src/app/services/preprocessing/leaf_isolator.py)
 
+> [!NOTE]
+> Quality thresholds (`blur_var_threshold`, `min_brightness`, `max_brightness`) are already configurable in [`config.yaml`](../backend/config.yaml) and can be tuned without code changes. Dynamic runtime overrides are also supported via Upstash Redis REST (`sf:config:thresholds`).
+
 **What to improve:**
 
-- Move quality thresholds to `config.yaml` so they can be tuned without code changes.
 - Validate threshold values against a representative labeled test set.
 - Add protective handling for malformed, truncated, or adversarial images.
 - Add regression tests covering good, blurry, dark, bright, and no-leaf images.
@@ -133,11 +144,12 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Runs the configured EfficientNet-B0 crop classifier against the processed leaf image.
+- Runs the configured EfficientNet-B0 crop classifier against the processed leaf image (`crop_identifier_v1.pth`).
 - Returns crop label, confidence, and top-k probability information.
 - Supported crops: Cotton, Groundnut, Pepper Bell, Potato, Tomato.
 - Model file path and labels file are resolved at startup; model name and version are included in the `provenance` block of every prediction result.
 - Confidence is stored in `prediction.crop_conf` for drift monitoring and expert escalation decisions.
+- The confidence routing threshold (`thresholds.crop_confidence`, default `0.7`) is read from [`config.yaml`](../backend/config.yaml); predictions below this threshold trigger automatic expert escalation.
 
 **Known gaps:**
 
@@ -190,10 +202,11 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Loads the crop-specific EfficientNet disease classifier.
+- Loads the crop-specific EfficientNet-B2 disease classifier (one model per supported crop, see [`config.yaml`](../backend/config.yaml)).
 - Returns disease label, confidence, probability distribution, and model metadata.
 - Uses the preprocessed leaf image from the shared context.
 - Confidence is stored in `prediction.disease_conf` for drift monitoring and automatic expert escalation.
+- Predictions below `thresholds.disease_confidence` (default `0.7`, configurable in `config.yaml`) automatically trigger expert review.
 - Model name, version, and file are recorded in the `provenance` block.
 
 **Known gaps:**
@@ -207,7 +220,6 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Define a calibrated low-confidence policy (e.g., always escalate if confidence < N%).
 - Add per-crop precision/recall/F1 monitoring from expert review data.
 - Add tests for missing weights, incompatible label files, and low-confidence predictions.
 
@@ -249,7 +261,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Supports a configured YOLO classification model for pest detection.
+- Supports a configured YOLO classification model for pest detection (`models/pest_classifier/pest_classifier.pt`, as set in [`config.yaml`](../backend/config.yaml)).
 - Returns ranked pest probabilities and labels when the model is available.
 - The pipeline continues gracefully when the pest model is absent or unavailable.
 - Model availability and name are recorded in the `provenance` block.
@@ -276,25 +288,25 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 ### 1.8 Weather data and advisory
 
-**Status: Mostly implemented**
+**Status: Partial**
 
 **What works:**
 
-- `GET /weather` fetches current weather via OpenWeatherMap (or the configured provider).
-- Returns temperature, humidity, wind speed, pressure, cloudiness, and condition.
-- Weather data is in-memory cached for 10 minutes per lat/lon coordinate.
-- A personalized agricultural advisory is generated using the AI recommendation service, with a rule-based fallback that accounts for precipitation, high humidity, extreme heat, and cold.
-- Advisory is translated on-demand: if `language` is specified, the advisory is translated via Google Cloud Translation API and cached in the in-memory weather cache.
-- `POST /weather/translate` provides a standalone translation endpoint for any advisory text.
-- Weather context is shared with the pipeline: the `fetch_weather` stage in `prediction_job.py` incorporates weather into the LLM recommendation prompt. External failures degrade the result gracefully (`is_degraded=True`) without failing the prediction.
+- `fetch_weather()` in `weather/service.py` reads `lat`/`lon` from `context["user"]` and calls the OpenWeatherMap REST API (`data/2.5/weather`).
+- Returns temperature, feels-like, min/max, humidity, pressure, wind speed/direction, cloudiness, and weather condition/description.
+- External failures set `is_degraded=True` and mark the weather stage as failed without aborting the prediction pipeline.
 - Weather provider status and degraded flag are included in the `provenance` block.
-- Web `WeatherPage.tsx` auto-translates the advisory when the user switches language, with an in-flight deduplication guard.
+- Weather data is injected into the pipeline context and used by the LLM recommendation prompt in subsequent stages.
+- The `GET /weather` endpoint resolves coordinates from request parameters or falls back to the farmer's registered farm in profile (`user.farm.latitude`, `user.farm.longitude`); rejects with HTTP 400 if neither is configured.
+- Implements two layers of caching: Upstash Redis REST cache (`sf:weather:{cache_key}`) with 10-minute TTL and in-memory cache `_WEATHER_CACHE` (10-minute TTL).
+- Generates a farm-specific advisory paragraph via `generate_weather_advisory()` (calling Qwen3-4B with crop history and weather context) with automatic fallback to `_generate_rule_based_advisory()`.
+- On-demand advisory translation is supported via `POST /weather/translate` and inline parameter `GET /weather?language=...` using Google Cloud Translation API.
 
 **Known gaps:**
 
-- The weather cache is in-process and not shared across multiple FastAPI workers or restarts.
-- The cache does not invalidate on language change: the first language cached per coordinate wins.
-- The `GET /weather` default lat/lon is a hardcoded Warsaw coordinate (52.2297, 21.0122) — a development artifact.
+- The pipeline prediction path (`predict.py`) has a hardcoded default fallback to Warsaw coordinates (52.2297, 21.0122) when form parameters are omitted by clients.
+- `fetch_weather()` in the standalone pipeline context does not query the Upstash Redis weather cache before making an HTTP request (only the `GET /weather` endpoint checks the Redis cache).
+- No 5-day extended forecast visualization in the web frontend.
 
 **Relevant code:**
 
@@ -304,10 +316,10 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Remove the hardcoded Warsaw default; require explicit coordinates.
-- Move the in-memory cache to Redis for multi-worker and restart consistency.
-- Add timeout, retry, and provider rate-limit handling.
-- Add tests for provider timeout, malformed response, missing API key, and translation failures.
+- Unify pipeline weather fetching with the Upstash Redis cache `sf:weather:{lat}:{lon}` to eliminate redundant external API calls during predictions.
+- Remove the Warsaw default from `predict.py` form parameters; require coordinates or use the authenticated farmer's registered farm location.
+- Add extended 5-day forecast display to the web weather dashboard.
+- Add tests for provider timeout, malformed response, and missing API key.
 
 ---
 
@@ -317,23 +329,23 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Builds a structured recommendation from crop, disease, severity, weather, location, and context.
-- Calls a HuggingFace `Qwen/Qwen3-4B-Instruct-2507` model via the nscale provider when an `HF_TOKEN` is configured.
+- Builds a structured recommendation from crop, disease, severity, weather, location, and pest context.
+- Calls `Qwen/Qwen3-4B-Instruct-2507` via the HuggingFace `InferenceClient` with the **nscale** provider when `HF_TOKEN` is configured.
 - A lightweight in-process RAG retriever (`services/rag/retriever.py`) performs TF-IDF cosine similarity over a curated knowledge base (6 disease/crop chunks + general safety):
-  - Crops covered: Cotton (bollworm), Tomato (early blight), Rice (blast), Wheat (rust), Groundnut (leaf spot), and a general pesticide safety chunk.
+  - Crops covered: **Cotton** (bollworm, leaf curl/bacterial blight), **Tomato** (early & late blight), **Potato** (early & late blight), **Pepper Bell** (anthracnose, bacterial spot), **Groundnut** (tikka leaf spot, rust), and a general pesticide safety chunk.
   - Banned pesticides explicitly listed: Endosulfan, Monocrotophos, Methyl Parathion, Phorate, Carbaryl.
   - PHI constraints, application timing, and organic alternatives are included.
-  - The general safety chunk is always included regardless of relevance score.
+  - The general safety chunk is always appended regardless of relevance score (threshold `0.04`).
   - Retrieved context is injected into the LLM system prompt before every recommendation.
-- Returns structured output: `immediate_action`, `treatment`, `prevention`, `monitoring`, `pesticide`, `safety_disclaimer`.
-- Falls back to generic agronomic advice when the LLM is unavailable or returns invalid JSON.
+- Returns structured output validated by a `LLMRecommendation` Pydantic model: `immediate_action`, `treatment`, `prevention`, `monitoring`. A `safety_disclaimer` is appended unconditionally post-validation.
+- Falls back to a hard-coded rule-based response (not an external service) when the LLM is unavailable or its output fails Pydantic validation. The fallback sets `is_fallback=True` and records the reason.
 - Provider, model name, prompt version, fallback status, and fallback reason are recorded in the `provenance` block.
 
 **Known gaps:**
 
-- RAG knowledge base covers 5 crops; Cotton, Pepper Bell, and Potato disease-specific rules are not in the knowledge base.
+- RAG knowledge base does not currently cover unsupported crops (e.g., Rice, Wheat); a query for an unrecognised crop will fall back to the general safety chunk only.
 - No feedback loop from expert corrections back into the knowledge base.
-- The LLM's structured JSON output is not formally validated by a Pydantic schema; malformed output falls back silently.
+- `retrieve_context_with_ids()` returns retrieved chunk IDs but they are not yet persisted per-prediction for audit purposes.
 
 **Relevant code:**
 
@@ -342,10 +354,10 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Expand the RAG knowledge base to cover all supported crops (Cotton disease, Pepper Bell disease, Potato disease, etc.).
-- Add Pydantic validation for the LLM JSON output.
+- Expand the RAG knowledge base to cover additional crops as the model is extended.
+- Persist retrieved chunk IDs per prediction for retrieval auditability.
 - Add retrieval correctness tests (query → expected chunks).
-- Log which chunks were retrieved for each prediction for auditability.
+- Add integration tests for HF_TOKEN missing, nscale timeout, and Pydantic validation failure paths.
 
 ---
 
@@ -355,35 +367,35 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `predict.py` calls `_enqueue_prediction_job()` which submits the job to ARQ via `arq_pool.enqueue_job()`. If the ARQ pool is not initialized, `503` is returned immediately; no silent degradation.
-- `services/prediction_job.py` is the canonical worker path. It calls all 9 stages individually, publishing a live Redis event and writing an intermediate DB snapshot after each one:
-  - Stages: `preprocessing`, `crop_identification`, `decision_routing`, `disease_classification`, `severity` (+ alias `severity_calculation`), `pest_detection`, `weather`, `recommendation` (+ alias `llm_advisory`), `persistence`, final `completed`.
-  - Each event includes: `stage`, `status`, `message`, `timestamp`, `duration_ms`, and a `data` snapshot of the current crop/disease/pests/severity.
-- Intermediate DB writes after each stage: `prediction.result` and `prediction.crop/disease/severity_pct` columns are updated so REST polling always reflects current progress.
-- `run_pipeline()` in `pipeline.py` is a synchronous fallback path used for local testing and the admin health endpoint.
-- `reload_config()` is exposed and called by the model-promote endpoint to hot-reload `_CONFIG` and `_PREPROCESSOR` in the FastAPI process without a restart.
-- Automatic expert escalation: if disease or crop confidence is below the configured thresholds after the pipeline completes, `ensure_expert_review()` creates a pending `ExpertReview` record transactionally.
-- Auto-translation: if the requested language is not English, the recommendation is translated via `translate_recommendation_sync()` and stored in `prediction.result["translations"][lang_code]` before the final DB commit.
-- Worker settings: `max_jobs=2`, `job_timeout=900` seconds, `max_tries=3`.
+- **Synchronous mode (default, `REQUIRE_REDIS=False`):** `predict.py` calls `run_pipeline()` directly. The pipeline executes end-to-end within the HTTP request, results are committed to DB, dedup-cached in Upstash Redis REST (`sf:dedup:{hash}`, 24 h TTL), and the full result is returned in the response. `FastAPI BackgroundTasks` pre-translates the recommendation into Hindi and Gujarati, storing per-field translations in the `entity_translations` table.
+- **ARQ worker mode (`REQUIRE_REDIS=True`):** `predict.py` calls `_enqueue_prediction_job()` which submits to ARQ via `arq_pool.enqueue_job()`. If the pool is not initialized, `503` is returned immediately. The ARQ worker (`services/prediction_job.py`) runs all stages, publishing a live Redis pub/sub event and writing an intermediate DB snapshot after each:
+  - Stages: `preprocessing`, `crop_identification`, `decision_routing`, `disease_classification`, `severity`, `pest_detection`, `weather`, `recommendation`, `persistence`, final `completed`.
+  - Each event includes: `stage`, `status`, `message`, `timestamp`, `duration_ms`, and a `data` snapshot.
+  - Worker settings: `max_jobs=2`, `job_timeout=900` seconds, `max_tries=3`.
+- **Job status endpoint:** `GET /job/{job_id}` returns ARQ job status (`complete`, `processing`, `not_found`).
+- `reload_config()` is called by the model-promote endpoint to hot-reload `_CONFIG` in the FastAPI process.
+- Automatic expert escalation: if disease or crop confidence is below the configured thresholds, `ensure_expert_review()` creates a pending `ExpertReview` record.
+- **Scheduled crons (production):** QStash delivers webhook calls to `/api/v1/internal-cron/weather-risk` (verified with `CRON_SECRET`) for proactive weather-risk alert generation.
 
 **Known gaps:**
 
-- `reload_config()` only updates the in-process FastAPI state; the ARQ worker process continues using its own copy of `_CONFIG` until restarted.
-- No idempotent retry: a retried job can re-process the same image, overwriting previous results and potentially duplicating alerts or reviews.
-- No `/job/{job_id}` status endpoint; clients must poll `GET /predictions/{id}` to check progress.
+- `reload_config()` only updates the in-process FastAPI state; the ARQ worker process (when `REQUIRE_REDIS=True`) continues using its own copy of `_CONFIG` until restarted.
+- In ARQ mode, no idempotent retry: a retried job can re-process the same image and potentially duplicate alerts or reviews.
+- In sync mode (`REQUIRE_REDIS=False`), WebSocket progress events are not emitted during pipeline execution; clients see the result only on completion.
 
 **Relevant code:**
 
-- [prediction_job.py](../backend/src/app/services/prediction_job.py)
-- [pipeline.py](../backend/src/app/pipeline.py)
-- [predict.py](../backend/src/app/api/endpoints/predict.py)
-- [worker.py](../backend/src/app/worker.py)
+- [prediction_job.py](../backend/src/app/services/prediction_job.py) — ARQ worker path
+- [pipeline.py](../backend/src/app/pipeline.py) — synchronous pipeline orchestrator
+- [predict.py](../backend/src/app/api/endpoints/predict.py) — route handler, mode selection
+- [worker.py](../backend/src/app/worker.py) — ARQ worker entrypoint
+- [internal_cron.py](../backend/src/app/api/endpoints/internal_cron.py) — QStash webhook handler
 
 **What to improve:**
 
-- Implement cross-process config reload (e.g., Redis pub/sub or inotify-based config file watcher in the worker).
-- Add idempotency protection so retried jobs do not duplicate results, alerts, or expert reviews.
-- Add a `/job/{job_id}` status endpoint.
+- Implement cross-process config reload for ARQ workers (e.g., Redis pub/sub or inotify file watcher).
+- Add idempotency protection so ARQ retried jobs do not duplicate results, alerts, or expert reviews.
+- Emit WebSocket progress events in sync mode for a live progress UX without ARQ.
 - Add worker health, queue depth, job latency, retry rate, and failure rate metrics.
 
 ---
@@ -399,20 +411,20 @@ The web frontend is a functional multi-role application with a shared typed API 
 - `POST /auth/register` accepts name, phone/email, password, language, location, lat/lon, crop history, and farm details. Phone or email is required; a `409` is returned for duplicates.
 - `POST /auth/login` authenticates with phone or email (`identifier` field) and password. Rate-limited to 5 requests per minute via `slowapi`.
 - Passwords are hashed with `pwdlib`.
+- `POST /auth/change-password` changes password for authenticated users (requires `old_password` and `new_password` with minimum 8 characters).
 - Access tokens: HS256 JWT, 30-minute expiry. Refresh tokens: HS256 JWT, 30-day expiry.
 - Both tokens use a shared `_secret_key()` function that reads `JWT_SECRET_KEY` from the environment, defaulting to `"change-this-development-secret-key-32-bytes"` when the variable is unset.
 - `POST /auth/refresh` reads the `refresh_token` cookie, decodes it, and issues a new token pair. Deduplication is handled in the frontend API client.
 - `POST /auth/logout` deletes the `refresh_token` cookie.
 - The `get_current_user` dependency accepts a Bearer token or falls back to the `X-User-ID` request header as a development convenience. This fallback is active in the current code.
 - `require_expert_role` and `require_admin_role` enforce DB-backed role checks (`user.role in ["expert", "admin"]` or `user.role == "admin"`).
-- The `refresh_token` cookie is currently set with `secure=False`.
+- The `refresh_token` cookie `secure` flag is set dynamically: `True` when `ENVIRONMENT == "production"`, `False` otherwise.
 - The web API client (`client.ts`) handles automatic token refresh with deduplication and dispatches a `tokenRefreshed` event for other tabs.
 
 **Known gaps:**
 
 - The default JWT secret is a hard-coded development value; a missing `JWT_SECRET_KEY` in production is silently accepted.
 - The `X-User-ID` fallback in `get_current_user` is active in production code paths.
-- `secure=False` on the refresh-token cookie must be changed before HTTPS deployment.
 - No refresh-token rotation or revocation.
 
 **Relevant code:**
@@ -426,8 +438,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 - Fail startup when `JWT_SECRET_KEY` equals the default development value.
 - Remove the `X-User-ID` fallback or limit it to an explicit `DEBUG=true` environment flag.
-- Set `secure=True` on the refresh cookie for all HTTPS deployments.
-- Add integration tests: register, login, refresh, logout, expired token, invalid token, role checks.
+- Add integration tests: register, login, refresh, logout, change-password, expired token, invalid token, role checks.
 
 ---
 
@@ -439,22 +450,23 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 - `GET /profile` returns the authenticated user's profile, including name, phone, email, language, role, and farm fields (location, lat/lon, crop history, farm name, area).
 - `PATCH /profile` updates name, language, location, lat/lon, and crop history.
+- Password change is supported via `POST /auth/change-password`.
 - Profile is returned on login and register as part of `AuthResponse`.
 - Mobile `ApiService.getProfile()` and `updateProfile()` call these endpoints; the result is used to pre-fill the `CreatePredictionSheet` and `FarmerShell` data.
 
 **Known gaps:**
 
-- Password update is not supported via `/profile` (no change-password endpoint).
 - Language preference is stored on the `User` model but is not automatically applied to weather or translation unless the client sends it explicitly.
+- Profile update does not provide fine-grained validation on phone format or name length.
 
 **Relevant code:**
 
 - [profile.py](../backend/src/app/api/endpoints/profile.py)
+- [auth.py](../backend/src/app/api/endpoints/auth.py)
 - [mobile/lib/services/api_service.dart](../mobile/lib/services/api_service.dart)
 
 **What to improve:**
 
-- Add a change-password endpoint.
 - Add account deletion and data-export endpoints if required by the product.
 - Add profile validation (name length, valid phone format, valid crop names).
 
@@ -466,8 +478,10 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `GET /farm` returns the farmer's farm with all plots.
+- `GET /farm` returns the farmer's farm with all plots and multilingual entity translation overlays for plot names.
 - `PUT /farm` creates or updates the farm with name, location, lat/lon, area, crop history, and GeoJSON boundary.
+- **GeoJSON polygon validation (`_validate_geojson_polygon`):** Verifies polygon type, minimum 4 coordinates, closed linear rings (`ring[0] == ring[-1]`), valid coordinate boundaries (`-180 <= lon <= 180`, `-90 <= lat <= 90`), and checks for absence of self-intersections via Shapely `poly.is_valid`.
+- **Geodesic area calculation:** Automatically calculates approximate geodesic farm area in acres using projected coordinates when geometry is submitted.
 - `POST /farm/plots` creates a new plot with name, crop, area, and optional geometry.
 - `PUT /farm/plots/{plot_id}` updates a plot.
 - `DELETE /farm/plots/{plot_id}` removes a plot.
@@ -478,9 +492,8 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **Known gaps:**
 
-- Farm boundary validation does not check for closed rings, self-intersections, winding order, or geographic coordinate range.
-- Area is user-supplied; it is not computed from the boundary geometry.
 - The mobile `FarmScreen` does not support editing farm-level details (name, location, area); only plot creation is exposed.
+- Plot-level ownership check is enforced on parent farm, but concurrent plot modifications lack optimistic locking.
 
 **Relevant code:**
 
@@ -489,8 +502,6 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Add GeoJSON geometry validation (closed rings, self-intersections, valid coordinates).
-- Add optional server-side area computation from geometry.
 - Expose farm-level edit in the mobile `FarmScreen`.
 - Add tests for invalid polygons, plot outside boundary, ownership isolation, and deleted farms.
 
@@ -703,22 +714,24 @@ The web frontend is a functional multi-role application with a shared typed API 
 **What works:**
 
 - `GET /expert/queue` returns all pending `ExpertReview` records with crop, disease, confidence, severity, and timestamps. Ordered by most recent.
-- `GET /expert/reviews/{review_id}` returns full review details including raw/processed image paths and all prediction fields.
+- `GET /expert/reviews/{review_id}` returns full review details including raw/processed presigned GCS image URLs and all prediction fields. Accepts a `lang` query parameter — if provided, `farmer_guidance` is translated via the `entity_translations` overlay before returning.
 - `POST /expert/reviews/{review_id}` processes a review:
+  - Accepts three `action` values: `'Override / Correct Findings'`, `'Request Rescan'`, or approve (any other value).
   - Persists: `decision`, `status="verified"`, `expert_id`, `farmer_guidance`, `internal_note`, `corrected_disease`, `corrected_severity`.
   - Updates `prediction.status` to `"rescan_requested"` or `"verified"`.
   - Updates `prediction.result["disease"]["label"]` and `prediction.disease` if a correction is provided. Updates `prediction.result["severity"]["percent"]` and `prediction.severity_pct` if a corrected severity is provided. `flag_modified` is called to ensure SQLAlchemy tracks the JSON mutation.
   - Creates a farmer-facing alert (with duplicate guard) of kind `"review_verified"`.
   - Optionally creates a `DatasetCandidate` record when `add_to_retraining=true`.
+  - Enqueues background translation tasks via `enqueue_translation` for both `farmer_guidance` and the generated alert.
+  - State-machine enforcement: only `pending` reviews can be submitted; re-submitting a `verified` review returns HTTP 409.
 - Automatic low-confidence escalation: `prediction_job.py` calls `ensure_expert_review()` transactionally when disease or crop confidence is below threshold; `prediction.status` is set to `"pending_expert_review"`.
 - Farmer can also manually request review via `POST /predictions/{id}/expert-request` (mobile `ResultDetailSheet` button).
 - Web `ExpertQueuePage.tsx` and `ExpertReviewPage.tsx` render the queue and review forms.
 
 **Known gaps:**
 
-- `corrected_severity` is only persisted if the payload passes a numeric value; string inputs (e.g., `"Moderate (32%)"`) are silently ignored with a bare `except: pass`.
 - No reviewer assignment or duplicate-review protection (two experts can submit reviews for the same record simultaneously).
-- No state-machine enforcement: a `"verified"` review can be re-submitted.
+- No frontend locking to prevent stale updates if two experts open the same review queue item concurrently.
 
 **Relevant code:**
 
@@ -730,9 +743,8 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Fix severity parsing: accept numeric strings and strip percentage / label suffixes.
 - Add concurrent-submission protection (optimistic locking or a `reviewed_at IS NULL` guard).
-- Add explicit state transitions and reject re-submission of already-verified reviews.
+- Add reviewer assignment (`claimed_by`) to prevent duplicate work across active agronomists.
 - Add authorization tests: expert cannot review another expert's submitted review.
 
 ---
@@ -743,9 +755,10 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `GET /alerts` returns the authenticated user's last 20 alerts, ordered by creation date, including `id`, `prediction_id`, `kind`, `severity`, `title`, `body`, `is_read`, and `created_at`.
+- `GET /alerts` returns the authenticated user's last 20 alerts, ordered by creation date, including `id`, `prediction_id`, `kind`, `severity`, `title`, `body`, `is_read`, and `created_at`. Supports a `lang` query parameter and `Accept-Language` header — translations are applied via the `entity_translations` overlay.
 - `POST /alerts/{alert_id}/read` marks an alert read (with ownership check).
-- Alert kinds generated: `"review_verified"` (from expert review completion), weather risk alerts (from scheduled job), and prediction low-confidence alerts.
+- Alert kinds generated: `"review_verified"` (from expert review completion) and weather risk alerts (from the scheduled `POST /internal/cron/weather-risks` job). There is no separate "prediction low-confidence" alert kind.
+- `GET /predictions/{id}` automatically marks any associated `review_verified` alert as read when the farmer views the prediction detail.
 - Web `SideBar.tsx` exposes alert access/unread state; `AlertsPage.tsx` displays alerts.
 - Mobile `AlertsScreen` shows all alerts with read/unread state, distinguishes expert alerts (shield icon) from weather/disease alerts (warning icon), and supports marking alerts read. Unread count is shown as a `Badge` on the bottom nav icon.
 - `FarmerShell` loads alerts on startup and refreshes them on request.
@@ -817,13 +830,12 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `GET /admin/config` reads `crop_routing_threshold` and `expert_escalation_cutoff` from `config.yaml` (mapped from `thresholds.crop_confidence` and `thresholds.disease_confidence`).
-- `PUT /admin/config` writes updated values back to `config.yaml`.
+- `GET /admin/config` reads `crop_routing_threshold` and `expert_escalation_cutoff` from `config.yaml` (mapped from `thresholds.crop_confidence` and `thresholds.disease_confidence`). Only these two threshold fields are exposed; other config fields are not surfaced through this endpoint.
+- `PUT /admin/config` writes updated threshold values back to `config.yaml`, calls `pipeline.reload_config()` so the running FastAPI process picks up the change immediately, and publishes the updated thresholds to Upstash Redis REST under the key `sf:config:thresholds`.
 - `AdminMetricsPage.tsx` does not currently expose a config edit form; the endpoints are available but no frontend UI renders them.
 
 **Known limitation:**
 
-- `PUT /admin/config` writes to `config.yaml` but does **not** call `pipeline.reload_config()`. The running FastAPI process does not pick up the change until restarted.
 - The ARQ worker process is always separate; it never picks up config changes from either path until restarted.
 
 **Relevant code:**
@@ -832,7 +844,6 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Call `pipeline.reload_config()` after `PUT /admin/config` so at least the FastAPI process picks up the change immediately.
 - Implement a cross-process reload signal for the worker.
 - Expose the config edit form in the admin UI.
 - Add range validation and audit logging for threshold changes.
@@ -853,13 +864,16 @@ The web frontend is a functional multi-role application with a shared typed API 
   - Updates `model_registry.json` (marks all other versions as `"retired"`) and `config.yaml` atomically.
   - Calls `pipeline.reload_config()` to hot-reload the in-process FastAPI config.
   - Logs the promotion with `promoted_by` and timestamp.
+- `POST /admin/models/rollback` rolls back the active model to a specified or most-recently-retired version:
+  - Accepts `model_key` and an optional `target_version`; defaults to the most recently retired version if not specified.
+  - Verifies the target checkpoint exists on disk before switching.
+  - Updates `model_registry.json` and `config.yaml`, then calls `pipeline.reload_config()`.
 - `AdminMetricsPage.tsx` queries `GET /admin/models/health` and renders a model health panel.
 
 **Known gaps:**
 
 - `reload_config()` only affects the FastAPI process; the ARQ worker needs a separate restart.
-- No rollback endpoint (re-promote the previous version).
-- No frontend form for triggering promotions; only the health panel is rendered.
+- No frontend form for triggering promotions or rollbacks; only the health panel is rendered.
 
 **Relevant code:**
 
@@ -869,7 +883,6 @@ The web frontend is a functional multi-role application with a shared typed API 
 **What to improve:**
 
 - Add a promotion form to the admin UI.
-- Add a rollback (previous-version promote) endpoint.
 - Add cross-process worker reload.
 - Add tests for promotion gating, missing files, and concurrent promotions.
 
@@ -915,20 +928,21 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 ### 4.7 Database purge and blob cleanup
 
-**Status: Implemented — destructive, no dry-run**
+**Status: Implemented — confirmation token and dry-run preview enabled**
 
 **What works:**
 
-- `DELETE /admin/purge` deletes all DatasetCandidate, ExpertReview, Recommendation, Feedback, Alert, Prediction, and Image records. Requires admin role.
-- `DELETE /admin/blobs` removes files in `data/uploads`, `data/processed`, and `data/audio` that are not referenced by any Image record. Returns `deleted_files` count. Requires admin role.
+- `DELETE /admin/purge` deletes all DatasetCandidate, ExpertReview, Recommendation, Feedback, Alert, Prediction, and Image records in transactional cascade order.
+- Requires explicit confirmation token via body (`payload.confirmation`) or query parameter (`confirmation`): accepts `'DELETE'` or `'PURGE_ALL_DATA'`; rejects mismatch with HTTP 400.
+- Supports `dry_run=true` query parameter: computes and returns record counts across all 7 target tables without deleting data.
+- `DELETE /admin/blobs` removes unreferenced files from `data/uploads`, `data/processed`, and `data/audio`.
+- Supports `dry_run=true` query parameter: returns orphaned file counts and size without unlinking files.
 - Scheduled weekly cleanup (`purge_orphaned_blobs_cron`) runs every Sunday at 03:00 UTC via the ARQ worker. Files newer than 1 hour are preserved (grace period for in-flight predictions).
 - All storage paths use `storage_relative_path()` for normalization, preventing double-slash or OS-separator mismatches.
 
 **Known gaps:**
 
-- No dry-run or preview mode before deletion.
-- No audit log for who triggered the purge and when.
-- `DELETE /admin/purge` is irreversible with no confirmation.
+- No persistent audit log table recording who triggered purge/cleanup actions and when.
 
 **Relevant code:**
 
@@ -937,10 +951,28 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Add a dry-run mode to both admin blob cleanup and purge.
-- Record who triggered the operation and when in an audit log.
-- Add a required confirmation parameter to the purge endpoint.
+- Add an audit log table for admin data modifications and purges.
 - Add tests using temporary directories for blob cleanup.
+
+---
+
+### 4.8 Admin user management and manual triggers
+
+**Status: Implemented**
+
+**What works:**
+
+- `GET /admin/users` returns paginated list of registered users with search (name, email, phone) and role filtering (`farmer`, `expert`, `admin`). Returns total count, farm name/location, scan count, and registration date.
+- `PATCH /admin/users/{target_user_id}/role` updates user role (`farmer`, `expert`, `admin`) with critical security guards:
+  - **Self-demotion lockout prevention:** Administrators cannot demote their own account.
+  - **Last-admin lockout prevention:** Rejects demoting the last active administrator on the platform.
+- `POST /admin/weather-risk/trigger` manually invokes the proactive microclimate weather-risk evaluation task across all farms/plots for testing and verification without waiting for scheduled cron triggers.
+- Frontend `AdminUsersPage.tsx` provides role management UI, user search, and role switching modal.
+
+**Relevant code:**
+
+- [admin.py — /admin/users, /admin/weather-risk/trigger](../backend/src/app/api/endpoints/admin.py)
+- [frontend/src/pages/AdminUsersPage.tsx](../frontend/src/pages/AdminUsersPage.tsx)
 
 ---
 
@@ -952,10 +984,19 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Public routes: Landing, About/Services, Crops, Login, Register.
-- Protected routes: Dashboard, Scan, Processing, Result, History, Settings, Weather, Alerts, Farm Settings, Expert Queue, Expert Review, Admin Metrics, Admin Feedback.
-- `ProtectedRoute` enforces role-based access; the main shell (`Appshell.tsx`) and sidebar are role-aware.
-- `AuthContext` provides `user`, `token`, `language`, `units`, and `t()` translation function throughout the app.
+- Public routes: Landing (`/`), About (`/about`), Services (`/services`), Crops (`/crops`), Login (`/auth/login`), Register (`/auth/register`). `/crops` is fully public and does **not** require authentication.
+- Protected routes (wrapped in `AppShell` + `ProtectedRoute`): Dashboard, Scan, Processing, Result, History, Settings, Weather, Alerts, Farm Settings, Expert Queue, Expert Review, Admin Metrics, Admin Feedback, Admin Users.
+- `ProtectedRoute` accepts two optional boolean props that gate routes by role:
+  - `adminOnly` — allows `admin` **or** `expert` roles. Used for: `/admin/feedback`, `/admin/expert`, `/admin/expert/:id`.
+  - `strictAdminOnly` — allows `admin` role only. Used for: `/admin/metrics`, `/admin/users`.
+  - When neither prop is set, any authenticated user is admitted.
+  - While auth state is loading, a spinner is displayed instead of redirecting.
+- `AuthContext` (`context/AuthContext.tsx`) provides the following to all consumers:
+  - **State:** `user` (`Profile | null`), `token` (`string | null`), `isAuthenticated`, `isLoading`, `language`, `units`.
+  - **Helpers:** `t(key)` translation function, `setLanguage(lang)` (persists to localStorage and backend), `setUnits(units)` (localStorage only).
+  - **Auth actions:** `signIn(identifier, password)`, `signUp(payload)`, `signOut()`, `refreshProfile()`.
+  - The context does **not** expose `login()` or `logout()` — callers must use `signIn`/`signOut`.
+- The sidebar (`Sidebar.tsx`) renders a completely different navigation tree depending on role (`farmer`, `expert`, `admin`) and provides an in-sidebar notification panel for unread alerts, polling every 15 seconds.
 - On 401, the shared API client automatically attempts a token refresh via the HttpOnly cookie. Deduplication prevents parallel refresh calls.
 
 **Known gaps:**
@@ -1016,7 +1057,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 **What works:**
 
 - `WeatherPage.tsx` fetches weather data using the user's lat/lon from profile.
-- Displays temperature, condition, humidity, wind speed, pressure, and cloudiness using the configured units.
+- Displays temperature, condition, humidity, and wind speed using the configured units. Pressure and cloudiness are **not** displayed.
 - Shows the agricultural advisory text.
 - Auto-translates the advisory when the user's language is Hindi or Gujarati, with an in-flight deduplication guard. Falls back to server-provided `translated_advisory` or `translations[lang]` before calling `POST /weather/translate`.
 - TTS playback with pause/stop support. Fetches audio via `POST /tts`.
@@ -1041,7 +1082,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 - Full UI translation dictionaries in English, Hindi (`hi`), and Gujarati (`gu`) (`i18n/en.ts`, `hi.ts`, `gu.ts`).
 - Curated agricultural domain lexicon for crops, diseases, pests, severity levels, weather conditions, and alert titles (`i18n/domain.ts`).
-- Language preference is persisted in `localStorage` via `AuthContext`.
+- Language preference is persisted in `localStorage` and synced to the backend user profile via `updateProfile()` (a `PATCH /profile`-equivalent call) inside `AuthContext.setLanguage()`. On login, the language stored in the profile is loaded and applied.
 - `t()` translation function and `language`/`units` state are provided via context.
 - Backend translation service (`services/translation/service.py`) supports: `en`, `hi`, `gu`, `mr`, `te`, `ta` (Marathi, Telugu, Tamil) via `normalize_language_code`.
 - Primary translation engine: Google Cloud Translation API v2 (`translate_batch_google`).
@@ -1174,12 +1215,12 @@ The web frontend is a functional multi-role application with a shared typed API 
 **What works:**
 
 - `TtsService` is a singleton `ChangeNotifier`.
-- Primary: Google Cloud TTS via backend `POST /tts`. Returns MP3 audio as base64; decoded and played with `audioplayers`.
+- Primary: Google Cloud TTS via backend `POST /tts`. Returns MP3 audio as base64; decoded and played with `audioplayers`. Voice selection is handled server-side.
 - Fallback: `flutter_tts` on-device engine. If `gu` locale is unavailable, tries `hi-IN`, then `en-US`.
 - `cleanText()` strips markdown (bold, italic, headers, bullet syntax) before TTS.
-- `DomainTranslations.normalizeLang()` maps language names to codes; TTS voices: `hi-IN-Standard-A`, `gu-IN-Standard-A`, `en-IN-Standard-A`.
+- `DomainTranslations.normalizeLang()` maps language names/codes to normalized codes (`en`, `hi`, `gu`).
 - Per-item play/loading state tracked by string ID (`isItemPlaying(id)`, `isItemLoading(id)`).
-- `toggle(id, text, langCode)` — play if not playing, stop if playing the same item, switch if playing different item.
+- `toggle(id, text, langCode, {api})` — play if not playing, stop if playing the same item, switch if playing different item. The optional `api` parameter is required to use the Google Cloud path; omitting it forces on-device fallback.
 - TTS is used in `ResultDetailSheet` (full recommendation) and `WeatherScreen` (advisory). Web `WeatherPage` also uses TTS via `POST /tts`.
 - Backend `tts.py` caches audio by `sha256(lang_code + text)` in `data/audio/*.mp3`. Cache hit returns the file without calling Google API.
 
@@ -1202,18 +1243,18 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `SyncService` queues pending scans as `SyncQueueItem` JSON (base64 image bytes + filename + location + language + timestamp) in `SharedPreferences` under key `pending_leaf_scans`.
+- `SyncService` queues pending scans as `SyncQueueItem` JSON (base64 image bytes + filename + location + language + `plot_id` + lat + lon + timestamp + retry metadata) in `SharedPreferences` under key `pending_leaf_scans`.
 - `pendingCount()` and `getPendingItems()` expose queue state.
-- `drain()` iterates the queue, calls `predictBytes()` for each item, removes successfully uploaded items, and re-queues failed items.
+- `drain()` iterates the queue, calls `predictBytes()` for each item, removes successfully uploaded items, and re-queues failed items with an incremented `retryCount` and `lastAttemptAt` timestamp.
+- Exponential backoff is applied during `drain()`: delay = `min(300, 2^retryCount × 5)` seconds. Items still in their cooldown window are skipped until the next drain cycle.
 - `FarmerShell` listens to `onConnectivityChanged` and calls `drain()` when a non-`none` connection appears.
 - Pending count is shown in the Today tab stat card.
 
 **Known gaps:**
 
 - `SharedPreferences` is not a durable queue; storing large base64 images can cause serialization failures or storage exhaustion on low-memory devices.
-- `plot_id`, lat, and lon are not preserved in the queue item (only location text).
-- No bounded retry with backoff; a permanently failing item re-queues indefinitely.
 - No visible per-item status (uploading, failed, retrying) in the UI.
+- No maximum retry cap; a permanently failing item re-queues indefinitely (backoff reaches and stays at the 300-second ceiling).
 
 **Relevant code:**
 
@@ -1223,8 +1264,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 **What to improve:**
 
 - Migrate to SQLite (`sqflite`) for queue persistence.
-- Preserve `plot_id`, lat, lon, and a client request ID in each queue item.
-- Add bounded retry with exponential backoff and a maximum attempt count.
+- Add a maximum retry attempt count after which the item is discarded or flagged.
 - Show per-item upload status in the Today screen.
 
 ---
@@ -1251,16 +1291,17 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Displays temperature, condition, humidity, and wind speed from the live backend weather response.
+- Displays temperature, condition, humidity, and wind speed from the live backend weather response. `wind_speed_mps` (m/s) is converted to km/h (`× 3.6`) before display.
 - Shows an agricultural advisory.
 - Advisory translation: first checks `weather["translations"][langCode]`, then `_dynamicTranslatedAdvisory` (fetched via `POST /weather/translate`), then `weather["advisory"]` as final fallback.
 - TTS play/stop for the advisory, using `TtsService`.
 - Pull-to-refresh with `RefreshIndicator`.
 - Locale-aware via `DomainTranslations` for condition labels.
+- Shows a "Cached observation" indicator when `weather["cached"] == true`.
 
 **Known gaps:**
 
-- Wind speed is labeled "km/h" in the UI but the backend returns `wind_speed_mps` (meters per second). Conversion is not applied.
+- No explicit last-updated timestamp displayed for cached data beyond the "Cached observation" badge.
 
 **Relevant code:**
 
@@ -1268,8 +1309,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What to improve:**
 
-- Fix the wind speed unit label or apply the `m/s → km/h` conversion.
-- Show the last-updated timestamp for cached weather data.
+- Show the last-updated timestamp for cached weather data alongside the cached badge.
 
 ---
 
@@ -1303,27 +1343,31 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 ### 7.1 Redis and ARQ worker
 
-**Status: Implemented**
+**Status: Implemented (dual-mode: synchronous default vs. ARQ task queue)**
 
 **What works:**
 
-- FastAPI startup initializes an ARQ Redis pool (`core/arq.py`); the pool is stored in `app.state.arq_pool`.
-- `POST /predict` enqueues via `arq_pool.enqueue_job("process_prediction_job", ...)`. Returns `503` if pool is unavailable.
-- `worker.py` defines `WorkerSettings` with: `functions=[process_prediction_job]`, `max_jobs=2`, `job_timeout=900`, `max_tries=3`.
-- Scheduled cron jobs: `purge_orphaned_blobs_cron` (every Sunday at 03:00 UTC), `evaluate_weather_risks` (06:00, 12:00, 18:00 UTC daily).
-- `on_startup` configures logging so ARQ and `smart-farming.*` log records are both visible.
-- The `process_prediction_job` ARQ function runs `run_prediction_job()` in a thread executor to avoid blocking the async event loop.
+- **Mode A: Synchronous / Serverless default (`REQUIRE_REDIS=False`):** Predictions execute synchronously via `run_pipeline()`, calling the model service (Service #2) directly. Caching and deduplication use Upstash Serverless Redis REST (`sf:dedup:{hash}`). No background polling worker is required, allowing Cloud Run containers to scale to zero.
+- **Mode B: Asynchronous ARQ task queue (`REQUIRE_REDIS=True`):**
+  - FastAPI startup initializes an ARQ Redis pool (`core/arq.py`); stored in `app.state.arq_pool`.
+  - `POST /predict` enqueues via `arq_pool.enqueue_job("process_prediction_job", ...)`. Returns `503` if pool is unavailable.
+  - `worker.py` defines `WorkerSettings` with: `functions=[process_prediction_job]`, `max_jobs=2`, `job_timeout=900`, `max_tries=3`.
+  - The `process_prediction_job` ARQ function runs `run_prediction_job()` in a thread executor to avoid blocking the async event loop.
+  - Per-stage Redis pub/sub events are emitted and streamed over WebSocket.
+- `GET /job/{job_id}` endpoint returns the ARQ job status (`complete`, `processing`, or `not_found`).
+- Scheduled cron jobs in worker: `purge_orphaned_blobs_cron` (every Sunday at 03:00 UTC) and `evaluate_weather_risks` (06:00, 12:00, 18:00 UTC daily).
 
 **Known gaps:**
 
-- Worker process does not pick up `reload_config()` calls from the FastAPI process.
-- No job-status endpoint; clients must poll `GET /predictions/{id}`.
-- `max_tries=3` retries are not idempotent.
+- When running the ARQ worker process, it does not dynamically pick up `reload_config()` updates initiated from the FastAPI process without a worker restart.
+- In ARQ mode, `max_tries=3` retries lack idempotency guards and may re-process an image, generating duplicate alerts or reviews.
+- In synchronous mode (`REQUIRE_REDIS=False`), intermediate per-stage events are not published over WebSocket during execution.
 
 **Relevant code:**
 
 - [worker.py](../backend/src/app/worker.py)
 - [core/arq.py](../backend/src/app/core/arq.py)
+- [predict.py](../backend/src/app/api/endpoints/predict.py)
 
 ---
 
@@ -1333,60 +1377,92 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `core/paths.py` provides `ensure_storage_directories()`, `resolve_backend_path()`, `resolve_storage_path()` (with traversal protection), and `storage_relative_path()`.
+- `core/paths.py` provides `ensure_storage_directories()`, `resolve_backend_path()`, `resolve_storage_path()` (with path traversal protection), and `storage_relative_path()`.
 - Storage directories: `DATA_ROOT`, `UPLOAD_ROOT`, `PROCESSED_ROOT`, `AUDIO_ROOT` — all resolved from `settings`.
-- All file-handling code in `predict.py`, `tts.py`, `admin.py`, `worker.py`, and `mlops.py` uses these helpers.
+- Modular storage backend abstraction (`core/storage.py`):
+  - `LocalStorageBackend`: Local filesystem storage with direct file I/O and relative URL serving.
+  - `S3StorageBackend`: Object storage client supporting Google Cloud Storage (GCS) via its S3-compatible HMAC API (`https://storage.googleapis.com`) using `signature_version="s3"` for signature compatibility.
+  - `get_storage()` factory instantiates the active backend based on `STORAGE_BACKEND` (`"local"`, `"s3"`, `"gcs"`).
+  - Presigned URL generation for secure client media access (`storage.get_url(...)` with configurable expiration).
+  - Orphaned blob purge utility (`purge_orphaned_blobs`) supporting `dry_run` previews and configurable grace periods.
+
+**Relevant code:**
+
+- [core/paths.py](../backend/src/app/core/paths.py)
+- [core/storage.py](../backend/src/app/core/storage.py)
 
 ---
 
 ### 7.3 Proactive weather risk alerts
 
-**Status: Partial**
+**Status: Implemented**
 
 **What works:**
 
-- `weather/proactive.py` defines `evaluate_weather_risks` which is scheduled via ARQ cron three times per day.
-- The function is designed to inspect farms/plots and create weather-related alerts.
+- `weather/proactive.py` implements the proactive microclimate alert engine (`evaluate_weather_risks`).
+- Iterates all registered farms and plots with valid coordinates, fetching 5-day / 3-hour forecasts from OpenWeatherMap (up to 40 periods).
+- Evaluates 3 agronomic risk rules:
+  - `weather_blight_risk`: High humidity (>75%) + warm temps (20–30°C) → Fungal blight prevention warning.
+  - `weather_heat_stress`: Sustained ambient temperature >38°C for ≥3 periods → Irrigation and mulching warning.
+  - `weather_flood_risk`: Cumulative rainfall >20mm within 24 hours → Drainage check warning.
+- **24-hour unread deduplication (`_alert_exists`):** Suppresses creating duplicate unread alerts of the same kind for the same plot if one was generated within the previous 24 hours.
+- **Multi-channel execution:**
+  - ARQ cron: runs at 06:00, 12:00, 18:00 UTC daily in dedicated worker environments.
+  - Serverless QStash webhook: `POST /api/v1/internal-cron/weather-risk` verified with `CRON_SECRET` for Cloud Run environments.
+  - Manual admin trigger: `POST /admin/weather-risk/trigger` for on-demand evaluation and validation.
 
 **Known gaps:**
 
-- Without access to the proactive service implementation details, it is unclear which farms are iterated, what thresholds are used, or whether deduplication logic is in place.
-- No admin-facing last-run timestamp or manual trigger.
+- Risk rules use static thresholds; they are not tailored per specific crop variety or growth stage.
+- OpenWeatherMap forecast API quota can be consumed rapidly on instances with hundreds of registered plots (no batch geocoding or spatial clustering).
 
 **Relevant code:**
 
 - [weather/proactive.py](../backend/src/app/services/weather/proactive.py)
+- [internal_cron.py](../backend/src/app/api/endpoints/internal_cron.py)
+- [admin.py — trigger_weather_risk_job](../backend/src/app/api/endpoints/admin.py)
 - [worker.py](../backend/src/app/worker.py)
 
 **What to improve:**
 
-- Add last-run time, success/failure status, and farms-processed count to an admin endpoint.
-- Add a manual admin trigger for controlled testing.
-- Add deduplication logic to prevent duplicate weather alerts per farm per day.
+- Add spatial clustering to group nearby farm plots and avoid redundant forecast API calls for the same coordinates.
+- Make risk rule thresholds crop- and phenology-aware (e.g. flowering vs. vegetative stages).
+- Surface proactive alert metrics (total alerts triggered, plots scanned) in `GET /admin/metrics`.
 
 ---
 
 ## 8. Testing
 
-**Status: Limited automated coverage**
+**Status: Partial automated coverage**
 
 **Existing tests (`backend/tests/`):**
 
 | File | What it tests |
 |---|---|
-| `test_auth.py` | Auth utility functions: password hashing, token creation/decode, token type validation. |
+| `test_auth.py` | Auth utility functions: password hashing, token creation/decode, token type validation (access vs. refresh), invalid token rejection. |
 | `test_api.py` | Health + crops endpoint; `_public_result` serialization (strips `_` keys and `leaf_crop`); predict requires auth; feedback schema validation; weather endpoint returns 200 with temperature; admin metrics returns expected shape. |
-| `test_pipeline.py` | Pipeline smoke test. |
-| `test_hf_recommendation.py` | HuggingFace recommendation service integration test. |
-| `test_observability.py` | Observability/logging test. |
+| `test_pipeline.py` | Full pipeline smoke test (skipped when test image is absent); also runnable as a standalone script to print detailed per-stage output. |
+| `test_hf_recommendation.py` | HuggingFace recommendation service live integration (skipped when `HF_TOKEN` is absent; gracefully skips on 402 Payment Required). |
+| `test_observability.py` | Context stage initialization; weather degraded-state handling; recommendation rule-based fallback tagging; confidence rating and uncertainty flags; pest detector unavailable tagging; pipeline provenance and schema-version assertions. |
+| `test_storage.py` | `LocalStorageBackend` save/read/URL/delete round-trip; `S3StorageBackend` instantiation; `get_storage()` factory. |
+| `test_admin_users.py` | `GET /admin/users` list; `PATCH /admin/users/{id}/role` success, invalid role (422), self-demotion guard (400), last-admin demotion guard (400). |
+| `test_media_auth.py` | `GET /predictions/{id}/media-url/raw` — owner allowed; stranger forbidden (403); expert allowed only when status is `pending_expert_review`; admin allowed for any scan. |
+| `test_features_extended.py` | GeoJSON polygon validation: valid polygon, unclosed polygon rejected, out-of-bounds coordinates rejected; expert severity regex parsing for various string formats. |
+
+**Existing mobile tests (`mobile/test/`):**
+
+| File | What it tests |
+|---|---|
+| `widget_test.dart` | App smoke test — builds `FieldnoteApp` and asserts `MaterialApp` is present. |
+| `prediction_history_test.dart` | `Prediction.fromJson()` with full structured record; legacy flat-string crop/disease without `TypeError`; failed scan record parsed without crash. |
 
 **Coverage gaps (no automated tests):**
 
 - Image upload validation (oversized, wrong type, malformed bytes, duplicate concurrent).
 - Preprocessing quality rejection paths.
-- Expert review: authorization, state transitions, concurrent submission, severity parsing.
+- Expert review: authorization, state transitions, concurrent submission.
 - Feedback review: persistence, duplicate guard, correction merge into prediction result.
-- Farm/plot: boundary validation, ownership, geometry edge cases.
+- Farm/plot: ownership enforcement, geometry edge cases beyond polygon closure/bounds.
 - Admin purge and blob cleanup.
 - Admin config update: persistence and hot-reload.
 - Model registry: promotion gate, missing files, concurrent promotion.
@@ -1395,15 +1471,15 @@ The web frontend is a functional multi-role application with a shared typed API 
 - MLOps export: empty dataset, missing image files, invalid split totals, format modes.
 - History: ownership isolation, pagination boundaries.
 - ARQ worker job: idempotency, retry behavior, event publishing.
-- Mobile: `Prediction.fromJson()` edge cases, `SyncService` drain logic, `TtsService` fallback.
+- Mobile: `SyncService` drain logic, `TtsService` fallback.
 
 **Recommended test order:**
 
-1. Add endpoint tests for: prediction lifecycle, expert review, feedback review, farm geometry, alerts.
+1. Add endpoint tests for: prediction lifecycle, expert review, feedback review, alert endpoints.
 2. Add service tests for: preprocessing rejection, RAG retrieval, recommendation fallback, translation batch/fallback.
 3. Add model registry and MLOps export tests.
 4. Add worker integration test (temporary Redis, mock pipeline stages).
-5. Add mobile unit tests: `Prediction.fromJson()`, `SyncService`, `TtsService`.
+5. Add mobile unit tests: `SyncService`, `TtsService`.
 6. Add frontend TypeScript build and API contract smoke tests.
 7. Add end-to-end test: upload → prediction complete → result readable.
 
@@ -1414,44 +1490,66 @@ The web frontend is a functional multi-role application with a shared typed API 
 ### Priority 1: Close security and reliability gaps
 
 1. Require a non-default `JWT_SECRET_KEY` at startup.
-2. Remove or guard the `X-User-ID` development fallback in `get_current_user`.
-3. Set `secure=True` on the refresh-token cookie for HTTPS.
+2. Remove or guard the `X-User-ID` development fallback in `get_current_user` (restrict strictly to `DEBUG=True`).
+3. ~~Set `secure=True` on the refresh-token cookie for HTTPS.~~ **Done** — `auth.py` now sets `secure=True` when `ENVIRONMENT == "production"`.
 4. Make ARQ retries idempotent (no duplicate alerts, reviews, or results on retry).
-5. Call `pipeline.reload_config()` from `PUT /admin/config` so threshold changes take effect immediately in the FastAPI process.
+5. ~~Call `pipeline.reload_config()` from `PUT /admin/config`.~~ **Done** — `admin.py` calls `pipeline.reload_config()` on threshold updates and syncs to Upstash Redis REST (`sf:config:thresholds`).
 
 ### Priority 2: Improve mobile robustness
 
-1. Replace `SharedPreferences` with SQLite for the offline scan queue.
-2. Preserve `plot_id`, lat, lon in queue items.
-3. Add bounded retry with exponential backoff in `SyncService.drain()`.
+1. Replace `SharedPreferences` with SQLite for the offline scan queue to safely persist large raw image payloads.
+2. ~~Preserve `plot_id`, lat, lon in queue items.~~ **Done** — `SyncQueueItem` and `enqueueBytes()` persist `plot_id`, `lat`, and `lon`.
+3. ~~Add bounded retry with exponential backoff in `SyncService.drain()`.~~ **Done** — implements exponential backoff (`min(300, 2^retryCount × 5)` seconds). Add maximum attempt ceiling to prune permanently failing items.
 4. Migrate JWT storage from `SharedPreferences` to `flutter_secure_storage`.
-5. Fix the wind speed unit label in `WeatherScreen`.
+5. ~~Fix the wind speed unit label in `WeatherScreen`.~~ **Done** — `weather_screen.dart` explicitly converts m/s to km/h (`* 3.6`) before rendering.
 
 ### Priority 3: Expand test coverage
 
-1. Backend endpoint tests for: prediction lifecycle, expert review, feedback review, farm, alert.
+1. Backend endpoint tests for: prediction lifecycle, expert review, feedback review, alert.
 2. Service tests for: preprocessing rejection, RAG retrieval correctness, translation fallback.
-3. Mobile unit tests: `Prediction.fromJson()`, `SyncService`, `TtsService`.
-4. Frontend TypeScript build and type alignment.
+3. ~~Farm/plot geometry tests~~ **Done** — `test_features_extended.py` covers valid polygon, unclosed rejection, and out-of-bounds rejection.
+4. ~~`Prediction.fromJson()` unit tests~~ **Done** — `prediction_history_test.dart` covers full record, legacy format, and failed scan.
+5. Mobile unit tests: `SyncService`, `TtsService`.
+6. Frontend TypeScript build and type alignment.
 
 ### Priority 4: Product and data quality
 
 1. Expand the RAG knowledge base to cover all supported crops.
 2. Merge approved feedback corrections into the public prediction result.
-3. Fix expert review severity parsing (accept numeric strings).
-4. Add server-side filters to `GET /history`.
-5. Remove the hardcoded Warsaw default coordinates from `GET /weather`.
+3. ~~Fix expert review severity parsing (accept numeric strings).~~ **Done** — regex extraction is tested and verified in `test_features_extended.py`.
+4. Add server-side filters to `GET /history` (date range, crop, disease, status, plot).
+5. ~~Remove hardcoded Warsaw default coordinates from `GET /weather`.~~ **Done** — `weather.py` now resolves coordinates from the user's farm profile or requires explicit `lat`/`lon`. Remove the dev Warsaw default in `predict.py` form parameters.
 6. Build the full MLOps retraining loop once dataset export is validated end-to-end.
 
 ---
 
 ## 10. Reference Documents
 
-- [Smart Farming roadmap v2](smart_farming_roadmap_v2.md)
-- [Original Smart Farming roadmap](smart_farming_roadmap.md)
-- [Screen specifications](screen_specifications.md)
-- [Dataset descriptions](dataset%20descriptions.txt)
-- [Weather research notes](research-notes_on_how-weather-affect-on-crop.txt)
+**Markdown documentation (`Docs/`):**
+
+| Document | Description |
+|---|---|
+| [Architecture.md](Architecture.md) | System architecture overview — services, data flow, infrastructure. |
+| [API_Specification.md](API_Specification.md) | Full REST API reference: endpoints, request/response schemas, auth. |
+| [Auth_Roles.md](Auth_Roles.md) | Authentication flows and role-based access control rules. |
+| [Config_Reference.md](Config_Reference.md) | Application configuration keys, defaults, and environment variables. |
+| [DATASET.md](DATASET.md) | Dataset descriptions: crops, disease classes, image sources. |
+| [Deployment_Guide.md](Deployment_Guide.md) | Deployment instructions for local, staging, and production environments. |
+| [mlops_training_guide.md](mlops_training_guide.md) | Model training workflow, evaluation criteria, and artifact management. |
+| [MLOps_Retraining.md](MLOps_Retraining.md) | Automated retraining pipeline design and trigger conditions. |
+| [Model_Cards.md](Model_Cards.md) | Model cards for crop, disease, and pest models (inputs, outputs, limits). |
+| [UI_UX_Spec.md](UI_UX_Spec.md) | UI/UX specification: screens, navigation flows, component guidelines. |
+| [screen_specifications.md](screen_specifications.md) | *(Superseded by `UI_UX_Spec.md`)* Original per-screen specifications. |
+| [functionality-status.md](functionality-status.md) | This document — implementation status, gap analysis, and improvement plan. |
+
+**Other files (`Docs/`):**
+
+| File | Description |
+|---|---|
+| `smart_farming_roadmap_v2.pdf` | Project roadmap v2 (PDF). |
+| `smart_farming_roadmap.pdf` | Original project roadmap (PDF). |
+| `smart_farming_roadmap_stage10_plus.pdf` | Extended roadmap covering stage 10+ milestones (PDF). |
+| `Ai-Powered-Smart-Farming.pptx` | Project presentation deck. |
 
 ---
 

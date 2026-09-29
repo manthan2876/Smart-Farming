@@ -14,7 +14,7 @@ This document explains how to reproduce a training run for either the **crop ide
 ### 1. Python environment
 
 ```bash
-# Create a virtual environment (Python 3.10+)
+# Create a virtual environment (Python 3.11)
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
@@ -163,12 +163,15 @@ curl -X POST http://localhost:8000/admin/models/promote \
 
 This updates `config.yaml` and `model_registry.json` atomically.
 
+> **Note:** In the default production mode (`REQUIRE_REDIS=False`), the Redis hot-reload event is not published. After promoting, trigger a Cloud Run rolling deployment to reload models in production: `gcloud run deploy smart-farming-backend --image <IMAGE>`
+
 ---
 
 ## Training Script Options
 
 | Flag | Default | Description |
 |---|---|---|
+| `--output-dir` | required | Directory where `best.pth`, `last.pth`, `labels.json`, `metrics.json` are written |
 | `--model-name` | `efficientnet_b2` | EfficientNet variant (`b0`, `b1`, `b2`, `b3`) |
 | `--epochs` | `20` | Maximum training epochs |
 | `--batch-size` | `32` | Training batch size |
@@ -199,6 +202,7 @@ The script uses a deliberate two-phase approach to prevent catastrophic forgetti
 - [ ] Store `best.pth` and `labels.json` in version control or a model store.
 - [ ] Register the model via the `/admin/models/promote` endpoint to update `model_registry.json`.
 - [ ] Run the test evaluation (`eval` mode) before promoting to production.
+- [ ] In production (`REQUIRE_REDIS=False`), redeploy the Cloud Run service to pick up the new `config.yaml` / model weights after promotion.
 
 ---
 
