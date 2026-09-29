@@ -46,8 +46,12 @@ def sanitize_db_url(url: str | None) -> str:
     if ":" in userinfo:
         user, pwd = userinfo.split(":", 1)
         import urllib.parse
-        clean_pwd = urllib.parse.quote(urllib.parse.unquote(pwd), safe="")
-        clean_user = urllib.parse.quote(urllib.parse.unquote(user), safe=".")
+        clean_user = user.strip().strip("'\"")
+        clean_pwd = pwd.strip().strip("'\"")
+        if clean_pwd.startswith("[") and clean_pwd.endswith("]"):
+            clean_pwd = clean_pwd[1:-1].strip()
+        clean_pwd = urllib.parse.quote(urllib.parse.unquote(clean_pwd), safe="")
+        clean_user = urllib.parse.quote(urllib.parse.unquote(clean_user), safe=".")
         return f"{scheme}://{clean_user}:{clean_pwd}@{hostinfo}"
     return clean
 

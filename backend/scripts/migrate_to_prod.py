@@ -79,6 +79,13 @@ def verify_connection(url: str, label: str = "Database") -> bool:
     parsed = urlparse(url)
     display_host = parsed.hostname or url.split("@")[-1].split("/")[0] if "@" in url else url
     print(f"       Endpoint: {parsed.scheme}://{display_host}")
+    print(f"       Username: {parsed.username}")
+    print(f"       Host: {parsed.hostname}:{parsed.port or 5432}")
+    print(f"       Database: {parsed.path.lstrip('/')}")
+    raw_pass = parsed.password or ""
+    print(f"       Password chars count: {len(raw_pass)}")
+    if len(raw_pass) >= 4:
+        print(f"       Password preview: {raw_pass[:2]}...{raw_pass[-2:]}")
     try:
         engine = create_app_engine(url)
         with engine.connect() as conn:
