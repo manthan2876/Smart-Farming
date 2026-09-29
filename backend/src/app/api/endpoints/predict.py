@@ -383,9 +383,9 @@ async def predict(
             if canonical_rec and isinstance(canonical_rec, dict):
                 rec_fields = {k: v.strip() for k, v in canonical_rec.items() if isinstance(v, str) and v.strip()}
                 if rec_fields:
-                    from app.core.arq import enqueue_translation_sync
+                    from app.core.arq import enqueue_translation
                     background_tasks.add_task(
-                        enqueue_translation_sync,
+                        enqueue_translation,
                         "prediction",
                         new_pred.id,
                         rec_fields,
@@ -656,9 +656,9 @@ async def rescan_prediction(
             if canonical_rec and isinstance(canonical_rec, dict):
                 rec_fields = {k: v.strip() for k, v in canonical_rec.items() if isinstance(v, str) and v.strip()}
                 if rec_fields:
-                    from app.core.arq import enqueue_translation_sync
+                    from app.core.arq import enqueue_translation
                     background_tasks.add_task(
-                        enqueue_translation_sync,
+                        enqueue_translation,
                         "prediction",
                         new_pred.id,
                         rec_fields,

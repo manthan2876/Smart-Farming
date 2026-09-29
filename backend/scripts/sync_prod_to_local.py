@@ -79,8 +79,32 @@ def sync_prod_to_dev(force_sqlite: bool = False):
         else:
             target_conn.execute(text("PRAGMA foreign_keys = OFF;"))
 
+        TABLE_DEPENDENCY_ORDER = [
+            "users",
+            "farms",
+            "plots",
+            "images",
+            "predictions",
+            "recommendations",
+            "feedback",
+            "expert_reviews",
+            "dataset_candidates",
+            "alerts",
+            "password_reset_tokens",
+            "mlops_runs",
+            "entity_translations",
+        ]
+
+        def get_order(t_name: str) -> int:
+            try:
+                return TABLE_DEPENDENCY_ORDER.index(t_name)
+            except ValueError:
+                return 999
+
+        ordered_tables = sorted(prod_tables, key=get_order)
+
         total_synced = 0
-        for table in sorted(prod_tables):
+        for table in ordered_tables:
             if table not in target_tables:
                 print(f"   [SKIP] Table '{table}' does not exist in target metadata.")
                 continue
@@ -99,9 +123,15 @@ def sync_prod_to_dev(force_sqlite: bool = False):
             sanitized_rows = []
             for row in rows:
                 row_dict = dict(row)
-                if not is_postgres_target:
-                    for k, v in row_dict.items():
-                        if isinstance(v, (dict, list)):
+                for k, v in row_dict.items():
+                    if isinstance(v, (dict, list)):
+                        if is_postgres_target:
+                            try:
+                                import psycopg2.extras
+                                row_dict[k] = psycopg2.extras.Json(v)
+                            except Exception:
+                                row_dict[k] = json.dumps(v)
+                        else:
                             row_dict[k] = json.dumps(v)
                 sanitized_rows.append(row_dict)
 

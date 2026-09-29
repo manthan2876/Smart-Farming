@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # Model Inference Server (Server 2)
     MODEL_SERVER_URL: str = Field(default="http://127.0.0.1:8001")
-    MODEL_SERVER_TIMEOUT: int = Field(default=60)
+    MODEL_SERVER_TIMEOUT: int = Field(default=120)
 
     # Storage (AWS S3 & Google Cloud Storage)
     STORAGE_BACKEND: str = Field(default="local")

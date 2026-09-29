@@ -5,12 +5,19 @@ from arq import create_pool
 from arq.connections import RedisSettings
 from app.core.config import settings
 
+import asyncio
 logger = logging.getLogger(__name__)
 
 arq_pool = None
+main_loop = None
 
 async def init_arq():
-    global arq_pool
+    global arq_pool, main_loop
+    try:
+        main_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+
     try:
         redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
         arq_pool = await create_pool(redis_settings)
@@ -25,9 +32,10 @@ async def init_arq():
     return arq_pool
 
 async def close_arq():
-    global arq_pool
+    global arq_pool, main_loop
     if arq_pool:
         await arq_pool.close()
+    main_loop = None
 
 
 async def enqueue_translation(
@@ -87,14 +95,44 @@ def enqueue_translation_sync(
     fields: dict[str, str],
     name_fields: list[str] | None = None,
 ):
-    """Synchronous helper for worker threads / non-async code to enqueue translation to Redis."""
-    import asyncio
+    """Synchronous helper for worker threads / non-async code to enqueue translation safely."""
+    global main_loop
+    coro = enqueue_translation(entity_type, entity_id, fields, name_fields)
+
+    # 1. If the main FastAPI event loop is running, dispatch to it safely across threads
+    if main_loop and main_loop.is_running():
+        try:
+            current_loop = None
+            try:
+                current_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                pass
+
+            if current_loop is main_loop:
+                main_loop.create_task(coro)
+            else:
+                asyncio.run_coroutine_threadsafe(coro, main_loop)
+            return
+        except Exception as exc:
+            logger.warning("Failed to dispatch translation to main event loop: %s", exc)
+
+    # 2. Fallback for standalone worker threads: run in-process sync directly to avoid attaching arq_pool to a temporary loop
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.create_task(enqueue_translation(entity_type, entity_id, fields, name_fields))
-        else:
-            loop.run_until_complete(enqueue_translation(entity_type, entity_id, fields, name_fields))
-    except Exception:
-        asyncio.run(enqueue_translation(entity_type, entity_id, fields, name_fields))
+        from app.core.session import _session_factory
+        from app.services.translation.manager import process_entity_translation_sync
+        db = _session_factory()()
+        try:
+            process_entity_translation_sync(
+                session=db,
+                entity_type=entity_type,
+                entity_id=str(entity_id),
+                fields=fields,
+                name_fields=name_fields or [],
+            )
+        except Exception as e:
+            logger.warning("In-process translation sync error for %s #%s: %s", entity_type, entity_id, e)
+        finally:
+            db.close()
+    except Exception as exc:
+        logger.warning("Could not execute fallback translation: %s", exc)
 

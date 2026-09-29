@@ -167,6 +167,30 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
 
         print(f"[INFO] Inspecting {len(tables)} table(s) in {src_label}...")
 
+        TABLE_DEPENDENCY_ORDER = [
+            "users",
+            "farms",
+            "plots",
+            "images",
+            "predictions",
+            "recommendations",
+            "feedback",
+            "expert_reviews",
+            "dataset_candidates",
+            "alerts",
+            "password_reset_tokens",
+            "mlops_runs",
+            "entity_translations",
+        ]
+
+        def get_order(t_name: str) -> int:
+            try:
+                return TABLE_DEPENDENCY_ORDER.index(t_name)
+            except ValueError:
+                return 999
+
+        ordered_tables = sorted(tables, key=get_order)
+
         with tgt_engine.connect() as tgt_conn:
             is_postgres = "postgres" in target_url
             if is_postgres:
@@ -177,7 +201,7 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
                     pass
 
             total_synced = 0
-            for table in sorted(tables):
+            for table in ordered_tables:
                 with src_engine.connect() as s_conn:
                     rows = s_conn.execute(text(f'SELECT * FROM "{table}";')).mappings().all()
 
@@ -187,10 +211,15 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
                 print(f"   Syncing {table} ({len(rows)} row(s))...")
                 for row in rows:
                     row_dict = dict(row)
-                    # Convert dicts/lists to JSON strings if inserting into SQLite
-                    if "sqlite" in target_url:
-                        for k, v in row_dict.items():
-                            if isinstance(v, (dict, list)):
+                    for k, v in row_dict.items():
+                        if isinstance(v, (dict, list)):
+                            if is_postgres:
+                                try:
+                                    import psycopg2.extras
+                                    row_dict[k] = psycopg2.extras.Json(v)
+                                except Exception:
+                                    row_dict[k] = json.dumps(v)
+                            else:
                                 row_dict[k] = json.dumps(v)
 
                     cols = list(row_dict.keys())

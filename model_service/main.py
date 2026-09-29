@@ -1,9 +1,8 @@
-"""
-main.py — FastAPI entrypoint for Model Inference Server (Server 2, Port 8001)
-"""
+import os
+os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
 
-from __future__ import annotations
-
+import asyncio
+from contextlib import asynccontextmanager
 import cv2
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile, status
@@ -11,10 +10,25 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.pipeline import run_vision_pipeline
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    def _warmup():
+        try:
+            print("[ModelService] Pre-loading vision models into RAM in background...")
+            dummy = np.full((224, 224, 3), 120, dtype=np.uint8)
+            run_vision_pipeline(dummy, filename="warmup.jpg")
+            print("[ModelService] Vision models successfully loaded and ready in RAM.")
+        except Exception as e:
+            print(f"[ModelService] Warmup note: {e}")
+
+    asyncio.get_running_loop().run_in_executor(None, _warmup)
+    yield
+
 app = FastAPI(
     title="Smart Farming Model Inference Server",
     version="1.0.0",
-    description="Dedicated microservice for crop identification, disease classification, severity estimation, and pest detection."
+    description="Dedicated microservice for crop identification, disease classification, severity estimation, and pest detection.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

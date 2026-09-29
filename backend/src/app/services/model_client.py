@@ -32,8 +32,11 @@ async def call_model_service(
         except Exception as exc:
             print(f"[ModelClient] Failed to obtain GCP identity token: {exc}")
 
+    timeout_sec = max(float(getattr(settings, "MODEL_SERVER_TIMEOUT", 120)), 120.0)
+    timeout_cfg = httpx.Timeout(timeout_sec, connect=15.0)
+
     try:
-        async with httpx.AsyncClient(timeout=float(settings.MODEL_SERVER_TIMEOUT)) as client:
+        async with httpx.AsyncClient(timeout=timeout_cfg) as client:
             response = await client.post(
                 url,
                 files={"file": (filename, image_bytes, content_type or "image/jpeg")},
@@ -151,8 +154,11 @@ def call_model_service_sync(
         except Exception as exc:
             print(f"[ModelClient] Failed to obtain GCP identity token: {exc}")
 
+    timeout_sec = max(float(getattr(settings, "MODEL_SERVER_TIMEOUT", 120)), 120.0)
+    timeout_cfg = httpx.Timeout(timeout_sec, connect=15.0)
+
     try:
-        with httpx.Client(timeout=float(settings.MODEL_SERVER_TIMEOUT)) as client:
+        with httpx.Client(timeout=timeout_cfg) as client:
             response = client.post(
                 url,
                 files={"file": (filename, image_bytes, content_type or "image/jpeg")},
