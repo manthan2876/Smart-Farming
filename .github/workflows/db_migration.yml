@@ -1,28 +1,7 @@
-name: Database Migration Pipeline
+name: Migrate Dev Database to Production
 
 on:
   workflow_dispatch:
-    inputs:
-      target_env:
-        description: 'Target Environment'
-        required: true
-        type: choice
-        default: 'both'
-        options:
-          - 'both'
-          - 'production'
-          - 'development'
-      action:
-        description: 'Select Migration Action'
-        required: true
-        type: choice
-        default: 'schema_only'
-        options:
-          - 'schema_only'
-          - 'seed'
-          - 'sync_dev_to_prod'
-          - 'sync_prod_to_dev'
-          - 'check'
   push:
     branches:
       - main
@@ -32,8 +11,8 @@ on:
       - 'backend/scripts/migrate_to_prod.py'
 
 jobs:
-  migrate:
-    name: Run Database Migration
+  migrate_to_production:
+    name: Migrate Dev Database to Production
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || contains(github.event.head_commit.message, '[migrate-db]')
     steps:
@@ -51,59 +30,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Execute Migration Script
+      - name: Execute Migration to Production
         env:
           PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-          DEV_DATABASE_URL: ${{ secrets.DEV_DATABASE_URL || secrets.DATABASE_URL }}
         run: |
-          if [ -z "$PROD_DATABASE_URL" ] && [ -z "$DEV_DATABASE_URL" ]; then
-            echo "::error::Neither PROD_DATABASE_URL nor DEV_DATABASE_URL secret is configured in GitHub Repository Secrets!"
-            echo "Please configure secrets in: Repository Settings -> Secrets and variables -> Actions"
+          if [ -z "$PROD_DATABASE_URL" ]; then
+            echo "::error::PROD_DATABASE_URL secret is not configured in GitHub Repository Secrets!"
+            echo "Please go to: Repository Settings -> Secrets and variables -> Actions -> New repository secret -> PROD_DATABASE_URL"
             exit 1
           fi
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            ACTION="${{ github.event.inputs.action }}"
-            TARGET_ENV="${{ github.event.inputs.target_env }}"
-          else
-            ACTION="schema_only"
-            TARGET_ENV="both"
-          fi
-
           echo "========================================================"
-          echo "Executing Database Action: $ACTION on Target: $TARGET_ENV"
+          echo "Migrating Dev Schema & Alembic Revisions to Production..."
           echo "Triggered By: ${{ github.event_name }}"
           echo "========================================================"
 
-          if [ "$ACTION" = "check" ]; then
-            python backend/scripts/migrate_to_prod.py --check
-          elif [ "$ACTION" = "sync_dev_to_prod" ]; then
-            python backend/scripts/migrate_to_prod.py --sync-data --yes
-          elif [ "$ACTION" = "sync_prod_to_dev" ]; then
-            python backend/scripts/migrate_to_prod.py --sync-to-dev --yes
-          elif [ "$ACTION" = "seed" ]; then
-            if [ "$TARGET_ENV" = "both" ]; then
-              python backend/scripts/migrate_to_prod.py --all-dbs --seed --seed-dev --yes
-            elif [ "$TARGET_ENV" = "development" ]; then
-              python backend/scripts/migrate_to_prod.py --dev-only --seed-dev --yes
-            else
-              python backend/scripts/migrate_to_prod.py --seed --yes
-            fi
-          elif [ "$ACTION" = "schema_only" ]; then
-            if [ "$TARGET_ENV" = "both" ]; then
-              if [ -n "$DEV_DATABASE_URL" ] && [ -n "$PROD_DATABASE_URL" ]; then
-                python backend/scripts/migrate_to_prod.py --all-dbs --yes
-              elif [ -n "$DEV_DATABASE_URL" ]; then
-                python backend/scripts/migrate_to_prod.py --dev-only --yes
-              else
-                python backend/scripts/migrate_to_prod.py --schema-only --yes
-              fi
-            elif [ "$TARGET_ENV" = "development" ]; then
-              python backend/scripts/migrate_to_prod.py --dev-only --yes
-            else
-              python backend/scripts/migrate_to_prod.py --schema-only --yes
-            fi
-          else
-            echo "::error::Unknown action: $ACTION"
-            exit 1
-          fi
+          python backend/scripts/migrate_to_prod.py --schema-only --yes

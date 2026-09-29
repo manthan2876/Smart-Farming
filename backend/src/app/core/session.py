@@ -111,7 +111,7 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
     return connect_args
 
 
-def create_app_engine(url: str | None = None):
+def create_app_engine(url: str | None = None, **kwargs):
     target_url = sanitize_db_url(url or database_url())
     # Normalize postgresql:// to postgresql+psycopg2:// or postgresql+psycopg:// depending on installed driver
     if target_url.startswith("postgresql://"):
@@ -125,16 +125,25 @@ def create_app_engine(url: str | None = None):
             except ImportError:
                 target_url = target_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     connect_args = get_db_connect_args(target_url)
+    if "connect_args" in kwargs:
+        connect_args.update(kwargs.pop("connect_args"))
+
     if target_url.startswith("sqlite"):
-        return create_engine(target_url, connect_args=connect_args)
-    return create_engine(
-        target_url,
-        pool_size=15,
-        max_overflow=20,
-        pool_recycle=1200,
-        pool_pre_ping=True,
-        connect_args=connect_args,
-    )
+        return create_engine(target_url, connect_args=connect_args, **kwargs)
+
+    engine_kwargs = {
+        "connect_args": connect_args,
+    }
+    from sqlalchemy.pool import NullPool
+    if kwargs.get("poolclass") is not NullPool:
+        engine_kwargs.update({
+            "pool_size": 5,
+            "max_overflow": 5,
+            "pool_recycle": 1200,
+            "pool_pre_ping": True,
+        })
+    engine_kwargs.update(kwargs)
+    return create_engine(target_url, **engine_kwargs)
 
 
 @lru_cache(maxsize=1)

@@ -238,6 +238,43 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
                 except Exception:
                     pass
 
+                # Reset all PostgreSQL sequences to MAX(id) to prevent duplicate key errors on subsequent inserts
+                try:
+                    cols = tgt_conn.execute(text("""
+                        SELECT c.table_name, c.column_name
+                        FROM information_schema.columns c
+                        JOIN information_schema.tables t ON c.table_name = t.table_name
+                        WHERE t.table_schema = 'public' 
+                          AND t.table_type = 'BASE TABLE'
+                          AND (c.column_default LIKE 'nextval(%' OR c.identity_generation IS NOT NULL)
+                    """)).fetchall()
+
+                    for table_name, column_name in cols:
+                        seq_name = tgt_conn.execute(
+                            text("SELECT pg_get_serial_sequence(:t, :c)"),
+                            {"t": f'public."{table_name}"', "c": column_name}
+                        ).scalar() or tgt_conn.execute(
+                            text("SELECT pg_get_serial_sequence(:t, :c)"),
+                            {"t": table_name, "c": column_name}
+                        ).scalar()
+
+                        if seq_name:
+                            max_id = tgt_conn.execute(text(f'SELECT MAX("{column_name}") FROM "{table_name}"')).scalar()
+                            if max_id is not None and max_id > 0:
+                                tgt_conn.execute(
+                                    text("SELECT setval(:seq, :max_id, true)"),
+                                    {"seq": seq_name, "max_id": max_id}
+                                )
+                            else:
+                                tgt_conn.execute(
+                                    text("SELECT setval(:seq, 1, false)"),
+                                    {"seq": seq_name}
+                                )
+                    tgt_conn.commit()
+                    print("   [INFO] PostgreSQL auto-increment sequences advanced and synchronized.")
+                except Exception as seq_exc:
+                    print(f"   [WARN] Could not update PostgreSQL sequences: {seq_exc}")
+
         print(f"\n[SUCCESS] Data synchronization completed! Total rows processed: {total_synced}")
         return True
     except Exception as exc:
