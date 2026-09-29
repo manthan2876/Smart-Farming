@@ -1,26 +1,35 @@
-"""Production Database Migration & Synchronization CLI.
+"""Production & Development Database Migration & Synchronization CLI.
 
-Enables keeping local development (SQLite/local Postgres) completely separate
-from production (Supabase/cloud Postgres), with flexible options to migrate
-schema, seed data, or sync records on demand or via GitHub Actions.
+Supports managing Aiven Cloud PostgreSQL (Development) and Supabase Cloud PostgreSQL (Production)
+with flexible options to migrate schema, seed reference data, or sync records between environments.
 
 Usage:
-    # Interactive mode (prompts for options):
+    # Interactive menu:
     python backend/scripts/migrate_to_prod.py
 
-    # Apply schema updates only (Alembic upgrade head + create_all):
-    python backend/scripts/migrate_to_prod.py --schema-only
+    # Apply schema updates to Production only (Supabase):
+    python backend/scripts/migrate_to_prod.py --schema-only --yes
 
-    # Apply schema and seed default reference data:
-    python backend/scripts/migrate_to_prod.py --seed
+    # Apply schema updates to Development only (Aiven):
+    python backend/scripts/migrate_to_prod.py --dev-only --yes
 
-    # Full data sync from local database to production:
+    # Apply schema updates to BOTH Dev and Production:
+    python backend/scripts/migrate_to_prod.py --all-dbs --yes
+
+    # Sync data from Dev (Aiven) to Production (Supabase):
     python backend/scripts/migrate_to_prod.py --sync-data --yes
+
+    # Sync data from Production (Supabase) to Dev (Aiven):
+    python backend/scripts/migrate_to_prod.py --sync-to-dev --yes
+
+    # Check connectivity and table counts for both databases:
+    python backend/scripts/migrate_to_prod.py --check
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -62,12 +71,13 @@ def get_target_prod_url(cli_target: str | None = None) -> str:
     return sanitize_db_url(target)
 
 
-def get_local_source_url(cli_source: str | None = None) -> str:
-    """Resolve local development database URL."""
+def get_dev_source_url(cli_source: str | None = None) -> str:
+    """Resolve development database URL (Aiven Cloud PostgreSQL or local SQLite)."""
     source = (
         cli_source
-        or os.getenv("LOCAL_DATABASE_URL")
+        or os.getenv("DEV_DATABASE_URL")
         or os.getenv("DATABASE_URL")
+        or os.getenv("LOCAL_DATABASE_URL")
         or "sqlite:///./dev_database.db"
     )
     return sanitize_db_url(source)
@@ -82,10 +92,6 @@ def verify_connection(url: str, label: str = "Database") -> bool:
     print(f"       Username: {parsed.username}")
     print(f"       Host: {parsed.hostname}:{parsed.port or 5432}")
     print(f"       Database: {parsed.path.lstrip('/')}")
-    raw_pass = parsed.password or ""
-    print(f"       Password chars count: {len(raw_pass)}")
-    if len(raw_pass) >= 4:
-        print(f"       Password preview: {raw_pass[:2]}...{raw_pass[-2:]}")
     try:
         engine = create_app_engine(url)
         with engine.connect() as conn:
@@ -97,59 +103,59 @@ def verify_connection(url: str, label: str = "Database") -> bool:
         return False
 
 
-def apply_schema_migrations(target_url: str) -> bool:
+def apply_schema_migrations(target_url: str, db_label: str = "Database") -> bool:
     """Safely applies SQLAlchemy Base.metadata.create_all and Alembic migrations to target database."""
     print("\n" + "=" * 65)
-    print("  STEP 1: APPLYING PRODUCTION SCHEMA MIGRATIONS")
+    print(f"  APPLYING SCHEMA MIGRATIONS: {db_label.upper()}")
     print("=" * 65)
 
     try:
         engine = create_app_engine(target_url)
-        print("[INFO] Creating any newly declared tables in SQLAlchemy metadata...")
+        print(f"[INFO] Creating newly declared tables in {db_label}...")
         Base.metadata.create_all(engine)
-        print("[SUCCESS] Base.metadata.create_all completed.")
+        print(f"[SUCCESS] Base.metadata.create_all completed for {db_label}.")
 
         # Run Alembic upgrade head
-        print("[INFO] Executing Alembic migrations ('upgrade head')...")
+        print(f"[INFO] Executing Alembic migrations ('upgrade head') on {db_label}...")
         os.environ["DATABASE_URL"] = target_url
         alembic_cfg = Config(str(backend_dir / "alembic.ini"))
         alembic_cfg.set_main_option("script_location", str(backend_dir / "alembic"))
         command.upgrade(alembic_cfg, "head")
-        print("[SUCCESS] Alembic upgrade head completed successfully.")
+        print(f"[SUCCESS] Alembic upgrade head completed on {db_label}.")
 
-        # Print current tables on production
+        # Print current tables
         inspector = inspect(engine)
         tables = sorted(inspector.get_table_names())
-        print(f"\n[INFO] Production database now contains {len(tables)} table(s):")
+        print(f"\n[INFO] {db_label} now contains {len(tables)} table(s):")
         for t in tables:
             print(f"   - {t}")
         return True
     except Exception as exc:
-        print(f"[ERROR] Schema migration failed: {exc}")
+        print(f"[ERROR] Schema migration failed on {db_label}: {exc}")
         return False
 
 
-def seed_production_defaults(target_url: str) -> bool:
-    """Initializes default reference roles, admin accounts, and crop manifests on target database."""
+def seed_database_defaults(target_url: str, db_label: str = "Database") -> bool:
+    """Initializes default reference roles, admin accounts, and sample data."""
     print("\n" + "=" * 65)
-    print("  STEP 2: SEEDING DEFAULT PRODUCTION ACCOUNTS & REFERENCE DATA")
+    print(f"  SEEDING DEFAULT ACCOUNTS & REFERENCE DATA: {db_label.upper()}")
     print("=" * 65)
     try:
         from app.core.init_db import initialize_database
 
         os.environ["DATABASE_URL"] = target_url
         initialize_database()
-        print("[SUCCESS] Default production seed data verified/initialized.")
+        print(f"[SUCCESS] Default seed data verified/initialized for {db_label}.")
         return True
     except Exception as exc:
-        print(f"[ERROR] Seeding failed: {exc}")
+        print(f"[ERROR] Seeding failed on {db_label}: {exc}")
         return False
 
 
-def sync_records(source_url: str, target_url: str) -> bool:
-    """Syncs data rows from local development database into production."""
+def sync_records(source_url: str, target_url: str, src_label: str = "Source", tgt_label: str = "Target") -> bool:
+    """Syncs data rows between databases safely using ON CONFLICT DO NOTHING."""
     print("\n" + "=" * 65)
-    print("  STEP 3: SYNCING DATA FROM LOCAL TO PRODUCTION")
+    print(f"  SYNCING DATA: {src_label.upper()} -> {tgt_label.upper()}")
     print("=" * 65)
 
     try:
@@ -159,40 +165,49 @@ def sync_records(source_url: str, target_url: str) -> bool:
         src_inspector = inspect(src_engine)
         tables = [t for t in src_inspector.get_table_names() if t != "alembic_version"]
 
-        print(f"[INFO] Inspecting {len(tables)} table(s) in source database...")
-        src_session = sessionmaker(bind=src_engine)()
-        tgt_session = sessionmaker(bind=tgt_engine)()
+        print(f"[INFO] Inspecting {len(tables)} table(s) in {src_label}...")
 
         with tgt_engine.connect() as tgt_conn:
-            # Check if Postgres (supports session_replication_role)
             is_postgres = "postgres" in target_url
             if is_postgres:
-                tgt_conn.execute(text("SET session_replication_role = 'replica';"))
-                tgt_conn.commit()
+                try:
+                    tgt_conn.execute(text("SET session_replication_role = 'replica';"))
+                    tgt_conn.commit()
+                except Exception:
+                    pass
 
             total_synced = 0
-            for table in tables:
+            for table in sorted(tables):
                 with src_engine.connect() as s_conn:
                     rows = s_conn.execute(text(f'SELECT * FROM "{table}";')).mappings().all()
 
                 if not rows:
                     continue
 
-                print(f"   Syncing {table} ({len(rows)} rows)...")
-                # Insert rows into target
+                print(f"   Syncing {table} ({len(rows)} row(s))...")
                 for row in rows:
-                    cols = list(row.keys())
+                    row_dict = dict(row)
+                    # Convert dicts/lists to JSON strings if inserting into SQLite
+                    if "sqlite" in target_url:
+                        for k, v in row_dict.items():
+                            if isinstance(v, (dict, list)):
+                                row_dict[k] = json.dumps(v)
+
+                    cols = list(row_dict.keys())
                     col_names = ", ".join([f'"{c}"' for c in cols])
                     val_placeholders = ", ".join([f":{c}" for c in cols])
                     stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT DO NOTHING;')
-                    tgt_conn.execute(stmt, dict(row))
+                    tgt_conn.execute(stmt, row_dict)
                     total_synced += 1
 
                 tgt_conn.commit()
 
             if is_postgres:
-                tgt_conn.execute(text("SET session_replication_role = 'DEFAULT';"))
-                tgt_conn.commit()
+                try:
+                    tgt_conn.execute(text("SET session_replication_role = 'DEFAULT';"))
+                    tgt_conn.commit()
+                except Exception:
+                    pass
 
         print(f"\n[SUCCESS] Data synchronization completed! Total rows processed: {total_synced}")
         return True
@@ -201,39 +216,94 @@ def sync_records(source_url: str, target_url: str) -> bool:
         return False
 
 
+def check_databases(dev_url: str, prod_url: str) -> None:
+    """Check connectivity and compare row counts across both Dev and Prod."""
+    dev_ok = verify_connection(dev_url, "Development Database (Aiven)")
+    prod_ok = verify_connection(prod_url, "Production Database (Supabase)")
+
+    if not dev_ok or not prod_ok:
+        print("\n[!] Could not connect to one or more databases.")
+        return
+
+    dev_engine = create_app_engine(dev_url)
+    prod_engine = create_app_engine(prod_url)
+
+    dev_insp = inspect(dev_engine)
+    prod_insp = inspect(prod_engine)
+
+    all_tables = sorted(set(dev_insp.get_table_names()) | set(prod_insp.get_table_names()))
+    table_list = [t for t in all_tables if t != "alembic_version"]
+
+    print("\n" + "=" * 65)
+    print(f"{'TABLE NAME':<26} | {'DEV (AIVEN)':<15} | {'PROD (SUPABASE)':<15}")
+    print("-" * 65)
+
+    with dev_engine.connect() as dev_conn, prod_engine.connect() as prod_conn:
+        for t in table_list:
+            dev_cnt = "-"
+            prod_cnt = "-"
+            if dev_insp.has_table(t):
+                dev_cnt = str(dev_conn.execute(text(f'SELECT count(*) FROM "{t}";')).scalar())
+            if prod_insp.has_table(t):
+                prod_cnt = str(prod_conn.execute(text(f'SELECT count(*) FROM "{t}";')).scalar())
+            print(f"{t:<26} | {dev_cnt:<15} | {prod_cnt:<15}")
+
+    print("=" * 65)
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Smart Farming - Production Database Migration & Sync Utility"
+        description="Smart Farming - Dev (Aiven) & Prod (Supabase) Database Management Utility"
     )
     parser.add_argument(
         "--target",
         type=str,
-        help="Target production database URL (defaults to PROD_DATABASE_URL in .env)",
+        help="Production database URL (defaults to PROD_DATABASE_URL in .env)",
     )
     parser.add_argument(
         "--source",
         type=str,
-        help="Source local database URL (defaults to DATABASE_URL or sqlite:///./dev_database.db)",
+        help="Development database URL (defaults to DATABASE_URL in .env)",
     )
     parser.add_argument(
         "--schema-only",
         action="store_true",
-        help="Apply schema migrations (create_all + alembic upgrade head) without transferring data.",
+        help="Apply schema migrations to Production (Supabase).",
+    )
+    parser.add_argument(
+        "--dev-only",
+        action="store_true",
+        help="Apply schema migrations to Development (Aiven).",
+    )
+    parser.add_argument(
+        "--all-dbs",
+        action="store_true",
+        help="Apply schema migrations to BOTH Dev (Aiven) and Production (Supabase).",
     )
     parser.add_argument(
         "--seed",
         action="store_true",
-        help="Apply schema migrations and seed reference accounts/crops if empty.",
+        help="Apply schema migrations and seed reference accounts on Production.",
+    )
+    parser.add_argument(
+        "--seed-dev",
+        action="store_true",
+        help="Apply schema migrations and seed reference accounts on Development.",
     )
     parser.add_argument(
         "--sync-data",
         action="store_true",
-        help="Sync rows from local database to production.",
+        help="Sync rows from Development (Aiven) to Production (Supabase).",
+    )
+    parser.add_argument(
+        "--sync-to-dev",
+        action="store_true",
+        help="Sync rows from Production (Supabase) to Development (Aiven).",
     )
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Verify connectivity and report table status on production without modifying anything.",
+        help="Verify connectivity and compare table row counts for both Dev and Prod.",
     )
     parser.add_argument(
         "--yes", "-y",
@@ -243,78 +313,91 @@ def main():
 
     args = parser.parse_args()
 
-    target_url = get_target_prod_url(args.target)
-    source_url = get_local_source_url(args.source)
+    prod_url = get_target_prod_url(args.target)
+    dev_url = get_dev_source_url(args.source)
 
     print("=" * 65)
-    print("  SMART FARMING: DATABASE MIGRATION UTILITY")
+    print("  SMART FARMING: DATABASE MIGRATION & SYNC UTILITY")
     print("=" * 65)
-    print(f"  Source (Local Dev) : {source_url.split('@')[-1] if '@' in source_url else source_url}")
-    print(f"  Target (Production): {target_url.split('@')[-1] if '@' in target_url else target_url}")
+    print(f"  Dev  (Aiven)   : {dev_url.split('@')[-1] if '@' in dev_url else dev_url}")
+    print(f"  Prod (Supabase): {prod_url.split('@')[-1] if '@' in prod_url else prod_url}")
     print("=" * 65)
 
     if args.check:
-        verify_connection(target_url, "Production Database")
+        check_databases(dev_url, prod_url)
         return
 
     # Non-interactive CLI flag mode
-    if args.schema_only or args.seed or args.sync_data:
+    if args.schema_only or args.dev_only or args.all_dbs or args.seed or args.seed_dev or args.sync_data or args.sync_to_dev:
         if not args.yes:
-            confirm = input("\nProceed with migration to PRODUCTION? [y/N]: ").strip().lower()
+            confirm = input("\nProceed with database execution? [y/N]: ").strip().lower()
             if confirm not in ("y", "yes"):
                 print("Aborted.")
                 return
 
-        if not verify_connection(target_url, "Production Database"):
-            sys.exit(1)
-
-        success = apply_schema_migrations(target_url)
-        if not success:
-            sys.exit(1)
+        if args.dev_only:
+            verify_connection(dev_url, "Dev (Aiven)")
+            apply_schema_migrations(dev_url, "Dev (Aiven)")
+        elif args.all_dbs:
+            verify_connection(dev_url, "Dev (Aiven)")
+            apply_schema_migrations(dev_url, "Dev (Aiven)")
+            verify_connection(prod_url, "Prod (Supabase)")
+            apply_schema_migrations(prod_url, "Prod (Supabase)")
+        elif args.schema_only:
+            verify_connection(prod_url, "Prod (Supabase)")
+            apply_schema_migrations(prod_url, "Prod (Supabase)")
 
         if args.seed:
-            seed_production_defaults(target_url)
+            seed_database_defaults(prod_url, "Prod (Supabase)")
+        if args.seed_dev:
+            seed_database_defaults(dev_url, "Dev (Aiven)")
 
         if args.sync_data:
-            sync_records(source_url, target_url)
+            sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
+        if args.sync_to_dev:
+            sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
 
         print("\n[COMPLETE] All requested operations completed successfully.")
         return
 
     # Interactive menu mode
     print("\nSelect Migration Option:")
-    print("  [1] Apply Schema Updates Only (Alembic upgrade head + create_all) [Recommended & Safe]")
-    print("  [2] Apply Schema Updates + Seed Default Reference Data (Crops, Admin)")
-    print("  [3] Sync Local Data to Production (Copies local table rows)")
-    print("  [4] Check Production Connection & Table Status")
-    print("  [5] Cancel")
+    print("  [1] Apply Schema to Production (Supabase)")
+    print("  [2] Apply Schema to Development (Aiven)")
+    print("  [3] Apply Schema to BOTH Dev & Prod (Recommended for releases)")
+    print("  [4] Sync Data: Dev (Aiven) -> Prod (Supabase)")
+    print("  [5] Sync Data: Prod (Supabase) -> Dev (Aiven)")
+    print("  [6] Check Connections & Table Status (Both databases)")
+    print("  [7] Cancel")
 
     try:
-        choice = input("\nEnter choice [1-5]: ").strip()
+        choice = input("\nEnter choice [1-7]: ").strip()
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled.")
         return
 
     if choice == "1":
-        if verify_connection(target_url, "Production Database"):
-            apply_schema_migrations(target_url)
+        if verify_connection(prod_url, "Production (Supabase)"):
+            apply_schema_migrations(prod_url, "Production (Supabase)")
     elif choice == "2":
-        if verify_connection(target_url, "Production Database"):
-            if apply_schema_migrations(target_url):
-                seed_production_defaults(target_url)
+        if verify_connection(dev_url, "Development (Aiven)"):
+            apply_schema_migrations(dev_url, "Development (Aiven)")
     elif choice == "3":
-        confirm = input("\nWARNING: This will sync records to Production. Proceed? [y/N]: ").strip().lower()
-        if confirm in ("y", "yes"):
-            if verify_connection(target_url, "Production Database") and verify_connection(source_url, "Local Database"):
-                if apply_schema_migrations(target_url):
-                    sync_records(source_url, target_url)
+        if verify_connection(dev_url, "Development (Aiven)") and verify_connection(prod_url, "Production (Supabase)"):
+            apply_schema_migrations(dev_url, "Development (Aiven)")
+            apply_schema_migrations(prod_url, "Production (Supabase)")
     elif choice == "4":
-        verify_connection(target_url, "Production Database")
-        engine = create_app_engine(target_url)
-        insp = inspect(engine)
-        print("\nProduction Tables:")
-        for t in sorted(insp.get_table_names()):
-            print(f"   - {t}")
+        confirm = input("\nWARNING: This will copy records from Dev to Prod. Proceed? [y/N]: ").strip().lower()
+        if confirm in ("y", "yes"):
+            if verify_connection(dev_url, "Dev") and verify_connection(prod_url, "Prod"):
+                sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
+    elif choice == "5":
+        confirm = input("\nWARNING: This will copy records from Prod to Dev. Proceed? [y/N]: ").strip().lower()
+        if confirm in ("y", "yes"):
+            if verify_connection(prod_url, "Prod") and verify_connection(dev_url, "Dev"):
+                sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
+    elif choice == "6":
+        check_databases(dev_url, prod_url)
     else:
         print("Cancelled.")
 

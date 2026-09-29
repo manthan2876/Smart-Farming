@@ -33,15 +33,17 @@ else:
 
 
 def sanitize_db_url(url: str | None) -> str:
-    """Safely sanitize database URLs, auto-encoding special characters (like '@') in passwords."""
+    """Safely sanitize database URLs, auto-encoding special characters (like '@') in passwords and mapping postgres:// to postgresql://."""
     if not url:
         return "sqlite:///./dev_database.db"
     clean = url.strip().strip("'\"")
     if "://" not in clean:
         return clean
     scheme, remainder = clean.split("://", 1)
+    if scheme == "postgres":
+        scheme = "postgresql"
     if "@" not in remainder:
-        return clean
+        return f"{scheme}://{remainder}"
     userinfo, _, hostinfo = remainder.rpartition("@")
     if ":" in userinfo:
         user, pwd = userinfo.split(":", 1)
@@ -53,7 +55,7 @@ def sanitize_db_url(url: str | None) -> str:
         clean_pwd = urllib.parse.quote(urllib.parse.unquote(clean_pwd), safe="")
         clean_user = urllib.parse.quote(urllib.parse.unquote(clean_user), safe=".")
         return f"{scheme}://{clean_user}:{clean_pwd}@{hostinfo}"
-    return clean
+    return f"{scheme}://{remainder}"
 
 
 def database_url() -> str:
