@@ -20,6 +20,18 @@ async def init_arq():
 
     try:
         redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+        # Harden cloud connection timeouts and retries (especially for Upstash TLS over public internet)
+        redis_settings.conn_timeout = 15
+        redis_settings.conn_retries = 10
+        redis_settings.conn_retry_delay = 2
+        redis_settings.retry_on_timeout = True
+        try:
+            from redis.asyncio.retry import Retry
+            from redis.backoff import ExponentialBackoff
+            redis_settings.retry = Retry(ExponentialBackoff(cap=10, base=1), retries=5)
+            redis_settings.retry_on_error = [ConnectionError, TimeoutError, OSError]
+        except Exception:
+            pass
         arq_pool = await create_pool(redis_settings)
         mode = "Local Docker Redis" if settings.REQUIRE_REDIS else "Upstash Cloud Redis"
         logger.info("Initialized ARQ pool [%s: %s]", mode, redis_settings.host)

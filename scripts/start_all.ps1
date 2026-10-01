@@ -149,7 +149,10 @@ Write-Host "                 LIVE LOGS" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
 
+$global:Stopping = $false
+
 function Stop-AllServices {
+    $global:Stopping = $true
     Write-Host ""
     Write-Host "Stopping all services..." -ForegroundColor Yellow
     foreach ($svc in $services) {
@@ -172,6 +175,17 @@ try {
             if ($p.HasExited -and -not $svc.ReportedExit) {
                 Write-Host ("[" + $svc.Name.PadRight(8) + "] PROCESS EXITED - Code: " + $p.ExitCode) -ForegroundColor Red
                 $svc.ReportedExit = $true
+
+                # Auto-restart ARQ worker if it exits unexpectedly while other services are still running
+                if ($svc.Name -eq "ARQ" -and -not $global:Stopping) {
+                    Write-Host "[ARQ     ] Automatically restarting worker in 3 seconds..." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 3
+                    if (-not $global:Stopping) {
+                        $restarted = Start-ServiceProcess 'ARQ' $backend $arq 'src.app.worker.WorkerSettings' 'Yellow'
+                        $svc.Process = $restarted.Process
+                        $svc.ReportedExit = $false
+                    }
+                }
             }
         }
         Start-Sleep -Milliseconds 250

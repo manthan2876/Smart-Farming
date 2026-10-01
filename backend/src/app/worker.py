@@ -97,10 +97,24 @@ async def on_startup(ctx):
 def _get_worker_redis_settings() -> RedisSettings:
     url = getattr(settings, "REDIS_URL", None) or "redis://127.0.0.1:6379"
     try:
-        return RedisSettings.from_dsn(url)
+        rs = RedisSettings.from_dsn(url)
     except Exception as exc:
         logger.warning("Could not parse REDIS_URL '%s' (%s); falling back to default.", url, exc)
-        return RedisSettings(host="127.0.0.1", port=6379)
+        rs = RedisSettings(host="127.0.0.1", port=6379)
+
+    # Harden cloud connection timeouts and retries (especially for Upstash TLS over public internet)
+    rs.conn_timeout = 15
+    rs.conn_retries = 10
+    rs.conn_retry_delay = 2
+    rs.retry_on_timeout = True
+    try:
+        from redis.asyncio.retry import Retry
+        from redis.backoff import ExponentialBackoff
+        rs.retry = Retry(ExponentialBackoff(cap=10, base=1), retries=5)
+        rs.retry_on_error = [ConnectionError, TimeoutError, OSError]
+    except Exception:
+        pass
+    return rs
 
 
 class WorkerSettings:
@@ -112,3 +126,28 @@ class WorkerSettings:
     # When connected to Upstash Cloud Redis, poll every 3.0s to conserve command quota; 0.5s for local Docker
     poll_delay = getattr(settings, "ARQ_POLL_DELAY", None) or (3.0 if not settings.REQUIRE_REDIS else 0.5)
     redis_settings = _get_worker_redis_settings()
+
+
+# Patch ARQ Worker._poll_iteration to survive transient Redis connection resets / timeouts
+from arq.worker import Worker
+from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError, RedisError
+
+_original_poll_iteration = Worker._poll_iteration
+
+async def _resilient_poll_iteration(self) -> None:
+    try:
+        await _original_poll_iteration(self)
+    except (RedisConnectionError, RedisTimeoutError, RedisError, TimeoutError, OSError, ConnectionResetError) as exc:
+        logger.warning(
+            "Transient Redis error during polling loop (%s: %s). Reconnecting on next iteration...",
+            exc.__class__.__name__,
+            exc,
+        )
+        await asyncio.sleep(getattr(self, "poll_delay_s", 2.0))
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        logger.exception("Unexpected error in ARQ poll iteration: %s", exc)
+        await asyncio.sleep(getattr(self, "poll_delay_s", 2.0))
+
+Worker._poll_iteration = _resilient_poll_iteration
