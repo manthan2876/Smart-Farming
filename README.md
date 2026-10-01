@@ -1,6 +1,6 @@
 # 🌾 Smart Farming — AI-Powered Crop Disease Diagnosis & Precision Agronomy
 
-> Enterprise-grade, distributed AI platform for rapid crop disease diagnosis, pest detection, treatment recommendations, and agronomic field management.
+> Enterprise-grade, distributed AI platform for rapid crop disease diagnosis, pest detection, treatment recommendations, multilingual voice advisories, and precision agronomy management.
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
@@ -9,14 +9,15 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.6%20CPU-EE4C2C?logo=pytorch)](https://pytorch.org)
 [![YOLOv8](https://img.shields.io/badge/YOLO-v8-00FFFF?logo=ultralytics)](https://ultralytics.com)
 [![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Cloud%20Run-4285F4?logo=googlecloud)](https://cloud.google.com/run)
-[![Supabase](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
-[![Upstash](https://img.shields.io/badge/Cache-Upstash%20Redis%20REST-00E599?logo=redis)](https://upstash.com)
+[![Supabase](https://img.shields.io/badge/Prod%20DB-Supabase%20PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
+[![Aiven](https://img.shields.io/badge/Dev%20DB-Aiven%20PostgreSQL-FF3554?logo=aiven)](https://aiven.io)
+[![Upstash](https://img.shields.io/badge/Queue%20%26%20Cache-Upstash%20Redis%20%26%20QStash-00E599?logo=redis)](https://upstash.com)
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** September 2026  
-**Status:** Active / Production Reference  
+**Version:** 2.2  
+**Date:** October 2026  
+**Status:** Active / Production Ready  
 
 ---
 
@@ -24,18 +25,20 @@
 
 - [Overview](#overview)
 - [System Architecture](#system-architecture)
+- [Multi-Environment Database Architecture](#multi-environment-database-architecture)
 - [Tech Stack](#tech-stack)
 - [Repository Structure](#repository-structure)
 - [Diagnostic Pipeline](#diagnostic-pipeline)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [1. Model Inference Microservice (Server 2)](#1-model-inference-microservice-server-2)
-  - [2. Backend Gateway Server (Server 1)](#2-backend-gateway-server-server-1)
-  - [3. Frontend Dashboard](#3-frontend-dashboard)
+- [Quick Start](#quick-start)
+  - [1-Click Unified Runner (Recommended)](#1-click-unified-runner-recommended)
+  - [Manual Service Startup](#manual-service-startup)
+- [Database Management & Migration Tools](#database-management--migration-tools)
+- [Background Workers & Asynchronous Tasks (ARQ + QStash)](#background-workers--asynchronous-tasks-arq--qstash)
+- [Authentication & Security](#authentication--security)
 - [Environment Configuration](#environment-configuration)
 - [Key API Endpoints](#key-api-endpoints)
 - [User Roles & Workflows](#user-roles--workflows)
-- [Production Deployment](#production-deployment)
+- [Production Deployment & CI/CD](#production-deployment--cicd)
 - [Running Tests](#running-tests)
 - [Documentation Index](#documentation-index)
 
@@ -43,57 +46,81 @@
 
 ## Overview
 
-**Smart Farming** is a production-ready, distributed computer vision and agronomy advisory system. A farmer captures or uploads a leaf photograph, and the system executes an automated diagnostic and advisory workflow:
+**Smart Farming** is a production-grade, distributed computer vision and precision agronomy platform. When a farmer captures or uploads a leaf photograph, the platform executes an end-to-end automated diagnostic and advisory workflow:
 
 1. **Leaf Validation & Preprocessing** — OpenCV evaluates image sharpness (Laplacian variance), illumination, and leaf presence.
 2. **Crop Identification** — EfficientNet-B0 classifies the crop species (`Cotton`, `Groundnut`, `Pepper Bell`, `Potato`, `Tomato`).
 3. **Decision Routing** — Dynamically dispatches the validated leaf to the crop-specific disease classifier.
 4. **Disease Classification** — Dedicated per-crop EfficientNet-B2 models classify diseases with confidence and uncertainty scores.
 5. **Severity Estimation** — Adaptive HSV thresholding estimates affected surface area percentage and severity tier (`Healthy`, `Low`, `Medium`, `High`).
-6. **Pest Detection** — Ultralytics YOLOv8 classifies pest species presence.
-7. **Visual Evidence** — Generates Grad-CAM visual attention heatmaps overlaid on the original leaf for farmer and expert inspection.
+6. **Pest Detection** — Ultralytics YOLOv8 identifies agricultural pest infestations.
+7. **Visual Evidence (Grad-CAM)** — Generates activation attention heatmaps overlaid on the original leaf for farmer and expert inspection.
 8. **Real-Time Weather Context** — Fetches live meteorological conditions (temperature, humidity, rainfall) via OpenWeather API.
-9. **LLM Agronomy Advisory** — Google Gemini 2.5 Flash synthesizes diagnosis, weather, and farm telemetry into actionable chemical, organic, and preventive treatment plans.
-10. **Multilingual Delivery & Audio** — Localized into English, Hindi, and Gujarati with Google Cloud Text-to-Speech (TTS) audio narration.
-11. **Human-in-the-Loop Triage** — Sub-threshold (<70% confidence) or conflicting diagnoses are routed to an Agronomist Expert Queue for review and MLOps retraining candidate collection.
+9. **LLM Agronomy Advisory** — Google Gemini 2.5 Flash (with Hugging Face Qwen fallback) synthesizes diagnosis, weather, and farm telemetry into organic, chemical, and preventive treatment plans.
+10. **Multilingual Voice & Audio** — Localized into English, Hindi, and Gujarati with Google Cloud Text-to-Speech (TTS) audio narration.
+11. **Human-in-the-Loop Triage** — Sub-threshold (<70% confidence) diagnoses are routed to an Agronomist Expert Queue for review and MLOps retraining candidate collection.
+12. **Asynchronous Processing & Scheduled Crons** — Background tasks run via ARQ workers with Upstash Redis queues and serverless cron schedules orchestrated via Upstash QStash.
 
 ---
 
 ## System Architecture
 
-The platform operates as a decoupled microservices architecture designed for high scalability and zero-downtime deployments:
+The platform operates as a decoupled microservices architecture designed for fault tolerance and zero-downtime scalability:
 
 ```
                                   ┌────────────────────────────────────────┐
                                   │           Vercel CDN Edge              │
                                   │      React 18 + Vite SPA Frontend      │
                                   └──────────────────┬─────────────────────┘
-                                                     │ HTTPS / REST / WS
+                                                     │ HTTPS / REST
                                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 Google Cloud Run: smart-farming-backend                                │
+│                                 Google Cloud Run: smart-farming-backend                                 │
 │                                         (FastAPI API Gateway)                                           │
 │                                                                                                         │
-│  ├── JWT Authentication & RBAC (Farmer, Expert, Admin)                                                  │
+│  ├── JWT Authentication (Argon2id + Password Reset Tokens with SMTP)                                    │
 │  ├── Weather Service (OpenWeather API)                                                                  │
-│  ├── LLM Advisory Engine (Google Gemini 2.5 Flash / Hugging Face Qwen Fallback)                          │
+│  ├── LLM Advisory Engine (Google Gemini 2.5 Flash / Hugging Face Qwen Fallback)                         │
 │  ├── Google Cloud Translation (Write-time async translation) & Google Cloud TTS Audio                   │
 │  ├── Storage Abstraction (Google Cloud Storage / AWS S3 with 15-minute Presigned URLs)                  │
+│  ├── ARQ Job Enqueuer & In-process Serverless Fallback                                                  │
 │  └── Notifications & Triage Alerts Engine (Auto-mark read on scan navigation)                           │
 └───┬───────────────────────────────┬────────────────────────────────┬───────────────────────────────┬────┘
-    │ HTTP / Multipart              │ Database Connection            │ HTTPS REST API                │ Storage API
+    │ HTTP / Multipart              │ Database Connection            │ Redis Protocol (TLS)          │ S3 / HMAC API
     ▼                               ▼                                ▼                               ▼
 ┌─────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐
-│ Google Cloud Run        │   │ Supabase PostgreSQL       │   │ Upstash Redis REST        │   │ Google Cloud Storage      │
-│ inference-service       │   │ (Connection Pooling)      │   │ (Sub-20ms Latency)        │   │ Bucket: smart-farming-data│
-│                         │   │                           │   │                           │   │                           │
-│ • OpenCV Preprocessor   │   │ • Users & Farms           │   │ • Image Deduplication     │   │ • uploads/ (Raw Leaf)     │
-│ • EfficientNet-B0 Crop  │   │ • Predictions & Images    │   │ • Rate Limiting           │   │ • processed/ (Grad-CAM)   │
-│ • EfficientNet-B2 Dis.  │   │ • Expert Reviews          │   │ • Write-time Translations │   │ • audio/ (TTS Narration)  │
-│ • YOLOv8 Pest Detector  │   │ • Alerts & Notifications  │   │ • Pipeline Cache (24h)    │   │ • Presigned URL Redirects │
-│ • Grad-CAM Visualizer   │   │ • MLOps Retraining Pool   │   │                           │   │                           │
-└─────────────────────────┘   └───────────────────────────┘   └───────────────────────────┘   └───────────────────────────┘
+│ Google Cloud Run        │   │ Cloud PostgreSQL          │   │ Upstash Cloud Redis       │   │ Google Cloud Storage      │
+│ inference-service       │   │                           │   │ & Serverless QStash       │   │ Bucket: smart-farming-data│
+│ (Port 8001)             │   │ • Prod: Supabase Cloud    │   │                           │   │                           │
+│                         │   │   (Session Pooler: 5432)  │   │ • ARQ Job Queue           │   │ • uploads/ (Raw Leaf)     │
+│ • OpenCV Preprocessor   │   │ • Dev: Aiven Cloud        │   │ • Sub-15ms REST Cache     │   │ • processed/ (Grad-CAM)   │
+│ • EfficientNet-B0 Crop  │   │   (SSL Mode: Require)     │   │ • Scheduled Cron Webhooks │   │ • audio/ (TTS Narration)  │
+│ • EfficientNet-B2 Dis.  │   │                           │   │ • Rate Limiting & Dedup   │   │ • Presigned URL Streaming │
+│ • YOLOv8 Pest Detector  │   │ • Predictions & Images    │   │                           │   │                           │
+│ • Grad-CAM Visualizer   │   │ • Farms, Plots, Users     │   │ ┌───────────────────────┐ │   │                           │
+│ • In-Memory Pre-warming │   │ • Translations & Alerts   │   │ │ ARQ Background Worker │ │   │                           │
+└─────────────────────────┘   └───────────────────────────┘   │ │ (Async Translation/ML)│ │   └───────────────────────────┘
+                                                              │ └───────────────────────┘ │
+                                                              └───────────────────────────┘
 ```
+
+---
+
+## Multi-Environment Database Architecture
+
+Smart Farming maintains strict separation between Development and Production environments:
+
+| Environment | Provider | Endpoint / Usage | Connection Model |
+|---|---|---|---|
+| **Development** | **Aiven Cloud PostgreSQL** | `pg-xxx.aivencloud.com:25049/defaultdb` | SSL mode require, lightweight pool (size: 5, overflow: 5) |
+| **Local Fallback**| **SQLite** | `sqlite:///./dev_database.db` | Offline local development without cloud network access |
+| **Production** | **Supabase Cloud PostgreSQL** | `aws-0-xxx.pooler.supabase.com:5432/postgres` | Session Pooler (port 5432 for transactional DDL migrations) |
+
+### Key Migration Principles:
+1. **Alembic Single Source of Truth**: `Base.metadata.create_all` is strictly removed from production paths. All schema DDL must go through versioned Alembic revisions (`alembic upgrade head`).
+2. **User Data Protection**: Production user records (`users`, `farms`, `predictions`, `images`, `alerts`, etc.) are never overwritten by automated CI/CD pipelines.
+3. **Reference Data Allow-List**: Only safe, static reference tables defined in `REFERENCE_TABLES` can be synced via the optional `--sync-reference` flag.
+4. **PostgreSQL Sequence Auto-Sync**: Inserting records with explicit primary keys in PostgreSQL does not advance underlying serial sequences. Our sync tools automatically advance all PostgreSQL sequences to `MAX(id)` to prevent `UniqueViolation` duplicate key collisions.
 
 ---
 
@@ -101,15 +128,17 @@ The platform operates as a decoupled microservices architecture designed for hig
 
 | Layer | Technologies & Services | Details |
 |---|---|---|
-| **Frontend** | React 18, TypeScript 5, Vite 6, Tailwind CSS, Lucide Icons | Responsive dashboard, Grad-CAM slider, multilingual i18n |
-| **Backend Gateway** | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2.0 | REST API gateway, authentication, business orchestration |
-| **Model Microservice** | PyTorch 2.6 (CPU-optimised), timm, Ultralytics YOLOv8, OpenCV | Pure inference server, in-memory model weights, Grad-CAM |
-| **Database** | Supabase PostgreSQL 15 | Managed relational database with SSL & connection pooling |
-| **Caching & Dedup** | Upstash Redis (Serverless REST API) | Sub-20ms dedup caching, write-time translation cache |
-| **Object Storage** | Google Cloud Storage (GCS) / AWS S3 S3-compatible API | Raw leaves, Grad-CAM heatmaps, TTS audio blobs |
+| **Frontend** | React 18, TypeScript 5.6, Vite 6, Tailwind CSS, Lucide Icons | High-performance dashboard, interactive Grad-CAM viewer, multilingual UI |
+| **Backend Gateway** | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic | RESTful API gateway, RBAC, background job orchestration |
+| **Model Microservice** | PyTorch 2.6 (CPU-optimised), timm, Ultralytics YOLOv8, OpenCV | Pure inference server, in-memory model pre-warming, Grad-CAM generation |
+| **Job Queue & Scheduling** | ARQ, Upstash Redis (TLS `rediss://`), Upstash QStash | Asynchronous translation workers, pipeline tasks, serverless cron jobs |
+| **Database** | Aiven PostgreSQL (Dev) & Supabase PostgreSQL (Prod) | Managed cloud PostgreSQL instances with connection pooling & SSL |
+| **Caching & Dedup** | Upstash Serverless Redis REST | Sub-15ms translation hit caching, SHA-256 image deduplication, rate limiting |
+| **Object Storage** | Google Cloud Storage (GCS) / AWS S3 S3-compatible API | Raw leaves, Grad-CAM heatmaps, TTS audio narration with presigned URLs |
 | **Generative AI** | Google Gemini 2.5 Flash (`google-genai`), Qwen3-4B-Instruct | Context-aware agronomic advisory generation |
-| **Translation & TTS** | Google Cloud Translation API, Google Cloud Text-to-Speech | Dynamic Hindi & Gujarati translation, voice generation |
-| **Hosting & Cloud** | Google Cloud Run, Vercel | Fully managed containerized microservices & edge frontend |
+| **Translation & TTS** | Google Cloud Translation API, Google Cloud Text-to-Speech | Dynamic Hindi (`hi`) and Gujarati (`gu`) translations and voice generation |
+| **Email Service** | SMTP / TLS (Gmail / SendGrid compatible) | Password reset email tokens and security notifications |
+| **Hosting & CI/CD** | Google Cloud Run, Vercel, GitHub Actions | Containerized microservices, edge frontend, gated migration workflows |
 
 ---
 
@@ -117,35 +146,55 @@ The platform operates as a decoupled microservices architecture designed for hig
 
 ```
 Smart-Farming/
-├── backend/                                # FastAPI API Gateway (Server 1)
+├── start_all.bat                           # 1-Click unified launcher for all local services
+├── scripts/
+│   ├── start_all.ps1                       # Unified non-blocking service orchestrator + ARQ watchdog
+│   ├── start_backend.bat                   # Standalone Backend starter
+│   ├── start_model_server.bat              # Standalone Model Server starter
+│   ├── start_worker.bat                    # Standalone ARQ Worker starter
+│   ├── start_frontend.bat                  # Standalone Frontend starter
+│   ├── start_mobile.bat                    # Standalone Flutter Web starter
+│   └── stop_all.bat                        # Clean shutdown utility
+│
+├── backend/                                # FastAPI API Gateway & Business Core (Server 1)
 │   ├── src/app/
-│   │   ├── main.py                         # Application entrypoint & static storage fallback
-│   │   ├── pipeline.py                     # Pipeline orchestrator & remote vision dispatcher
-│   │   ├── context.py                      # Shared pipeline context dictionary factory
+│   │   ├── main.py                         # Application entrypoint & middleware configuration
+│   │   ├── worker.py                       # ARQ worker definition (process_prediction, translate_entity)
+│   │   ├── pipeline.py                     # Diagnostic pipeline coordinator
 │   │   ├── api/
-│   │   │   ├── deps.py                     # Auth dependency injection & RBAC guards
+│   │   │   ├── deps.py                     # Auth dependency injection (Argon2id, JWT guards)
 │   │   │   └── endpoints/                  # Modular REST routers
-│   │   │       ├── auth.py                 # JWT signup, login, refresh, logout
-│   │   │       ├── predict.py              # Upload, inference invocation, scan detail
+│   │   │       ├── auth.py                 # Signup, login, password reset, refresh
+│   │   │       ├── predict.py              # Leaf upload, prediction invocation, rescan
 │   │   │       ├── expert.py               # Agronomist review queue & audit submissions
 │   │   │       ├── alerts.py               # Notifications & read-status management
-│   │   │       ├── history.py              # Farmer diagnosis history & timeline
-│   │   │       ├── weather.py              # OpenWeather current conditions & forecast
-│   │   │       ├── crops.py                # Supported crop species & catalog
+│   │   │       ├── history.py              # Diagnostic timeline & historical scans
+│   │   │       ├── weather.py              # OpenWeather metrics & forecasts
+│   │   │       ├── crops.py                # Supported crop species & pathogen catalog
 │   │   │       ├── tts.py                  # Audio generation & asset streaming
-│   │   │       ├── admin.py                # Administrative telemetry & user controls
-│   │   │       ├── translation.py          # On-demand entity translation overlay
+│   │   │       ├── admin.py                # Admin telemetry & user management
+│   │   │       ├── translation.py          # Entity translation overlay
 │   │   │       └── mlops.py                # Retraining candidate export & registry
-│   │   ├── core/                           # Database engine, config settings, storage clients
-│   │   ├── models/                         # SQLAlchemy declarative schema models
+│   │   ├── core/                           # Session pooling, settings, arq pool, storage clients
+│   │   ├── models/                         # SQLAlchemy declarative schema models (13 tables)
 │   │   ├── schemas/                        # Pydantic validation schemas
-│   │   ├── services/                       # Third-party integrations (Gemini, Weather, TTS)
+│   │   ├── services/                       # Integrations (Gemini, Weather, TTS, Translation)
 │   │   └── crud/                           # Database repository queries
-│   ├── alembic/                            # Database migration versions
-│   ├── requirements.txt
+│   ├── scripts/                            # Database & migration utilities
+│   │   ├── migrate_to_prod.py              # Dev/Prod migration, schema upgrade, reference sync
+│   │   ├── sync_prod_to_local.py           # Matches Dev DB to Prod DB (local use only)
+│   │   ├── reset_sequences.py              # Resets PostgreSQL auto-increment sequences to MAX(id)
+│   │   ├── setup_qstash_schedules.py       # Configures Upstash QStash cron schedules
+│   │   ├── verify_qstash_and_events.py     # Validates QStash webhook event delivery
+│   │   ├── verify_upstash_features.py      # Tests Upstash Redis connection & caching
+│   │   ├── test_smtp.py                    # Validates email sending & SMTP credentials
+│   │   └── verify_gcs_storage.py           # Validates GCS HMAC connectivity & upload
+│   ├── alembic/                            # Versioned database migrations
+│   ├── seed_users.py                       # Seeds initial Admin, Expert, and Farmer accounts
+│   ├── requirements.txt                    # Backend dependencies
 │   └── Dockerfile                          # Cloud Run container definition for backend
 │
-├── model_service/                          # Dedicated Computer Vision Microservice (Server 2)
+├── model_service/                          # Dedicated Vision Inference Microservice (Server 2)
 │   ├── src/
 │   │   ├── loader.py                       # Model checkpoint loader with defensive fallbacks
 │   │   ├── pipeline.py                     # Multi-stage computer vision orchestrator
@@ -158,20 +207,22 @@ Smart-Farming/
 │   │       └── pest_detector.py            # YOLOv8 pest detection stage
 │   ├── models/                             # Pretrained PyTorch & YOLO weight checkpoints
 │   ├── config.yaml                         # Confidence thresholds & model architecture specs
-│   ├── main.py                             # Lightweight FastAPI inference runner
+│   ├── main.py                             # Inference server with in-memory model pre-warming
 │   ├── requirements.txt
 │   └── Dockerfile                          # CPU-optimised Cloud Run container definition
 │
-├── frontend/                               # React 18 + Vite Web Application
+├── frontend/                               # React 18 + Vite Web Application (Server 3)
 │   ├── src/
-│   │   ├── pages/                          # Application view pages
-│   │   │   ├── DashboardPage.tsx           # Farmer dashboard with quick telemetry
+│   │   ├── pages/                          # Application pages
+│   │   │   ├── DashboardPage.tsx           # Telemetry & quick action hub
 │   │   │   ├── ScanPage.tsx                # Drag-and-drop diagnostic leaf capture
 │   │   │   ├── PredictionResultPage.tsx    # Diagnosis report, Grad-CAM viewer, audio player
 │   │   │   ├── AlertsPage.tsx              # Notifications with scan link & auto-read
 │   │   │   ├── ExpertQueuePage.tsx         # Agronomist triage desk
 │   │   │   ├── ExpertReviewPage.tsx        # Side-by-side diagnostic verification interface
-│   │   │   └── HistoryPage.tsx             # Longitudinal scan records
+│   │   │   ├── HistoryPage.tsx             # Longitudinal scan records
+│   │   │   ├── LoginPage.tsx               # Authentication interface
+│   │   │   └── ResetPasswordPage.tsx       # Email token-based password reset interface
 │   │   ├── components/                     # Reusable UI component library
 │   │   ├── api/                            # Typed HTTP client modules
 │   │   ├── context/                        # AuthContext & LanguageContext
@@ -179,6 +230,8 @@ Smart-Farming/
 │   ├── package.json
 │   └── vite.config.ts
 │
+├── .github/workflows/
+│   └── db_migration.yml                    # CI/CD: Automated Alembic prod migrations with approval gate
 ├── Docs/                                   # Architecture, API, & deployment specifications
 └── README.md
 ```
@@ -188,147 +241,212 @@ Smart-Farming/
 ## Diagnostic Pipeline
 
 ```
-  Step 1: Input
-    Farmer captures or uploads a leaf image (.jpg, .png, .webp).
+  Step 1: Input Capture
+    Farmer uploads a leaf photo via web or mobile (.jpg, .png, .webp).
            │
            ▼
-  Step 2: Backend Gateway (`smart-farming-backend`)
+  Step 2: Backend Gateway (Port 8000)
     • Computes SHA-256 hash of image bytes.
-    • Checks Upstash Redis REST for existing deduplication match (<20ms).
-    • Saves raw leaf to Google Cloud Storage (`uploads/{hash}.jpg`).
+    • Checks Upstash Redis REST for deduplication (<15ms).
+    • Saves raw leaf to Google Cloud Storage (uploads/{hash}.jpg).
            │
            ▼
-  Step 3: Vision Microservice (`inference-service`)
-    • Preprocessing: OpenCV checks blur score, brightness score, leaf mask.
-    • Crop Identification: EfficientNet-B0 predicts species (e.g., Tomato).
-    • Decision Router: Selects the Tomato EfficientNet-B2 disease model.
-    • Disease Classification: Predicts condition (e.g., Early Blight) + confidence.
-    • Severity Estimation: Estimates affected leaf area (0–100%).
-    • Pest Detection: YOLOv8 flags presence of agricultural pests.
-    • Grad-CAM: Generates activation heatmap and saves to GCS (`processed/{hash}.jpg`).
+  Step 3: Vision Microservice (Port 8001)
+    • Preprocessing: OpenCV verifies blur score, brightness, and green leaf presence.
+    • Crop ID: EfficientNet-B0 predicts species (e.g., Tomato).
+    • Router: Dispatches to the Tomato EfficientNet-B2 disease classifier.
+    • Disease Diagnosis: Predicts disease (e.g., Early Blight) + confidence percentage.
+    • Severity Mask: HSV thresholding calculates affected surface area (0–100%).
+    • Pest Scan: Ultralytics YOLOv8 flags presence of agricultural pests.
+    • Grad-CAM: Generates activation heatmap overlay and saves to GCS (processed/{hash}.jpg).
            │
            ▼
-  Step 4: Contextual Enrichment & Synthesis
-    • Weather: Fetches live local weather metrics via OpenWeather API.
+  Step 4: Contextual Synthesis & Background Jobs
+    • Weather: Fetches live local weather via OpenWeather API.
     • LLM Advisory: Google Gemini 2.5 Flash generates organic, chemical, and preventive advice.
-    • Translation: Asynchronously generates Hindi & Gujarati translations in Upstash Redis.
-    • Audio: Synthesizes spoken advisory via Google Cloud Text-to-Speech.
+    • ARQ Worker / Async Queue:
+      - Asynchronously translates advice into Hindi & Gujarati using Google Translation API.
+      - Caches translations in Upstash Redis for sub-15ms instant retrieval.
+    • Audio: Generates spoken voice advisory via Google Cloud Text-to-Speech.
            │
            ▼
   Step 5: Delivery & Triage
     • Returns structured JSON to frontend.
-    • If disease confidence < 70%, automatically enqueues for Expert Agronomist review.
-    • Generates notification alert in farmer's alerts inbox.
+    • Sub-70% confidence diagnoses automatically enter the Agronomist Expert Queue.
+    • Generates notification alert in the farmer's alerts inbox.
 ```
 
 ---
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
+### 1-Click Unified Runner (Recommended)
 
-- **Python:** 3.11+
-- **Node.js:** 18+ (with npm)
-- **Supabase Account:** PostgreSQL database connection string
-- **Upstash Account:** Redis REST URL and Bearer Token
-- **Google Cloud Account:** GCS Bucket & API keys (Gemini, TTS, Translation)
+To launch all 4 services concurrently in unified streaming mode with colored logs:
+
+```cmd
+.\start_all.bat
+```
+
+This starts:
+- **Backend API Gateway** $\to$ `http://127.0.0.1:8000` (Swagger docs at `/docs`)
+- **Model Inference Server** $\to$ `http://127.0.0.1:8001` (Pre-loads models into RAM)
+- **Frontend Dashboard** $\to$ `http://localhost:5173`
+- **ARQ Worker** $\to$ Connected to Upstash Redis queue with auto-watchdog
+
+*Press `Ctrl+C` to stop all services cleanly.*
 
 ---
 
-### 1. Model Inference Microservice (Server 2)
+### Manual Service Startup
 
+#### 1. Model Inference Microservice (Server 2)
 ```powershell
-# Navigate to model_service
 cd model_service
-
-# Create and activate virtual environment
 python -m venv .venv
-.venv\Scripts\activate   # Windows
-# source .venv/bin/activate # Linux / macOS
-
-# Install dependencies (CPU PyTorch + OpenCV + YOLO)
+.\.venv\Scripts\activate
 pip install -r requirements.txt
-
-# Start the inference microservice on port 8001
-uvicorn main:app --reload --host 0.0.0.0 --port 8001
+uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-Health check: **http://localhost:8001/health**
-
----
-
-### 2. Backend Gateway Server (Server 1)
-
+#### 2. Backend Gateway Server (Server 1)
 ```powershell
-# Navigate to backend
 cd backend
-
-# Create and activate virtual environment
 python -m venv .venv
-.venv\Scripts\activate   # Windows
-# source .venv/bin/activate # Linux / macOS
-
-# Install dependencies
+.\.venv\Scripts\activate
 pip install -r requirements.txt
-
-# Configure your environment
 cp .env.example .env
-# Edit .env with your Supabase DATABASE_URL, UPSTASH credentials, and API keys
-
-# Apply database migrations
+# Edit .env with your database and API keys
 alembic upgrade head
-
-# Start the API Gateway on port 8000
-uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
+python seed_users.py  # Seeds default admin, expert, farmer accounts
+uvicorn src.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Interactive Swagger Docs: **http://localhost:8000/docs**
-
----
-
-### 3. Frontend Dashboard
-
+#### 3. ARQ Background Worker
 ```powershell
-# Navigate to frontend
+cd backend
+.\.venv\Scripts\activate
+arq src.app.worker.WorkerSettings
+```
+
+#### 4. Frontend Dashboard (Server 3)
+```powershell
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start local development server
 npm run dev
 ```
 
-Application will be accessible at **http://localhost:5173**.
+---
+
+## Database Management & Migration Tools
+
+The `backend/scripts/` directory provides comprehensive database synchronization and migration tools:
+
+### 1. Production Migration CLI (`migrate_to_prod.py`)
+Used for interactive or CI-driven schema migrations between Aiven (Dev) and Supabase (Prod):
+
+```powershell
+# Interactive menu:
+python backend/scripts/migrate_to_prod.py
+
+# Check database connectivity and compare row counts:
+python backend/scripts/migrate_to_prod.py --check
+
+# Apply Alembic schema migrations to Production (Supabase):
+python backend/scripts/migrate_to_prod.py --schema-only --yes
+
+# Apply schema migrations to Development (Aiven):
+python backend/scripts/migrate_to_prod.py --dev-only --yes
+
+# Upsert safe reference tables from Dev to Prod (Dev wins on conflict):
+python backend/scripts/migrate_to_prod.py --sync-reference --yes
+```
+
+### 2. Match Dev to Production (`sync_prod_to_local.py`)
+A dedicated local tool to mirror Production (Supabase) data down into Development (Aiven or local SQLite):
+
+```powershell
+# Sync Prod data into Dev (Aiven Cloud):
+python backend/scripts/sync_prod_to_local.py --yes
+
+# Sync Prod data into local SQLite dev_database.db:
+python backend/scripts/sync_prod_to_local.py --sqlite --yes
+```
+*(Blocked from executing inside GitHub Actions CI/CD for safety).*
+
+### 3. PostgreSQL Sequence Reset (`reset_sequences.py`)
+Fixes primary key sequence desynchronization on any target PostgreSQL database:
+
+```powershell
+python backend/scripts/reset_sequences.py
+```
+
+---
+
+## Background Workers & Asynchronous Tasks (ARQ + QStash)
+
+### ARQ Redis Worker (`backend/src/app/worker.py`)
+- Offloads heavy or long-running I/O tasks (batch translations, rescan processing, MLOps exports) from the main FastAPI event loop.
+- Features resilient connection handling with 15s connection timeouts, 10 retries, and exponential backoff to handle idle cloud socket disconnects over public networks.
+- In-process fallback: if Redis is unavailable, background tasks execute in a managed thread pool with Upstash REST string caching.
+
+### Upstash QStash Crons (`backend/scripts/setup_qstash_schedules.py`)
+- Serverless recurring schedules trigger periodic webhooks without requiring always-on cron servers:
+  - Daily weather alert scans for user farms.
+  - Periodic follow-up rescan reminders for active infections.
+- Verify active schedules with:
+  ```powershell
+  python backend/scripts/verify_qstash_and_events.py
+  ```
+
+---
+
+## Authentication & Security
+
+- **Password Hashing**: Encrypted using **Argon2id** (Version 19, 64 MB memory cost, 3 iterations, 4 parallel threads) via `pwdlib[argon2]`.
+- **JWT Authentication**: HS256 signed access tokens (30 minutes) and refresh tokens (30 days).
+- **Password Reset Flow**: Ephemeral, single-use reset tokens with expiry transmitted via SMTP email (TLS).
+- **Role-Based Access Control (RBAC)**:
+  - `farmer` — Upload scans, view personalized dashboard, listen to audio advisories, view notifications.
+  - `expert` — Access Expert Review Queue, verify Grad-CAM heatmaps, override diagnoses, provide agronomist notes.
+  - `admin` — System metrics, user role management, MLOps candidate dataset exports.
 
 ---
 
 ## Environment Configuration
 
-Configure these parameters in `backend/.env`:
+Configure these parameters in `backend/.env` (see [`backend/.env.example`](backend/.env.example)):
 
 | Key | Description | Example / Default |
 |---|---|---|
-| `ENVIRONMENT` | Deployment environment | `production` / `development` |
-| `DEBUG` | Enable debug logs | `False` |
-| `DATABASE_URL` | Supabase PostgreSQL connection string | `postgresql://postgres:PASSWORD@db.xxx.supabase.co:5432/postgres?sslmode=require` |
-| `JWT_SECRET_KEY` | HMAC SHA-256 signing secret for authentication tokens | Secure 64-char hex string |
-| `MODEL_SERVER_URL` | URL of dedicated Model Inference Microservice | `http://localhost:8001` or Cloud Run URL |
-| `UPSTASH_REDIS_REST_URL` | Upstash Serverless Redis REST endpoint | `https://xxx.upstash.io` |
-| `UPSTASH_REDIS_REST_TOKEN`| Upstash Bearer authorization token | `[YOUR-UPSTASH-TOKEN]` |
-| `STORAGE_BACKEND` | Active storage provider | `gcs`, `s3`, or `local` |
+| `ENVIRONMENT` | Deployment environment | `development` / `production` |
+| `DEBUG` | Enable debug logs | `True` / `False` |
+| `DATABASE_URL` | Dev Database (Aiven PostgreSQL or SQLite) | `postgres://avnadmin:...@pg-xxx.aivencloud.com:25049/defaultdb?sslmode=require` |
+| `PROD_DATABASE_URL` | Prod Database (Supabase Session Pooler) | `postgresql://postgres.xxx:...@aws-0-xxx.pooler.supabase.com:5432/postgres?sslmode=require` |
+| `JWT_SECRET_KEY` | HMAC SHA-256 signing secret for JWT tokens | 64-character random hex string |
+| `REQUIRE_REDIS` | Toggle Redis queue mode | `False` (Upstash Cloud) / `True` (Local Docker) |
+| `UPSTASH_REDIS_URL` | Upstash Cloud Redis TLS endpoint for ARQ | `rediss://default:TOKEN@xxx.upstash.io:6379` |
+| `UPSTASH_REDIS_REST_URL` | Upstash Serverless REST endpoint | `https://xxx.upstash.io` |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash REST Bearer token | `[YOUR-TOKEN]` |
+| `QSTASH_URL` | Upstash QStash API endpoint | `https://qstash-us-east-1.upstash.io/v2` |
+| `QSTASH_TOKEN` | Upstash QStash authentication token | `[YOUR-QSTASH-TOKEN]` |
+| `MODEL_SERVER_URL` | URL of dedicated Model Inference Microservice | `http://127.0.0.1:8001` or Cloud Run URL |
+| `MODEL_SERVER_TIMEOUT` | Read timeout for vision inference (seconds) | `120` |
+| `STORAGE_BACKEND` | Active object storage provider | `gcs`, `s3`, or `local` |
 | `AWS_ACCESS_KEY_ID` | GCS HMAC Access Key or AWS S3 Key | `GOOG1E...` |
 | `AWS_SECRET_ACCESS_KEY` | GCS HMAC Secret Key or AWS S3 Secret | `[YOUR-SECRET-KEY]` |
 | `AWS_ENDPOINT_URL` | Custom S3 endpoint (for GCS compatibility) | `https://storage.googleapis.com` |
-| `AWS_S3_BUCKET` | Target bucket name | `smart-farming-data` |
+| `AWS_S3_BUCKET` | Cloud bucket name | `smart-farming-data` |
 | `GEMINI_API_KEY` | Google Gemini API key for treatment advisories | `[YOUR-GEMINI-KEY]` |
-| `OPENWEATHER_API` | OpenWeather API key for live weather fetching | `[YOUR-OPENWEATHER-KEY]` |
+| `OPENWEATHER_API` | OpenWeather API key for meteorological metrics | `[YOUR-OPENWEATHER-KEY]` |
 | `GOOGLE_TTS_API_KEY` | Google Cloud Text-to-Speech API key | `[YOUR-TTS-KEY]` |
-| `GOOGLE_TRANSLATION_API_KEY`| Google Cloud Translation API key | `[YOUR-TRANSLATE-KEY]` |
-| `CORS_ORIGINS` | Allowed origins (comma-separated) | `https://smart-farming-dashboard-green.vercel.app,http://localhost:5173` |
-
-> [!CAUTION]
-> Special characters in the database password (such as `@`, `#`, `$`) must be percent-encoded (e.g. `@` $\to$ `%40`) to prevent URI parsing failures. Never commit plain-text credentials to Git.
+| `GOOGLE_TRANSLATION_API_KEY` | Google Cloud Translation API key | `[YOUR-TRANSLATE-KEY]` |
+| `SMTP_HOST` | SMTP server for password reset emails | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port | `587` |
+| `SMTP_USER` | SMTP username / sender email | `your_email@gmail.com` |
+| `SMTP_PASSWORD` | SMTP app password | `[APP-PASSWORD]` |
+| `SMTP_TLS` | Enable TLS encryption | `True` |
+| `CORS_ORIGINS` | Allowed origins (comma-separated) | `http://localhost:5173,https://your-domain.vercel.app` |
 
 ---
 
@@ -336,21 +454,23 @@ Configure these parameters in `backend/.env`:
 
 | Category | Method | Endpoint | Description |
 |---|---|---|---|
-| **Auth** | `POST` | `/auth/register` | Register new farmer, expert, or administrator |
-| | `POST` | `/auth/login` | Authenticate and obtain JWT access & refresh tokens |
-| | `POST` | `/auth/refresh` | Refresh expired access token |
-| **Diagnostics** | `POST` | `/predict` | Upload leaf image, invoke vision microservice, synthesize advice |
-| | `GET` | `/predictions/{id}` | Retrieve diagnosis details, Grad-CAM URLs, auto-mark alert read |
-| | `POST` | `/predictions/{id}/rescan` | Submit follow-up treatment progress scan |
-| **Alerts** | `GET` | `/alerts` | Get user notifications and triage advisories |
-| | `POST` | `/alerts/{id}/read` | Mark individual alert as read |
-| **Expert Triage** | `GET` | `/expert/queue` | List low-confidence diagnoses pending agronomist triage |
-| | `GET` | `/expert/reviews/{id}` | Get review case with presigned raw leaf and Grad-CAM URLs |
-| | `POST` | `/expert/reviews/{id}` | Approve, override, or request rescan with agronomist guidance |
-| **Telemetry** | `GET` | `/weather` | Fetch live meteorological metrics for farm coordinates |
-| | `GET` | `/crops` | Catalog of supported crop species, pathogens, and symptoms |
-| | `GET` | `/history` | Longitudinal diagnostic timeline for authenticated user |
-| | `GET` | `/admin/metrics` | System health, model inference latencies, triage counts |
+| **Auth** | `POST` | `/api/v1/auth/register` | Register new user account |
+| | `POST` | `/api/v1/auth/login` | Authenticate and obtain JWT access & refresh tokens |
+| | `POST` | `/api/v1/auth/forgot-password` | Request password reset email with secure token |
+| | `POST` | `/api/v1/auth/reset-password` | Set new password using email token |
+| | `POST` | `/api/v1/auth/refresh` | Refresh expired access token |
+| **Diagnostics** | `POST` | `/api/v1/predict` | Upload leaf image, invoke vision microservice, synthesize advice |
+| | `GET` | `/api/v1/predictions/{id}` | Retrieve diagnosis details, Grad-CAM URLs, auto-mark alert read |
+| | `POST` | `/api/v1/predictions/{id}/rescan` | Submit follow-up treatment progress scan |
+| **Alerts** | `GET` | `/api/v1/alerts` | Get user notifications and triage advisories |
+| | `POST` | `/api/v1/alerts/{id}/read` | Mark individual alert as read |
+| **Expert Triage** | `GET` | `/api/v1/expert/queue` | List low-confidence diagnoses pending agronomist triage |
+| | `GET` | `/api/v1/expert/reviews/{id}` | Get review case with presigned raw leaf and Grad-CAM URLs |
+| | `POST` | `/api/v1/expert/reviews/{id}` | Approve, override, or request rescan with agronomist guidance |
+| **Telemetry** | `GET` | `/api/v1/weather` | Fetch live meteorological metrics for farm coordinates |
+| | `GET` | `/api/v1/crops` | Catalog of supported crop species, pathogens, and symptoms |
+| | `GET` | `/api/v1/history` | Longitudinal diagnostic timeline for authenticated user |
+| | `GET` | `/api/v1/admin/metrics` | System health, model inference latencies, triage counts |
 
 ---
 
@@ -378,34 +498,33 @@ Configure these parameters in `backend/.env`:
 
 ---
 
-## Production Deployment
+## Production Deployment & CI/CD
 
-The platform is deployed using continuous deployment triggers connected to GitHub:
+### Automated Database Migrations (`.github/workflows/db_migration.yml`)
+- Triggered on `push` to `main` when changes touch `backend/alembic/**` or `backend/scripts/migrate_to_prod.py`.
+- **Gated Execution**: Protected by a GitHub `production` environment approval gate requiring manual reviewer authorization before touching the production database.
+- **Strict DDL Path**: Executes `migrate_to_prod.py --schema-only --yes` to apply Alembic migrations against Supabase Session Pooler (port 5432).
+- **Opt-In Reference Sync**: Manual `workflow_dispatch` trigger allows optionally syncing safe allow-listed reference tables.
 
-| Service | Hosting Provider | Deployment Strategy |
-|---|---|---|
-| **API Gateway** (`smart-farming-backend`) | Google Cloud Run (`us-central1`) | Automated build via Cloud Build on git push to `main` |
-| **Vision Microservice** (`inference-service`) | Google Cloud Run (`us-central1`) | Automated build via Cloud Build on git push to `main` |
-| **Frontend Dashboard** | Vercel Edge Network | Automated deployment from GitHub repository |
-| **Database** | Supabase Cloud | Managed PostgreSQL with connection pooler on port `5432` |
-| **Redis Cache** | Upstash Serverless | Distributed REST-based Redis cluster |
-| **Object Storage** | Google Cloud Storage | Regional bucket `smart-farming-data` with HMAC authentication |
-
-For step-by-step instructions on setting up production infrastructure, refer to the [Deployment Guide](Docs/Deployment_Guide.md).
+### Hosting Services:
+- **API Gateway**: Google Cloud Run (`us-central1`) via Cloud Build.
+- **Vision Microservice**: Google Cloud Run (`us-central1`) with CPU optimization.
+- **Frontend Dashboard**: Vercel Edge Network.
+- **Database**: Supabase Cloud PostgreSQL.
+- **Storage**: Google Cloud Storage (`smart-farming-data`).
 
 ---
 
 ## Running Tests
 
 Execute backend test suites:
-
 ```powershell
 cd backend
+.\.venv\Scripts\activate
 python -m pytest tests/ -v
 ```
 
-Execute frontend test and build verification:
-
+Execute frontend build verification:
 ```powershell
 cd frontend
 npm run build
@@ -417,7 +536,7 @@ npm run build
 
 Comprehensive documentation is available in the [`Docs/`](Docs/) directory:
 
-- [Architecture & System Design](Docs/Architecture.md) — Comprehensive technical specification of all layers, contracts, and services.
+- [Architecture & System Design](Docs/Architecture.md) — Technical specification of all layers, contracts, and services.
 - [API Specification](Docs/API_Specification.md) — OpenAPI / REST endpoint schemas, request parameters, and response structures.
 - [Deployment Guide](Docs/Deployment_Guide.md) — Cloud Run, Vercel, Supabase, and Upstash deployment runbooks.
 - [Configuration Reference](Docs/Config_Reference.md) — Complete environment variable and `config.yaml` dictionary.
@@ -428,5 +547,5 @@ Comprehensive documentation is available in the [`Docs/`](Docs/) directory:
 
 ---
 
-*AI-Powered Smart Farming — Documentation*  
-*Last Updated: September 2026*
+*AI-Powered Smart Farming Platform*  
+*Last Updated: October 2026*

@@ -1,4 +1,7 @@
-Smart-Farming/ (98985 files)
+Smart-Farming/ (99009 files)
+    ├── .github/ (1 files)
+        ├── workflows/ (1 files)
+            ├── db_migration.yml
     ├── Datasets/ (98459 files)
         ├── dataset_split/ (30404 files)
             ├── test/ (4260 files)
@@ -277,10 +280,11 @@ Smart-Farming/ (98985 files)
         ├── smart_farming_roadmap.pdf
         ├── smart_farming_roadmap_stage10_plus.pdf
         ├── smart_farming_roadmap_v2.pdf
-    ├── backend/ (127 files)
-        ├── alembic/ (2 files)
-            ├── versions/ (1 files)
+    ├── backend/ (147 files)
+        ├── alembic/ (3 files)
+            ├── versions/ (2 files)
                 ├── 0001_add_feedback_review_fields.py
+                ├── 0002_add_password_reset_tokens.py
             ├── env.py
         ├── backend.egg-info/ (5 files)
             ├── PKG-INFO
@@ -288,32 +292,47 @@ Smart-Farming/ (98985 files)
             ├── dependency_links.txt
             ├── requires.txt
             ├── top_level.txt
-        ├── data/ (12 files)
+        ├── data/ (23 files)
             ├── audio/ (4 files)
                 ├── 3195df5b2fd52926b649e57d74b54dbe87eb8bd91aa8591bafbdac648a0c1c66.mp3
                 ├── 6dcc7bc959c23c0b7d2aeaab1e9cb3996f5c1e363fcf9245ad3292c028a7aa2c.mp3
                 ├── d07762cb505c39c554a9a4e235ee447858573a5250711752a6c3982e249c7d46.mp3
                 ├── f1ede4688c740437cbe9b5ca99bcbceee404a4560f5275f94df8dc1c14963f83.mp3
-            ├── processed/ (4 files)
+            ├── processed/ (8 files)
+                ├── 2e29105f07430ed52ace75566c74f377d175789b8a3ae282ffbb8ebd7d3a79cc.jpg
                 ├── 4b8d76092c74ea448ec5831fa2c7b44b5fc4d0e8330e20065e1975c74212f03e.jpg
+                ├── 79f96553d5051db27f68d989ce7bef010d4a767b27ce1e8b799fa496b040a3b8.jpg
                 ├── a0ec0cc715ac06831ef73c2930c9305d08127f9cc74d0a4020b2041a31d0a66b.jpg
                 ├── a95b482ea5e36cff7f5b9ec6f81b67d81efa2bcf214d20195d66e6a8311a62ed.jpg
                 ├── bf415de97004ebf47a7199b6d3cac923f01b2be6fe15a94fdf355e2037ef24ec.jpg
-            ├── uploads/ (4 files)
+                ├── c3ee8814e5bf63352b47d5ae11bf186a441bda3233a29ccb50d86f3919450316.jpg
+                ├── d3625feb4540abf15264de875386b35271ddad479754eaa151e85f8f68f0cfff.jpg
+            ├── uploads/ (11 files)
+                ├── 2e29105f07430ed52ace75566c74f377d175789b8a3ae282ffbb8ebd7d3a79cc.jpg
                 ├── 4b8d76092c74ea448ec5831fa2c7b44b5fc4d0e8330e20065e1975c74212f03e.jpg
+                ├── 5831c6b1faf6e7a1bbbab62d533e11bbeb417be58a924d1d84d39158015d693c.jpg
+                ├── 79f96553d5051db27f68d989ce7bef010d4a767b27ce1e8b799fa496b040a3b8.jpg
                 ├── a0ec0cc715ac06831ef73c2930c9305d08127f9cc74d0a4020b2041a31d0a66b.jpg
                 ├── a95b482ea5e36cff7f5b9ec6f81b67d81efa2bcf214d20195d66e6a8311a62ed.jpg
                 ├── bf415de97004ebf47a7199b6d3cac923f01b2be6fe15a94fdf355e2037ef24ec.jpg
-        ├── scripts/ (7 files)
+                ├── c03c7c5883beedfd2037c2752263dbb5333db1cf827196d86dc8b4e3a0dd04a6.jpg
+                ├── c3ee8814e5bf63352b47d5ae11bf186a441bda3233a29ccb50d86f3919450316.jpg
+                ├── d048a0d67d6d17886c868a74f93f865cf94b53b9ef3f5e0777ec4533a4d60e04.jpg
+                ├── d3625feb4540abf15264de875386b35271ddad479754eaa151e85f8f68f0cfff.jpg
+        ├── scripts/ (11 files)
             ├── migrate_render_to_supabase.py
+            ├── migrate_to_prod.py
             ├── migrate_to_s3.py
+            ├── reset_sequences.py
             ├── setup_qstash_schedules.py
+            ├── sync_prod_to_local.py
+            ├── test_smtp.py
             ├── train_eval.py
             ├── verify_gcs_storage.py
             ├── verify_qstash_and_events.py
             ├── verify_upstash_features.py
-        ├── src/ (83 files)
-            ├── app/ (83 files)
+        ├── src/ (86 files)
+            ├── app/ (86 files)
                 ├── api/ (20 files)
                     ├── endpoints/ (18 files)
                         ├── __init__.py
@@ -349,14 +368,15 @@ Smart-Farming/ (98985 files)
                     ├── security.py
                     ├── session.py
                     ├── storage.py
-                ├── crud/ (6 files)
+                ├── crud/ (7 files)
                     ├── __init__.py
                     ├── expert_review.py
                     ├── farm.py
                     ├── feedback.py
+                    ├── password_reset.py
                     ├── prediction.py
                     ├── user.py
-                ├── models/ (13 files)
+                ├── models/ (14 files)
                     ├── __init__.py
                     ├── alert.py
                     ├── dataset.py
@@ -365,6 +385,7 @@ Smart-Farming/ (98985 files)
                     ├── feedback.py
                     ├── image.py
                     ├── mlopsRun.py
+                    ├── password_reset.py
                     ├── plot.py
                     ├── prediction.py
                     ├── recommendation.py
@@ -383,7 +404,7 @@ Smart-Farming/ (98985 files)
                     ├── user.py
                 ├── scripts/ (1 files)
                     ├── backfill_translations.py
-                ├── services/ (14 files)
+                ├── services/ (15 files)
                     ├── rag/ (2 files)
                         ├── __init__.py
                         ├── retriever.py
@@ -400,6 +421,7 @@ Smart-Farming/ (98985 files)
                         ├── proactive.py
                         ├── service.py
                     ├── __init__.py
+                    ├── email.py
                     ├── model_client.py
                     ├── prediction_job.py
                 ├── utils/ (3 files)
@@ -417,7 +439,7 @@ Smart-Farming/ (98985 files)
                 ├── dependency_links.txt
                 ├── requires.txt
                 ├── top_level.txt
-        ├── tests/ (9 files)
+        ├── tests/ (10 files)
             ├── test_admin_users.py
             ├── test_api.py
             ├── test_auth.py
@@ -425,6 +447,7 @@ Smart-Farming/ (98985 files)
             ├── test_hf_recommendation.py
             ├── test_media_auth.py
             ├── test_observability.py
+            ├── test_password_management.py
             ├── test_pipeline.py
             ├── test_storage.py
         ├── .dockerignore
@@ -445,11 +468,11 @@ Smart-Farming/ (98985 files)
         ├── processed/ (2 files)
             ├── aphids_tomato.jpeg
             ├── media_1789974766831.jpg
-    ├── frontend/ (75 files)
+    ├── frontend/ (77 files)
         ├── public/ (2 files)
             ├── aphids_tomato.jpeg
             ├── favicon.svg
-        ├── src/ (58 files)
+        ├── src/ (60 files)
             ├── api/ (9 files)
                 ├── admin.ts
                 ├── alerts.ts
@@ -491,7 +514,7 @@ Smart-Farming/ (98985 files)
             ├── lib/ (2 files)
                 ├── format.ts
                 ├── routes.ts
-            ├── pages/ (20 files)
+            ├── pages/ (22 files)
                 ├── AboutPage.tsx
                 ├── AdminFeedbackPage.tsx
                 ├── AdminMetricsPage.tsx
@@ -502,12 +525,14 @@ Smart-Farming/ (98985 files)
                 ├── ExpertQueuePage.tsx
                 ├── ExpertReviewPage.tsx
                 ├── FarmSettingsPage.tsx
+                ├── ForgotPasswordPage.tsx
                 ├── HistoryPage.tsx
                 ├── LandingPage.tsx
                 ├── LoginPage.tsx
                 ├── PredictionResultPage.tsx
                 ├── ProcessingPage.tsx
                 ├── RegisterPage.tsx
+                ├── ResetPasswordPage.tsx
                 ├── ScanPage.tsx
                 ├── ServicesPage.tsx
                 ├── SettingsPage.tsx
@@ -934,6 +959,7 @@ Smart-Farming/ (98985 files)
     ├── .gitattributes
     ├── .gitignore
     ├── README.md
+    ├── dev_database.db
     ├── folder_tree.txt
     ├── start_all.bat
     ├── start_all_with_mobile.bat
