@@ -124,7 +124,7 @@ def sync_prod_to_dev(force_sqlite: bool = False, skip_confirm: bool = False):
                 target_conn.execute(text("SET session_replication_role = 'replica';"))
                 target_conn.commit()
             except Exception:
-                pass
+                target_conn.rollback()
         else:
             target_conn.execute(text("PRAGMA foreign_keys = OFF;"))
 
@@ -185,7 +185,7 @@ def sync_prod_to_dev(force_sqlite: bool = False, skip_confirm: bool = False):
                 target_conn.execute(text("SET session_replication_role = 'DEFAULT';"))
                 target_conn.commit()
             except Exception:
-                pass
+                target_conn.rollback()
 
             # Reset all PostgreSQL sequences to MAX(id) to prevent duplicate key errors on subsequent inserts
             try:

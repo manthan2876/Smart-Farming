@@ -16,10 +16,13 @@ Usage:
     # Apply schema updates to BOTH Dev and Production:
     python backend/scripts/migrate_to_prod.py --all-dbs --yes
 
-    # Sync data from Dev (Aiven) to Production (Supabase):
+    # Upsert reference tables from Dev (Aiven) to Production (Supabase):
+    python backend/scripts/migrate_to_prod.py --sync-reference --yes
+
+    # Sync data from Dev (Aiven) to Production (Supabase) [Manual only]:
     python backend/scripts/migrate_to_prod.py --sync-data --yes
 
-    # Sync data from Production (Supabase) to Dev (Aiven):
+    # Sync data from Production (Supabase) to Dev (Aiven) [Manual only]:
     python backend/scripts/migrate_to_prod.py --sync-to-dev --yes
 
     # Check connectivity and table counts for both databases:
@@ -53,6 +56,12 @@ from app.core import Base
 from app.core.config import settings
 from app.core.session import create_app_engine, sanitize_db_url
 import app.models  # Register all models with Base.metadata
+
+# Tables safe to copy Dev -> Prod (static/reference lookup data only, NEVER user-generated or operational data).
+# In this project, all current 13 tables (users, farms, plots, predictions, entity_translations, alerts, etc.)
+# contain user-specific or operational data. Keep this list empty until dedicated static catalogs
+# (e.g. disease_handbook, crop_types) are introduced.
+REFERENCE_TABLES: set[str] = set()
 
 
 def get_target_prod_url(cli_target: str | None = None) -> str:
@@ -104,26 +113,42 @@ def verify_connection(url: str, label: str = "Database") -> bool:
 
 
 def apply_schema_migrations(target_url: str, db_label: str = "Database") -> bool:
-    """Safely applies SQLAlchemy Base.metadata.create_all and Alembic migrations to target database."""
+    """Safely applies Alembic migrations ('upgrade head') to target database."""
     print("\n" + "=" * 65)
     print(f"  APPLYING SCHEMA MIGRATIONS: {db_label.upper()}")
     print("=" * 65)
 
     try:
-        engine = create_app_engine(target_url)
-        print(f"[INFO] Creating newly declared tables in {db_label}...")
-        Base.metadata.create_all(engine)
-        print(f"[SUCCESS] Base.metadata.create_all completed for {db_label}.")
+        clean_url = sanitize_db_url(target_url)
+        engine = create_app_engine(clean_url)
 
-        # Run Alembic upgrade head
-        print(f"[INFO] Executing Alembic migrations ('upgrade head') on {db_label}...")
-        os.environ["DATABASE_URL"] = target_url
+        # 1. Query current migration revision
+        current_rev = None
+        with engine.connect() as conn:
+            try:
+                current_rev = conn.execute(text("SELECT version_num FROM alembic_version;")).scalar()
+            except Exception:
+                current_rev = "none"
+
+        # 2. Run Alembic upgrade head
+        print(f"[INFO] Executing Alembic migrations ('upgrade head') on {db_label} (current revision: {current_rev})...")
+        os.environ["DATABASE_URL"] = clean_url
         alembic_cfg = Config(str(backend_dir / "alembic.ini"))
         alembic_cfg.set_main_option("script_location", str(backend_dir / "alembic"))
+        alembic_cfg.set_main_option("sqlalchemy.url", clean_url.replace("%", "%%"))
         command.upgrade(alembic_cfg, "head")
-        print(f"[SUCCESS] Alembic upgrade head completed on {db_label}.")
 
-        # Print current tables
+        # 3. Query new migration revision
+        new_rev = None
+        with engine.connect() as conn:
+            try:
+                new_rev = conn.execute(text("SELECT version_num FROM alembic_version;")).scalar()
+            except Exception:
+                new_rev = "unknown"
+
+        print(f"[SUCCESS] Alembic upgrade head completed on {db_label}: {current_rev} -> {new_rev}")
+
+        # 4. Print current tables
         inspector = inspect(engine)
         tables = sorted(inspector.get_table_names())
         print(f"\n[INFO] {db_label} now contains {len(tables)} table(s):")
@@ -143,7 +168,8 @@ def seed_database_defaults(target_url: str, db_label: str = "Database") -> bool:
     try:
         from app.core.init_db import initialize_database
 
-        os.environ["DATABASE_URL"] = target_url
+        clean_url = sanitize_db_url(target_url)
+        os.environ["DATABASE_URL"] = clean_url
         initialize_database()
         print(f"[SUCCESS] Default seed data verified/initialized for {db_label}.")
         return True
@@ -152,18 +178,34 @@ def seed_database_defaults(target_url: str, db_label: str = "Database") -> bool:
         return False
 
 
-def sync_records(source_url: str, target_url: str, src_label: str = "Source", tgt_label: str = "Target") -> bool:
-    """Syncs data rows between databases safely using ON CONFLICT DO NOTHING."""
+def sync_records(
+    source_url: str,
+    target_url: str,
+    src_label: str = "Source",
+    tgt_label: str = "Target",
+    only_tables: set[str] | list[str] | None = None,
+) -> bool:
+    """Syncs data rows between databases safely using primary key upsert (source wins on conflict)."""
     print("\n" + "=" * 65)
     print(f"  SYNCING DATA: {src_label.upper()} -> {tgt_label.upper()}")
     print("=" * 65)
 
     try:
-        src_engine = create_app_engine(source_url)
-        tgt_engine = create_app_engine(target_url)
+        clean_src = sanitize_db_url(source_url)
+        clean_tgt = sanitize_db_url(target_url)
+        src_engine = create_app_engine(clean_src)
+        tgt_engine = create_app_engine(clean_tgt)
 
         src_inspector = inspect(src_engine)
-        tables = [t for t in src_inspector.get_table_names() if t != "alembic_version"]
+        tgt_inspector = inspect(tgt_engine)
+        tables = [t for t in src_inspector.get_table_names() if t != "alembic_version" and tgt_inspector.has_table(t)]
+
+        if only_tables is not None:
+            tables = [t for t in tables if t in only_tables]
+
+        if not tables:
+            print(f"[INFO] No matching tables found for synchronization (only_tables={only_tables}).")
+            return True
 
         print(f"[INFO] Inspecting {len(tables)} table(s) in {src_label}...")
 
@@ -198,7 +240,7 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
                     tgt_conn.execute(text("SET session_replication_role = 'replica';"))
                     tgt_conn.commit()
                 except Exception:
-                    pass
+                    tgt_conn.rollback()
 
             total_synced = 0
             for table in ordered_tables:
@@ -225,7 +267,21 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
                     cols = list(row_dict.keys())
                     col_names = ", ".join([f'"{c}"' for c in cols])
                     val_placeholders = ", ".join([f":{c}" for c in cols])
-                    stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT DO NOTHING;')
+
+                    pk_constraint = tgt_inspector.get_pk_constraint(table) or {}
+                    pk_cols = pk_constraint.get("constrained_columns", [])
+                    update_cols = [c for c in cols if c not in pk_cols]
+
+                    if is_postgres and pk_cols and update_cols:
+                        pk_names = ", ".join([f'"{c}"' for c in pk_cols])
+                        update_set = ", ".join([f'"{c}" = EXCLUDED."{c}"' for c in update_cols])
+                        stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT ({pk_names}) DO UPDATE SET {update_set};')
+                    elif is_postgres and pk_cols:
+                        pk_names = ", ".join([f'"{c}"' for c in pk_cols])
+                        stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT ({pk_names}) DO NOTHING;')
+                    else:
+                        stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT DO NOTHING;')
+
                     tgt_conn.execute(stmt, row_dict)
                     total_synced += 1
 
@@ -236,7 +292,7 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
                     tgt_conn.execute(text("SET session_replication_role = 'DEFAULT';"))
                     tgt_conn.commit()
                 except Exception:
-                    pass
+                    tgt_conn.rollback()
 
                 # Reset all PostgreSQL sequences to MAX(id) to prevent duplicate key errors on subsequent inserts
                 try:
@@ -250,6 +306,8 @@ def sync_records(source_url: str, target_url: str, src_label: str = "Source", tg
                     """)).fetchall()
 
                     for table_name, column_name in cols:
+                        if only_tables is not None and table_name not in only_tables:
+                            continue
                         seq_name = tgt_conn.execute(
                             text("SELECT pg_get_serial_sequence(:t, :c)"),
                             {"t": f'public."{table_name}"', "c": column_name}
@@ -357,14 +415,19 @@ def main():
         help="Apply schema migrations and seed reference accounts on Development.",
     )
     parser.add_argument(
+        "--sync-reference",
+        action="store_true",
+        help="Upsert only REFERENCE_TABLES from Dev to Prod (dev wins on conflict).",
+    )
+    parser.add_argument(
         "--sync-data",
         action="store_true",
-        help="Sync rows from Development (Aiven) to Production (Supabase).",
+        help="Sync rows from Development (Aiven) to Production (Supabase) [Manual only].",
     )
     parser.add_argument(
         "--sync-to-dev",
         action="store_true",
-        help="Sync rows from Production (Supabase) to Development (Aiven).",
+        help="Sync rows from Production (Supabase) to Development (Aiven) [Manual only].",
     )
     parser.add_argument(
         "--check",
@@ -393,79 +456,122 @@ def main():
         check_databases(dev_url, prod_url)
         return
 
-    # Non-interactive CLI flag mode
-    if args.schema_only or args.dev_only or args.all_dbs or args.seed or args.seed_dev or args.sync_data or args.sync_to_dev:
+    # Safety Guard: Block destructive/full data sync commands in CI environments
+    is_ci = os.getenv("GITHUB_ACTIONS") == "true" or os.getenv("CI") == "true"
+    if is_ci and (args.sync_data or args.sync_to_dev):
+        print("\n[FATAL] Full database sync (--sync-data / --sync-to-dev) is forbidden in CI/CD.")
+        sys.exit(1)
+
+    # Check if any CLI command flags were provided
+    is_cli_mode = any([
+        args.schema_only,
+        args.dev_only,
+        args.all_dbs,
+        args.seed,
+        args.seed_dev,
+        args.sync_reference,
+        args.sync_data,
+        args.sync_to_dev,
+    ])
+
+    if is_cli_mode:
         if not args.yes:
             confirm = input("\nProceed with database execution? [y/N]: ").strip().lower()
             if confirm not in ("y", "yes"):
                 print("Aborted.")
-                return
+                sys.exit(0)
+
+        ok = True
 
         if args.dev_only:
-            verify_connection(dev_url, "Dev (Aiven)")
-            apply_schema_migrations(dev_url, "Dev (Aiven)")
+            ok = verify_connection(dev_url, "Dev (Aiven)") and apply_schema_migrations(dev_url, "Dev (Aiven)")
         elif args.all_dbs:
-            verify_connection(dev_url, "Dev (Aiven)")
-            apply_schema_migrations(dev_url, "Dev (Aiven)")
-            verify_connection(prod_url, "Prod (Supabase)")
-            apply_schema_migrations(prod_url, "Prod (Supabase)")
+            ok = (
+                verify_connection(dev_url, "Dev (Aiven)")
+                and apply_schema_migrations(dev_url, "Dev (Aiven)")
+                and verify_connection(prod_url, "Prod (Supabase)")
+                and apply_schema_migrations(prod_url, "Prod (Supabase)")
+            )
         elif args.schema_only:
-            verify_connection(prod_url, "Prod (Supabase)")
-            apply_schema_migrations(prod_url, "Prod (Supabase)")
+            ok = verify_connection(prod_url, "Prod (Supabase)") and apply_schema_migrations(prod_url, "Prod (Supabase)")
 
-        if args.seed:
-            seed_database_defaults(prod_url, "Prod (Supabase)")
-        if args.seed_dev:
-            seed_database_defaults(dev_url, "Dev (Aiven)")
+        if ok and args.seed:
+            ok = seed_database_defaults(prod_url, "Prod (Supabase)")
+        if ok and args.seed_dev:
+            ok = seed_database_defaults(dev_url, "Dev (Aiven)")
 
-        if args.sync_data:
-            sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
-        if args.sync_to_dev:
-            sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
+        if ok and args.sync_reference:
+            if not REFERENCE_TABLES:
+                print("\n[INFO] REFERENCE_TABLES allow-list is empty. No reference tables to sync.")
+            else:
+                ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)", only_tables=REFERENCE_TABLES)
+
+        if ok and args.sync_data:
+            ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
+        if ok and args.sync_to_dev:
+            ok = sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
+
+        if not ok:
+            print("\n[FAILED] One or more requested operations failed.")
+            sys.exit(1)
 
         print("\n[COMPLETE] All requested operations completed successfully.")
-        return
+        sys.exit(0)
 
     # Interactive menu mode
     print("\nSelect Migration Option:")
     print("  [1] Apply Schema to Production (Supabase)")
     print("  [2] Apply Schema to Development (Aiven)")
     print("  [3] Apply Schema to BOTH Dev & Prod (Recommended for releases)")
-    print("  [4] Sync Data: Dev (Aiven) -> Prod (Supabase)")
-    print("  [5] Sync Data: Prod (Supabase) -> Dev (Aiven)")
-    print("  [6] Check Connections & Table Status (Both databases)")
-    print("  [7] Cancel")
+    print("  [4] Upsert Reference Tables: Dev (Aiven) -> Prod (Supabase)")
+    print("  [5] Sync Data: Dev (Aiven) -> Prod (Supabase) [Manual full sync]")
+    print("  [6] Sync Data: Prod (Supabase) -> Dev (Aiven) [Manual full sync]")
+    print("  [7] Check Connections & Table Status (Both databases)")
+    print("  [8] Cancel")
 
     try:
-        choice = input("\nEnter choice [1-7]: ").strip()
+        choice = input("\nEnter choice [1-8]: ").strip()
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled.")
         return
 
+    ok = True
     if choice == "1":
-        if verify_connection(prod_url, "Production (Supabase)"):
-            apply_schema_migrations(prod_url, "Production (Supabase)")
+        ok = verify_connection(prod_url, "Production (Supabase)") and apply_schema_migrations(prod_url, "Production (Supabase)")
     elif choice == "2":
-        if verify_connection(dev_url, "Development (Aiven)"):
-            apply_schema_migrations(dev_url, "Development (Aiven)")
+        ok = verify_connection(dev_url, "Development (Aiven)") and apply_schema_migrations(dev_url, "Development (Aiven)")
     elif choice == "3":
-        if verify_connection(dev_url, "Development (Aiven)") and verify_connection(prod_url, "Production (Supabase)"):
-            apply_schema_migrations(dev_url, "Development (Aiven)")
-            apply_schema_migrations(prod_url, "Production (Supabase)")
+        ok = (
+            verify_connection(dev_url, "Development (Aiven)")
+            and apply_schema_migrations(dev_url, "Development (Aiven)")
+            and verify_connection(prod_url, "Production (Supabase)")
+            and apply_schema_migrations(prod_url, "Production (Supabase)")
+        )
     elif choice == "4":
+        if not REFERENCE_TABLES:
+            print("\n[INFO] REFERENCE_TABLES allow-list is empty. No reference tables to sync.")
+        else:
+            if verify_connection(dev_url, "Dev") and verify_connection(prod_url, "Prod"):
+                ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)", only_tables=REFERENCE_TABLES)
+    elif choice == "5":
         confirm = input("\nWARNING: This will copy records from Dev to Prod. Proceed? [y/N]: ").strip().lower()
         if confirm in ("y", "yes"):
             if verify_connection(dev_url, "Dev") and verify_connection(prod_url, "Prod"):
-                sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
-    elif choice == "5":
+                ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
+    elif choice == "6":
         confirm = input("\nWARNING: This will copy records from Prod to Dev. Proceed? [y/N]: ").strip().lower()
         if confirm in ("y", "yes"):
             if verify_connection(prod_url, "Prod") and verify_connection(dev_url, "Dev"):
-                sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
-    elif choice == "6":
+                ok = sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
+    elif choice == "7":
         check_databases(dev_url, prod_url)
     else:
         print("Cancelled.")
+        return
+
+    if not ok:
+        print("\n[FAILED] One or more requested operations failed.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

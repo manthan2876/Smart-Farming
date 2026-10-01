@@ -1,48 +1,55 @@
-name: Migrate Dev Database to Production
+name: Migrate Database to Production
 
 on:
   workflow_dispatch:
+    inputs:
+      sync_reference:
+        description: "Also upsert reference tables Dev -> Prod (dev wins on conflict)"
+        type: boolean
+        default: false
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'backend/alembic/**'
-      - 'backend/src/app/models/**'
       - 'backend/scripts/migrate_to_prod.py'
+
+concurrency:
+  group: prod-migration
+  cancel-in-progress: false
 
 jobs:
   migrate_to_production:
-    name: Migrate Dev Database to Production
+    name: Migrate Production Database
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || contains(github.event.head_commit.message, '[migrate-db]')
+    environment: production        # Required reviewer approval gate
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Execute Migration to Production
+      - name: Migrate Production
         env:
           PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          DEV_DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+          SYNC_REFERENCE: ${{ github.event.inputs.sync_reference }}
         run: |
           if [ -z "$PROD_DATABASE_URL" ]; then
-            echo "::error::PROD_DATABASE_URL secret is not configured in GitHub Repository Secrets!"
-            echo "Please go to: Repository Settings -> Secrets and variables -> Actions -> New repository secret -> PROD_DATABASE_URL"
-            exit 1
+            echo "::error::PROD_DATABASE_URL is not configured in environment secrets"; exit 1
           fi
-
-          echo "========================================================"
-          echo "Migrating Dev Schema & Alembic Revisions to Production..."
-          echo "Triggered By: ${{ github.event_name }}"
-          echo "========================================================"
-
-          python backend/scripts/migrate_to_prod.py --schema-only --yes
+          ARGS="--schema-only --yes"
+          if [ "$SYNC_REFERENCE" = "true" ]; then
+            if [ -z "$DEV_DATABASE_URL" ]; then
+              echo "::error::DEV_DATABASE_URL is not configured for reference sync"; exit 1
+            fi
+            ARGS="$ARGS --sync-reference"
+          fi
+          python backend/scripts/migrate_to_prod.py $ARGS

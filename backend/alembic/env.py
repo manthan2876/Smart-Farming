@@ -15,13 +15,16 @@ import app.models
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-config.set_main_option("sqlalchemy.url", database_url().replace("%", "%%"))
+existing_url = config.get_main_option("sqlalchemy.url")
+if not existing_url:
+    config.set_main_option("sqlalchemy.url", database_url().replace("%", "%%"))
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url") or database_url()
     context.configure(
-        url=database_url(),
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
