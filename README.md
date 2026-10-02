@@ -6,6 +6,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript)](https://typescriptlang.org)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.6%20CPU-EE4C2C?logo=pytorch)](https://pytorch.org)
 [![YOLOv8](https://img.shields.io/badge/YOLO-v8-00FFFF?logo=ultralytics)](https://ultralytics.com)
 [![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Cloud%20Run-4285F4?logo=googlecloud)](https://cloud.google.com/run)
@@ -15,8 +16,8 @@
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.2  
-**Date:** October 2026  
+**Version:** 2.3  
+**Date:** 02 October 2026  
 **Status:** Active / Production Ready  
 
 ---
@@ -32,10 +33,12 @@
 - [Quick Start](#quick-start)
   - [1-Click Unified Runner (Recommended)](#1-click-unified-runner-recommended)
   - [Manual Service Startup](#manual-service-startup)
+  - [Mobile App (Flutter)](#mobile-app-flutter)
 - [Database Management & Migration Tools](#database-management--migration-tools)
 - [Background Workers & Asynchronous Tasks (ARQ + QStash)](#background-workers--asynchronous-tasks-arq--qstash)
 - [Authentication & Security](#authentication--security)
 - [Environment Configuration](#environment-configuration)
+- [Mobile Environment Configuration](#mobile-environment-configuration)
 - [Key API Endpoints](#key-api-endpoints)
 - [User Roles & Workflows](#user-roles--workflows)
 - [Production Deployment & CI/CD](#production-deployment--cicd)
@@ -128,11 +131,13 @@ Smart Farming maintains strict separation between Development and Production env
 
 | Layer | Technologies & Services | Details |
 |---|---|---|
-| **Frontend** | React 18, TypeScript 5.6, Vite 6, Tailwind CSS, Lucide Icons | High-performance dashboard, interactive Grad-CAM viewer, multilingual UI |
+| **Frontend (Web)** | React 18, TypeScript 5.6, Vite 6, Tailwind CSS, Lucide Icons | High-performance dashboard, interactive Grad-CAM viewer, multilingual UI |
+| **Mobile App** | Flutter 3.x (Dart), `flutter_map`, `latlong2`, `shared_preferences`, `flutter_tts` | Farmer-only native Android app with center-crosshair GIS boundary drawing, Supabase Remote Config, JWT auth, offline scan queue |
 | **Backend Gateway** | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic | RESTful API gateway, RBAC, background job orchestration |
 | **Model Microservice** | PyTorch 2.6 (CPU-optimised), timm, Ultralytics YOLOv8, OpenCV | Pure inference server, in-memory model pre-warming, Grad-CAM generation |
 | **Job Queue & Scheduling** | ARQ, Upstash Redis (TLS `rediss://`), Upstash QStash | Asynchronous translation workers, pipeline tasks, serverless cron jobs |
 | **Database** | Aiven PostgreSQL (Dev) & Supabase PostgreSQL (Prod) | Managed cloud PostgreSQL instances with connection pooling & SSL |
+| **Remote Config** | Supabase `public.app_config` table via PostgREST | Farmer app backend URL discovery without app rebuilds; read-only via anon RLS policy |
 | **Caching & Dedup** | Upstash Serverless Redis REST | Sub-15ms translation hit caching, SHA-256 image deduplication, rate limiting |
 | **Object Storage** | Google Cloud Storage (GCS) / AWS S3 S3-compatible API | Raw leaves, Grad-CAM heatmaps, TTS audio narration with presigned URLs |
 | **Generative AI** | Google Gemini 2.5 Flash (`google-genai`), Qwen3-4B-Instruct | Context-aware agronomic advisory generation |
@@ -147,6 +152,7 @@ Smart Farming maintains strict separation between Development and Production env
 ```
 Smart-Farming/
 ├── start_all.bat                           # 1-Click unified launcher for all local services
+├── start_all_with_mobile.bat              # Unified launcher including Flutter mobile hot-reload
 ├── scripts/
 │   ├── start_all.ps1                       # Unified non-blocking service orchestrator + ARQ watchdog
 │   ├── start_backend.bat                   # Standalone Backend starter
@@ -166,6 +172,7 @@ Smart-Farming/
 │   │   │   └── endpoints/                  # Modular REST routers
 │   │   │       ├── auth.py                 # Signup, login, password reset, refresh
 │   │   │       ├── predict.py              # Leaf upload, prediction invocation, rescan
+│   │   │       ├── farm.py                 # Farm & plot CRUD with GeoJSON polygon validation
 │   │   │       ├── expert.py               # Agronomist review queue & audit submissions
 │   │   │       ├── alerts.py               # Notifications & read-status management
 │   │   │       ├── history.py              # Diagnostic timeline & historical scans
@@ -229,6 +236,47 @@ Smart-Farming/
 │   │   └── i18n/                           # Localised dictionaries (EN, HI, GU)
 │   ├── package.json
 │   └── vite.config.ts
+│
+├── mobile/                                 # Flutter Native Mobile App (Farmer-only, Android)
+│   ├── lib/
+│   │   ├── main.dart                       # App entry — loads RemoteConfig then runApp()
+│   │   ├── screens/
+│   │   │   ├── auth/
+│   │   │   │   ├── auth_wrapper.dart       # Token validation & auto-login logic
+│   │   │   │   └── login_screen.dart       # Login & registration (no server URL input)
+│   │   │   ├── shell/
+│   │   │   │   └── farmer_shell.dart       # 5-tab bottom nav (Today/Farm/Scan/Alerts/History)
+│   │   │   ├── map/
+│   │   │   │   └── field_boundary_screen.dart  # Center-crosshair GIS boundary drawing + magnetic snapping
+│   │   │   ├── farm/
+│   │   │   │   ├── farm_screen.dart        # Farm & plot list, launch boundary drawing
+│   │   │   │   └── widgets/
+│   │   │   │       └── farm_satellite_card.dart  # Satellite map thumbnail of farm boundary
+│   │   │   ├── scan/
+│   │   │   │   ├── create_prediction_sheet.dart  # Camera/gallery, plot selector, offline queue
+│   │   │   │   ├── processing_sheet.dart          # WebSocket live progress + polling fallback
+│   │   │   │   └── result_detail_sheet.dart       # Full result: TTS, feedback, translations
+│   │   │   ├── today/today_screen.dart     # Dashboard: weather widget, recent alerts
+│   │   │   ├── alerts/alerts_screen.dart   # Alert inbox with unread badge
+│   │   │   ├── history/history_screen.dart # Paginated scan history
+│   │   │   ├── weather/weather_screen.dart # Current conditions with km/h wind & TTS advisory
+│   │   │   └── settings/settings_screen.dart  # Language preference, password change
+│   │   ├── services/
+│   │   │   ├── api_service.dart            # JWT REST client, locked backend URL (no manual override)
+│   │   │   ├── remote_config_service.dart  # Supabase app_config fetch + SharedPreferences cache
+│   │   │   ├── sync_service.dart           # Offline scan queue with exponential backoff retry
+│   │   │   └── tts_service.dart            # Google Cloud TTS with on-device flutter_tts fallback
+│   │   ├── models/
+│   │   │   └── prediction.dart             # Prediction.fromJson(), localized text & audio helpers
+│   │   ├── providers/
+│   │   │   └── locale_provider.dart        # EN / HI / GU locale state
+│   │   ├── utils/
+│   │   │   ├── app_logger.dart             # Tagged mobile logger
+│   │   │   └── geo_math.dart               # Geodesic distance, point-on-segment snap, polygon area
+│   │   ├── theme/app_theme.dart            # Material 3 design tokens (AppColors, AppTheme)
+│   │   └── i18n/app_translations.dart      # EN / HI / GU string keys
+│   ├── .env.example                        # Mobile env template (API_BASE_URL, SUPABASE_*)
+│   └── pubspec.yaml                        # Flutter dependencies (flutter_map, latlong2, etc.)
 │
 ├── .github/workflows/
 │   └── db_migration.yml                    # CI/CD: Automated Alembic prod migrations with approval gate
@@ -335,6 +383,44 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+### Mobile App (Flutter)
+
+The Flutter mobile app targets Android (API 21+) and is exclusively for the **farmer** role. The backend URL is fetched dynamically from Supabase Remote Config — no hardcoded URL, no in-app settings dialog.
+
+#### Prerequisites
+- Flutter SDK 3.x installed (`flutter doctor` should show ✅ Android toolchain)
+- Android device or emulator connected (`flutter devices`)
+- `mobile/.env` configured with your Supabase and backend keys
+
+#### Setup `mobile/.env`
+```env
+# Compile-time fallback backend URL (used if Supabase remote config unavailable)
+API_BASE_URL=https://smart-farming-backend-17713614069.us-central1.run.app
+
+# Supabase Remote Config
+SUPABASE_URL=https://<YOUR_PROJECT_REF>.supabase.co
+SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
+```
+
+#### Run on Device
+```powershell
+cd mobile
+flutter pub get
+flutter run -d <DEVICE_ID> --dart-define-from-file=.env
+```
+
+#### Build APK
+```powershell
+cd mobile
+flutter build apk --debug --dart-define-from-file=.env
+# Install to connected device:
+adb install -r build\app\outputs\flutter-apk\app-debug.apk
+```
+
+> **Remote Config:** At startup, the app queries `SUPABASE_URL/rest/v1/app_config?key=eq.api_base_url` using the `SUPABASE_ANON_KEY`. The result is cached in `SharedPreferences` for offline use. URL fallback order: Supabase → cached → `API_BASE_URL` → `http://127.0.0.1:8000`.
 
 ---
 
@@ -450,6 +536,20 @@ Configure these parameters in `backend/.env` (see [`backend/.env.example`](backe
 
 ---
 
+## Mobile Environment Configuration
+
+Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at build time):
+
+| Variable | Description | Example |
+|---|---|---|
+| `API_BASE_URL` | Compile-time fallback backend URL. Used only if Supabase Remote Config and cache are both unavailable. | `https://smart-farming-backend-17713614069.us-central1.run.app` |
+| `SUPABASE_URL` | Supabase project URL — used by `RemoteConfigService` to query the `app_config` table. | `https://ntqevjzjhntkilmknrfh.supabase.co` |
+| `SUPABASE_ANON_KEY` | Supabase anonymous (public) key. Required for PostgREST REST queries. RLS restricts to SELECT only. | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
+
+> **Security note:** No user or developer can view or change the backend URL from inside the app. The `RemoteConfigService` reads the URL from Supabase `app_config` at startup; the result is cached in `SharedPreferences`. All in-app server settings UI has been permanently removed.
+
+---
+
 ## Key API Endpoints
 
 | Category | Method | Endpoint | Description |
@@ -462,6 +562,11 @@ Configure these parameters in `backend/.env` (see [`backend/.env.example`](backe
 | **Diagnostics** | `POST` | `/api/v1/predict` | Upload leaf image, invoke vision microservice, synthesize advice |
 | | `GET` | `/api/v1/predictions/{id}` | Retrieve diagnosis details, Grad-CAM URLs, auto-mark alert read |
 | | `POST` | `/api/v1/predictions/{id}/rescan` | Submit follow-up treatment progress scan |
+| **Farm & Plots** | `GET` | `/api/v1/farm` | Get farm details with all plots and multilingual overlays |
+| | `PUT` | `/api/v1/farm` | Create/update farm with name, location, GeoJSON boundary |
+| | `POST` | `/api/v1/farm/plots` | Create a new plot with optional GeoJSON geometry |
+| | `PUT` | `/api/v1/farm/plots/{id}` | Update plot details or boundary |
+| | `DELETE` | `/api/v1/farm/plots/{id}` | Remove a plot |
 | **Alerts** | `GET` | `/api/v1/alerts` | Get user notifications and triage advisories |
 | | `POST` | `/api/v1/alerts/{id}/read` | Mark individual alert as read |
 | **Expert Triage** | `GET` | `/api/v1/expert/queue` | List low-confidence diagnoses pending agronomist triage |
@@ -530,6 +635,13 @@ cd frontend
 npm run build
 ```
 
+Execute mobile static analysis and unit tests:
+```powershell
+cd mobile
+flutter analyze
+flutter test
+```
+
 ---
 
 ## Documentation Index
@@ -539,13 +651,14 @@ Comprehensive documentation is available in the [`Docs/`](Docs/) directory:
 - [Architecture & System Design](Docs/Architecture.md) — Technical specification of all layers, contracts, and services.
 - [API Specification](Docs/API_Specification.md) — OpenAPI / REST endpoint schemas, request parameters, and response structures.
 - [Deployment Guide](Docs/Deployment_Guide.md) — Cloud Run, Vercel, Supabase, and Upstash deployment runbooks.
-- [Configuration Reference](Docs/Config_Reference.md) — Complete environment variable and `config.yaml` dictionary.
+- [Configuration Reference](Docs/Config_Reference.md) — Complete environment variable and `config.yaml` dictionary, including mobile Flutter variables.
 - [Authentication & Roles](Docs/Auth_Roles.md) — RBAC matrix, token lifecycle, and session security models.
 - [Model Cards](Docs/Model_Cards.md) — Model metrics, architecture benchmarks, datasets, and limitations.
 - [MLOps & Retraining Loop](Docs/MLOps_Retraining.md) — Feedback ingestion, dataset candidate curation, and model promotion.
-- [UI / UX Design System](Docs/UI_UX_Spec.md) — Design tokens, component states, and accessibility standards.
+- [UI / UX Design System](Docs/UI_UX_Spec.md) — Design tokens, component states, mobile boundary drawing UI, and accessibility standards.
+- [Functionality Status](Docs/functionality-status.md) — Implementation status, gap analysis, and improvement roadmap.
 
 ---
 
 *AI-Powered Smart Farming Platform*  
-*Last Updated: October 2026*
+*Last Updated: 02 October 2026*
