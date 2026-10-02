@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 1.0  
-**Date:** September 2026  
+**Date:** 02 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -487,25 +487,56 @@ The web frontend is a functional multi-role application with a shared typed API 
 - `DELETE /farm/plots/{plot_id}` removes a plot.
 - Plot geometry is validated against the farm boundary using an in-process ray-casting algorithm (`_plot_inside_farm`), including tolerance on the boundary.
 - Schemas `FarmRequest`, `FarmResponse`, `PlotRequest`, `PlotResponse` are Pydantic-validated.
-- Mobile `FarmScreen` shows farm details and the plot list; `_showAddPlotDialog` creates plots via `createPlot()`.
+- Mobile `FarmScreen` now launches `FieldBoundaryScreen` for drawing farm and plot boundaries via an interactive map with center-crosshair point placement. Boundaries are drawn by panning the map and tapping + to place vertices. Magnetic snapping auto-corrects plot points placed outside the farm boundary to the nearest farm edge. `GeoMath` utility calculates geodesic area returned as acres and hectares.
 - `CreatePredictionSheet` loads farm plots and shows them in a dropdown; the selected `plot_id` is sent to `predictBytes()`.
 
 **Known gaps:**
 
-- The mobile `FarmScreen` does not support editing farm-level details (name, location, area); only plot creation is exposed.
+- The mobile `FarmScreen` supports editing farm boundary via `FieldBoundaryScreen`, but direct farm-level attribute editing (name, location) via a form is still not exposed.
 - Plot-level ownership check is enforced on parent farm, but concurrent plot modifications lack optimistic locking.
 
 **Relevant code:**
 
 - [farm.py](../backend/src/app/api/endpoints/farm.py)
 - [mobile/lib/screens/farm/farm_screen.dart](../mobile/lib/screens/farm/farm_screen.dart)
+- [mobile/lib/screens/map/field_boundary_screen.dart](../mobile/lib/screens/map/field_boundary_screen.dart) — center-crosshair boundary drawing with magnetic snapping
+- [mobile/lib/utils/geo_math.dart](../mobile/lib/utils/geo_math.dart) — geodesic calculations and snap projection
 
 **What to improve:**
 
-- Expose farm-level edit in the mobile `FarmScreen`.
+- Expose farm-level attribute editing (name, location) in the mobile `FarmScreen`.
 - Add tests for invalid polygons, plot outside boundary, ownership isolation, and deleted farms.
 
 ---
+
+### 2.4 Remote Config and Backend URL Security
+
+**Status: Implemented**
+
+**What works:**
+
+- `RemoteConfigService.fetchBackendUrl()` fetches `api_base_url` from the Supabase `public.app_config` table via PostgREST (`https://{SUPABASE_URL}/rest/v1/app_config?key=eq.api_base_url&select=value`) using the `SUPABASE_ANON_KEY` compile-time variable.
+- 4-second network timeout; on failure or missing key, falls back to the SharedPreferences cache key `remote_config_api_base_url`.
+- URL resolution order in `ApiService.initBaseUrl()`: (1) Supabase Remote Config → (2) SharedPreferences cached remote URL → (3) compile-time `API_BASE_URL` from `.env` → (4) local dev default (`http://127.0.0.1:8000`).
+- Offline resilience: a successfully fetched URL is cached to SharedPreferences immediately after fetch. The app starts instantly on repeat launches without network.
+- **Backend URL is fully locked from the client:** The `_showServerSettingsDialog`, `Icons.dns_outlined` header button, and "Change URL" error-state link have been removed from `LoginScreen`. `setCustomBaseUrl` and `resetToRemoteConfig` are removed from `ApiService`. No user or farmer can inspect or modify the backend endpoint from within the app.
+- Supabase table `public.app_config` has RLS enabled with a public read-only policy (SELECT for `anon`, `authenticated`, `public`). Write access requires admin database access only.
+
+**Known gaps:**
+
+- `SUPABASE_ANON_KEY` must be set at compile time via `--dart-define-from-file=.env`. A missing key silently falls back to cached/local URL with a log warning.
+- No in-app indicator showing which backend URL is currently active (intentional security design).
+
+**Relevant code:**
+
+- [remote_config_service.dart](../mobile/lib/services/remote_config_service.dart) — Supabase PostgREST query, timeout, and SharedPreferences caching
+- [api_service.dart](../mobile/lib/services/api_service.dart) — `initBaseUrl()` resolution chain
+- [login_screen.dart](../mobile/lib/screens/auth/login_screen.dart) — Server Settings dialog and URL buttons removed
+
+**What to improve:**
+
+- Add a startup validation warning if neither Supabase nor cache returns a URL and the fallback is the local dev address in a production build.
+- Consider signing the config response (HMAC) to prevent MITM URL substitution.
 
 ## 3. Scan and Prediction Features
 
@@ -1502,6 +1533,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 3. ~~Add bounded retry with exponential backoff in `SyncService.drain()`.~~ **Done** — implements exponential backoff (`min(300, 2^retryCount × 5)` seconds). Add maximum attempt ceiling to prune permanently failing items.
 4. Migrate JWT storage from `SharedPreferences` to `flutter_secure_storage`.
 5. ~~Fix the wind speed unit label in `WeatherScreen`.~~ **Done** — `weather_screen.dart` explicitly converts m/s to km/h (`* 3.6`) before rendering.
+6. ~~Remote Config via Supabase `app_config` table~~ **Done** — `RemoteConfigService` fetches `api_base_url` from Supabase and caches it locally. `ApiService.initBaseUrl()` uses a 4-level fallback chain. Backend URL cannot be changed from within the app.
 
 ### Priority 3: Expand test coverage
 
@@ -1554,4 +1586,4 @@ The web frontend is a functional multi-role application with a shared typed API 
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: September 2026*
+*Last Updated: 02 October 2026*

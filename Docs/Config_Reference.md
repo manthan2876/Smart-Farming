@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 1.0  
-**Date:** September 2026  
+**Date:** 02 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -262,6 +262,22 @@ The backend provides a unified, S3-compatible storage abstraction (`storage.py`)
 > [!NOTE]
 > Vite only exposes variables prefixed with `VITE_` to client-side bundles. Secrets must never be stored in frontend environment variables.
 
+## 3.1 Environment Variables — Mobile (Flutter)
+
+**Location:** `mobile/.env` (passed to the build via `--dart-define-from-file=.env`)
+
+> [!CAUTION]
+> Never commit `mobile/.env` to version control. The `SUPABASE_ANON_KEY` is a public read-only key safe for embedding in client apps, but should still be kept out of version history to avoid accidental exposure.
+
+| Variable | Type | Example / Default | Description |
+|---|---|---|---|
+| `API_BASE_URL` | string | `https://smart-farming-backend-17713614069.us-central1.run.app` | Compile-time fallback backend URL. Used only when both Supabase Remote Config and the SharedPreferences cache are unavailable. |
+| `SUPABASE_URL` | string | `https://ntqevjzjhntkilmknrfh.supabase.co` | Supabase project URL. Used by `RemoteConfigService` to query `public.app_config` table via PostgREST. |
+| `SUPABASE_ANON_KEY` | string | `eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...` | Supabase anonymous (public) API key. Required for authenticated PostgREST queries. Safe to embed in client builds; RLS policy restricts access to SELECT only. |
+
+> [!NOTE]
+> The mobile app resolves the backend URL at startup in priority order: (1) Supabase `app_config` remote value → (2) SharedPreferences cached URL → (3) `API_BASE_URL` compile-time variable → (4) `http://127.0.0.1:8000` local dev default.
+
 ---
 
 ## 4. `model_registry.json`
@@ -361,4 +377,4 @@ API Process
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: September 2026*
+*Last Updated: 02 October 2026*

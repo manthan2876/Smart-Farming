@@ -54,6 +54,23 @@ def _validate_geojson_polygon(geom: dict | None) -> tuple[bool, str, float | Non
         return False, f"Invalid geometry: {exc}", None
 
 
+def _plot_inside_farm(plot_geom: dict | None, farm_geom: dict | None) -> bool:
+    """Check if plot geometry is contained within farm boundary."""
+    if not plot_geom or not farm_geom:
+        return True
+    try:
+        farm_ring = farm_geom.get("coordinates", [[]])[0]
+        plot_ring = plot_geom.get("coordinates", [[]])[0]
+        if not farm_ring or not plot_ring or len(farm_ring) < 3 or len(plot_ring) < 3:
+            return True
+        farm_poly = ShapelyPolygon(farm_ring)
+        plot_poly = ShapelyPolygon(plot_ring)
+        buffered = farm_poly.buffer(1e-7)
+        return buffered.contains(plot_poly) or buffered.covers(plot_poly)
+    except Exception:
+        return True
+
+
 @router.get("", response_model=FarmResponse)
 async def get_farmer_farm(
     request: Request,
@@ -104,7 +121,9 @@ async def save_farmer_farm(
             raise HTTPException(status_code=404, detail="Farmer profile not found.")
 
         data = payload.model_dump()
-        if payload.boundary:
+        if payload.reset_boundary:
+            data["boundary"] = None
+        elif payload.boundary:
             valid, msg, calc_acres = _validate_geojson_polygon(payload.boundary)
             if not valid:
                 raise HTTPException(status_code=422, detail=f"Invalid farm boundary: {msg}")
@@ -170,15 +189,8 @@ async def create_plot(
 
         # Check containment inside farm if farm boundary exists
         if payload.geometry and user.farm.boundary:
-            try:
-                farm_poly = ShapelyPolygon(user.farm.boundary.get("coordinates", [[]])[0])
-                plot_poly = ShapelyPolygon(payload.geometry.get("coordinates", [[]])[0])
-                if not farm_poly.contains(plot_poly) and not farm_poly.intersects(plot_poly):
-                    raise HTTPException(status_code=400, detail="Plot boundary must be within the saved farm boundary.")
-            except HTTPException:
-                raise
-            except Exception:
-                pass
+            if not _plot_inside_farm(payload.geometry, user.farm.boundary):
+                raise HTTPException(status_code=400, detail="Plot boundary must be within the saved farm boundary.")
 
         final_area = payload.area_acres or calc_acres or 0.0
         new_plot = Plot(
@@ -201,6 +213,8 @@ async def create_plot(
             pass
 
         return new_plot
+    except HTTPException:
+        raise
     except SQLAlchemyError as exc:
         session.rollback()
         raise HTTPException(status_code=503, detail="Database error.") from exc
@@ -221,14 +235,25 @@ async def update_plot(
         plot = session.query(Plot).filter(Plot.id == plot_id, Plot.farm_id == user.farm.id).first()
         if not plot:
             raise HTTPException(status_code=404, detail="Plot not found.")
-        if payload.geometry is not None and not _plot_inside_farm(payload.geometry, user.farm.boundary):
-            raise HTTPException(status_code=400, detail="Plot boundary must be inside the saved farm boundary.")
         
         plot.name = payload.name
-        plot.crop = payload.crop
-        plot.area_acres = payload.area_acres
-        if payload.geometry is not None:
+        if payload.crop is not None:
+            plot.crop = payload.crop
+        if payload.area_acres is not None:
+            plot.area_acres = payload.area_acres
+
+        if payload.reset_geometry:
+            plot.geometry = None
+        elif payload.geometry is not None:
+            valid, msg, calc_acres = _validate_geojson_polygon(payload.geometry)
+            if not valid:
+                raise HTTPException(status_code=422, detail=f"Invalid plot geometry: {msg}")
+            if not _plot_inside_farm(payload.geometry, user.farm.boundary):
+                raise HTTPException(status_code=400, detail="Plot boundary must be inside the saved farm boundary.")
             plot.geometry = payload.geometry
+            if (payload.area_acres is None or payload.area_acres == 0) and calc_acres:
+                plot.area_acres = calc_acres
+
         session.commit()
         session.refresh(plot)
 

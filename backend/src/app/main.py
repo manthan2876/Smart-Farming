@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -152,10 +152,21 @@ async def serve_data_file(file_path: str):
     if backend_type in ("s3", "gcs"):
         try:
             from app.core.storage import get_storage
-            from app.core.config import settings
             storage = get_storage()
-            presigned_url = storage.get_url(clean_subpath, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
-            return RedirectResponse(url=presigned_url, status_code=307)
+            data = storage.get(clean_subpath)
+            content_type = "image/jpeg"
+            lower_path = clean_subpath.lower()
+            if lower_path.endswith(".png"):
+                content_type = "image/png"
+            elif lower_path.endswith(".webp"):
+                content_type = "image/webp"
+            elif lower_path.endswith(".mp3"):
+                content_type = "audio/mpeg"
+            return Response(
+                content=data,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
         except Exception:
             pass
 

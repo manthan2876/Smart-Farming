@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 1.0  
-**Date:** September 2026  
+**Date:** 02 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -107,6 +107,8 @@ flowchart TD
 | **Real-time** | Native WebSocket API for live pipeline progress |
 | **i18n** | Three-locale support — English, Hindi (`hi`), Gujarati (`gu`) |
 | **Roles** | `farmer` · `expert` · `admin` (route-level guards) |
+
+> **Note:** A native Flutter mobile client (`mobile/`) serves the farmer-facing use case independently from the React web dashboard. It authenticates via the same JWT API, uses `RemoteConfigService` to dynamically discover the backend URL from Supabase `app_config`, and includes a center-crosshair GIS boundary drawing screen with magnetic farm-boundary snapping.
 
 ### 3.2 API Gateway
 
@@ -224,6 +226,7 @@ flowchart LR
 | **Object Store** | Raw uploads, processed images, audio files | Google Cloud Storage (`smart-farming-data` via S3 HMAC API) · AWS S3 · Local |
 | **Serverless Cache & State** | Sub-20ms translation caching, prediction dedup, dynamic thresholds, weather caching & lazy cron locks | Upstash Serverless Redis REST (`UPSTASH_REDIS_REST_URL` via HTTPS token auth) |
 | **Entity Translations Table** | Per-field multilingual translations for instant lookup without re-translating | `entity_translations` table in Supabase PostgreSQL — columns: `entity_type`, `entity_id`, `field_name`, `language`, `translated_text`, `status`; populated asynchronously by FastAPI `BackgroundTasks` after each prediction |
+| **App Config / Remote Config** | Mobile dynamic backend URL discovery | Supabase PostgreSQL `public.app_config` table — key-value store queried via PostgREST REST API; read-only for client apps via `anon` RLS policy |
 
 The storage interface (`storage.py`) is fully abstracted — switching between `local`, `gcs`, or `s3` backends is a single environment variable change (`STORAGE_BACKEND`).
 
@@ -865,4 +868,4 @@ flowchart LR
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: September 2026*
+*Last Updated: 02 October 2026*

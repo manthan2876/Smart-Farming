@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 1.0  
-**Date:** September 2026  
+**Date:** 02 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -432,5 +432,72 @@ Crop and disease names are stored separately in `domain.ts` to support:
 
 ---
 
+## 8. Mobile Application UI (Flutter)
+
+### 8.1 Overview
+
+The farmer-facing Flutter mobile app (`mobile/`) runs on Android (API 21+) and shares the backend REST API with the web dashboard. It is exclusively for the `farmer` role. Expert and admin roles are rejected at login with a clear error message.
+
+### 8.2 Navigation Shell
+
+`FarmerShell` provides a 5-tab bottom navigation bar:
+
+| Tab | Icon | Screen |
+|---|---|---|
+| Today | `home` | `TodayScreen` — dashboard with current weather and recent alerts |
+| Farm | `agriculture` | `FarmScreen` — farm details, plots list, boundary drawing |
+| Scan | `center_focus_strong` (FAB) | `CreatePredictionSheet` → `ProcessingSheet` → `ResultDetailSheet` |
+| Alerts | `notifications` | `AlertsScreen` — expert review and weather alerts with unread badge |
+| History | `history` | `HistoryScreen` — past scan list |
+
+### 8.3 Login Screen
+
+- Header row: app logo (green `eco` icon on primary-color rounded rectangle) + language selector button (`TextButton.icon` with `Icons.language`)
+- No server settings or backend URL input (removed; URL governed by Supabase Remote Config)
+- Supports registration (name, location, identifier, password) and login (identifier + password)
+- Forgot password flow via bottom sheet
+
+### 8.4 Boundary Drawing Screen (`FieldBoundaryScreen`)
+
+Activated when tapping "Draw Boundary" for a farm or plot in `FarmScreen`.
+
+| UI Element | Description |
+|---|---|
+| **Center crosshair** | Small `+` icon (20px, white/colored, high-contrast shadow). Represents the coordinate that will be added as a vertex. Map pans behind it. |
+| **Map tiles** | Satellite (default) or OSM, toggled via bottom bar icon |
+| **Bottom bar - `+` button** | Adds a boundary vertex at the crosshair position (center of screen). Snaps to farm boundary edge if plot point is within ~20m outside the farm. |
+| **Bottom bar - complete button** | Closes the polygon (requires ≥3 points). Disabled until 3+ vertices placed. |
+| **Vertex marker** | Numbered circle on each placed point. Tap to highlight/select; long-press to delete. |
+| **Move mode** | Tap a highlighted vertex then move map to reposition; crosshair turns cyan. Tap `✓` to confirm move. |
+| **Rubber-band line** | White dashed line from last placed vertex to current crosshair position (preview). |
+| **Magnetic snap indicator** | Amber floating badge and amber crosshair when a plot point would snap to the farm boundary. |
+| **Context badge** | Floating label above crosshair showing current state: Moving Corner #N, Hovering Start Point, Snapping to Farm Boundary, etc. |
+| **AppBar** | Title (Draw/Edit Farm/Plot Boundary). Delete boundary icon if editing existing boundary. Undo button. |
+
+**Crosshair color states:**
+
+| State | Color |
+|---|---|
+| Default | White |
+| Hovering start point (close polygon) | Neon Green (`#00e676`) |
+| Hovering an existing corner | Amber (`#ffab00`) |
+| Moving a corner | Cyan (`#00b0ff`) |
+| Magnetic snapping to farm edge | Orange-Amber (`#f57f17`) |
+
+### 8.5 Settings Screen
+
+`SettingsScreen` — language preference, password change. Accessed via Settings icon in `FarmerShell` app bar.
+
+### 8.6 Design Tokens (Mobile)
+
+| Token | Value | Usage |
+|---|---|---|
+| `AppColors.primary` | `Color(0xff2e7d32)` | Primary green — buttons, icons, accents |
+| `AppColors.primaryLight` | Light green tint | Backgrounds, chips |
+| `AppColors.textPrimary` | Dark text | Body text |
+| `AppColors.textMuted` | Muted text | Subtitles, hints |
+
+---
+
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: September 2026*
+*Last Updated: 02 October 2026*

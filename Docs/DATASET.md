@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 1.0  
-**Date:** September 2026  
+**Date:** 02 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -242,4 +242,4 @@ Per `mlops_training_guide.md`, production retraining pulls a **different** datas
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: September 2026*
+*Last Updated: 02 October 2026*

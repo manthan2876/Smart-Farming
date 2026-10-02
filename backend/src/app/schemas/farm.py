@@ -31,9 +31,12 @@ class FarmRequest(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180)
     crop_history: list[str] = Field(default_factory=list, max_length=50)
     boundary: dict[str, Any] | None = None
+    reset_boundary: bool = False
 
 class PlotRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     crop: str | None = Field(default=None, max_length=100)
     area_acres: float | None = Field(default=None, ge=0)
     geometry: dict[str, Any] | None = Field(default=None)
+    reset_geometry: bool = False
+
