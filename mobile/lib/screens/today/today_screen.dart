@@ -16,6 +16,7 @@ class TodayScreen extends StatelessWidget {
     required this.onSelectPrediction,
     required this.onSeeTrail,
     required this.onLogout,
+    this.onOpenSettings,
   });
 
   final Map<String, dynamic> userProfile;
@@ -27,6 +28,7 @@ class TodayScreen extends StatelessWidget {
   final ValueChanged<Prediction> onSelectPrediction;
   final VoidCallback onSeeTrail;
   final VoidCallback onLogout;
+  final VoidCallback? onOpenSettings;
 
   Widget _stat(String value, String label) => Expanded(
         child: Container(
@@ -127,7 +129,9 @@ class TodayScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '${(latestPrediction!.confidence * 100).round()}% ${context.tr('aiConfidence')}',
@@ -137,7 +141,6 @@ class TodayScreen extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         Text(
                           '${latestPrediction!.severity}% ${context.tr('severity')}',
                           style: const TextStyle(
@@ -197,6 +200,12 @@ class TodayScreen extends StatelessWidget {
             ),
             Row(
               children: [
+                if (onOpenSettings != null)
+                  IconButton(
+                    onPressed: onOpenSettings,
+                    icon: const Icon(Icons.settings_outlined, color: AppColors.primary),
+                    tooltip: context.tr('navSettings'),
+                  ),
                 IconButton(
                   onPressed: () => showLanguageSelectionSheet(context),
                   icon: const Icon(Icons.language, color: AppColors.primary),
@@ -269,9 +278,12 @@ class TodayScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              context.tr('recentDiagnoses'),
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Text(
+                context.tr('recentDiagnoses'),
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             TextButton(
               onPressed: onSeeTrail,

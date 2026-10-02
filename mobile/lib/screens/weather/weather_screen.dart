@@ -175,30 +175,36 @@ class _WeatherScreenState extends State<WeatherScreen> {
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('weatherTitle'),
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
-                ),
-                if (weather?['cached'] == true)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.cached, size: 12, color: AppColors.textSubtle),
-                        SizedBox(width: 4),
-                        Text(
-                          'Cached observation',
-                          style: TextStyle(fontSize: 11, color: AppColors.textSubtle),
-                        ),
-                      ],
-                    ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('weatherTitle'),
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600),
                   ),
-              ],
+                  if (weather?['cached'] == true)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.cached, size: 12, color: AppColors.textSubtle),
+                          SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'Cached observation',
+                              style: TextStyle(fontSize: 11, color: AppColors.textSubtle),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
             if (widget.onRefresh != null)
               IconButton(
@@ -264,8 +270,10 @@ class _WeatherScreenState extends State<WeatherScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                spacing: 16,
+                runSpacing: 6,
+                alignment: WrapAlignment.spaceBetween,
                 children: [
                   Text('${context.tr('humidity')}: $hum', style: const TextStyle(color: Colors.white70)),
                   Text('${context.tr('windSpeed')}: $wind', style: const TextStyle(color: Colors.white70)),

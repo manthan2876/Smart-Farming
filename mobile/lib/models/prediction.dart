@@ -10,6 +10,9 @@ class Prediction {
     required this.recommendation,
     this.imagePath,
     this.rawPath,
+    this.rawUrl,
+    this.processedUrl,
+    this.severityBucket,
     this.pending = false,
     this.immediateAction,
     this.treatment,
@@ -21,6 +24,20 @@ class Prediction {
     this.createdAt,
     this.notes = const [],
     this.translations,
+    this.expertDecision,
+    this.expertGuidance,
+    this.correctedDisease,
+    this.expertReviewStatus,
+    this.isFallback = false,
+    this.isMasked = false,
+    this.isUncertain = false,
+    this.modelUsed,
+    this.durationMs,
+    this.schemaVersion,
+    this.weatherTemp,
+    this.weatherHumidity,
+    this.weatherCondition,
+    this.historicalImages = const [],
   });
 
   final int id;
@@ -31,6 +48,9 @@ class Prediction {
   final String recommendation;
   final String? imagePath;
   final String? rawPath;
+  final String? rawUrl;
+  final String? processedUrl;
+  final String? severityBucket;
   final bool pending;
   final String? immediateAction;
   final String? treatment;
@@ -42,6 +62,22 @@ class Prediction {
   final String? createdAt;
   final List<String> notes;
   final Map<String, dynamic>? translations;
+  final String? expertDecision;
+  final String? expertGuidance;
+  final String? correctedDisease;
+  final String? expertReviewStatus;
+  final bool isFallback;
+  final bool isMasked;
+  final bool isUncertain;
+  final String? modelUsed;
+  final int? durationMs;
+  final String? schemaVersion;
+  final double? weatherTemp;
+  final int? weatherHumidity;
+  final String? weatherCondition;
+  final List<Map<String, dynamic>> historicalImages;
+
+  String? get processedPath => imagePath;
 
   /// Returns the complete comprehensive spoken recommendation combining all actionable paragraphs.
   String get fullAudioRecommendation {
@@ -198,32 +234,94 @@ class Prediction {
         merged[key] = value;
       }
     });
+    return copyWith(translations: merged);
+  }
+
+  /// Flexible copyWith helper
+  Prediction copyWith({
+    int? id,
+    String? crop,
+    String? disease,
+    double? confidence,
+    int? severity,
+    String? recommendation,
+    String? imagePath,
+    String? rawPath,
+    String? rawUrl,
+    String? processedUrl,
+    String? severityBucket,
+    bool? pending,
+    String? immediateAction,
+    String? treatment,
+    String? prevention,
+    String? monitoring,
+    String? status,
+    double? qualityScore,
+    List<String>? pests,
+    String? createdAt,
+    List<String>? notes,
+    Map<String, dynamic>? translations,
+    String? expertDecision,
+    String? expertGuidance,
+    String? correctedDisease,
+    String? expertReviewStatus,
+    bool? isFallback,
+    bool? isMasked,
+    bool? isUncertain,
+    String? modelUsed,
+    int? durationMs,
+    String? schemaVersion,
+    double? weatherTemp,
+    int? weatherHumidity,
+    String? weatherCondition,
+    List<Map<String, dynamic>>? historicalImages,
+  }) {
     return Prediction(
-      id: id,
-      crop: crop,
-      disease: disease,
-      confidence: confidence,
-      severity: severity,
-      recommendation: recommendation,
-      imagePath: imagePath,
-      rawPath: rawPath,
-      pending: pending,
-      immediateAction: immediateAction,
-      treatment: treatment,
-      prevention: prevention,
-      monitoring: monitoring,
-      status: status,
-      qualityScore: qualityScore,
-      pests: pests,
-      createdAt: createdAt,
-      notes: notes,
-      translations: merged,
+      id: id ?? this.id,
+      crop: crop ?? this.crop,
+      disease: disease ?? this.disease,
+      confidence: confidence ?? this.confidence,
+      severity: severity ?? this.severity,
+      recommendation: recommendation ?? this.recommendation,
+      imagePath: imagePath ?? this.imagePath,
+      rawPath: rawPath ?? this.rawPath,
+      rawUrl: rawUrl ?? this.rawUrl,
+      processedUrl: processedUrl ?? this.processedUrl,
+      severityBucket: severityBucket ?? this.severityBucket,
+      pending: pending ?? this.pending,
+      immediateAction: immediateAction ?? this.immediateAction,
+      treatment: treatment ?? this.treatment,
+      prevention: prevention ?? this.prevention,
+      monitoring: monitoring ?? this.monitoring,
+      status: status ?? this.status,
+      qualityScore: qualityScore ?? this.qualityScore,
+      pests: pests ?? this.pests,
+      createdAt: createdAt ?? this.createdAt,
+      notes: notes ?? this.notes,
+      translations: translations ?? this.translations,
+      expertDecision: expertDecision ?? this.expertDecision,
+      expertGuidance: expertGuidance ?? this.expertGuidance,
+      correctedDisease: correctedDisease ?? this.correctedDisease,
+      expertReviewStatus: expertReviewStatus ?? this.expertReviewStatus,
+      isFallback: isFallback ?? this.isFallback,
+      isMasked: isMasked ?? this.isMasked,
+      isUncertain: isUncertain ?? this.isUncertain,
+      modelUsed: modelUsed ?? this.modelUsed,
+      durationMs: durationMs ?? this.durationMs,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      weatherTemp: weatherTemp ?? this.weatherTemp,
+      weatherHumidity: weatherHumidity ?? this.weatherHumidity,
+      weatherCondition: weatherCondition ?? this.weatherCondition,
+      historicalImages: historicalImages ?? this.historicalImages,
     );
   }
 
   factory Prediction.fromJson(Map<String, dynamic> json) {
+    // Unfold follow_up if present
+    final target = json['follow_up'] is Map ? (json['follow_up'] as Map).cast<String, dynamic>() : json;
+
     // 1. Robust crop parsing (handles Map, String, or null)
-    final cropRaw = json['crop'];
+    final cropRaw = target['crop'];
     Map<String, dynamic> crop = {};
     String cropLabel = 'Unknown crop';
     double cropConfidence = 0.0;
@@ -235,12 +333,12 @@ class Prediction {
       cropLabel = cropRaw;
       crop = {'label': cropRaw};
     }
-    if (cropConfidence == 0.0 && json['crop_conf'] is num) {
-      cropConfidence = (json['crop_conf'] as num).toDouble();
+    if (cropConfidence == 0.0 && target['crop_conf'] is num) {
+      cropConfidence = (target['crop_conf'] as num).toDouble();
     }
 
     // 2. Robust disease parsing (handles Map, String, or null)
-    final diseaseRaw = json['disease'];
+    final diseaseRaw = target['disease'];
     Map<String, dynamic> disease = {};
     String diseaseLabel = 'Unknown condition';
     double diseaseConfidence = 0.0;
@@ -252,23 +350,28 @@ class Prediction {
       diseaseLabel = diseaseRaw;
       disease = {'label': diseaseRaw};
     }
-    if (diseaseConfidence == 0.0 && json['disease_conf'] is num) {
-      diseaseConfidence = (json['disease_conf'] as num).toDouble();
+    if (diseaseConfidence == 0.0 && target['disease_conf'] is num) {
+      diseaseConfidence = (target['disease_conf'] as num).toDouble();
     }
 
     // 3. Robust severity parsing (handles Map, num, or string)
-    final sevRaw = json['severity'];
+    final sevRaw = target['severity'];
     int severityPercent = 0;
+    String? severityBucket;
     if (sevRaw is Map) {
       severityPercent = (sevRaw['percent'] as num?)?.round() ?? 0;
+      severityBucket = sevRaw['bucket']?.toString();
     } else if (sevRaw is num) {
       severityPercent = sevRaw.round();
-    } else if (json['severity_pct'] is num) {
-      severityPercent = (json['severity_pct'] as num).round();
+    } else if (target['severity_pct'] is num) {
+      severityPercent = (target['severity_pct'] as num).round();
+    }
+    if (severityBucket == null && target['severity_bucket'] != null) {
+      severityBucket = target['severity_bucket']?.toString();
     }
 
     // 4. Robust recommendation parsing (handles Map, String, or null)
-    final recRaw = json['recommendation'];
+    final recRaw = target['recommendation'];
     Map<String, dynamic> recommendation = {};
     String? immediate;
     String? treat;
@@ -307,43 +410,80 @@ class Prediction {
     } else if (recRaw is String && recRaw.isNotEmpty) {
       recText = recRaw;
     } else {
-      recText = json['error']?.toString() ?? 'Follow local agricultural guidance.';
+      recText = target['error']?.toString() ?? 'Follow local agricultural guidance.';
     }
 
     // 5. Robust image parsing
-    final imgRaw = json['image'];
+    final imgRaw = target['image'];
     Map<String, dynamic> image = {};
     if (imgRaw is Map) {
       image = imgRaw.cast<String, dynamic>();
     }
-    final rawPath = image['raw_path']?.toString() ?? json['raw_path']?.toString();
-    final processedPath = image['processed_path']?.toString() ?? json['processed_path']?.toString();
+    final rawPath = image['raw_path']?.toString() ?? target['raw_path']?.toString();
+    final processedPath = image['processed_path']?.toString() ?? target['processed_path']?.toString();
+    final rawUrl = image['raw_url']?.toString() ?? target['raw_url']?.toString();
+    final processedUrl = image['processed_url']?.toString() ?? target['processed_url']?.toString();
 
     // 6. Robust pests parsing
-    final pestsList = (json['pests'] as List?)
+    final pestsList = (target['pests'] as List?)
             ?.map((p) => p is Map ? (p['label']?.toString() ?? '') : p?.toString() ?? '')
             .where((label) => label.isNotEmpty)
             .toList() ??
         [];
 
     // 7. Robust status parsing
-    final rawStatus = json['status'];
+    final rawStatus = target['status'];
     String statusStr = 'completed';
+    String? expertReviewStatus;
+    bool isMasked = false;
     if (rawStatus is String) {
       statusStr = rawStatus;
     } else if (rawStatus is Map) {
       statusStr = rawStatus['pipeline']?.toString() ?? 'completed';
+      expertReviewStatus = rawStatus['expert_review']?.toString();
+      isMasked = rawStatus['mask_advisory'] == true ||
+          (expertReviewStatus == 'pending' && (immediate == null || immediate.isEmpty));
     }
 
-    final rawTranslations = (json['translations'] as Map?)?.cast<String, dynamic>() ??
-        (json['result'] is Map ? (json['result']['translations'] as Map?)?.cast<String, dynamic>() : null);
+    final isFallback = (recRaw is Map && recRaw['is_fallback'] == true) || target['is_fallback'] == true;
+    final isUncertain = (diseaseRaw is Map && diseaseRaw['is_uncertain'] == true) ||
+        (diseaseConfidence > 0 && diseaseConfidence < 0.60);
+
+    // 8. Expert review data
+    final expRaw = target['expert_review_data'] as Map?;
+    final expertDecision = expRaw?['decision']?.toString();
+    final expertGuidance = expRaw?['farmer_guidance']?.toString();
+    final correctedDisease = expRaw?['corrected_disease']?.toString();
+
+    // 9. Weather snapshot
+    final weatherMap = target['weather'] as Map?;
+    final weatherTemp = (weatherMap?['temperature_celsius'] as num?)?.toDouble();
+    final weatherHumidity = (weatherMap?['humidity_percent'] as num?)?.round();
+    final weatherCondition = weatherMap?['condition']?.toString();
+
+    // 10. Provenance & model
+    final provenance = target['provenance'] as Map?;
+    final modelsMap = provenance?['models'] as Map?;
+    final diseaseModelMap = modelsMap?['disease'] as Map?;
+    final modelUsed = (diseaseRaw is Map ? diseaseRaw['model_used']?.toString() : null) ??
+        diseaseModelMap?['name']?.toString();
+    final durationMs = (target['total_duration_ms'] as num?)?.round();
+    final schemaVersion = target['schema_version']?.toString();
+
+    // 11. Historical images timeline
+    final histRaw = target['historical_images'] as List?;
+    final historicalImages = histRaw?.map((e) => e is Map ? e.cast<String, dynamic>() : <String, dynamic>{}).toList() ?? [];
+
+    final rawTranslations = (target['translations'] as Map?)?.cast<String, dynamic>() ??
+        (target['result'] is Map ? (target['result']['translations'] as Map?)?.cast<String, dynamic>() : null);
 
     return Prediction(
-      id: (json['prediction_id'] as num?)?.toInt() ?? (json['id'] as num?)?.toInt() ?? 0,
+      id: (target['prediction_id'] as num?)?.toInt() ?? (target['id'] as num?)?.toInt() ?? 0,
       crop: cropLabel,
       disease: diseaseLabel,
       confidence: diseaseConfidence > 0 ? diseaseConfidence : cropConfidence,
       severity: severityPercent,
+      severityBucket: severityBucket,
       recommendation: recText,
       immediateAction: immediate,
       treatment: treat,
@@ -351,11 +491,27 @@ class Prediction {
       monitoring: monitor,
       imagePath: processedPath ?? rawPath,
       rawPath: rawPath,
+      rawUrl: rawUrl,
+      processedUrl: processedUrl,
       qualityScore: (image['quality_score'] as num?)?.toDouble(),
       pests: pestsList,
       status: statusStr,
-      createdAt: json['created_at']?.toString(),
-      notes: (json['notes'] as List?)?.map((n) => n.toString()).toList() ?? [],
+      expertReviewStatus: expertReviewStatus,
+      isFallback: isFallback,
+      isMasked: isMasked,
+      isUncertain: isUncertain,
+      expertDecision: expertDecision,
+      expertGuidance: expertGuidance,
+      correctedDisease: correctedDisease,
+      modelUsed: modelUsed,
+      durationMs: durationMs,
+      schemaVersion: schemaVersion,
+      weatherTemp: weatherTemp,
+      weatherHumidity: weatherHumidity,
+      weatherCondition: weatherCondition,
+      historicalImages: historicalImages,
+      createdAt: target['created_at']?.toString(),
+      notes: (target['notes'] as List?)?.map((n) => n.toString()).toList() ?? [],
       translations: rawTranslations,
     );
   }

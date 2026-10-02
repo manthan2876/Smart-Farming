@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'providers/locale_provider.dart';
 import 'screens/auth/auth_wrapper.dart';
+import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 
-void main() => runApp(const RootApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.initBaseUrl();
+  runApp(const RootApp());
+}
 
 class RootApp extends StatefulWidget {
   const RootApp({super.key});

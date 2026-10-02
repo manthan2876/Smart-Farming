@@ -4,26 +4,51 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/prediction.dart';
 import '../utils/app_logger.dart';
+import 'remote_config_service.dart';
 
 class ApiService {
+  /// Base URL resolved from compile-time environment variable (--dart-define-from-file=.env)
+  static const String envBackendUrl =
+      String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  static const String localBackendUrl = 'http://127.0.0.1:8000';
+
+  static String? customBaseUrl;
+
+  /// Initializes the backend base URL dynamically from Supabase Remote Config,
+  /// falling back to compile-time .env or local development.
+  /// No client-side modification is allowed from within the app.
+  static Future<void> initBaseUrl() async {
+    // 1. Fetch dynamic Remote Config from Supabase app_config table
+    final remoteUrl = await RemoteConfigService.fetchBackendUrl();
+    if (remoteUrl != null && remoteUrl.isNotEmpty) {
+      customBaseUrl = remoteUrl;
+      return;
+    }
+
+    // 2. Fallback to compile-time .env or local default
+    customBaseUrl = _resolveDefaultBaseUrl();
+  }
+
+  static Future<bool> testConnection(String url) async {
+    try {
+      final clean = url.trim().replaceAll(RegExp(r'/+$'), '');
+      final uri = Uri.parse('$clean/health');
+      final res = await http.get(uri).timeout(const Duration(seconds: 5));
+      return res.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
+  }
+
   ApiService({String? baseUrl, this.accessToken})
-      : baseUrl = baseUrl ?? _resolveDefaultBaseUrl();
+      : baseUrl = baseUrl ?? customBaseUrl ?? _resolveDefaultBaseUrl();
 
   final String baseUrl;
   final String? accessToken;
 
   static String _resolveDefaultBaseUrl() {
-    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
-    if (envUrl.isNotEmpty) return envUrl;
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000';
-    }
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'http://10.0.2.2:8000';
-      default:
-        return 'http://127.0.0.1:8000';
-    }
+    if (envBackendUrl.isNotEmpty) return envBackendUrl;
+    return localBackendUrl;
   }
 
   String getAssetUrl(String? path) {
@@ -152,18 +177,27 @@ class ApiService {
     double? latitude,
     double? longitude,
     List<String>? cropHistory,
+    Map<String, dynamic>? boundary,
+    bool resetBoundary = false,
   }) async {
+    final payload = <String, dynamic>{
+      'name': name,
+      'location': location,
+      'area_acres': areaAcres,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      'crop_history': cropHistory ?? [],
+    };
+    if (resetBoundary) {
+      payload['boundary'] = null;
+    } else if (boundary != null) {
+      payload['boundary'] = boundary;
+    }
+
     final response = await http.put(
       Uri.parse('$baseUrl/farm'),
       headers: {'Content-Type': 'application/json', ..._headers},
-      body: jsonEncode({
-        'name': name,
-        'location': location,
-        'area_acres': areaAcres,
-        if (latitude != null) 'latitude': latitude,
-        if (longitude != null) 'longitude': longitude,
-        'crop_history': cropHistory ?? [],
-      }),
+      body: jsonEncode(payload),
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 400) {
@@ -177,20 +211,57 @@ class ApiService {
     required String crop,
     required double areaAcres,
     String status = 'Active',
+    Map<String, dynamic>? geometry,
   }) async {
+    final payload = <String, dynamic>{
+      'name': name,
+      'crop': crop,
+      'area_acres': areaAcres,
+      'status': status,
+      if (geometry != null) 'geometry': geometry,
+    };
+
     final response = await http.post(
       Uri.parse('$baseUrl/farm/plots'),
       headers: {'Content-Type': 'application/json', ..._headers},
-      body: jsonEncode({
-        'name': name,
-        'crop': crop,
-        'area_acres': areaAcres,
-        'status': status,
-      }),
+      body: jsonEncode(payload),
     );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 400) {
       throw Exception(body['detail'] ?? 'Failed to create plot');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> updatePlot(
+    int plotId, {
+    required String name,
+    required String crop,
+    required double areaAcres,
+    String status = 'Active',
+    Map<String, dynamic>? geometry,
+    bool resetGeometry = false,
+  }) async {
+    final payload = <String, dynamic>{
+      'name': name,
+      'crop': crop,
+      'area_acres': areaAcres,
+      'status': status,
+    };
+    if (resetGeometry) {
+      payload['geometry'] = null;
+    } else if (geometry != null) {
+      payload['geometry'] = geometry;
+    }
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/farm/plots/$plotId'),
+      headers: {'Content-Type': 'application/json', ..._headers},
+      body: jsonEncode(payload),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 400) {
+      throw Exception(body['detail'] ?? 'Failed to update plot');
     }
     return body;
   }
@@ -236,6 +307,26 @@ class ApiService {
     return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
   }
 
+  Future<void> deletePlot(int plotId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/farm/plots/$plotId'),
+      headers: _headers,
+    );
+    if (response.statusCode >= 400) {
+      throw Exception('Failed to delete plot');
+    }
+  }
+
+  Future<List<String>> getSupportedCrops() async {
+    final response = await http.get(Uri.parse('$baseUrl/crops'), headers: _headers);
+    if (response.statusCode >= 400) {
+      throw Exception('Failed to retrieve supported crops');
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = body['crops'] as List?;
+    return list?.map((e) => e.toString()).toList() ?? [];
+  }
+
   Future<void> markAlertRead(int alertId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/alerts/$alertId/read'),
@@ -243,6 +334,14 @@ class ApiService {
     );
     if (response.statusCode >= 400) {
       throw Exception('Failed to mark alert as read');
+    }
+  }
+
+  Future<void> markAllAlertsRead(List<int> alertIds) async {
+    for (final id in alertIds) {
+      try {
+        await markAlertRead(id);
+      } catch (_) {}
     }
   }
 
@@ -330,13 +429,102 @@ class ApiService {
 
   Future<void> requestExpertReview(int predictionId) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/predict/$predictionId/expert-review'),
+      Uri.parse('$baseUrl/predictions/$predictionId/request-expert'),
       headers: _headers,
     );
     if (response.statusCode >= 400) {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       throw Exception(body['detail'] ?? 'Failed to request expert review');
     }
+  }
+
+  Future<Map<String, dynamic>> rescanBytes(
+    int predictionId,
+    Uint8List bytes,
+    String filename, {
+    int? plotId,
+  }) async {
+    final cleanFilename = filename.isNotEmpty ? filename : 'rescan_leaf.jpg';
+    final lower = cleanFilename.toLowerCase();
+    final mediaType = lower.endsWith('.png')
+        ? MediaType('image', 'png')
+        : lower.endsWith('.webp')
+            ? MediaType('image', 'webp')
+            : MediaType('image', 'jpeg');
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/predictions/$predictionId/rescan'),
+    );
+    request.headers.addAll(_headers);
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: cleanFilename,
+        contentType: mediaType,
+      ),
+    );
+    if (plotId != null) {
+      request.fields['plot_id'] = plotId.toString();
+    }
+    final streamedResponse = await request.send();
+    final resString = await streamedResponse.stream.bytesToString();
+    final body = jsonDecode(resString) as Map<String, dynamic>;
+    if (streamedResponse.statusCode >= 400) {
+      throw Exception(body['detail'] ?? 'Rescan failed (${streamedResponse.statusCode})');
+    }
+    return body;
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/change-password'),
+      headers: {'Content-Type': 'application/json', ..._headers},
+      body: jsonEncode({
+        'old_password': oldPassword,
+        'new_password': newPassword,
+      }),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 400) {
+      throw Exception(body['detail'] ?? 'Failed to change password');
+    }
+  }
+
+  Future<String> forgotPassword(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/forgot-password'),
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: jsonEncode({'email': email.trim()}),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 400) {
+      throw Exception(body['detail'] ?? 'Failed to send reset link');
+    }
+    return body['message']?.toString() ?? 'Password reset link sent to your email.';
+  }
+
+  Future<String> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/reset-password'),
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: jsonEncode({
+        'token': token.trim(),
+        'new_password': newPassword,
+      }),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 400) {
+      throw Exception(body['detail'] ?? 'Failed to reset password');
+    }
+    return body['message']?.toString() ?? 'Password has been reset successfully.';
   }
 
   Future<Map<String, dynamic>> translatePrediction(int id, String language) async {

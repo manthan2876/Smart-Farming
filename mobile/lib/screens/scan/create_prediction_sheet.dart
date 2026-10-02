@@ -229,8 +229,10 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                     style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 10,
                     children: [
                       ElevatedButton.icon(
                         onPressed: () => _pickImage(ImageSource.camera),
@@ -242,7 +244,6 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
                       ),
-                      const SizedBox(width: 12),
                       OutlinedButton.icon(
                         onPressed: () => _pickImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo_library),
@@ -307,9 +308,12 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
                   children: [
                     const Icon(Icons.tune, color: AppColors.accent, size: 18),
                     const SizedBox(width: 8),
-                    Text(
-                      context.tr('diagnosticTelemetry'),
-                      style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 12),
+                    Expanded(
+                      child: Text(
+                        context.tr('diagnosticTelemetry'),
+                        style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),

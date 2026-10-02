@@ -9,9 +9,12 @@ class LocaleProvider extends ChangeNotifier {
   }
 
   static const String _prefKey = 'smart_farm_lang';
+  static const String _unitKey = 'smart_farm_units';
   String _currentLanguage = 'English';
+  String _currentUnit = 'Metric';
 
   String get currentLanguage => _currentLanguage;
+  String get currentUnit => _currentUnit;
   String get languageCode => DomainTranslations.normalizeLang(_currentLanguage);
 
   Future<void> _loadSavedLanguage() async {
@@ -20,8 +23,12 @@ class LocaleProvider extends ChangeNotifier {
       final saved = prefs.getString(_prefKey);
       if (saved != null && (saved == 'English' || saved == 'Hindi' || saved == 'Gujarati')) {
         _currentLanguage = saved;
-        notifyListeners();
       }
+      final savedUnit = prefs.getString(_unitKey);
+      if (savedUnit != null && (savedUnit == 'Metric' || savedUnit == 'Imperial')) {
+        _currentUnit = savedUnit;
+      }
+      notifyListeners();
     } catch (_) {}
   }
 
@@ -32,6 +39,16 @@ class LocaleProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefKey, newLang);
+    } catch (_) {}
+  }
+
+  Future<void> setUnit(String newUnit) async {
+    if (_currentUnit == newUnit) return;
+    _currentUnit = newUnit;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_unitKey, newUnit);
     } catch (_) {}
   }
 
@@ -76,6 +93,7 @@ extension LocaleContextX on BuildContext {
   LocaleProvider get loc => LocaleScope.of(this);
   String tr(String key) => LocaleScope.of(this).tr(key);
   String get localeCode => LocaleScope.of(this).languageCode;
+  String get currentUnit => LocaleScope.of(this).currentUnit;
 }
 
 /// Reusable Language Selector Sheet

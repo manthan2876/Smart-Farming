@@ -16,6 +16,7 @@ import '../history/history_screen.dart';
 import '../scan/create_prediction_sheet.dart';
 import '../scan/processing_sheet.dart';
 import '../scan/result_detail_sheet.dart';
+import '../settings/settings_screen.dart';
 import '../today/today_screen.dart';
 import '../weather/weather_screen.dart';
 
@@ -260,6 +261,20 @@ class _FarmerShellState extends State<FarmerShell> {
     );
   }
 
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(
+          userProfile: _userProfile,
+          farm: _farm,
+          api: _api,
+          onLogout: widget.onLogout,
+          onProfileUpdated: _loadProfile,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         body: SafeArea(
@@ -276,6 +291,7 @@ class _FarmerShellState extends State<FarmerShell> {
                 onSelectPrediction: _showResultSheet,
                 onSeeTrail: () => setState(() => _tab = 1),
                 onLogout: widget.onLogout,
+                onOpenSettings: _openSettings,
               ),
               HistoryScreen(
                 history: _history,
