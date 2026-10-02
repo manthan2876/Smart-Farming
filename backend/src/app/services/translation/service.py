@@ -64,6 +64,7 @@ async def translate_batch_google(texts: list[str], target_lang: str) -> list[str
     url = f"https://translation.googleapis.com/language/translate/v2?key={api_key}"
     payload = {
         "q": texts,
+        "source": "en",
         "target": target_code,
         "format": "text",
     }
@@ -148,7 +149,7 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
         keys = [item[1] for item in items_to_lookup]
         cached_values = await redis_rest.mget(keys)
         for (idx, _, text), cached in zip(items_to_lookup, cached_values):
-            if cached:
+            if cached and (target_code not in ("hi", "gu") or not any(c.isalpha() for c in text) or any(ord(c) >= 0x0900 for c in cached)):
                 results[idx] = cached
             else:
                 missing_indices.append(idx)
@@ -234,6 +235,7 @@ def translate_batch_google_sync(texts: list[str], target_lang: str) -> list[str]
     url = f"https://translation.googleapis.com/language/translate/v2?key={api_key}"
     payload = {
         "q": texts,
+        "source": "en",
         "target": target_code,
         "format": "text",
     }

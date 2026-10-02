@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController(text: 'Anand, Gujarat');
   bool _busy = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -80,6 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final confirmPasswordCtrl = TextEditingController();
     bool isSubmitting = false;
     bool sentEmail = false;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
     String? recoveryError;
     String? recoverySuccess;
 
@@ -238,20 +241,28 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: newPasswordCtrl,
-                      obscureText: true,
+                      obscureText: obscureNew,
                       decoration: InputDecoration(
                         labelText: context.tr('newPassword'),
                         prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                          onPressed: () => setSheetState(() => obscureNew = !obscureNew),
+                        ),
                         border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: confirmPasswordCtrl,
-                      obscureText: true,
+                      obscureText: obscureConfirm,
                       decoration: InputDecoration(
                         labelText: context.tr('confirmPassword'),
                         prefixIcon: const Icon(Icons.check_circle_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                          onPressed: () => setSheetState(() => obscureConfirm = !obscureConfirm),
+                        ),
                         border: const OutlineInputBorder(),
                       ),
                     ),
@@ -469,11 +480,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: _passwordCtrl,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: context.tr('passwordHint'),
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
                     ),
                   ),
                   if (!_isRegister) ...[

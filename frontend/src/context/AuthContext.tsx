@@ -44,9 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async (authToken: string) => {
     try {
       const savedLang = localStorage.getItem(PREF_LANG_KEY);
-      const userData = await profile(authToken, savedLang || undefined);
+      const effectiveLang = (savedLang === "Gujarati" || savedLang === "Hindi" || savedLang === "English") ? (savedLang as Language) : undefined;
+      const userData = await profile(authToken, effectiveLang);
       setUser(userData);
-      if (userData.language && (userData.language === "Gujarati" || userData.language === "Hindi" || userData.language === "English")) {
+      if (effectiveLang) {
+        setLanguageState(effectiveLang);
+      } else if (userData.language && (userData.language === "Gujarati" || userData.language === "Hindi" || userData.language === "English")) {
         setLanguageState(userData.language as Language);
         localStorage.setItem(PREF_LANG_KEY, userData.language);
       }
@@ -76,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setLanguage = async (newLang: Language) => {
     setLanguageState(newLang);
     localStorage.setItem(PREF_LANG_KEY, newLang);
-    if (token && user) {
+    if (token) {
       try {
         await updateProfile({ language: newLang }, token);
         const refreshed = await profile(token, newLang);

@@ -27,11 +27,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
     final savedToken = prefs.getString('auth_token');
+    final savedLocale = prefs.getString('app_locale');
     if (savedToken != null && savedToken.isNotEmpty) {
       AppLogger.info('AuthWrapper', 'Found stored auth token. Validating user session...');
-      final api = ApiService(accessToken: savedToken);
+      final api = ApiService(accessToken: savedToken, languageCode: savedLocale);
       try {
-        final profile = await api.getProfile();
+        final profile = await api.getProfile(lang: savedLocale);
         final role = profile['role']?.toString().toLowerCase();
         if (role == 'farmer') {
           AppLogger.info('AuthWrapper', 'Session restored successfully for ${profile['name']} (role: farmer).');

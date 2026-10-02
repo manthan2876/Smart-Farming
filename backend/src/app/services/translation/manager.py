@@ -56,10 +56,15 @@ def process_entity_translation_sync(
                 language=lang,
             ).first()
 
-            # Skip translation if identical source has already been translated
+            # Skip translation if identical source has already been translated to valid Indic text
             if existing and existing.source_hash == src_hash and existing.status == "done":
-                stats["skipped"] += 1
-                continue
+                is_valid = True
+                if lang in ("hi", "gu") and any(c.isalpha() for c in clean_text):
+                    if not existing.translated_text or not any(ord(c) >= 0x0900 for c in existing.translated_text):
+                        is_valid = False
+                if is_valid:
+                    stats["skipped"] += 1
+                    continue
 
             try:
                 # 1. Check Upstash Redis REST string cache first (15ms hit)
@@ -67,7 +72,7 @@ def process_entity_translation_sync(
                 trans_cache_key = f"sf:trans:{lang}:{src_hash}"
                 cached_val = redis_rest.get_sync(trans_cache_key)
 
-                if cached_val:
+                if cached_val and (lang not in ("hi", "gu") or not any(c.isalpha() for c in clean_text) or any(ord(c) >= 0x0900 for c in cached_val)):
                     translated_val = cached_val
                     logger.debug("Upstash Redis REST cache hit for %s -> %s", field_name, lang)
                 else:

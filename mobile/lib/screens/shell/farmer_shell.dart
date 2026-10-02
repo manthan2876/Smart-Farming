@@ -128,7 +128,8 @@ class _FarmerShellState extends State<FarmerShell> {
 
   Future<void> _loadProfile() async {
     try {
-      final profile = await _api.getProfile();
+      final lang = context.mounted ? context.localeCode : _api.languageCode;
+      final profile = await _api.getProfile(lang: lang);
       AppLogger.info('FarmerShell', 'Profile loaded for ${profile['name']} (${profile['email'] ?? profile['phone']})');
       if (mounted) setState(() => _userProfile = profile);
     } catch (e, stack) {
@@ -138,7 +139,8 @@ class _FarmerShellState extends State<FarmerShell> {
 
   Future<void> _loadFarm() async {
     try {
-      final farm = await _api.getFarm();
+      final lang = context.mounted ? context.localeCode : _api.languageCode;
+      final farm = await _api.getFarm(lang: lang);
       AppLogger.info('FarmerShell', 'Farm data loaded: ${farm['name'] ?? 'None'} (${farm['area_acres'] ?? 0} acres)');
       if (mounted) {
         setState(() => _farm = farm);
@@ -173,7 +175,8 @@ class _FarmerShellState extends State<FarmerShell> {
 
   Future<void> _loadAlerts() async {
     try {
-      final alerts = await _api.getAlerts();
+      final lang = context.mounted ? context.localeCode : _api.languageCode;
+      final alerts = await _api.getAlerts(lang: lang);
       AppLogger.info('FarmerShell', 'Alerts loaded: ${alerts.length} total (${alerts.where((a) => a['is_read'] != true).length} unread)');
       if (mounted) setState(() => _alerts = alerts);
     } catch (e, stack) {
