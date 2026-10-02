@@ -57,8 +57,29 @@ def reset_db_sequences(db_url: str, label: str = "Database"):
     print(f"[SUCCESS] {updated} sequence(s) updated for {label}.\n")
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Reset PostgreSQL auto-increment sequences.")
+    parser.add_argument("--prod", action="store_true", help="Reset Production (Supabase) database sequences.")
+    parser.add_argument("--all", action="store_true", help="Reset both Development and Production sequences.")
+    args = parser.parse_args()
+
     dev_url = os.getenv("DATABASE_URL")
-    if dev_url:
-        reset_db_sequences(dev_url, "Development (Aiven)")
+    prod_url = os.getenv("PROD_DATABASE_URL")
+
+    if args.prod:
+        if prod_url:
+            reset_db_sequences(prod_url, "Production (Supabase)")
+        else:
+            print("[ERROR] PROD_DATABASE_URL not set in .env")
+    elif args.all:
+        if dev_url:
+            reset_db_sequences(dev_url, "Development (Aiven)")
+        if prod_url:
+            reset_db_sequences(prod_url, "Production (Supabase)")
     else:
-        print("[ERROR] DATABASE_URL not set.")
+        if dev_url:
+            reset_db_sequences(dev_url, "Development (Aiven)")
+        elif prod_url:
+            reset_db_sequences(prod_url, "Production (Supabase)")
+        else:
+            print("[ERROR] Neither DATABASE_URL nor PROD_DATABASE_URL is set in .env")
