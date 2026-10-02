@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -7,26 +9,18 @@ import '../utils/app_logger.dart';
 import 'remote_config_service.dart';
 
 class ApiService {
-  /// Base URL resolved from compile-time environment variable (--dart-define-from-file=.env)
-  static const String envBackendUrl =
-      String.fromEnvironment('API_BASE_URL', defaultValue: '');
-  static const String localBackendUrl = 'http://127.0.0.1:8000';
-
   static String? customBaseUrl;
 
-  /// Initializes the backend base URL dynamically from Supabase Remote Config,
-  /// falling back to compile-time .env or local development.
-  /// No client-side modification is allowed from within the app.
+  /// Initializes the backend base URL dynamically and exclusively from Supabase Remote Config.
+  /// The mobile app strictly uses the URL defined in Supabase public.app_config (key: api_base_url).
   static Future<void> initBaseUrl() async {
-    // 1. Fetch dynamic Remote Config from Supabase app_config table
     final remoteUrl = await RemoteConfigService.fetchBackendUrl();
     if (remoteUrl != null && remoteUrl.isNotEmpty) {
       customBaseUrl = remoteUrl;
-      return;
+      AppLogger.info('ApiService', 'Backend URL initialized exclusively from Supabase: $customBaseUrl');
+    } else {
+      AppLogger.error('ApiService', 'Failed to retrieve backend URL from Supabase Remote Config.');
     }
-
-    // 2. Fallback to compile-time .env or local default
-    customBaseUrl = _resolveDefaultBaseUrl();
   }
 
   static Future<bool> testConnection(String url) async {
@@ -41,16 +35,11 @@ class ApiService {
   }
 
   ApiService({String? baseUrl, this.accessToken, this.languageCode})
-      : baseUrl = baseUrl ?? customBaseUrl ?? _resolveDefaultBaseUrl();
+      : baseUrl = baseUrl ?? customBaseUrl ?? '';
 
   final String baseUrl;
   final String? accessToken;
   String? languageCode;
-
-  static String _resolveDefaultBaseUrl() {
-    if (envBackendUrl.isNotEmpty) return envBackendUrl;
-    return localBackendUrl;
-  }
 
   String getAssetUrl(String? path) {
     if (path == null || path.isEmpty) return '';
@@ -65,16 +54,106 @@ class ApiService {
         'Accept': 'application/json',
       };
 
+  Future<http.Response> _sendWithRetry(
+    Future<http.Response> Function() requestFn, {
+    int maxRetries = 1,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    int attempts = 0;
+    while (true) {
+      attempts++;
+      try {
+        final response = await requestFn().timeout(timeout);
+        final status = response.statusCode;
+        final bodyLower = response.body.toLowerCase();
+        final isColdStartTimeout = status == 504 ||
+            status == 502 ||
+            bodyLower.contains('upstream request timeout') ||
+            bodyLower.contains('upstream connect error');
+
+        if (isColdStartTimeout && attempts <= maxRetries) {
+          AppLogger.warn('ApiService', 'Server cold start / timeout ($status). Retrying in 1.5s (attempt $attempts)...');
+          await Future.delayed(const Duration(milliseconds: 1500));
+          continue;
+        }
+        return response;
+      } on TimeoutException {
+        if (attempts <= maxRetries) {
+          AppLogger.warn('ApiService', 'Request timed out on attempt $attempts. Retrying in 1.5s...');
+          await Future.delayed(const Duration(milliseconds: 1500));
+          continue;
+        }
+        throw Exception('Server is taking too long to respond. Please try again.');
+      } catch (e) {
+        if (e is SocketException && attempts <= maxRetries) {
+          AppLogger.warn('ApiService', 'SocketException on attempt $attempts. Retrying in 1.5s...');
+          await Future.delayed(const Duration(milliseconds: 1500));
+          continue;
+        }
+        rethrow;
+      }
+    }
+  }
+
+  Map<String, dynamic> _parseJsonResponse(
+    http.Response response, {
+    String fallbackError = 'Request failed',
+  }) {
+    final status = response.statusCode;
+    final bodyText = response.body.trim();
+
+    if (status >= 500) {
+      final lower = bodyText.toLowerCase();
+      if (lower.contains('upstream') || lower.contains('timeout') || status == 504 || status == 502) {
+        throw Exception('Server is starting up or temporarily busy. Please try again in a few moments.');
+      }
+      throw Exception('Server error ($status). Please try again shortly.');
+    }
+
+    if (bodyText.isEmpty) {
+      if (status >= 400) {
+        throw Exception('$fallbackError (HTTP $status)');
+      }
+      return {};
+    }
+
+    try {
+      final decoded = jsonDecode(bodyText);
+      if (decoded is Map<String, dynamic>) {
+        if (status >= 400) {
+          final detail = decoded['detail'];
+          if (detail is String && detail.isNotEmpty) {
+            throw Exception(detail);
+          } else if (detail is List && detail.isNotEmpty) {
+            final msg = detail.map((e) => e is Map ? (e['msg'] ?? e.toString()) : e.toString()).join(', ');
+            throw Exception(msg);
+          }
+          throw Exception('$fallbackError (HTTP $status)');
+        }
+        return decoded;
+      }
+      if (status >= 400) {
+        throw Exception('$fallbackError (HTTP $status)');
+      }
+      return {'data': decoded};
+    } on FormatException {
+      if (status >= 400) {
+        if (bodyText.toLowerCase().contains('timeout') || bodyText.toLowerCase().contains('upstream')) {
+          throw Exception('Server request timed out. Please try again.');
+        }
+        throw Exception('$fallbackError ($status)');
+      }
+      throw Exception('Unexpected server response ($status)');
+    }
+  }
+
   Future<Map<String, dynamic>> login(String identifier, String password) async {
-    final response = await http.post(
+    final response = await _sendWithRetry(() => http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: jsonEncode({'identifier': identifier, 'password': password}),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Authentication failed');
-    }
+    ));
+    final body = _parseJsonResponse(response, fallbackError: 'Authentication failed');
 
     // Role check: ONLY allow farmers
     final user = body['user'] as Map<String, dynamic>?;
@@ -97,7 +176,7 @@ class ApiService {
     String? farmName,
     double? farmAreaAcres,
   }) async {
-    final response = await http.post(
+    final response = await _sendWithRetry(() => http.post(
       Uri.parse('$baseUrl/auth/register'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: jsonEncode({
@@ -111,22 +190,17 @@ class ApiService {
         if (farmName != null) 'farm_name': farmName,
         if (farmAreaAcres != null) 'farm_area_acres': farmAreaAcres,
       }),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Registration failed');
-    }
-    return body;
+    ));
+    return _parseJsonResponse(response, fallbackError: 'Registration failed');
   }
 
   Future<Map<String, dynamic>> getProfile({String? lang}) async {
     final effectiveLang = lang ?? languageCode;
     final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
-    final response = await http.get(Uri.parse('$baseUrl/profile$query'), headers: _headers);
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to retrieve profile');
-    }
+    final response = await _sendWithRetry(
+      () => http.get(Uri.parse('$baseUrl/profile$query'), headers: _headers),
+    );
+    final body = _parseJsonResponse(response, fallbackError: 'Failed to retrieve profile');
 
     // Ensure farmer role
     final role = body['role']?.toString().toLowerCase();
@@ -145,7 +219,7 @@ class ApiService {
     String? farmName,
     double? farmAreaAcres,
   }) async {
-    final response = await http.patch(
+    final response = await _sendWithRetry(() => http.patch(
       Uri.parse('$baseUrl/profile'),
       headers: {'Content-Type': 'application/json', ..._headers},
       body: jsonEncode({
@@ -156,24 +230,18 @@ class ApiService {
         if (farmName != null) 'farm_name': farmName,
         if (farmAreaAcres != null) 'farm_area_acres': farmAreaAcres,
       }),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to update profile');
-    }
-    return body;
+    ));
+    return _parseJsonResponse(response, fallbackError: 'Failed to update profile');
   }
 
   Future<Map<String, dynamic>> getFarm({String? lang}) async {
     final effectiveLang = lang ?? languageCode;
     final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
-    final response = await http.get(Uri.parse('$baseUrl/farm$query'), headers: _headers);
+    final response = await _sendWithRetry(
+      () => http.get(Uri.parse('$baseUrl/farm$query'), headers: _headers),
+    );
     if (response.statusCode == 404) return {};
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to retrieve farm details');
-    }
-    return body;
+    return _parseJsonResponse(response, fallbackError: 'Failed to retrieve farm details');
   }
 
   Future<Map<String, dynamic>> saveFarm({
@@ -200,16 +268,12 @@ class ApiService {
       payload['boundary'] = boundary;
     }
 
-    final response = await http.put(
+    final response = await _sendWithRetry(() => http.put(
       Uri.parse('$baseUrl/farm'),
       headers: {'Content-Type': 'application/json', ..._headers},
       body: jsonEncode(payload),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to save farm details');
-    }
-    return body;
+    ));
+    return _parseJsonResponse(response, fallbackError: 'Failed to save farm details');
   }
 
   Future<Map<String, dynamic>> createPlot({
@@ -227,16 +291,12 @@ class ApiService {
       if (geometry != null) 'geometry': geometry,
     };
 
-    final response = await http.post(
+    final response = await _sendWithRetry(() => http.post(
       Uri.parse('$baseUrl/farm/plots'),
       headers: {'Content-Type': 'application/json', ..._headers},
       body: jsonEncode(payload),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to create plot');
-    }
-    return body;
+    ));
+    return _parseJsonResponse(response, fallbackError: 'Failed to create plot');
   }
 
   Future<Map<String, dynamic>> updatePlot(
@@ -260,45 +320,39 @@ class ApiService {
       payload['geometry'] = geometry;
     }
 
-    final response = await http.put(
+    final response = await _sendWithRetry(() => http.put(
       Uri.parse('$baseUrl/farm/plots/$plotId'),
       headers: {'Content-Type': 'application/json', ..._headers},
       body: jsonEncode(payload),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to update plot');
-    }
-    return body;
+    ));
+    return _parseJsonResponse(response, fallbackError: 'Failed to update plot');
   }
 
   Future<Map<String, dynamic>> getWeather({double lat = 22.2587, double lon = 71.1924, String? language}) async {
     final langParam = language != null && language.isNotEmpty ? '&language=${Uri.encodeComponent(language)}' : '';
-    final response = await http
-        .get(
-          Uri.parse('$baseUrl/weather?lat=$lat&lon=$lon$langParam'),
-          headers: _headers,
-        )
-        .timeout(const Duration(seconds: 15));
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to retrieve weather');
-    }
-    return body;
+    final response = await _sendWithRetry(
+      () => http.get(
+        Uri.parse('$baseUrl/weather?lat=$lat&lon=$lon$langParam'),
+        headers: _headers,
+      ),
+      timeout: const Duration(seconds: 15),
+    );
+    return _parseJsonResponse(response, fallbackError: 'Failed to retrieve weather');
   }
 
   Future<String?> translateWeatherAdvisory(String text, String targetLanguage) async {
     if (text.trim().isEmpty || targetLanguage == 'en') return text;
     try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/weather/translate'),
-            headers: {'Content-Type': 'application/json', ..._headers},
-            body: jsonEncode({'text': text, 'target_language': targetLanguage}),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _sendWithRetry(
+        () => http.post(
+          Uri.parse('$baseUrl/weather/translate'),
+          headers: {'Content-Type': 'application/json', ..._headers},
+          body: jsonEncode({'text': text, 'target_language': targetLanguage}),
+        ),
+        timeout: const Duration(seconds: 15),
+      );
       if (response.statusCode >= 400) return null;
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final body = _parseJsonResponse(response);
       return body['translated_text']?.toString();
     } catch (_) {
       return null;
@@ -308,11 +362,23 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getAlerts({String? lang}) async {
     final effectiveLang = lang ?? languageCode;
     final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
-    final response = await http.get(Uri.parse('$baseUrl/alerts$query'), headers: _headers);
+    final response = await _sendWithRetry(
+      () => http.get(Uri.parse('$baseUrl/alerts$query'), headers: _headers),
+    );
     if (response.statusCode >= 400) {
-      throw Exception('Failed to retrieve alerts');
+      throw Exception('Failed to retrieve alerts (${response.statusCode})');
     }
-    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+    final bodyText = response.body.trim();
+    if (bodyText.isEmpty) return [];
+    try {
+      final decoded = jsonDecode(bodyText);
+      if (decoded is List) {
+        return decoded.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<void> deletePlot(int plotId) async {
@@ -489,30 +555,24 @@ class ApiService {
     required String oldPassword,
     required String newPassword,
   }) async {
-    final response = await http.post(
+    final response = await _sendWithRetry(() => http.post(
       Uri.parse('$baseUrl/auth/change-password'),
       headers: {'Content-Type': 'application/json', ..._headers},
       body: jsonEncode({
         'old_password': oldPassword,
         'new_password': newPassword,
       }),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to change password');
-    }
+    ));
+    _parseJsonResponse(response, fallbackError: 'Failed to change password');
   }
 
   Future<String> forgotPassword(String email) async {
-    final response = await http.post(
+    final response = await _sendWithRetry(() => http.post(
       Uri.parse('$baseUrl/auth/forgot-password'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: jsonEncode({'email': email.trim()}),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to send reset link');
-    }
+    ));
+    final body = _parseJsonResponse(response, fallbackError: 'Failed to send reset link');
     return body['message']?.toString() ?? 'Password reset link sent to your email.';
   }
 
@@ -520,31 +580,24 @@ class ApiService {
     required String token,
     required String newPassword,
   }) async {
-    final response = await http.post(
+    final response = await _sendWithRetry(() => http.post(
       Uri.parse('$baseUrl/auth/reset-password'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: jsonEncode({
         'token': token.trim(),
         'new_password': newPassword,
       }),
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to reset password');
-    }
+    ));
+    final body = _parseJsonResponse(response, fallbackError: 'Failed to reset password');
     return body['message']?.toString() ?? 'Password has been reset successfully.';
   }
 
   Future<Map<String, dynamic>> translatePrediction(int id, String language) async {
-    final response = await http.post(
+    final response = await _sendWithRetry(() => http.post(
       Uri.parse('$baseUrl/predictions/$id/translate?target_language=$language'),
       headers: _headers,
-    );
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Failed to translate prediction');
-    }
-    return body;
+    ));
+    return _parseJsonResponse(response, fallbackError: 'Failed to translate prediction');
   }
 
   Future<String?> generateTTS(String text, {String language = 'en'}) async {

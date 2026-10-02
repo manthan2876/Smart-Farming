@@ -271,12 +271,11 @@ The backend provides a unified, S3-compatible storage abstraction (`storage.py`)
 
 | Variable | Type | Example / Default | Description |
 |---|---|---|---|
-| `API_BASE_URL` | string | `https://smart-farming-backend-17713614069.us-central1.run.app` | Compile-time fallback backend URL. Used only when both Supabase Remote Config and the SharedPreferences cache are unavailable. |
 | `SUPABASE_URL` | string | `https://ntqevjzjhntkilmknrfh.supabase.co` | Supabase project URL. Used by `RemoteConfigService` to query `public.app_config` table via PostgREST. |
 | `SUPABASE_ANON_KEY` | string | `eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...` | Supabase anonymous (public) API key. Required for authenticated PostgREST queries. Safe to embed in client builds; RLS policy restricts access to SELECT only. |
 
 > [!NOTE]
-> The mobile app resolves the backend URL at startup in priority order: (1) Supabase `app_config` remote value → (2) SharedPreferences cached URL → (3) `API_BASE_URL` compile-time variable → (4) `http://127.0.0.1:8000` local dev default.
+> The mobile app resolves the backend URL at startup exclusively from the Supabase `app_config` table (`key='api_base_url'`), with automatic offline local caching in SharedPreferences for subsequent launches. Local dev and arbitrary URL overrides are disallowed.
 
 ---
 

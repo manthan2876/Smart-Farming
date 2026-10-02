@@ -515,22 +515,21 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `RemoteConfigService.fetchBackendUrl()` fetches `api_base_url` from the Supabase `public.app_config` table via PostgREST (`https://{SUPABASE_URL}/rest/v1/app_config?key=eq.api_base_url&select=value`) using the `SUPABASE_ANON_KEY` compile-time variable.
-- 4-second network timeout; on failure or missing key, falls back to the SharedPreferences cache key `remote_config_api_base_url`.
-- URL resolution order in `ApiService.initBaseUrl()`: (1) Supabase Remote Config → (2) SharedPreferences cached remote URL → (3) compile-time `API_BASE_URL` from `.env` → (4) local dev default (`http://127.0.0.1:8000`).
-- Offline resilience: a successfully fetched URL is cached to SharedPreferences immediately after fetch. The app starts instantly on repeat launches without network.
+- `RemoteConfigService.fetchBackendUrl()` fetches `api_base_url` exclusively from the Supabase `public.app_config` table via PostgREST (`https://{SUPABASE_URL}/rest/v1/app_config?key=eq.api_base_url&select=value`) using the default anonymous key or `SUPABASE_ANON_KEY`.
+- 8-second network timeout; on temporary network failure, falls back to the locally cached value in SharedPreferences (`remote_config_api_base_url`) saved from prior successful Supabase fetches.
+- **Strict single source of truth:** `ApiService.initBaseUrl()` resolves the backend URL exclusively from Supabase Remote Config (or its local offline cache). All local dev defaults (`http://127.0.0.1:8000`) and arbitrary compile-time overrides have been eliminated.
 - **Backend URL is fully locked from the client:** The `_showServerSettingsDialog`, `Icons.dns_outlined` header button, and "Change URL" error-state link have been removed from `LoginScreen`. `setCustomBaseUrl` and `resetToRemoteConfig` are removed from `ApiService`. No user or farmer can inspect or modify the backend endpoint from within the app.
 - Supabase table `public.app_config` has RLS enabled with a public read-only policy (SELECT for `anon`, `authenticated`, `public`). Write access requires admin database access only.
 
 **Known gaps:**
 
-- `SUPABASE_ANON_KEY` must be set at compile time via `--dart-define-from-file=.env`. A missing key silently falls back to cached/local URL with a log warning.
+- On first cold launch without any prior cache, an internet connection is required to fetch the initial config from Supabase.
 - No in-app indicator showing which backend URL is currently active (intentional security design).
 
 **Relevant code:**
 
 - [remote_config_service.dart](../mobile/lib/services/remote_config_service.dart) — Supabase PostgREST query, timeout, and SharedPreferences caching
-- [api_service.dart](../mobile/lib/services/api_service.dart) — `initBaseUrl()` resolution chain
+- [api_service.dart](../mobile/lib/services/api_service.dart) — `initBaseUrl()` exclusive Supabase resolution
 - [login_screen.dart](../mobile/lib/screens/auth/login_screen.dart) — Server Settings dialog and URL buttons removed
 
 **What to improve:**

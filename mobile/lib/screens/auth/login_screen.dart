@@ -64,8 +64,11 @@ class _LoginScreenState extends State<LoginScreen> {
         widget.onLoggedIn(tokens['access_token'].toString(), user);
       }
     } catch (e) {
+      final msg = e.toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('FormatException: ', '');
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = msg;
       });
     } finally {
       if (mounted) setState(() => _busy = false);

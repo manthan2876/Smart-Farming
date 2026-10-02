@@ -8,6 +8,8 @@ class RemoteConfigService {
   RemoteConfigService._();
 
   static const String defaultSupabaseUrl = 'https://ntqevjzjhntkilmknrfh.supabase.co';
+  static const String defaultSupabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cWV2anpqaG50a2lsbWtucmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMjA5MTgsImV4cCI6MjEwNTg5NjkxOH0._WysQ1LtUunC7TQwt2LfqP_X0e_-ug9Z0ioi1fWSMZ0';
 
   /// Supabase project URL (configurable via compile-time --dart-define or .env)
   static const String supabaseUrl = String.fromEnvironment(
@@ -18,25 +20,19 @@ class RemoteConfigService {
   /// Supabase anon public API key (configurable via compile-time --dart-define or .env)
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: '',
+    defaultValue: defaultSupabaseAnonKey,
   );
 
   static const String _cachedBackendUrlKey = 'remote_config_api_base_url';
 
-  /// Fetches the current backend base URL from Supabase `app_config` table.
-  /// Falls back gracefully to locally cached value if offline or error occurs.
+  /// Fetches the backend base URL exclusively from Supabase `app_config` table.
+  /// Falls back gracefully to locally cached Supabase value if device is offline.
   static Future<String?> fetchBackendUrl() async {
-    // 1. Check if anon key is configured
-    if (supabaseAnonKey.isEmpty) {
-      AppLogger.warn(
-        'RemoteConfig',
-        'SUPABASE_ANON_KEY is not set. Using cached or fallback backend URL.',
-      );
-      return getCachedBackendUrl();
-    }
+    final keyToUse = supabaseAnonKey.isNotEmpty ? supabaseAnonKey : defaultSupabaseAnonKey;
+    final urlToUse = supabaseUrl.isNotEmpty ? supabaseUrl : defaultSupabaseUrl;
 
     try {
-      final cleanUrl = supabaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+      final cleanUrl = urlToUse.trim().replaceAll(RegExp(r'/+$'), '');
       final uri = Uri.parse('$cleanUrl/rest/v1/app_config?key=eq.api_base_url&select=value');
 
       AppLogger.info('RemoteConfig', 'Fetching dynamic backend URL from Supabase: $uri');
@@ -44,11 +40,11 @@ class RemoteConfigService {
       final response = await http.get(
         uri,
         headers: {
-          'apikey': supabaseAnonKey,
-          'Authorization': 'Bearer $supabaseAnonKey',
+          'apikey': keyToUse,
+          'Authorization': 'Bearer $keyToUse',
           'Content-Type': 'application/json',
         },
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
