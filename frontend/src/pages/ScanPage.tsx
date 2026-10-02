@@ -25,8 +25,8 @@ export default function ScanPage() {
   const [plotId, setPlotId] = useState<number | undefined>(undefined);
   
   const { data: farmData } = useQuery({
-    queryKey: ["farm"],
-    queryFn: () => getFarm(token!),
+    queryKey: ["farm", appLanguage],
+    queryFn: () => getFarm(token!, appLanguage),
     enabled: !!token,
   });
   

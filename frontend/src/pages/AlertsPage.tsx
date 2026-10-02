@@ -14,8 +14,8 @@ export default function AlertsPage() {
   const [filter, setFilter] = useState<"all" | "unread" | "weather" | "expert">("all");
 
   const { data: alerts = [], isLoading, error } = useQuery<AlertItem[]>({
-    queryKey: ["alerts"],
-    queryFn: () => fetchAlerts(token!),
+    queryKey: ["alerts", language],
+    queryFn: () => fetchAlerts(token!, language),
     enabled: !!token,
   });
 
@@ -35,8 +35,30 @@ export default function AlertsPage() {
 
   const filteredAlerts = alerts.filter((alert) => {
     if (filter === "unread") return !alert.is_read;
-    if (filter === "weather") return alert.kind?.toLowerCase().includes("weather") || alert.title?.toLowerCase().includes("weather");
-    if (filter === "expert") return alert.kind?.toLowerCase().includes("expert") || alert.title?.toLowerCase().includes("expert");
+    if (filter === "weather") {
+      const lowerKind = alert.kind?.toLowerCase() || "";
+      const lowerTitle = alert.title?.toLowerCase() || "";
+      return (
+        lowerKind.includes("weather") ||
+        lowerTitle.includes("weather") ||
+        lowerTitle.includes("मौसम") ||
+        lowerTitle.includes("હવામાન") ||
+        lowerTitle.includes("વરસાદ") ||
+        lowerTitle.includes("ગરમી") ||
+        lowerTitle.includes("જોખમ") ||
+        lowerTitle.includes("जोखिम")
+      );
+    }
+    if (filter === "expert") {
+      const lowerKind = alert.kind?.toLowerCase() || "";
+      const lowerTitle = alert.title?.toLowerCase() || "";
+      return (
+        lowerKind.includes("expert") ||
+        lowerTitle.includes("expert") ||
+        lowerTitle.includes("विशेषज्ञ") ||
+        lowerTitle.includes("નિષ્ણાત")
+      );
+    }
     return true;
   });
 

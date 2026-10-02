@@ -23,10 +23,26 @@ def transliterate_name(text: str, target_lang: str) -> str:
     target_code = "gu" if target_lang.lower().startswith("gu") else "hi"
     lang_label = "Gujarati" if target_code == "gu" else "Hindi"
 
-    # 1. Try Gemini REST API if GEMINI_API_KEY is configured
+    # 1. Try Google Cloud Translation API v2 first (ultra-fast ~300ms, accurate for Indian names/places)
+    api_key = settings.GOOGLE_TRANSLATION_API_KEY or settings.GOOGLE_TTS_API_KEY
+    if api_key:
+        try:
+            url = f"https://translation.googleapis.com/language/translate/v2?key={api_key}"
+            resp = httpx.post(url, json={"q": [clean_text], "target": target_code}, timeout=5.0)
+            if resp.status_code == 200:
+                data = resp.json().get("data", {})
+                translations = data.get("translations", [])
+                if translations:
+                    res = translations[0].get("translatedText", "").strip()
+                    if res:
+                        return res
+        except Exception as exc:
+            logger.warning("Google Translate transliteration failed for '%s': %s", clean_text, exc)
+
+    # 2. Fallback to Gemini REST API if GEMINI_API_KEY is configured
     if settings.GEMINI_API_KEY:
         try:
-            for model_name in ["gemini-2.5-flash", "gemini-3.6-flash"]:
+            for model_name in ["gemini-2.0-flash", "gemini-1.5-flash"]:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
                 prompt = (
                     f"Transliterate the Indian name, farm name, or place name '{clean_text}' into {lang_label} script phonetically. "
@@ -34,7 +50,7 @@ def transliterate_name(text: str, target_lang: str) -> str:
                     f"Output ONLY the transliterated word without quotes or punctuation."
                 )
                 payload = {"contents": [{"parts": [{"text": prompt}]}]}
-                resp = httpx.post(url, json=payload, timeout=6.0)
+                resp = httpx.post(url, json=payload, timeout=5.0)
                 if resp.status_code == 200:
                     cand = resp.json().get("candidates", [{}])[0]
                     parts = cand.get("content", {}).get("parts", [{}])
@@ -42,21 +58,7 @@ def transliterate_name(text: str, target_lang: str) -> str:
                     if transliterated:
                         return transliterated
         except Exception as exc:
-            logger.debug("Gemini transliteration attempt failed (%s), trying Google Translate fallback...", exc)
-
-    # 2. Fallback to Google Cloud Translation API v2
-    api_key = settings.GOOGLE_TRANSLATION_API_KEY or settings.GOOGLE_TTS_API_KEY
-    if api_key:
-        try:
-            url = f"https://translation.googleapis.com/language/translate/v2?key={api_key}"
-            resp = httpx.post(url, json={"q": [clean_text], "target": target_code}, timeout=6.0)
-            if resp.status_code == 200:
-                data = resp.json().get("data", {})
-                translations = data.get("translations", [])
-                if translations:
-                    return translations[0].get("translatedText", clean_text).strip()
-        except Exception as exc:
-            logger.warning("Google Translate fallback failed for transliteration '%s': %s", clean_text, exc)
+            logger.debug("Gemini transliteration attempt failed (%s)", exc)
 
     # 3. Fallback to original English
     return clean_text

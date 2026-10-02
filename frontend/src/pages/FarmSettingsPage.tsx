@@ -263,8 +263,8 @@ export default function FarmSettingsPage() {
 
 
   const { data: farmData, isLoading } = useQuery({
-    queryKey: ["farmSettings"],
-    queryFn: () => request<any>("/farm", {}, token!),
+    queryKey: ["farmSettings", language],
+    queryFn: () => request<any>(`/farm?lang=${encodeURIComponent(language)}`, {}, token!),
     enabled: !!token,
   });
 

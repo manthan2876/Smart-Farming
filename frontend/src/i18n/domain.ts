@@ -142,6 +142,33 @@ export function translateAlertTitle(title?: string | null, lang?: string): strin
   if (!title) return "Alert";
   const code = normalizeLangCode(lang);
   const key = title.trim().toLowerCase();
-  return alertTitlesMap[key]?.[code] || title;
+  const directMatch = alertTitlesMap[key]?.[code];
+  if (directMatch) return directMatch;
+
+  if (code !== "en") {
+    const lower = title.toLowerCase();
+    if (lower.includes("early blight") || lower.includes("leaf spot")) {
+      const prefix = code === "gu" ? "🍃 પાનના ટપકાં / સુકારો જોખમ ચેતવણી" : "🍃 अगेती झुलसा / पत्ती धब्बा जोखिम चेतावनी";
+      const split = title.split("—");
+      return split.length > 1 ? `${prefix} — ${split.slice(1).join("—").trim()}` : prefix;
+    }
+    if (lower.includes("extreme heat") || lower.includes("heat stress")) {
+      const prefix = code === "gu" ? "🌡️ અતિશય ગરમીની ચેતવણી" : "🌡️ अत्यधिक गर्मी की चेतावनी";
+      const split = title.split("—");
+      return split.length > 1 ? `${prefix} — ${split.slice(1).join("—").trim()}` : prefix;
+    }
+    if (lower.includes("heavy rain") || lower.includes("waterlogging") || lower.includes("flood")) {
+      const prefix = code === "gu" ? "🌧️ ભારે વરસાદ / પાણી ભરાવાની ચેતવણી" : "🌧️ भारी बारिश / जलभराव की चेतावनी";
+      const split = title.split("—");
+      return split.length > 1 ? `${prefix} — ${split.slice(1).join("—").trim()}` : prefix;
+    }
+    if (lower.includes("expert review") || lower.includes("specialist")) {
+      const prefix = code === "gu" ? "✓ નિષ્ણાત સમીક્ષા પૂર્ણ" : "✓ विशेषज्ञ समीक्षा पूर्ण";
+      const split = title.split("—");
+      return split.length > 1 ? `${prefix} — ${split.slice(1).join("—").trim()}` : prefix;
+    }
+  }
+
+  return title;
 }
 

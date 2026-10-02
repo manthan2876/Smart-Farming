@@ -43,24 +43,19 @@ async def get_farmer_profile(
         raise HTTPException(status_code=404, detail="Farmer profile not found.")
     
     res = _profile(user)
-    req_lang = lang or request.headers.get("accept-language")
+    req_lang = lang or request.headers.get("accept-language") or user.language
     if req_lang and not req_lang.lower().startswith("en"):
         norm_code = "gu" if req_lang.lower().startswith("gu") else ("hi" if req_lang.lower().startswith("hi") else None)
         if norm_code:
             res_dict = res.model_dump()
-            overlay_dict_translations(session, res_dict, "user", user.id, ["name"], norm_code)
+            overlay_dict_translations(session, res_dict, "user", user.id, ["name"], norm_code, name_fields=["name"])
             if user.farm:
-                farm_trans = session.query(EntityTranslation).filter_by(
-                    entity_type="farm",
-                    entity_id=str(user.farm.id),
-                    language=norm_code,
-                    status="done"
-                ).all()
-                for ft in farm_trans:
-                    if ft.field_name == "name" and ft.translated_text:
-                        res_dict["farm_name"] = ft.translated_text
-                    elif ft.field_name == "location" and ft.translated_text:
-                        res_dict["location"] = ft.translated_text
+                farm_dict = {"name": user.farm.name, "location": user.farm.location or ""}
+                overlay_dict_translations(session, farm_dict, "farm", user.farm.id, ["name", "location"], norm_code, name_fields=["name", "location"])
+                if farm_dict.get("name"):
+                    res_dict["farm_name"] = farm_dict["name"]
+                if farm_dict.get("location"):
+                    res_dict["location"] = farm_dict["location"]
             return ProfileResponse(**res_dict)
     return res
 

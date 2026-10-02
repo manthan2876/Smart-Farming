@@ -93,8 +93,8 @@ async def get_farmer_farm(
         "status": p.status,
         "geometry": p.geometry,
     } for p in farm.plots]
-    req_lang = lang or request.headers.get("accept-language")
-    overlay_entity_translations(session, plot_items, "plot", lambda x: x["id"], ["name"], req_lang)
+    req_lang = lang or request.headers.get("accept-language") or user.language
+    overlay_entity_translations(session, plot_items, "plot", lambda x: x["id"], ["name"], req_lang, name_fields=["name"])
     farm_data = {
         "id": farm.id,
         "name": farm.name,
@@ -106,7 +106,7 @@ async def get_farmer_farm(
         "boundary": farm.boundary,
         "plots": plot_items,
     }
-    overlay_dict_translations(session, farm_data, "farm", farm.id, ["name", "location"], req_lang)
+    overlay_dict_translations(session, farm_data, "farm", farm.id, ["name", "location"], req_lang, name_fields=["name", "location"])
     return FarmResponse(**farm_data)
 
 @router.put("", response_model=FarmResponse)

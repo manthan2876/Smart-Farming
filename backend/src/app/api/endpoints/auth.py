@@ -32,9 +32,9 @@ from app.services.email import send_reset_password_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-def _profile(user) -> ProfileResponse:
+def _profile(user, session: Session | None = None, req_lang: str | None = None) -> ProfileResponse:
     farm = user.farm
-    return ProfileResponse(
+    base = ProfileResponse(
         id=user.id,
         name=user.name,
         phone=user.phone,
@@ -48,6 +48,24 @@ def _profile(user) -> ProfileResponse:
         farm_name=farm.name if farm else None,
         farm_area_acres=farm.area_acres if farm else None,
     )
+    if not session:
+        return base
+    lang_to_use = req_lang or user.language
+    if lang_to_use and not lang_to_use.lower().startswith("en"):
+        norm_code = "gu" if lang_to_use.lower().startswith("gu") else ("hi" if lang_to_use.lower().startswith("hi") else None)
+        if norm_code:
+            from app.services.translation.overlay import overlay_dict_translations
+            res_dict = base.model_dump()
+            overlay_dict_translations(session, res_dict, "user", user.id, ["name"], norm_code, name_fields=["name"])
+            if farm:
+                farm_dict = {"name": farm.name, "location": farm.location or ""}
+                overlay_dict_translations(session, farm_dict, "farm", farm.id, ["name", "location"], norm_code, name_fields=["name", "location"])
+                if farm_dict.get("name"):
+                    res_dict["farm_name"] = farm_dict["name"]
+                if farm_dict.get("location"):
+                    res_dict["location"] = farm_dict["location"]
+            return ProfileResponse(**res_dict)
+    return base
 
 
 @router.post("/change-password", response_model=MessageResponse, status_code=200)
@@ -193,7 +211,7 @@ async def register(
     except Exception:
         pass
 
-    return AuthResponse(tokens=tokens, user=_profile(user))
+    return AuthResponse(tokens=tokens, user=_profile(user, session=session))
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -223,7 +241,10 @@ async def login(
         samesite="lax",
         max_age=7 * 24 * 60 * 60,
     )
-    return AuthResponse(tokens=tokens, user=_profile(user))
+    return AuthResponse(
+        tokens=tokens,
+        user=_profile(user, session=session, req_lang=request.headers.get("accept-language")),
+    )
 
 
 @router.post("/refresh", response_model=dict[str, str | int])

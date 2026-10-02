@@ -110,12 +110,22 @@ class _AlertsScreenState extends State<AlertsScreen> {
       if (_activeTab == 'weather') {
         final kind = alert['kind']?.toString().toLowerCase() ?? '';
         final title = alert['title']?.toString().toLowerCase() ?? '';
-        return kind.contains('weather') || title.contains('weather');
+        return kind.contains('weather') ||
+            title.contains('weather') ||
+            title.contains('मौसम') ||
+            title.contains('હવામાન') ||
+            title.contains('વરસાદ') ||
+            title.contains('ગરમી') ||
+            title.contains('જોખમ') ||
+            title.contains('जोखिम');
       }
       if (_activeTab == 'expert') {
         final kind = alert['kind']?.toString().toLowerCase() ?? '';
         final title = alert['title']?.toString().toLowerCase() ?? '';
-        return kind.contains('expert') || title.contains('expert');
+        return kind.contains('expert') ||
+            title.contains('expert') ||
+            title.contains('विशेषज्ञ') ||
+            title.contains('નિષ્ણાત');
       }
       return true;
     }).toList();

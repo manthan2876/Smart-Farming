@@ -39,7 +39,9 @@ async def get_alerts(
         }
         for a in alerts
     ]
-    req_lang = lang or request.headers.get("accept-language")
+    from app.models import User
+    user = session.get(User, user_id)
+    req_lang = lang or request.headers.get("accept-language") or (user.language if user else None)
     overlay_entity_translations(session, res, "alert", lambda x: x["id"], ["title", "body"], req_lang)
     return res
 

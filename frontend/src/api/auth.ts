@@ -33,8 +33,9 @@ export async function register(payload: {
     body: JSON.stringify(payload),
   });
 }
-export async function profile(token: string) {
-  return request<Profile>("/profile", {}, token);
+export async function profile(token: string, lang?: string) {
+  const query = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return request<Profile>(`/profile${query}`, {}, token);
 }
 export async function updateProfile(payload: Partial<Profile>, token: string) {
   return request<Profile>(

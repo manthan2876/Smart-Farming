@@ -11,8 +11,9 @@ export interface AlertItem {
   created_at: string;
 }
 
-export async function fetchAlerts(token: string): Promise<AlertItem[]> {
-  return request<AlertItem[]>("/alerts", {}, token);
+export async function fetchAlerts(token: string, lang?: string): Promise<AlertItem[]> {
+  const query = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return request<AlertItem[]>(`/alerts${query}`, {}, token);
 }
 
 export async function markAlertRead(alertId: number, token: string): Promise<{ status: string }> {

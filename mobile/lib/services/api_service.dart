@@ -40,11 +40,12 @@ class ApiService {
     }
   }
 
-  ApiService({String? baseUrl, this.accessToken})
+  ApiService({String? baseUrl, this.accessToken, this.languageCode})
       : baseUrl = baseUrl ?? customBaseUrl ?? _resolveDefaultBaseUrl();
 
   final String baseUrl;
   final String? accessToken;
+  String? languageCode;
 
   static String _resolveDefaultBaseUrl() {
     if (envBackendUrl.isNotEmpty) return envBackendUrl;
@@ -60,6 +61,7 @@ class ApiService {
 
   Map<String, String> get _headers => {
         if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+        if (languageCode != null && languageCode!.isNotEmpty) 'Accept-Language': languageCode!,
         'Accept': 'application/json',
       };
 
@@ -117,8 +119,10 @@ class ApiService {
     return body;
   }
 
-  Future<Map<String, dynamic>> getProfile() async {
-    final response = await http.get(Uri.parse('$baseUrl/profile'), headers: _headers);
+  Future<Map<String, dynamic>> getProfile({String? lang}) async {
+    final effectiveLang = lang ?? languageCode;
+    final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
+    final response = await http.get(Uri.parse('$baseUrl/profile$query'), headers: _headers);
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 400) {
       throw Exception(body['detail'] ?? 'Failed to retrieve profile');
@@ -160,8 +164,10 @@ class ApiService {
     return body;
   }
 
-  Future<Map<String, dynamic>> getFarm() async {
-    final response = await http.get(Uri.parse('$baseUrl/farm'), headers: _headers);
+  Future<Map<String, dynamic>> getFarm({String? lang}) async {
+    final effectiveLang = lang ?? languageCode;
+    final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
+    final response = await http.get(Uri.parse('$baseUrl/farm$query'), headers: _headers);
     if (response.statusCode == 404) return {};
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 400) {
@@ -299,8 +305,10 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAlerts() async {
-    final response = await http.get(Uri.parse('$baseUrl/alerts'), headers: _headers);
+  Future<List<Map<String, dynamic>>> getAlerts({String? lang}) async {
+    final effectiveLang = lang ?? languageCode;
+    final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
+    final response = await http.get(Uri.parse('$baseUrl/alerts$query'), headers: _headers);
     if (response.statusCode >= 400) {
       throw Exception('Failed to retrieve alerts');
     }

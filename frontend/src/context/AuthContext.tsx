@@ -43,7 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = async (authToken: string) => {
     try {
-      const userData = await profile(authToken);
+      const savedLang = localStorage.getItem(PREF_LANG_KEY);
+      const userData = await profile(authToken, savedLang || undefined);
       setUser(userData);
       if (userData.language && (userData.language === "Gujarati" || userData.language === "Hindi" || userData.language === "English")) {
         setLanguageState(userData.language as Language);
@@ -77,8 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(PREF_LANG_KEY, newLang);
     if (token && user) {
       try {
-        const updated = await updateProfile({ language: newLang }, token);
-        setUser(updated);
+        await updateProfile({ language: newLang }, token);
+        const refreshed = await profile(token, newLang);
+        setUser(refreshed);
       } catch (err) {
         console.warn("Failed to persist language to backend profile:", err);
       }

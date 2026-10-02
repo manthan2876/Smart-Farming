@@ -24,6 +24,7 @@ import { request } from "../api/client";
 import { useState } from "react";
 
 import ThemeToggle from "./ThemeToggle";
+import { translateAlertTitle } from "../i18n/domain";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -31,14 +32,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { user, token, signOut, t } = useAuth();
+  const { user, token, signOut, t, language } = useAuth();
   const navigate = useNavigate();
   const isExpert = user?.role === "expert";
   const isSuperAdmin = user?.role === "admin";
 
   const { data: alerts = [], refetch: refetchAlerts } = useQuery({
-    queryKey: ["alerts"],
-    queryFn: () => request<any[]>("/alerts", {}, token!),
+    queryKey: ["alerts", language],
+    queryFn: () => request<any[]>(`/alerts?lang=${encodeURIComponent(language)}`, {}, token!),
     enabled: !!token,
     refetchInterval: 15000,
   });
@@ -129,7 +130,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             ) : (
               alerts.map((alert: any) => (
                 <div key={alert.id} className={`border-b border-line p-4 last:border-0 ${alert.is_read ? "bg-surface" : "bg-farmer-50/80 dark:bg-farmer-900/40"}`}>
-                  <div className="mb-1 break-words text-sm font-bold text-ink">{alert.title}</div>
+                  <div className="mb-1 break-words text-sm font-bold text-ink">{translateAlertTitle(alert.title, language)}</div>
                   <div className="mb-2 break-words text-xs leading-5 text-muted">{alert.body}</div>
                   <div className="flex items-center gap-3">
                     {alert.prediction_id && (

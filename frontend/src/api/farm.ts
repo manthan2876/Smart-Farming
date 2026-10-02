@@ -1,8 +1,9 @@
-﻿import { request } from "./client";
+import { request } from "./client";
 import type { Farm } from "./types";
 
-export async function getFarm(token: string) {
-  return request<Farm>("/farm", {}, token);
+export async function getFarm(token: string, lang?: string) {
+  const query = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return request<Farm>(`/farm${query}`, {}, token);
 }
 export async function saveFarm(farm: Omit<Farm, "id">, token: string) {
   return request<Farm>(

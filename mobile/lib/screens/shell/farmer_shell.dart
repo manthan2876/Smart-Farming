@@ -68,9 +68,10 @@ class _FarmerShellState extends State<FarmerShell> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final currentLocale = context.localeCode;
+    _api.languageCode = currentLocale;
     if (_lastLocale != null && _lastLocale != currentLocale) {
       _lastLocale = currentLocale;
-      _loadWeather();
+      _loadAllData();
     } else {
       _lastLocale = currentLocale;
     }
