@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -33,6 +34,7 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
   bool _cropDone = false;
   bool _diseaseDone = false;
   bool _pestDone = false;
+  bool _pestUnavailable = false;
   bool _advisoryDone = false;
   bool _pipelineDone = false;
 
@@ -45,6 +47,8 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
   WebSocketChannel? _wsChannel;
   StreamSubscription? _wsSubscription;
   Timer? _pollTimer;
+  Timer? _wsReconnectTimer;
+  int _wsReconnectAttempts = 0;
   bool _finished = false;
 
   @override
@@ -58,27 +62,50 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _wsReconnectTimer?.cancel();
     _wsSubscription?.cancel();
     _wsChannel?.sink.close();
     super.dispose();
   }
 
+  void _scheduleWsReconnect() {
+    if (_finished || !mounted) return;
+    _wsReconnectTimer?.cancel();
+    final delayMs = math.min(1000 * math.pow(2, _wsReconnectAttempts).toInt(), 10000);
+    _wsReconnectAttempts++;
+    _wsReconnectTimer = Timer(Duration(milliseconds: delayMs), () {
+      if (!_finished && mounted) {
+        _connectWs();
+      }
+    });
+  }
+
   void _connectWs() {
+    if (_finished || !mounted) return;
     try {
+      _wsSubscription?.cancel();
+      _wsChannel?.sink.close();
       final wsUrl = widget.api.getWebSocketUrl('/ws/predictions/${widget.predictionId}');
       _wsChannel = WebSocketChannel.connect(Uri.parse(wsUrl));
       _wsSubscription = _wsChannel!.stream.listen(
         (message) {
           if (!mounted) return;
+          _wsReconnectAttempts = 0;
           try {
             final data = jsonDecode(message.toString()) as Map<String, dynamic>;
             _handleEvent(data);
           } catch (_) {}
         },
-        onError: (_) {},
-        onDone: () {},
+        onError: (_) {
+          _scheduleWsReconnect();
+        },
+        onDone: () {
+          _scheduleWsReconnect();
+        },
       );
-    } catch (_) {}
+    } catch (_) {
+      _scheduleWsReconnect();
+    }
   }
 
   void _handleEvent(Map<String, dynamic> data) {
@@ -125,7 +152,12 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
     } else if (stage == 'disease_classification' && isCompleted) {
       _cropDone = true;
       _diseaseDone = true;
-    } else if (stage == 'pest_detection' && isCompleted) {
+    } else if (stage == 'pest_detection') {
+      final msg = payload['message']?.toString().toLowerCase() ?? '';
+      final pestClass = payload['pest_classification'] as Map?;
+      if (pestClass?['status'] == 'unavailable' || status == 'unavailable' || msg.contains('unavailable')) {
+        _pestUnavailable = true;
+      }
       _cropDone = true;
       _diseaseDone = true;
       _pestDone = true;
@@ -176,7 +208,15 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
         if (st['crop_identification'] == 'completed') _cropDone = true;
         if (st['disease_classification'] == 'completed') _diseaseDone = true;
         if (st['pest_detection'] == 'completed') _pestDone = true;
+        if (st['pest_detection'] == 'unavailable' || st['pest_detection'] == 'skipped') {
+          _pestDone = true;
+          _pestUnavailable = true;
+        }
         if (st['recommendation'] == 'completed') _advisoryDone = true;
+      }
+      final pestClass = target['pest_classification'] as Map?;
+      if (pestClass?['status'] == 'unavailable') {
+        _pestUnavailable = true;
       }
 
       if (pipeStatus == 'completed' || pipeStatus == 'ready') {
@@ -191,6 +231,9 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
     if (_finished) return;
     _finished = true;
     _pollTimer?.cancel();
+    _wsReconnectTimer?.cancel();
+    _wsSubscription?.cancel();
+    _wsChannel?.sink.close();
     setState(() {
       _cropDone = true;
       _diseaseDone = true;
@@ -286,9 +329,11 @@ class _ProcessingSheetState extends State<ProcessingSheet> {
         : (_diseaseDone ? context.tr('identifiedPrefix') : context.tr('analyzingPathology'));
 
     final translatedPests = _detectedPests.map((p) => context.loc.pest(p)).toList();
-    final pestStr = translatedPests.isNotEmpty
-        ? translatedPests.join(', ')
-        : (_pestDone ? context.tr('noPestsDetected') : context.tr('scanningPests'));
+    final pestStr = _pestUnavailable
+        ? context.tr('pestDetectorUnavailable')
+        : (translatedPests.isNotEmpty
+            ? translatedPests.join(', ')
+            : (_pestDone ? context.tr('noPestsDetected') : context.tr('scanningPests')));
 
     return DraggableScrollableSheet(
       expand: false,

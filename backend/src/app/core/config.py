@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     GOOGLE_TRANSLATION_API_KEY: str = Field(default="")
     GEMINI_API_KEY: str = Field(default="")
 
+    # Geographic Defaults (Indian agricultural reference region)
+    DEFAULT_LAT: float = Field(default=21.7645)
+    DEFAULT_LON: float = Field(default=72.1519)
+    DEFAULT_LOCATION: str = Field(default="Gujarat, India")
+
     # Model Inference Server (Server 2)
     MODEL_SERVER_URL: str = Field(default="http://127.0.0.1:8001")
     MODEL_SERVER_TIMEOUT: int = Field(default=120)

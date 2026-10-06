@@ -88,6 +88,19 @@ def estimate_severity(context: dict) -> dict:
         )
         return context
 
+    if (
+        context.get("status", {}).get("decision_routing") == "unsupported_crop"
+        or context.get("crop", {}).get("status") == "unsupported_crop"
+    ):
+        context["status"]["severity"] = "skipped_unsupported_crop"
+        context["severity"]["percent"] = 0.0
+        context["severity"]["affected_area"] = 0.0
+        context["severity"]["bucket"] = "N/A"
+        context.setdefault("notes", []).append(
+            "Severity estimation skipped for unsupported crop species."
+        )
+        return context
+
     image_bgr = context["image"].get("leaf_crop")
 
     if image_bgr is None:
@@ -170,14 +183,21 @@ def estimate_severity(context: dict) -> dict:
     except Exception as exc:
         context["notes"].append(f"Grad-CAM overlay generation error: {exc}")
 
-    if percent is None or affected_area is None:
+    disease_label = str(context.get("disease", {}).get("label") or "").strip().lower()
+    is_healthy = "healthy" in disease_label
+
+    if is_healthy and (percent is None or percent < 15.0):
+        percent = 0.0
+        affected_area = 0.0
+        bucket = "Healthy"
+    elif percent is None or affected_area is None:
         context["notes"].append(
             "Severity estimation failed — could not obtain a reliable leaf mask."
         )
         context["status"]["severity"] = "failed"
         return context
-
-    bucket = _severity_bucket(percent)
+    else:
+        bucket = _severity_bucket(percent)
 
     quality_flag = "reliable"
     total_pixels = image_bgr.shape[0] * image_bgr.shape[1] if image_bgr is not None else 0
@@ -185,7 +205,6 @@ def estimate_severity(context: dict) -> dict:
         quality_flag = "extreme_damage"
     elif total_pixels < 2500:
         quality_flag = "low_leaf_area"
-
 
     context["severity"]["percent"] = round(float(percent), 2)
     context["severity"]["affected_area"] = round(float(affected_area), 4)
@@ -584,6 +603,9 @@ def _severity_bucket(
     percent: float,
 ) -> str:
     """Map severity percentage to a human-readable bucket."""
+    if percent <= 0.0:
+        return "Healthy"
+
     if percent < 20.0:
         return "Mild"
 
@@ -591,3 +613,4 @@ def _severity_bucket(
         return "Moderate"
 
     return "Severe"
+

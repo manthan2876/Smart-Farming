@@ -194,7 +194,7 @@ async def register(
         httponly=True,
         secure=_cookie_secure(),
         samesite="lax",
-        max_age=7 * 24 * 60 * 60,
+        max_age=30 * 24 * 60 * 60,
     )
 
     # Enqueue write-time transliteration for user and farm name
@@ -239,7 +239,7 @@ async def login(
         httponly=True,
         secure=_cookie_secure(),
         samesite="lax",
-        max_age=7 * 24 * 60 * 60,
+        max_age=30 * 24 * 60 * 60,
     )
     return AuthResponse(
         tokens=tokens,
@@ -264,7 +264,7 @@ async def refresh(request: Request, response: Response) -> dict[str, str | int]:
         httponly=True,
         secure=_cookie_secure(),
         samesite="lax",
-        max_age=7 * 24 * 60 * 60,
+        max_age=30 * 24 * 60 * 60,
     )
     return tokens
 

@@ -20,6 +20,8 @@ class DomainTranslations {
     'capsicum': {'en': 'Pepper Bell', 'hi': 'शिमला मिर्च', 'gu': 'કેપ્સિકમ / ભોળર મરચાં'},
     'potato': {'en': 'Potato', 'hi': 'आलू', 'gu': 'બટાકા'},
     'tomato': {'en': 'Tomato', 'hi': 'टमाटर', 'gu': 'ટામેટા'},
+    'unsupported crop': {'en': 'Unsupported Crop', 'hi': 'असमर्थित फसल', 'gu': 'બિન-સપોર્ટેડ પાક'},
+    'unsupported crop / indeterminate': {'en': 'Unsupported Crop / Indeterminate', 'hi': 'असमर्थित फसल / अस्पष्ट', 'gu': 'બિન-સપોર્ટેડ પાક / અનિર્ધારિત'},
   };
 
   static String translateCrop(String? crop, String lang) {
@@ -61,6 +63,9 @@ class DomainTranslations {
     'verticillium wilt': {'en': 'Verticillium Wilt', 'hi': 'वर्टिसिलियम विल्ट', 'gu': 'વર્ટિસિલિયમ સુકારો'},
     'virus': {'en': 'Viral Infection', 'hi': 'विषाणु (वायरस)', 'gu': 'વાઈરસનો ચેપ'},
     'yellow curl virus': {'en': 'Yellow Leaf Curl Virus', 'hi': 'पीला पत्ती मरोड़ वायरस', 'gu': 'પીળો કોકડવા વાઈરસ'},
+    'unsupported crop': {'en': 'Unsupported Crop', 'hi': 'असमर्थित फसल', 'gu': 'બિન-સપોર્ટેડ પાક'},
+    'unsupported crop / indeterminate': {'en': 'Unsupported Crop / Indeterminate', 'hi': 'असमर्थित फसल / अस्पष्ट', 'gu': 'બિન-સપોર્ટેડ પાક / અનિર્ધારિત'},
+    'no model available': {'en': 'No Model Available', 'hi': 'कोई मॉडल उपलब्ध नहीं', 'gu': 'કોઈ મોડેલ ઉપલબ્ધ નથી'},
   };
 
   static String translateDisease(String? disease, String lang) {
@@ -96,12 +101,14 @@ class DomainTranslations {
   // ── Severity Buckets ─────────────────────────────────────────────────────
   static const Map<String, Map<String, String>> _severity = {
     'healthy': {'en': 'Healthy', 'hi': 'स्वस्थ', 'gu': 'તંદુરસ્ત'},
+    'mild': {'en': 'Mild Severity', 'hi': 'हल्का प्रकोप', 'gu': 'હળવો ઉપદ્રવ'},
     'low': {'en': 'Low Severity', 'hi': 'कम प्रकोप', 'gu': 'ઓછો ઉપદ્રવ'},
     'moderate': {'en': 'Moderate Severity', 'hi': 'मध्यम प्रकोप', 'gu': 'મધ્યમ ઉપદ્રવ'},
     'medium': {'en': 'Moderate Severity', 'hi': 'मध्यम प्रकोप', 'gu': 'મધ્યમ ઉપદ્રવ'},
     'high': {'en': 'High Severity', 'hi': 'अधिक प्रकोप', 'gu': 'વધુ ઉપદ્રવ'},
     'severe': {'en': 'Severe Infection', 'hi': 'गंभीर संक्रमण', 'gu': 'ગંભીર ચેપ'},
     'critical': {'en': 'Critical Stage', 'hi': 'अत्यधिक गंभीर', 'gu': 'અત્યંત ગંભીર'},
+    'n/a': {'en': 'N/A', 'hi': 'लागू नहीं', 'gu': 'લાગુ પડતું નથી'},
   };
 
   static String translateSeverityBucket(String? bucket, String lang) {

@@ -360,7 +360,7 @@ ${context.tr('reportGeneratedBy')}
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(8)),
                 child: Text(
-                  '${(_pred.confidence * 100).round()}% ${context.tr('aiConfidence')}',
+                  '${context.tr('modelConfidence')}: ${(_pred.confidence * 100).round()}%',
                   style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
                 ),
               ),
@@ -394,6 +394,54 @@ ${context.tr('reportGeneratedBy')}
                     ],
                   ),
                 ),
+              if (_pred.isPestUnavailable)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(color: const Color(0xfffff3cd), borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.pest_control_outlined, size: 14, color: Color(0xff856404)),
+                      const SizedBox(width: 4),
+                      Text(
+                        context.tr('pestDetectorUnavailable'),
+                        style: const TextStyle(color: Color(0xff856404), fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_pred.pests.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(color: const Color(0xffffebee), borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bug_report, size: 14, color: Color(0xffc62828)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _pred.pests.map((p) => context.loc.pest(p)).join(', '),
+                        style: const TextStyle(color: Color(0xffc62828), fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(color: const Color(0xffe8f5e9), borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle_outline, size: 14, color: Color(0xff2e7d32)),
+                      const SizedBox(width: 4),
+                      Text(
+                        context.tr('noPestsDetected'),
+                        style: const TextStyle(color: Color(0xff2e7d32), fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
 
@@ -417,8 +465,44 @@ ${context.tr('reportGeneratedBy')}
             ),
           ],
 
+          // Unsupported Crop Warning Banner
+          if (_pred.isUnsupportedCrop) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xfffff8e1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xffffe082)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xffe65100), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.tr('unsupportedCropTitle'),
+                          style: const TextStyle(color: Color(0xffe65100), fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          context.tr('unsupportedCropDesc'),
+                          style: const TextStyle(color: Color(0xffbf360c), fontSize: 11.5, height: 1.35),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // Tentative Low Confidence Warning Banner
-          if (_pred.isUncertain) ...[
+          if (_pred.isUncertain && !_pred.isUnsupportedCrop) ...[
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
@@ -443,7 +527,11 @@ ${context.tr('reportGeneratedBy')}
             ),
           ],
 
-          const SizedBox(height: 18),
+          // ── Treatment Progress Comparison (Follow-up Rescan) ─────────────────
+          if (_pred.treatmentProgress != null) ...[
+            _buildTreatmentProgressCard(context, _pred.treatmentProgress!),
+            const SizedBox(height: 18),
+          ],
 
           // ── Visual Pathology Analysis (Original Leaf vs GradCAM Heatmap) ──────
           if (hasImages && activeImgUrl != null) ...[
@@ -711,6 +799,29 @@ ${context.tr('reportGeneratedBy')}
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
+          if (_pred.plotInfo != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primaryBorder),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.grass, color: AppColors.primary, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${context.tr('calibratedForPlot')}: ${_pred.plotInfo!['name']}${_pred.plotInfo!['area_acres'] != null ? ' (${_pred.plotInfo!['area_acres']} acres)' : ''} — ${context.tr('plotScaleAdvice')}',
+                      style: const TextStyle(color: AppColors.primary, fontSize: 11.5, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: const Color(0xfff4f1e8), borderRadius: BorderRadius.circular(14)),
@@ -954,6 +1065,139 @@ ${context.tr('reportGeneratedBy')}
             ],
           ),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTreatmentProgressCard(BuildContext context, Map<String, dynamic> prog) {
+    final status = prog['status']?.toString() ?? 'stable';
+    final deltaNum = (prog['severity_delta'] as num?)?.toDouble() ?? 0.0;
+    final parentSev = (prog['parent_severity_pct'] as num?)?.toDouble() ?? 0.0;
+    final currSev = (prog['current_severity_pct'] as num?)?.toDouble() ?? 0.0;
+    final message = prog['message']?.toString() ?? '';
+
+    Color badgeBg;
+    Color badgeText;
+    String statusLabel;
+    if (status == 'improving') {
+      badgeBg = const Color(0xffe8f5e9);
+      badgeText = const Color(0xff2e7d32);
+      statusLabel = context.tr('treatmentImproving');
+    } else if (status == 'resolved') {
+      badgeBg = const Color(0xffe8f5e9);
+      badgeText = const Color(0xff2e7d32);
+      statusLabel = context.tr('treatmentResolved');
+    } else if (status == 'worsening') {
+      badgeBg = const Color(0xffffebee);
+      badgeText = const Color(0xffc62828);
+      statusLabel = context.tr('treatmentWorsening');
+    } else {
+      badgeBg = const Color(0xffe3f2fd);
+      badgeText = const Color(0xff1565c0);
+      statusLabel = context.tr('treatmentStable');
+    }
+
+    final deltaStr = deltaNum > 0 ? '+${deltaNum.toStringAsFixed(1)}%' : '${deltaNum.toStringAsFixed(1)}%';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primaryBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.show_chart, color: AppColors.primary, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    context.tr('treatmentProgress'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(8)),
+                child: Text(
+                  statusLabel.toUpperCase(),
+                  style: TextStyle(color: badgeText, fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+          if (message.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              message,
+              style: const TextStyle(fontSize: 12.5, color: Color(0xff5d513f), height: 1.4),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfffbf9f4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(context.tr('previousScan'), style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text('${parentSev.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfffbf9f4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(context.tr('currentScan'), style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text('${currSev.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: badgeText.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(context.tr('severityDelta'), style: TextStyle(fontSize: 10, color: badgeText, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text(deltaStr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: badgeText)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

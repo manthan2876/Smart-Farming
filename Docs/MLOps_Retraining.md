@@ -498,7 +498,7 @@ The `migrate_to_s3.py` script handles:
 - Uploading all local model checkpoints and label files
 - Re-writing paths in `model_registry.json` to GCS URIs
 - Uploading exported datasets and raw image files
-- Verifying upload integrity via MD5 checksums
+- Verifying upload integrity via SHA-256 checksums
 
 > **Note:** GCS is accessed via its S3-compatible HMAC API. The SDK treats it as S3 (boto3) with a custom endpoint (`AWS_ENDPOINT_URL`). No boto3 code change is needed compared to AWS S3 — only the environment variables differ.
 

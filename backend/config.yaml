@@ -3,27 +3,33 @@ models:
     path: models/crop_identifier_v1.pth
     labels: models/crop_identifier_labels.json
     arch: efficientnet_b0
+    temperature: 1.08
   disease_models:
     Cotton:
       path: models/disease_Cotton.pth
       labels: models/disease_Cotton_labels.json
       arch: efficientnet_b2
+      temperature: 1.12
     Groundnut:
       path: models/disease_Groundnut.pth
       labels: models/disease_Groundnut_labels.json
       arch: efficientnet_b2
+      temperature: 1.15
     Pepper_Bell:
       path: models/disease_Pepper_Bell.pth
       labels: models/disease_Pepper_Bell_labels.json
       arch: efficientnet_b2
+      temperature: 1.10
     Potato:
       path: models/disease_Potato.pth
       labels: models/disease_Potato_labels.json
       arch: efficientnet_b2
+      temperature: 1.14
     Tomato:
       path: models/disease_Tomato.pth
       labels: models/disease_Tomato_labels.json
       arch: efficientnet_b2
+      temperature: 1.18
   pest_classifier:
     path: models/pest_classifier/pest_classifier.pt
 thresholds:

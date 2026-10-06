@@ -6,8 +6,8 @@ class PredictionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     location: str = Field(default="Unknown")
-    lat: float = Field(default=52.2297, ge=-90, le=90)
-    lon: float = Field(default=21.0122, ge=-180, le=180)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
     language: str = Field(default="English", min_length=1, max_length=32)
 
 class PredictionResponse(BaseModel):
@@ -34,5 +34,8 @@ class PredictionResponse(BaseModel):
     historical_images: list[dict[str, str]] | None = None
     follow_up: dict[str, Any] | None = None
     translations: dict[str, Any] | None = None
+    treatment_progress: dict[str, Any] | None = None
+    farm: dict[str, Any] | None = None
+    plot: dict[str, Any] | None = None
 
     model_config = ConfigDict(extra="allow")

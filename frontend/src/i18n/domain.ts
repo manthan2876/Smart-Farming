@@ -16,6 +16,9 @@ const cropsMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
   pepper_bell: { en: "Pepper Bell", hi: "शिमला मिर्च", gu: "કેપ્સિકમ" },
   potato: { en: "Potato", hi: "आलू", gu: "બટાકા" },
   tomato: { en: "Tomato", hi: "टमाटर", gu: "ટામેટા" },
+  "unsupported crop": { en: "Unsupported Crop", hi: "असमर्थित फसल", gu: "બિન-સપોર્ટેડ પાક" },
+  "unsupported crop / indeterminate": { en: "Unsupported Crop / Indeterminate", hi: "असमर्थित फसल / अस्पष्ट", gu: "બિન-સપોર્ટેડ પાક / અનિર્ધારિત" },
+  indeterminate: { en: "Indeterminate Crop", hi: "अस्पष्ट फसल", gu: "અનિર્ધારિત પાક" },
 };
 
 export function translateCrop(crop?: string | null, lang?: string): string {
@@ -55,6 +58,9 @@ const diseasesMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
   "verticillium wilt": { en: "Verticillium Wilt", hi: "वर्टिसिलियम विल्ट", gu: "વર્ટિસિલિયમ સુકારો" },
   virus: { en: "Viral Infection", hi: "विषाणु (वायरस)", gu: "વાઈરસનો ચેપ" },
   "yellow curl virus": { en: "Yellow Leaf Curl Virus", hi: "पीला पत्ती मरोड़ वायरस", gu: "પીળો પર્ણ વલન વાઈરસ" },
+  "unsupported crop": { en: "Unsupported Crop", hi: "असमर्थित फसल", gu: "બિન-સપોર્ટેડ પાક" },
+  "unsupported crop / indeterminate": { en: "Unsupported Crop / Indeterminate", hi: "असमर्थित फसल / अस्पष्ट", gu: "બિન-સપોર્ટેડ પાક / અનિર્ધારિત" },
+  "no model available": { en: "No Model Available", hi: "कोई मॉडल उपलब्ध नहीं", gu: "કોઈ મોડેલ ઉપલબ્ધ નથી" },
 };
 
 export function translateDisease(disease?: string | null, lang?: string): string {
@@ -85,11 +91,15 @@ export function translatePest(pest?: string | null, lang?: string): string {
 
 // ── Severity ─────────────────────────────────────────────────────────────
 const severityMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
+  healthy: { en: "Healthy", hi: "स्वस्थ", gu: "તંદુરસ્ત" },
+  mild: { en: "Mild", hi: "हल्का", gu: "હળવું" },
   low: { en: "Low", hi: "कम", gu: "ઓછી" },
   moderate: { en: "Moderate", hi: "मध्यम", gu: "મધ્યમ" },
   high: { en: "High", hi: "उच्च", gu: "ઉચ્ચ" },
   critical: { en: "Critical", hi: "गंभीर", gu: "ગંભીર" },
   severe: { en: "Severe", hi: "गंभीर", gu: "ગંભીર" },
+  "n/a": { en: "N/A", hi: "लागू नहीं", gu: "લાગુ પડતું નથી" },
+  na: { en: "N/A", hi: "लागू नहीं", gu: "લાગુ પડતું નથી" },
 };
 
 export function translateSeverityBucket(severity?: string | null, lang?: string): string {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { request } from "../api/client";
+import { requestWithMeta } from "../api/client";
 import { History, ArrowRight, Filter, Search, Sprout } from "../components/icons";
 import { Badge, Button, Card, Input, Select, Table, Skeleton } from "../components/ui";
 import { translateCrop, translateDisease, translateSeverityBucket } from "../i18n/domain";
@@ -20,13 +20,33 @@ interface PredictionRecord {
 export default function HistoryPage() {
   const { token, t, language } = useAuth();
   const [filterCrop, setFilterCrop] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
-  const { data: scans = [], isLoading } = useQuery<PredictionRecord[]>({
-    queryKey: ["fullScanHistory"],
-    queryFn: () => request<PredictionRecord[]>("/history?limit=50", {}, token!),
+  const offset = (page - 1) * pageSize;
+  const statusQueryParam = statusFilter !== "All" ? `&status=${encodeURIComponent(statusFilter)}` : "";
+
+  const { data: responseData, isLoading } = useQuery<{
+    data: PredictionRecord[];
+    totalCount: number;
+    offset: number;
+    limit: number;
+  }>({
+    queryKey: ["scanHistory", page, statusFilter, pageSize],
+    queryFn: () =>
+      requestWithMeta<PredictionRecord[]>(
+        `/history?limit=${pageSize}&offset=${offset}${statusQueryParam}`,
+        {},
+        token!,
+      ),
     enabled: !!token,
   });
+
+  const scans = responseData?.data || [];
+  const totalCount = responseData?.totalCount ?? scans.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const filteredScans = scans.filter((scan) => {
     const cropName = String(scan.crop?.label || scan.crop?.name || "");
@@ -43,6 +63,14 @@ export default function HistoryPage() {
     ...Array.from(new Set(scans.map((s) => s.crop?.label || s.crop?.name).filter(Boolean)))
   ] as string[];
 
+  const statusOptions = [
+    { value: "All", label: t("allStatuses") },
+    { value: "completed", label: t("statusCompleted") },
+    { value: "verified", label: t("statusVerified") },
+    { value: "pending_expert_review", label: t("statusPendingReview") },
+    { value: "failed", label: t("statusFailed") },
+  ];
+
   return (
     <div className="space-y-6 pb-12">
       <div>
@@ -52,7 +80,7 @@ export default function HistoryPage() {
       </div>
 
       <div className="space-y-5">
-        <Card className="flex flex-col gap-4 sm:flex-row sm:items-end" padding="md">
+        <Card className="flex flex-col gap-4 lg:flex-row lg:items-end" padding="md">
           <div className="flex-1">
             <Input 
               id="history-search" 
@@ -64,7 +92,7 @@ export default function HistoryPage() {
               onChange={(e) => setSearchQuery(e.target.value)} 
             />
           </div>
-          <div className="space-y-1.5 sm:w-60">
+          <div className="space-y-1.5 sm:w-52">
             <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted" htmlFor="history-crop-filter">
               <Filter size={14} className="text-farmer-700 dark:text-farmer-300" />
               <span>{t("crop")}</span>
@@ -72,12 +100,24 @@ export default function HistoryPage() {
             <Select 
               id="history-crop-filter"
               value={filterCrop} 
-              onChange={(val) => setFilterCrop(val)}
+              onChange={(val) => { setFilterCrop(val); setPage(1); }}
               options={uniqueCrops.map((crop) => ({
                 value: crop,
                 label: crop === "All" ? t("all") : translateCrop(crop, language),
                 icon: crop === "All" ? <Filter size={14} className="text-muted" /> : <Sprout size={14} className="text-farmer-700 shrink-0" />,
               }))}
+            />
+          </div>
+          <div className="space-y-1.5 sm:w-56">
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted" htmlFor="history-status-filter">
+              <Filter size={14} className="text-farmer-700 dark:text-farmer-300" />
+              <span>{t("filterByStatus")}</span>
+            </label>
+            <Select 
+              id="history-status-filter"
+              value={statusFilter} 
+              onChange={(val) => { setStatusFilter(val); setPage(1); }}
+              options={statusOptions}
             />
           </div>
         </Card>
@@ -142,7 +182,16 @@ export default function HistoryPage() {
                 return (
                   <tr className="border-t border-line text-sm text-ink" key={recordId || index}>
                     <td className="px-5 py-4"><Badge>{translateCrop(cropName, language)}</Badge></td>
-                    <td className="px-5 py-4 font-semibold">{translateDisease(diseaseName, language)}</td>
+                    <td className="px-5 py-4 font-semibold">
+                      <div className="flex items-center gap-2">
+                        <span>{translateDisease(diseaseName, language)}</span>
+                        {(scan.status?.expert_review === "verified" || scan.status?.pipeline === "verified") && (
+                          <Badge tone="success" className="text-[10px] py-0.5 px-1.5 font-normal">
+                            {t("verified")}
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-5 py-4">
                       <Badge tone={severityText.toLowerCase() === "severe" ? "danger" : severityText.toLowerCase() === "moderate" ? "warning" : "success"}>
                         {translateSeverityBucket(severityText, language)}
@@ -164,6 +213,32 @@ export default function HistoryPage() {
               })}
             </tbody>
           </Table>
+        )}
+
+        {!isLoading && scans.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 text-xs text-muted">
+            <div>
+              {t("showingPage")} <span className="font-semibold text-ink">{page}</span> {t("of")} <span className="font-semibold text-ink">{totalPages}</span> ({totalCount} {t("totalRecords")})
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page <= 1 || isLoading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                {t("previous")}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page >= totalPages || scans.length < pageSize || isLoading}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                {t("next")}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>

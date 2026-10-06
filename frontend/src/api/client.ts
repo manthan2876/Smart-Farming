@@ -95,6 +95,70 @@ export async function request<T>(
   return response.json() as Promise<T>;
 }
 
+export async function requestWithMeta<T>(
+  path: string,
+  options: RequestInit = {},
+  token?: string | null,
+): Promise<{ data: T; totalCount: number; offset: number; limit: number }> {
+  const execute = async (currentToken: string | null | undefined) => {
+    const headers = new Headers(options.headers);
+    if (currentToken) {
+      headers.set("Authorization", `Bearer ${currentToken}`);
+    }
+    const savedLang = localStorage.getItem("smart_farm_lang");
+    if (savedLang && !headers.has("Accept-Language")) {
+      headers.set("Accept-Language", savedLang);
+    }
+    if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+    return fetch(`${API_URL}${path}`, { credentials: 'include', ...options, headers });
+  };
+
+  let response = await execute(token);
+
+  if (response.status === 401 && path !== "/auth/login" && path !== "/auth/refresh") {
+    try {
+      if (!refreshPromise) {
+        refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+        }).then(async (res) => {
+          if (res.ok) {
+            const tokens = await res.json();
+            return tokens.access_token;
+          }
+          return null;
+        }).catch(() => null)
+          .finally(() => {
+            refreshPromise = null;
+          });
+      }
+      
+      const newAccessToken = await refreshPromise;
+      if (newAccessToken) {
+        localStorage.setItem("smart_farm_token", newAccessToken);
+        window.dispatchEvent(new CustomEvent("tokenRefreshed", { detail: newAccessToken }));
+        response = await execute(newAccessToken);
+      }
+    } catch (e) {
+      // Refresh failed
+    }
+  }
+
+  if (!response.ok)
+    throw new Error(
+      (await response.json().catch(() => null))?.detail ??
+        `Request failed (${response.status})`,
+    );
+
+  const totalCount = parseInt(response.headers.get("x-total-count") || "0", 10);
+  const offset = parseInt(response.headers.get("x-offset") || "0", 10);
+  const limit = parseInt(response.headers.get("x-limit") || "0", 10);
+  const data = (await response.json()) as T;
+  return { data, totalCount, offset, limit };
+}
+
 export async function requestBlob(
   path: string,
   options: RequestInit = {},

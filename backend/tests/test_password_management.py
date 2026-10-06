@@ -24,7 +24,8 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 
 
 @pytest.fixture(autouse=True)
-def setup_test_db():
+def setup_test_db(monkeypatch):
+    monkeypatch.setattr("app.main.initialize_database", lambda: None)
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)

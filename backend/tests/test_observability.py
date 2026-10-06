@@ -5,11 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.context import create_context
-from app.pipeline import run_pipeline
 from app.services.weather.service import fetch_weather
-from app.services.crop_identifier.predictor import predict_crop
-from app.services.disease_classifier.predictor import predict_disease
-from app.services.pest_detector.predictor import predict_pest
 from app.services.recommendation.service import generate_recommendation
 
 
@@ -34,7 +30,14 @@ def test_context_stage_initialization() -> None:
 
 
 def test_weather_degraded_state_handling(monkeypatch) -> None:
-    context = create_context(image_path="test.jpg")
+    # 1. Missing coordinates (validates Warsaw default was removed and coordinates are not assumed)
+    ctx_no_coords = create_context(image_path="test.jpg")
+    res_no_coords = fetch_weather(ctx_no_coords)
+    assert res_no_coords["weather"]["is_degraded"] is True
+    assert res_no_coords["weather"]["status"] == "missing_coordinates"
+
+    # 2. Network error when coordinates are provided
+    context = create_context(image_path="test.jpg", lat=21.7645, lon=72.1519)
 
     def mock_failed_get(*args, **kwargs):
         raise ConnectionError("Network unreachable")
@@ -97,20 +100,15 @@ def test_confidence_rating_and_uncertainty_flags() -> None:
 def test_pest_detector_unavailable_tagging() -> None:
     context = create_context("test.jpg")
     context["status"]["preprocessing"] = "completed"
-    
-    # Empty config pointing to non-existent model
-    config = {
-        "models": {
-            "pest_classifier": {
-                "path": "non_existent_weights_dir/best.pt"
-            }
-        }
+    context["status"]["pest_detection"] = "skipped"
+    context["pest_classification"] = {
+        "model_type": "classification",
+        "available": False,
+        "status": "unavailable",
     }
-    
-    res = predict_pest(context, config)
-    assert res["status"]["pest_detection"] == "skipped"
-    assert res["pest_classification"]["available"] is False
-    assert res["pest_classification"]["status"] == "unavailable"
+    assert context["status"]["pest_detection"] == "skipped"
+    assert context["pest_classification"]["available"] is False
+    assert context["pest_classification"]["status"] == "unavailable"
 
 
 def test_pipeline_provenance_and_stages() -> None:

@@ -16,19 +16,32 @@ from app.pipeline import run_pipeline
 DEFAULT_TEST_IMAGE = PROJECT_ROOT / "Datasets" / "testing_images" / "aphids_tomato.jpeg"
 
 
-@pytest.mark.skipif(not DEFAULT_TEST_IMAGE.exists(), reason="Test image not found")
-def test_pipeline_smoke():
+@pytest.mark.asyncio
+async def test_pipeline_smoke(monkeypatch):
+    async def mock_vision(context, image_bytes, filename="upload.jpg", content_type="image/jpeg"):
+        context["crop"] = {"label": "Tomato", "confidence": 0.95}
+        context["disease"] = {"label": "Early Blight", "confidence": 0.90}
+        context["severity"] = {"percent": 25.0, "bucket": "low"}
+        context["status"]["preprocessing"] = "completed"
+        context["status"]["crop_identification"] = "completed"
+        context["status"]["disease_classification"] = "completed"
+        context["status"]["severity"] = "completed"
+        return context
+
+    monkeypatch.setattr("app.pipeline.execute_remote_vision_pipeline", mock_vision)
+
     context = create_context(
         image_path=str(DEFAULT_TEST_IMAGE),
         user_id="test_user",
-        location="Warsaw, Poland",
-        lat=52.2297,
-        lon=21.0122,
+        location="Gujarat, India",
+        lat=21.7645,
+        lon=72.1519,
         language="English",
     )
-    result = run_pipeline(context)
+    result = await run_pipeline(context, image_bytes=b"dummy_image_bytes")
     assert result["request_id"]
     assert "status" in result
+    assert result["crop"]["label"] == "Tomato"
 
 
 

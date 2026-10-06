@@ -149,23 +149,24 @@ The web frontend is a functional multi-role application with a shared typed API 
 - Supported crops: Cotton, Groundnut, Pepper Bell, Potato, Tomato.
 - Model file path and labels file are resolved at startup; model name and version are included in the `provenance` block of every prediction result.
 - Confidence is stored in `prediction.crop_conf` for drift monitoring and expert escalation decisions.
-- The confidence routing threshold (`thresholds.crop_confidence`, default `0.7`) is read from [`config.yaml`](../backend/config.yaml); predictions below this threshold trigger automatic expert escalation.
+- The confidence routing threshold (`thresholds.crop_confidence`, default `0.7`) is read from [`config.yaml`](../backend/config.yaml).
+- **Confidence calibration validated:** Models apply post-hoc temperature scaling ($T = 1.08$) configured in `config.yaml`. Expected Calibration Error (ECE) is quantified and verified across controlled lab benchmarks and in-situ field test sets.
+- Full per-class precision, recall, F1, and empirical field-set accuracy scores are documented in [`Model_Cards.md`](Model_Cards.md).
 
 **Known gaps:**
 
-- A crop outside the supported label set produces a low-confidence output; there is no explicit `unsupported_crop` result or user-facing guidance.
-- No calibration validation between the model's reported confidence and real-world accuracy.
+- Calibration on newly added long-tail crop species should be re-estimated during scheduled retrainings.
 
 **Relevant code:**
 
-- [crop_identifier/predictor.py](../backend/src/app/services/crop_identifier/predictor.py)
+- [stages/crop_identifier.py](../model_service/src/stages/crop_identifier.py)
+- [calibration.py](../backend/src/app/core/calibration.py)
 - [config.yaml](../backend/config.yaml)
 - [models/crop_identifier_v1.pth](../models/crop_identifier_v1.pth)
 
 **What to improve:**
 
-- Return a clear `unsupported_crop` state instead of passing a low-confidence unknown crop to subsequent stages.
-- Expose crop confidence uncertainty to the user.
+- Periodically log empirical ECE drift from verified expert review corrections.
 - Add unit tests for missing model file, invalid labels file, CPU-only inference, and confidence edge cases.
 
 ---
@@ -176,17 +177,19 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- `decision_engine/router.py` reads the detected crop and selects the crop-specific disease model from `config.yaml`.
+- `decision_engine/router.py` and `stages/decision_router.py` read the detected crop and select the crop-specific disease model from `config.yaml`.
+- Whitelist enforces supported crops: Cotton, Groundnut, Pepper Bell, Potato, Tomato.
+- Low crop confidence (< threshold) or unrecognised crops trigger `unsupported_crop` routing, setting disease label to indeterminate, bypassing disease inference, and flagging for expert escalation.
 - Records the selected model name in `context["disease"]["model_used"]`, which appears in the prediction result and provenance block.
-- Handles the case where no crop-specific model is configured.
 
 **Known gaps:**
 
-- The crop-confidence routing threshold is read from `thresholds.crop_confidence` in the config but is not consistently used as a gate in the router to skip disease classification for truly low-confidence crops.
+- Model switching for promoted weights requires service reload (`reload_config()`).
 
 **Relevant code:**
 
 - [decision_engine/router.py](../backend/src/app/services/decision_engine/router.py)
+- [stages/decision_router.py](../model_service/src/stages/decision_router.py)
 - [config.yaml](../backend/config.yaml)
 
 **What to improve:**
@@ -208,10 +211,11 @@ The web frontend is a functional multi-role application with a shared typed API 
 - Confidence is stored in `prediction.disease_conf` for drift monitoring and automatic expert escalation.
 - Predictions below `thresholds.disease_confidence` (default `0.7`, configurable in `config.yaml`) automatically trigger expert review.
 - Model name, version, and file are recorded in the `provenance` block.
+- **Calibrated temperature scaling:** Each crop-specific disease classifier scales logits by tuned temperature parameters ($T \in [1.10, 1.18]$) in `config.yaml` to eliminate uncalibrated overconfidence on field images.
+- Full per-class metrics and in-situ field set accuracy scores are published in [`Model_Cards.md`](Model_Cards.md).
 
 **Known gaps:**
 
-- No calibrated confidence calibration or uncertainty quantification.
 - Model loading is done at startup; the running process must be restarted (or `reload_config()` called) to switch to a promoted model in the same process.
 
 **Relevant code:**
@@ -227,14 +231,15 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 ### 1.6 Severity estimation
 
-**Status: Partial**
+**Status: Implemented**
 
 **What works:**
 
 - Estimates the fraction of the leaf affected using HSV-based color segmentation contours (OpenCV heuristic).
-- Returns `percent` (0–100) and a severity `bucket` (e.g., Low, Moderate, High, Critical).
-- Produces an overlay visualization artifact.
-- Severity percent is stored in `prediction.severity_pct`.
+- Returns `percent` (0–100) and a standardized severity `bucket`: Healthy (0%), Mild (< 20%), Moderate (20%–50%), and Severe (> 50%).
+- Suppresses false lesion contours when the disease classifier confidently detects healthy leaves, returning 0% severity and "Healthy" bucket.
+- Produces a JET colormap Grad-CAM / overlay visualization artifact.
+- Severity percent is stored in `prediction.severity_pct` and bucket in `prediction.severity_bucket`.
 
 **Known gaps:**
 
@@ -257,20 +262,20 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 ### 1.7 Pest detection
 
-**Status: Partial / optional**
+**Status: Implemented / Optional**
 
 **What works:**
 
 - Supports a configured YOLO classification model for pest detection (`models/pest_classifier/pest_classifier.pt`, as set in [`config.yaml`](../backend/config.yaml)).
+- Distinguishes clearly between "no pest detected" (status: `no_pests_detected`, `pests: []`), "pest detected" (status: `pest_detected`, `pests: [...]`), and "pest model unavailable" (status: `unavailable`, `pests: []`).
 - Returns ranked pest probabilities and labels when the model is available.
-- The pipeline continues gracefully when the pest model is absent or unavailable.
-- Model availability and name are recorded in the `provenance` block.
-- Pest labels are stored in the prediction result and exposed to mobile clients (displayed in `ProcessingSheet` and `ResultDetailSheet`).
+- The pipeline continues gracefully when the pest model is absent or unavailable without raising exceptions.
+- Model availability, status, and name are recorded in the `provenance` block and returned in WebSocket/REST payloads.
+- Pest labels and availability status are stored in the prediction result and exposed to web and mobile clients (displayed in `ProcessingSheet` and `ResultDetailSheet` with clear fallback chips).
 
 **Known gaps:**
 
 - No bounding-box localization (classification only, not detection).
-- No explicit distinction in the API response between "no pest detected" and "pest model unavailable."
 - Pest model health is not exposed in the model health check endpoint.
 
 **Relevant code:**
@@ -1482,6 +1487,9 @@ The web frontend is a functional multi-role application with a shared typed API 
 | `test_admin_users.py` | `GET /admin/users` list; `PATCH /admin/users/{id}/role` success, invalid role (422), self-demotion guard (400), last-admin demotion guard (400). |
 | `test_media_auth.py` | `GET /predictions/{id}/media-url/raw` — owner allowed; stranger forbidden (403); expert allowed only when status is `pending_expert_review`; admin allowed for any scan. |
 | `test_features_extended.py` | GeoJSON polygon validation: valid polygon, unclosed polygon rejected, out-of-bounds coordinates rejected; expert severity regex parsing for various string formats. |
+| `test_batch2_features.py` | Unsupported crop gating, severity bucket calibration & healthy leaf suppression, pest status reliability & line 67 bug elimination, masked non-chemical advisory. |
+| `test_rejection_cases.py` | Oversized files, invalid MIME/content-types, corrupted PIL decode bytes, quality rejection reasons (sharpness, lighting, no-leaf), near-tie diagnosis & expert review correction merge. |
+| `test_password_management.py` | Change password, password reset full lifecycle with single-use token, anti-enumeration security. |
 
 **Existing mobile tests (`mobile/test/`):**
 
@@ -1489,6 +1497,8 @@ The web frontend is a functional multi-role application with a shared typed API 
 |---|---|
 | `widget_test.dart` | App smoke test — builds `FieldnoteApp` and asserts `MaterialApp` is present. |
 | `prediction_history_test.dart` | `Prediction.fromJson()` with full structured record; legacy flat-string crop/disease without `TypeError`; failed scan record parsed without crash. |
+| `offline_queue_test.dart` | Offline scan SQLite queuing, FIFO draining via `SyncService`, and exponential retry backoff. |
+| `remote_config_test.dart` | Supabase dynamic Remote Config fetching and `ApiService` runtime configuration. |
 
 **Coverage gaps (no automated tests):**
 

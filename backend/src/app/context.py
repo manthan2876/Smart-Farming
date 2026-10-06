@@ -7,9 +7,11 @@ def create_context(
     image_path: str,
     user_id: str = "anon",
     location: str = "Unknown",
-    lat: float = 52.2297,  # Default or dynamic latitude
-    lon: float = 21.0122,  # Default or dynamic longitude
+    lat: float | None = None,
+    lon: float | None = None,
     language: str = "English",
+    farm: dict[str, Any] | None = None,
+    plot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "request_id": str(uuid.uuid4()),
@@ -20,6 +22,8 @@ def create_context(
             "lon": lon,
             "language": language,
         },
+        "farm": farm or {},
+        "plot": plot or {},
         "image": {
             "raw_path": str(image_path),
             "processed_path": None,

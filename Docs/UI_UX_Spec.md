@@ -408,7 +408,7 @@ Dynamic API backend strings are mapped to localized terms at runtime:
 - `translateCrop(crop, lang)`: Localizes crop names (`Tomato` → `ટમેટા` / `टमाटर`)
 - `translateDisease(disease, lang)`: Localizes diagnosis labels (`Early Blight` → `અગાઉનો સુકારો` / `अगेती झुलसा`)
 - `translatePest(pest, lang)`: Localizes detected agricultural pests
-- `translateSeverityBucket(bucket, lang)`: Localizes severity tiers (Healthy, Low, Medium, High)
+- `translateSeverityBucket(bucket, lang)`: Localizes severity tiers (Healthy, Mild, Moderate, Severe)
 - `translateWeather(condition, lang)`: Localizes meteorological status terms
 - `translateAlertTitle(title, lang)`: Localizes system and agronomist triage alerts
 

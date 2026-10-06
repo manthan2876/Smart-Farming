@@ -100,6 +100,9 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
         _fileName,
         location: loc,
         language: targetLang,
+        plotId: _selectedPlotId,
+        lat: lat,
+        lon: lon,
       );
       if (mounted) {
         Navigator.pop(context);
@@ -127,6 +130,31 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
         throw Exception('Prediction ID not received from server');
       }
     } catch (e) {
+      final errStr = e.toString().toLowerCase();
+      final isNetwork = errStr.contains('socket') ||
+          errStr.contains('network') ||
+          errStr.contains('clientexception') ||
+          errStr.contains('connection refused') ||
+          errStr.contains('timed out') ||
+          errStr.contains('handshake');
+      if (isNetwork) {
+        await widget.sync.enqueueBytes(
+          _bytes!,
+          _fileName,
+          location: loc,
+          language: targetLang,
+          plotId: _selectedPlotId,
+          lat: lat,
+          lon: lon,
+        );
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('offlineQueuedBanner'))),
+          );
+        }
+        return;
+      }
       if (mounted) {
         setState(() {
           _submitting = false;

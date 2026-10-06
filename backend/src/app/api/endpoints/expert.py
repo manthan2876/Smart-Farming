@@ -123,12 +123,12 @@ async def post_expert_review(
             detail="Conflict: This review has already been verified and finalized.",
         )
 
-    action = payload.get("action")
+    action = payload.get("action") or payload.get("decision") or "Confirm AI Findings"
     review.decision = action
     review.status = "verified"
     review.expert_id = user_id
     
-    if action == "Override / Correct Findings":
+    if action in ("Override / Correct Findings", "corrected", "override", "Override") or payload.get("corrected_disease"):
         review.corrected_disease = payload.get("corrected_disease")
         raw_sev = payload.get("corrected_severity")
         if raw_sev is not None:
@@ -183,13 +183,20 @@ async def post_expert_review(
                 provenance_note=provenance,
             ))
     
-    res = dict(pred.result)
-    if "status" in res and isinstance(res["status"], dict):
-        new_status = dict(res["status"])
-        new_status["expert_review"] = "verified"
-        if "mask_advisory" in new_status:
-            new_status["mask_advisory"] = False
-        res["status"] = new_status
+    res = dict(pred.result or {})
+    result_status = dict(res.get("status") or {})
+    
+    if action == "Request Rescan":
+        result_status["expert_review"] = "rescan_requested"
+        result_status["pipeline"] = "rescan_requested"
+        pred.status = "rescan_requested"
+    else:
+        result_status["expert_review"] = "verified"
+        result_status["pipeline"] = "verified"
+        pred.status = "verified"
+        result_status["mask_advisory"] = False
+
+    res["status"] = result_status
         
     # Also update the recommendation field inside result if farmer_guidance was provided
     if review.farmer_guidance:
@@ -199,13 +206,29 @@ async def post_expert_review(
 
     if review.corrected_disease:
         res.setdefault("disease", {})["label"] = review.corrected_disease
+        res["disease"]["is_uncertain"] = False
+        res["disease"]["confidence_rating"] = "verified"
         pred.disease = review.corrected_disease
+    elif action == "Confirm AI Findings":
+        res.setdefault("disease", {})["is_uncertain"] = False
+        res["disease"]["confidence_rating"] = "verified"
+
     if review.corrected_severity is not None:
         res.setdefault("severity", {})["percent"] = review.corrected_severity
+        sev_bucket = "Severe" if review.corrected_severity > 55 else ("Moderate" if review.corrected_severity >= 25 else "Low")
+        res["severity"]["bucket"] = sev_bucket
         pred.severity_pct = review.corrected_severity
-    result_status = dict(res.get("status") or {})
-    result_status["expert_review"] = "rescan_requested" if action == "Request Rescan" else "verified"
-    res["status"] = result_status
+        if hasattr(pred, "severity_bucket"):
+            pred.severity_bucket = sev_bucket
+
+    res["expert_review_data"] = {
+        "decision": action,
+        "corrected_disease": review.corrected_disease,
+        "corrected_severity": review.corrected_severity,
+        "farmer_guidance": review.farmer_guidance,
+        "status": "verified",
+        "reviewed_at": review.reviewed_at.isoformat() if review.reviewed_at else None,
+    }
 
     pred.result = res
     flag_modified(pred, "result")

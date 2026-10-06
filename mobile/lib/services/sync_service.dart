@@ -1,15 +1,18 @@
-import 'dart:convert';
-import 'dart:math';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/sync_queue_item.dart';
 import 'api_service.dart';
+import 'offline_queue_db.dart';
 
 class SyncService {
-  SyncService(this.api);
+  SyncService(this.api, {OfflineQueueDb? queueDb, Connectivity? connectivity})
+      : _queueDb = queueDb ?? OfflineQueueDb(),
+        _connectivity = connectivity ?? Connectivity();
+
   final ApiService api;
-  static const _queueKey = 'pending_leaf_scans';
+  final OfflineQueueDb _queueDb;
+  final Connectivity _connectivity;
 
   Future<void> enqueueBytes(
     Uint8List bytes,
@@ -20,70 +23,48 @@ class SyncService {
     double? lat,
     double? lon,
   }) async {
-    final preferences = await SharedPreferences.getInstance();
-    final queue = preferences.getStringList(_queueKey) ?? [];
-    final item = SyncQueueItem(
-      createdAt: DateTime.now(),
+    await _queueDb.enqueue(
+      bytes,
+      fileName,
       location: location,
       language: language,
-      fileName: fileName,
-      base64Data: base64Encode(bytes),
       plotId: plotId,
       lat: lat,
       lon: lon,
-      retryCount: 0,
     );
-    queue.add(jsonEncode(item.toJson()));
-    await preferences.setStringList(_queueKey, queue);
   }
 
-  Future<int> pendingCount() async =>
-      (await SharedPreferences.getInstance()).getStringList(_queueKey)?.length ?? 0;
+  Future<int> pendingCount() async => await _queueDb.pendingCount();
 
-  Future<List<SyncQueueItem>> getPendingItems() async {
-    final preferences = await SharedPreferences.getInstance();
-    final raw = preferences.getStringList(_queueKey) ?? [];
-    return raw
-        .map((s) => SyncQueueItem.fromJson(jsonDecode(s) as Map<String, dynamic>))
-        .toList();
-  }
+  Future<List<SyncQueueItem>> getPendingItems() async => await _queueDb.getAllItems();
 
   Future<int> drain() async {
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity.contains(ConnectivityResult.none)) return 0;
-    
-    final preferences = await SharedPreferences.getInstance();
-    final queue = preferences.getStringList(_queueKey) ?? [];
-    if (queue.isEmpty) return 0;
+    try {
+      final connectivity = await _connectivity.checkConnectivity();
+      if (connectivity.contains(ConnectivityResult.none)) return 0;
+    } catch (_) {
+      // If connectivity check fails or in test/headless runner, proceed to attempt drain
+    }
 
-    final remaining = <String>[];
+    final itemsToSync = await _queueDb.getItemsToSync();
+    if (itemsToSync.isEmpty) return 0;
+
     int syncedCount = 0;
-    final now = DateTime.now();
 
-    for (final raw in queue) {
-      SyncQueueItem item;
-      try {
-        item = SyncQueueItem.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-      } catch (_) {
+    for (final item in itemsToSync) {
+      if (item.id == null) continue;
+
+      // Mark syncing to guard against concurrent drain loops
+      await _queueDb.markSyncing(item.id!);
+
+      final bytes = await _queueDb.readItemImageBytes(item);
+      if (bytes == null || bytes.isEmpty) {
+        // Unreadable or corrupt image file, delete from queue
+        await _queueDb.deleteItem(item.id!, imageFilePath: item.imageFilePath);
         continue;
       }
 
-      if (item.base64Data == null || item.base64Data!.isEmpty) {
-        continue;
-      }
-
-      // Exponential backoff check: delay = min(300, (2 ^ retryCount) * 5) seconds
-      if (item.retryCount > 0 && item.lastAttemptAt != null) {
-        final backoffSec = min(300, pow(2, item.retryCount).toInt() * 5);
-        if (now.difference(item.lastAttemptAt!).inSeconds < backoffSec) {
-          // Still in backoff cooldown, preserve in queue for next drain cycle
-          remaining.add(raw);
-          continue;
-        }
-      }
-
       try {
-        final bytes = base64Decode(item.base64Data!);
         await api.predictBytes(
           bytes,
           item.fileName,
@@ -93,19 +74,15 @@ class SyncService {
           lat: item.lat ?? 21.7645,
           lon: item.lon ?? 72.1519,
         );
+        // Successfully uploaded, delete row and local image file
+        await _queueDb.deleteItem(item.id!, imageFilePath: item.imageFilePath);
         syncedCount++;
       } catch (err) {
-        // Record failed attempt with updated retry count and backoff timestamp
-        final updated = item.copyWith(
-          retryCount: item.retryCount + 1,
-          lastAttemptAt: DateTime.now(),
-          status: 'retry_pending',
-        );
-        remaining.add(jsonEncode(updated.toJson()));
+        // Increment retry count and apply exponential backoff
+        await _queueDb.markFailed(item.id!, item.retryCount + 1);
       }
     }
 
-    await preferences.setStringList(_queueKey, remaining);
     return syncedCount;
   }
 }

@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import imageCompression from "browser-image-compression";
-import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer } from "../components/icons";
+import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer, Activity, Sprout } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { getPrediction, requestExpertReview } from "../api/predictions";
 import { Badge, Button, Card, Input } from "../components/ui";
@@ -164,6 +164,70 @@ export default function PredictionResultPage() {
     {isLoadingAudio ? t("loading") : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
   </Button>;
 
+  const TreatmentProgressCard = ({ progress }: { progress: any }) => {
+    if (!progress) return null;
+    const status = progress.status;
+    const statusBadgeTone = status === "improving" || status === "resolved" ? "success" : status === "worsening" ? "danger" : "info";
+    const statusText = status === "improving" 
+      ? t("treatmentImproving") 
+      : status === "worsening" 
+      ? t("treatmentWorsening") 
+      : status === "resolved"
+      ? t("treatmentResolved")
+      : t("treatmentStable");
+    const delta = progress.severity_delta;
+    const deltaFormatted = delta > 0 ? `+${delta.toFixed(1)}%` : `${delta?.toFixed(1)}%`;
+
+    return (
+      <Card className="border-farmer-300 dark:border-farmer-700">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Activity className="text-farmer-600 dark:text-farmer-400" size={22} />
+            <h3 className="font-display text-xl text-ink">{t("treatmentProgress")}</h3>
+          </div>
+          <Badge tone={statusBadgeTone} className="text-xs font-semibold px-2.5 py-1 uppercase">
+            {statusText}
+          </Badge>
+        </div>
+
+        <p className="mt-3 text-sm text-ink leading-6">{progress.message}</p>
+
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div className="rounded-sm border border-line bg-canvas p-4">
+            <div className="text-xs uppercase tracking-wider text-muted">{t("previousScan")}</div>
+            <div className="mt-1.5 font-display text-2xl font-bold text-ink">
+              {progress.parent_severity_pct != null ? `${progress.parent_severity_pct.toFixed(1)}%` : "N/A"}
+            </div>
+            <div className="mt-1 text-xs text-muted">
+              {translateSeverityBucket(progress.parent_severity_bucket, language)}
+              {progress.parent_date && ` • ${new Date(progress.parent_date).toLocaleDateString()}`}
+            </div>
+          </div>
+
+          <div className="rounded-sm border border-line bg-canvas p-4">
+            <div className="text-xs uppercase tracking-wider text-muted">{t("currentScan")}</div>
+            <div className="mt-1.5 font-display text-2xl font-bold text-ink">
+              {progress.current_severity_pct != null ? `${progress.current_severity_pct.toFixed(1)}%` : "N/A"}
+            </div>
+            <div className="mt-1 text-xs text-muted">
+              {translateSeverityBucket(progress.current_severity_bucket, language)}
+            </div>
+          </div>
+
+          <div className={`rounded-sm border p-4 ${status === "improving" || status === "resolved" ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200" : status === "worsening" ? "border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200" : "border-line bg-canvas text-ink"}`}>
+            <div className="text-xs uppercase tracking-wider opacity-80">{t("severityDelta")}</div>
+            <div className="mt-1.5 font-display text-2xl font-bold">
+              {deltaFormatted}
+            </div>
+            <div className="mt-1 text-xs opacity-80">
+              {statusText}
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   const Advisory = ({ predictionData }: { predictionData: any }) => {
     const rawRec = predictionData.recommendation || {};
     const translatedRec = targetLang !== "en" ? (predictionData.translations?.[targetLang] || localTranslations[targetLang]) : null;
@@ -190,6 +254,16 @@ export default function PredictionResultPage() {
         </div>
         <AudioButton text={advisoryText} />
       </div>
+      {(predictionData.plot || recommendation.plot_name || recommendation.farm_aware) && (
+        <div className="mt-3 inline-flex items-center gap-2 rounded bg-farmer-800/80 px-3 py-1.5 text-xs text-farmer-200 border border-farmer-700">
+          <Sprout size={14} className="text-emerald-400" />
+          <span>
+            <strong>{t("calibratedForPlot")}:</strong> {predictionData.plot?.name || recommendation.plot_name || "Plot"}
+            {(predictionData.plot?.area_acres || recommendation.plot_area_acres) && ` (${predictionData.plot?.area_acres || recommendation.plot_area_acres} acres)`}
+            {` — ${t("plotScaleAdvice")}`}
+          </span>
+        </div>
+      )}
       {isFallback && <div className="mt-4 rounded-sm border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-200 leading-5">{t("standardRulesNote")}</div>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div>
       <p className="mt-5 border-l-4 border-danger bg-red-50 dark:bg-red-950/40 p-3 text-xs leading-5 text-danger dark:text-red-300"><strong>{t("important")}:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
@@ -204,10 +278,41 @@ export default function PredictionResultPage() {
     const isLowConfidence = predictionData.disease?.is_uncertain === true || diseaseConfidence < 60;
     const confRating = predictionData.disease?.confidence_rating || (diseaseConfidence >= 85 ? "high" : diseaseConfidence >= 60 ? "moderate" : "low");
     const severityPercent = predictionData.severity?.percent || 0;
-    const pestOffline = predictionData.pest_classification?.available === false || predictionData.status?.pest_detection === "skipped";
+    const pestStatus = predictionData.pest_classification?.status || (predictionData.status as any)?.pest_detection;
+    const pestOffline = predictionData.pest_classification?.available === false || pestStatus === "unavailable" || pestStatus === "skipped";
     const weatherDegraded = predictionData.weather?.is_degraded || predictionData.weather?.status === "failed" || !predictionData.weather?.temperature_celsius;
+    const isUnsupportedCrop =
+      predictionData.crop?.status === "unsupported_crop" ||
+      (predictionData.status as any)?.decision_routing === "unsupported_crop" ||
+      predictionData.disease?.label?.toLowerCase().includes("unsupported crop");
 
     return <div className="space-y-6">
+      {predictionData.treatment_progress && (
+        <TreatmentProgressCard progress={predictionData.treatment_progress} />
+      )}
+      {isUnsupportedCrop && (
+        <Card className="border-amber-300 bg-amber-50/90 dark:border-amber-700/60 dark:bg-amber-950/40">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 text-amber-700 dark:text-amber-400 shrink-0" size={20} />
+            <div>
+              <h3 className="font-display text-lg font-semibold text-amber-900 dark:text-amber-200">
+                {t("unsupportedCropTitle")}
+              </h3>
+              <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">
+                {t("unsupportedCropDesc")}
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-1.5 items-center text-xs text-amber-900 dark:text-amber-200">
+                <span className="font-semibold">{t("supportedCropsLabel")}:</span>
+                {["Cotton", "Groundnut", "Pepper Bell", "Potato", "Tomato"].map((c) => (
+                  <span key={c} className="rounded bg-amber-200/70 dark:bg-amber-900/60 px-2 py-0.5 font-medium">
+                    {translateCrop(c, language)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
       <Card><h3 className="font-display text-xl text-ink">{t("visualAnalysis")}</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[[t("originalUpload"), rawImage, ""], [t("gradcamHeatmap"), processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">{t("imageUnavailable")}</div>}</div>)}</div></Card>
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -216,12 +321,41 @@ export default function PredictionResultPage() {
         </div>
         <div className="mt-5 space-y-4">
           <div className="rounded-sm bg-canvas p-4">
-            <h2 className="font-display text-2xl text-ink">{(predictionData.status as any)?.expert_review === "pending" ? t("pendingVerification") : translateDisease(predictionData.disease?.label, language)}</h2>
-            <p className="mt-1 text-sm text-muted">Model {t("confidence")}: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-2xl text-ink">
+                {(predictionData.status as any)?.expert_review === "pending"
+                  ? t("pendingVerification")
+                  : translateDisease(predictionData.disease?.label, language)}
+              </h2>
+              {((predictionData.status as any)?.expert_review === "verified" || (predictionData.status as any)?.pipeline === "verified") && (
+                <Badge tone="success" className="inline-flex items-center gap-1">
+                  <CheckCircle2 size={13} /> {t("specialistVerified")}
+                </Badge>
+              )}
+            </div>
+            {predictionData.expert_review_data?.corrected_disease && (
+              <p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                {t("correctedBySpecialist")}: {translateDisease(predictionData.expert_review_data.corrected_disease, language)}
+              </p>
+            )}
+            <p className="mt-1 text-sm text-muted">{t("modelConfidence")}: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
               <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700"}`} style={{ width: `${diseaseConfidence}%` }} />
             </div>
             {isLowConfidence && <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">{t("tentativeDiagnosisDesc")}</div>}
+            {predictionData.disease?.could_also_be && (
+              <div className="mt-3 rounded border border-amber-300 bg-amber-50/80 p-3 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+                <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
+                  <AlertCircle size={15} />
+                  <span>
+                    {t("couldAlsoBe")}: {translateDisease(predictionData.disease.could_also_be.label || predictionData.disease.could_also_be, language)} ({((predictionData.disease.could_also_be.confidence || 0) * 100).toFixed(1)}%)
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] leading-4 text-amber-700 dark:text-amber-400">
+                  {t("nearTieExplanation")}
+                </p>
+              </div>
+            )}
           </div>
           <div className="rounded-sm bg-canvas p-4">
             <h2 className="font-display text-xl text-ink">{t("severity")}: {translateSeverityBucket(predictionData.severity?.bucket, language)}</h2>
@@ -230,7 +364,7 @@ export default function PredictionResultPage() {
           </div>
           <div className="text-xs uppercase tracking-wide text-muted space-y-1.5">
             <p><strong>{t("crop")}:</strong> {translateCrop(predictionData.crop?.label, language)} {predictionData.crop?.confidence && `(${(predictionData.crop.confidence * 100).toFixed(1)}%)`}</p>
-            <p><strong>{t("pests")}:</strong> {pestOffline ? <span className="italic text-amber-600">{t("offlineNotAvailable")}</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => translatePest(p.label, language)).join(", ") : t("noPests")}</p>
+            <p><strong>{t("pests")}:</strong> {pestOffline ? <span className="inline-flex items-center gap-1 rounded bg-amber-100/80 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"><AlertCircle size={11} /> {t("pestDetectorUnavailable")}</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => `${translatePest(p.label, language)}${p.confidence ? ` (${(p.confidence * 100).toFixed(0)}%)` : ""}`).join(", ") : <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium"><CheckCircle2 size={12} /> {t("noPestsDetected")}</span>}</p>
             <p><strong>{t("weather")} {t("context")}:</strong> {weatherDegraded ? <span className="italic text-amber-600">{t("unavailableDuringScan")}</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% ${t("humidity").toLowerCase()} (${translateWeather(predictionData.weather?.condition, language)})`}</p>
           </div>
           <div className="flex flex-wrap items-center justify-between border-t border-line pt-3 text-[11px] text-muted">
@@ -304,12 +438,18 @@ export default function PredictionResultPage() {
           <div>
             <h3 className="font-display text-xl text-ink">{t("diagnosticStatus")}</h3>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Badge tone={status?.pipeline === "completed" ? "success" : "warning"}>
+              <Badge tone={status?.pipeline === "completed" || status?.pipeline === "verified" ? "success" : "warning"}>
                 Pipeline: {status?.pipeline || "Unknown"}
               </Badge>
-              <Badge tone={status?.expert_review === "completed" ? "info" : "neutral"}>
-                Expert Review: {status?.expert_review || "Not Requested"}
-              </Badge>
+              {status?.expert_review === "verified" || status?.pipeline === "verified" ? (
+                <Badge tone="success" className="inline-flex items-center gap-1">
+                  <CheckCircle2 size={13} /> {t("specialistVerified")}
+                </Badge>
+              ) : (
+                <Badge tone={status?.expert_review === "pending" ? "warning" : "neutral"}>
+                  Expert Review: {status?.expert_review || "Not Requested"}
+                </Badge>
+              )}
             </div>
           </div>
           {status?.expert_review === "not_requested" && !isFailed && (

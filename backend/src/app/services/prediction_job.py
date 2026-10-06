@@ -45,6 +45,68 @@ def _as_float(value) -> float | None:
         return None
 
 
+def calculate_treatment_progress(
+    parent_pred: Any,
+    current_disease: str,
+    current_sev_pct: float,
+    current_bucket: str,
+) -> dict[str, Any]:
+    parent_res = parent_pred.result if isinstance(getattr(parent_pred, "result", None), dict) else {}
+    parent_sev = getattr(parent_pred, "severity_pct", None)
+    if parent_sev is None:
+        parent_sev = parent_res.get("severity", {}).get("percent")
+    parent_sev = float(parent_sev or 0.0)
+
+    parent_disease = getattr(parent_pred, "disease", None)
+    if not parent_disease:
+        parent_disease = parent_res.get("disease", {}).get("label") or "Unknown"
+
+    parent_bucket = parent_res.get("severity", {}).get("bucket") or "Unknown"
+
+    delta = round(float(current_sev_pct) - float(parent_sev), 1)
+    parent_date_str = parent_pred.created_at.strftime("%b %d") if getattr(parent_pred, "created_at", None) else "previous scan"
+
+    if str(current_disease).lower() == "healthy" or float(current_sev_pct) <= 0.0:
+        status = "resolved"
+        message = (
+            f"Foliar infection appears fully resolved compared to {parent_disease} "
+            f"({parent_sev:.1f}% on {parent_date_str}). Foliar tissue is healthy."
+        )
+    elif delta <= -5.0:
+        status = "improving"
+        message = (
+            f"Foliar infection decreased by {abs(delta):.1f}% (from {parent_sev:.1f}% to {current_sev_pct:.1f}%). "
+            "Plant is responding positively to treatment."
+        )
+    elif delta >= 5.0:
+        status = "worsening"
+        message = (
+            f"Foliar infection increased by {delta:.1f}% (from {parent_sev:.1f}% to {current_sev_pct:.1f}%). "
+            "Infection is spreading; review treatment dosage or consult specialist."
+        )
+    else:
+        status = "stable"
+        message = (
+            f"Foliar infection remains stable (change of {delta:+.1f}% from {parent_sev:.1f}% to {current_sev_pct:.1f}%)."
+        )
+
+    if parent_disease != "Unknown" and current_disease != "Unknown" and parent_disease.lower() != current_disease.lower() and current_disease.lower() != "healthy":
+        message += f" Diagnosed condition shifted from {parent_disease} to {current_disease}."
+
+    return {
+        "parent_prediction_id": parent_pred.id,
+        "parent_date": parent_pred.created_at.isoformat() if getattr(parent_pred, "created_at", None) else None,
+        "parent_disease": parent_disease,
+        "parent_severity_pct": parent_sev,
+        "parent_severity_bucket": parent_bucket,
+        "current_severity_pct": current_sev_pct,
+        "current_severity_bucket": current_bucket,
+        "severity_delta": delta,
+        "status": status,
+        "message": message,
+    }
+
+
 def run_prediction_job(
     prediction_id: int,
     user_id: str,
@@ -108,6 +170,40 @@ def run_prediction_job(
         if not raw_path.exists():
             raise FileNotFoundError(f"Prediction image not found: {relative_image_path}")
 
+        farm_info = {}
+        plot_info = {}
+        effective_plot_id = plot_id or prediction.plot_id
+        if effective_plot_id:
+            from app.models import Plot, Farm
+            plot_obj = db.get(Plot, effective_plot_id)
+            if plot_obj:
+                plot_info = {
+                    "id": plot_obj.id,
+                    "name": plot_obj.name,
+                    "crop": plot_obj.crop,
+                    "area_acres": plot_obj.area_acres,
+                    "status": plot_obj.status,
+                }
+                if plot_obj.farm:
+                    farm_info = {
+                        "id": plot_obj.farm.id,
+                        "name": plot_obj.farm.name,
+                        "location": plot_obj.farm.location,
+                        "area_acres": plot_obj.farm.area_acres,
+                        "crop_history": plot_obj.farm.crop_history or [],
+                    }
+        if not farm_info:
+            from app.models import Farm
+            farm_obj = db.query(Farm).filter(Farm.user_id == user_id).first()
+            if farm_obj:
+                farm_info = {
+                    "id": farm_obj.id,
+                    "name": farm_obj.name,
+                    "location": farm_obj.location,
+                    "area_acres": farm_obj.area_acres,
+                    "crop_history": farm_obj.crop_history or [],
+                }
+
         context = create_context(
             image_path=str(raw_path),
             user_id=user_id,
@@ -115,6 +211,8 @@ def run_prediction_job(
             lat=lat,
             lon=lon,
             language=language,
+            farm=farm_info,
+            plot=plot_info,
         )
         # Make sure every intermediate snapshot saved to the DB (and returned by
         # GET /predictions/{id}) reports the pipeline as running, not "missing".
@@ -229,12 +327,17 @@ def run_prediction_job(
 
         # 3. Decision Routing
         t0 = stage_start("decision_routing", "Selecting crop-specific disease model...")
+        routing_status = cv_result.get("status", {}).get("decision_routing", "completed")
         disease_model_name = cv_result.get("disease", {}).get("model_used") or "default"
+        if routing_status == "unsupported_crop":
+            routing_msg = f"Crop '{crop_label}' is unsupported for automated disease diagnosis. Specialist inspection advised."
+        else:
+            routing_msg = f"Routed to model: {disease_model_name}"
         stage_finish(
             "decision_routing",
             t0,
-            f"Routed to model: {disease_model_name}",
-            data={"disease": cv_result.get("disease")},
+            routing_msg,
+            data={"disease": cv_result.get("disease"), "crop": cv_result.get("crop")},
         )
 
         # 4. Disease Classification
@@ -267,7 +370,16 @@ def run_prediction_job(
         context["pests"] = cv_result.get("pests", [])
         context.setdefault("pest_classification", {}).update(cv_result.get("pest_classification", {}))
         pests = context.get("pests", [])
-        pest_summary = ", ".join([p.get("label", "Pest") for p in pests]) if pests else "No pests detected"
+        pest_status = context.get("pest_classification", {}).get("status")
+        pest_det_status = cv_result.get("status", {}).get("pest_detection", "completed")
+
+        if pest_status == "unavailable" or pest_det_status in ("unavailable", "skipped"):
+            pest_summary = "Pest detection model unavailable"
+        elif not pests or pest_status == "no_pests_detected":
+            pest_summary = "No pests detected"
+        else:
+            pest_summary = ", ".join([p.get("label", "Pest") for p in pests])
+
         stage_finish(
             "pest_detection",
             t0,
@@ -370,20 +482,49 @@ def run_prediction_job(
         disease_confidence = prediction.disease_conf or 0.0
         crop_confidence = prediction.crop_conf or 0.0
 
+        is_near_tie = public_result.get("disease", {}).get("is_near_tie", False)
+        could_also_be_info = public_result.get("disease", {}).get("could_also_be")
+
+        is_unsupported_crop = (
+            public_result.get("crop", {}).get("status") == "unsupported_crop"
+            or public_result.get("status", {}).get("decision_routing") == "unsupported_crop"
+            or crop_confidence < crop_threshold
+        )
+
         review_reason: str | None = None
-        if disease_confidence < disease_threshold:
+        if is_unsupported_crop:
+            crop_name = public_result.get("crop", {}).get("label") or "Unknown Crop"
+            review_reason = (
+                f"Crop '{crop_name}' is unsupported or identified with low confidence ({crop_confidence * 100:.1f}%). "
+                "Automated disease models support Cotton, Groundnut, Pepper Bell, Potato, and Tomato."
+            )
+            public_result["status"]["mask_advisory"] = True
+        elif is_near_tie:
+            alt_lbl = could_also_be_info.get("label", "alternative candidate") if isinstance(could_also_be_info, dict) else "alternative candidate"
+            review_reason = f"Near-tie diagnosis with alternative candidate '{alt_lbl}'. Flagged for expert verification."
+        elif disease_confidence < disease_threshold:
             review_reason = "Disease confidence is below the configured threshold."
-        elif crop_confidence < crop_threshold:
-            review_reason = "Crop confidence is below the configured threshold."
         already_pending = (
             prediction.expert_review is not None and prediction.expert_review.status == "pending"
         )
 
-        # Decide the expert-review flag BEFORE assigning the result: ensure_expert_review()
-        # may commit, and JSON columns don't track in-place changes made after that.
-        public_result["status"]["expert_review"] = (
-            "pending" if (review_reason or already_pending) else "not_requested"
-        )
+        # Compute treatment progress if this is a follow-up/rescan
+        effective_parent_id = parent_id or prediction.parent_id
+        if effective_parent_id:
+            parent_pred = db.query(Prediction).filter(Prediction.id == effective_parent_id).first()
+            if parent_pred:
+                cur_disease = public_result.get("disease", {}).get("label") or "Unknown"
+                cur_sev = _as_float(public_result.get("severity", {}).get("percent")) or 0.0
+                cur_bucket = public_result.get("severity", {}).get("bucket") or "Unknown"
+                public_result["treatment_progress"] = calculate_treatment_progress(
+                    parent_pred, cur_disease, cur_sev, cur_bucket
+                )
+
+        if plot_info:
+            public_result["plot"] = plot_info
+        if farm_info:
+            public_result["farm"] = farm_info
+
         prediction.result = public_result
 
         if review_reason:

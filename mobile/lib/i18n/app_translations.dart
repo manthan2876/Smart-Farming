@@ -252,6 +252,10 @@ class AppTranslations {
     'cornerSnappedToBoundary': {'en': 'Corner snapped directly to farm boundary.', 'hi': 'कोना सीधे खेत की सीमा पर संरेखित हो गया।', 'gu': 'ખૂણો સીધો ખેતરની સીમા સાથે જોડાઈ ગયો.'},
     'cornerSnappedAndSaved': {'en': 'Corner snapped and saved to farm boundary.', 'hi': 'कोना संरेखित होकर खेत की सीमा पर सहेजा गया।', 'gu': 'ખૂણો સીમા સાથે જોડાઈને સાચવાઈ ગયો.'},
     'snappingToBoundary': {'en': 'Snapping to Farm Boundary', 'hi': 'खेत सीमा पर संरेखित हो रहा है', 'gu': 'ખેતર સીમા સાથે જોડાઈ રહ્યું છે'},
+    'pestDetectorUnavailable': {'en': 'Pest Detection Unavailable', 'hi': 'कीट पहचान अनुपलब्ध', 'gu': 'જીવાત તપાસ અનુપલબ્ધ'},
+    'unsupportedCropTitle': {'en': 'Unsupported Crop Species', 'hi': 'असमर्थित फसल प्रजाति', 'gu': 'બિન-સપોર્ટેડ પાકની જાત'},
+    'unsupportedCropDesc': {'en': 'Automated disease analysis currently supports Cotton, Groundnut, Pepper Bell, Potato, and Tomato. This scan has been routed for specialist review.', 'hi': 'स्वचालित रोग विश्लेषण वर्तमान में कपास, मूंगफली, शिमला मिर्च, आलू और टमाटर का समर्थन करता है। इस स्कैन को विशेषज्ञ समीक्षा के लिए भेज दिया गया है।', 'gu': 'સ્વચાલિત રોગ વિશ્લેષણ હાલમાં કપાસ, મગફળી, કેપ્સિકમ, બટાકા અને ટામેટાને સપોર્ટ કરે છે. આ સ્કેનને નિષ્ણાત સમીક્ષા માટે મોકલવામાં આવ્યો છે.'},
+    'supportedCrops': {'en': 'Supported Crops', 'hi': 'समर्थित फसलें', 'gu': 'સપોર્ટેડ પાકો'},
   };
 
   static String get(String key, String lang) {

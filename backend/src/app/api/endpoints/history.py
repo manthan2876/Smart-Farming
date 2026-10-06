@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Request, Response
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,7 @@ from app.models import Prediction
 @router.get("/history")
 async def history(
     request: Request,
+    response: Response,
     offset: int = 0,
     limit: int = 20,
     lang: str | None = None,
@@ -67,6 +68,12 @@ async def history(
         if last_id is not None:
             query = query.filter(Prediction.id < last_id)
 
+        total_count = query.count()
+        response.headers["X-Total-Count"] = str(total_count)
+        response.headers["X-Offset"] = str(offset)
+        response.headers["X-Limit"] = str(limit)
+        response.headers["Access-Control-Expose-Headers"] = "X-Total-Count, X-Offset, X-Limit"
+
         predictions = query.order_by(Prediction.id.desc()).offset(offset if last_id is None else 0).limit(limit).all()
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail=f"DB Error: {str(exc)}") from exc
@@ -76,6 +83,10 @@ async def history(
         res = dict(p.result or {})
         res["prediction_id"] = p.id
         res["id"] = p.id
+        if p.plot_id is not None:
+            res["plot_id"] = p.plot_id
+        if p.parent_id is not None:
+            res["parent_id"] = p.parent_id
 
         # Normalize crop: must be a dictionary matching PredictionResponse & clients
         existing_crop = res.get("crop")
@@ -136,11 +147,25 @@ async def history(
             if not existing_img.get("processed_path") and p.processed_path:
                 existing_img["processed_path"] = p.processed_path
 
-        # Normalize status
-        if isinstance(res.get("status"), dict):
-            res["status"]["pipeline"] = p.status
+        # Normalize status & expert review
+        if not isinstance(res.get("status"), dict):
+            res["status"] = {}
+        res["status"]["pipeline"] = p.status
+        if p.expert_review:
+            res["status"]["expert_review"] = p.expert_review.status
+            res["expert_review_data"] = {
+                "decision": p.expert_review.decision,
+                "corrected_disease": p.expert_review.corrected_disease,
+                "corrected_severity": p.expert_review.corrected_severity,
+                "farmer_guidance": p.expert_review.farmer_guidance,
+                "status": p.expert_review.status,
+            }
+            if (p.expert_review.status == "verified" or p.status == "verified") and p.expert_review.corrected_disease:
+                res["disease"]["label"] = p.expert_review.corrected_disease
+                if p.expert_review.corrected_severity is not None:
+                    res.setdefault("severity", {})["percent"] = p.expert_review.corrected_severity
         else:
-            res["status"] = {"pipeline": p.status}
+            res["status"].setdefault("expert_review", "not_requested")
 
         # Normalize recommendation
         if "recommendation" not in res or not isinstance(res.get("recommendation"), (dict, str)):

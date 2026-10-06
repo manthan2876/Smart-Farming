@@ -211,7 +211,7 @@ flowchart LR
 | **2 · Crop Identification** | EfficientNet-B0 | `crop.label`, `crop.confidence`, `crop.uncertainty`, `crop.is_uncertain` |
 | **3 · Decision Routing** | `config.yaml` lookup | Selects per-crop disease model; sets `crop.status` |
 | **4 · Disease Classification** | EfficientNet-B2 (per-crop) | `disease.label`, `disease.confidence`, `disease.all_probs`, `disease.escalation_required` |
-| **5 · Severity Estimation** | HSV contour heuristic | `severity.percent`, `severity.bucket` (Mild / Moderate / Severe) |
+| **5 · Severity Estimation** | HSV contour heuristic | `severity.percent`, `severity.bucket` (Healthy / Mild / Moderate / Severe) |
 | **6 · Pest Detection** | YOLOv8-cls | `pests[{label, confidence}]`, `pest_classification` |
 | **7 · Weather Enrichment** | OpenWeatherMap REST API | `weather.{temperature, humidity, wind_speed, condition}` |
 | **8 · Recommendation** | Qwen3 (HuggingFace / nscale) | `recommendation.{immediate_action, treatment, prevention, monitoring}` |

@@ -249,10 +249,11 @@ async def predict(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     location: str = Form(default="Unknown"),
-    lat: float = Form(default=52.2297),
-    lon: float = Form(default=21.0122),
+    lat: float | None = Form(default=None),
+    lon: float | None = Form(default=None),
     language: str = Form(default="English"),
     plot_id: int | None = Form(default=None),
+    client_uuid: str | None = Form(default=None),
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -304,12 +305,49 @@ async def predict(
         # 1. Fast Upstash Redis REST deduplication check (sub-20ms)
         try:
             from app.core.redis_rest import redis_rest
+            if client_uuid:
+                cached_uuid_res = await redis_rest.get(f"sf:uuid:{client_uuid}")
+                if cached_uuid_res and isinstance(cached_uuid_res, dict):
+                    cached_uuid_res["cached"] = True
+                    return cached_uuid_res
+
             cached_dedup = await redis_rest.get(f"sf:dedup:{hash_val}")
-            if cached_dedup and isinstance(cached_dedup, dict) and cached_dedup.get("status", {}).get("pipeline") == "completed":
+            if cached_dedup and isinstance(cached_dedup, dict) and cached_dedup.get("status", {}).get("pipeline") in _SUCCESS_STATUSES:
                 cached_dedup["cached"] = True
                 return cached_dedup
         except Exception:
             pass
+
+        # Resolve coordinates if not provided: Plot -> User farm -> Indian regional default
+        if lat is None or lon is None:
+            if plot_id:
+                from app.models import Plot
+                plot_obj = session.get(Plot, plot_id)
+                if plot_obj and plot_obj.user_id == user_id:
+                    if plot_obj.latitude is not None and plot_obj.longitude is not None:
+                        lat = float(plot_obj.latitude)
+                        lon = float(plot_obj.longitude)
+                    elif plot_obj.farm and plot_obj.farm.latitude is not None and plot_obj.farm.longitude is not None:
+                        lat = float(plot_obj.farm.latitude)
+                        lon = float(plot_obj.farm.longitude)
+                        if location == "Unknown" and plot_obj.farm.location:
+                            location = plot_obj.farm.location
+
+            if lat is None or lon is None:
+                from app.models import User
+                user_obj = session.get(User, user_id)
+                if user_obj and user_obj.farm:
+                    if user_obj.farm.latitude is not None and user_obj.farm.longitude is not None:
+                        lat = float(user_obj.farm.latitude)
+                        lon = float(user_obj.farm.longitude)
+                    if location == "Unknown" and user_obj.farm.location:
+                        location = user_obj.farm.location
+
+            if lat is None or lon is None:
+                lat = getattr(settings, "DEFAULT_LAT", 21.7645)
+                lon = getattr(settings, "DEFAULT_LON", 72.1519)
+                if location == "Unknown":
+                    location = getattr(settings, "DEFAULT_LOCATION", "Gujarat, India")
 
         # Save to active storage backend (Local disk or AWS S3 / GCS)
         from app.core.storage import get_storage
@@ -339,6 +377,40 @@ async def predict(
         with upload_path.open("wb") as destination:
             destination.write(image_bytes)
 
+        # Enrich farm and plot context
+        farm_info = {}
+        plot_info = {}
+        if plot_id:
+            from app.models import Plot, Farm
+            plot_obj = session.get(Plot, plot_id)
+            if plot_obj:
+                plot_info = {
+                    "id": plot_obj.id,
+                    "name": plot_obj.name,
+                    "crop": plot_obj.crop,
+                    "area_acres": plot_obj.area_acres,
+                    "status": plot_obj.status,
+                }
+                if plot_obj.farm:
+                    farm_info = {
+                        "id": plot_obj.farm.id,
+                        "name": plot_obj.farm.name,
+                        "location": plot_obj.farm.location,
+                        "area_acres": plot_obj.farm.area_acres,
+                        "crop_history": plot_obj.farm.crop_history or [],
+                    }
+        if not farm_info:
+            from app.models import Farm
+            farm_obj = session.query(Farm).filter(Farm.user_id == user_id).first()
+            if farm_obj:
+                farm_info = {
+                    "id": farm_obj.id,
+                    "name": farm_obj.name,
+                    "location": farm_obj.location,
+                    "area_acres": farm_obj.area_acres,
+                    "crop_history": farm_obj.crop_history or [],
+                }
+
         context = create_context(
             image_path=relative_image_path,
             user_id=user_id,
@@ -346,6 +418,8 @@ async def predict(
             lat=lat,
             lon=lon,
             language=language,
+            farm=farm_info,
+            plot=plot_info,
         )
 
         # If Redis/ARQ is not configured or offline, execute synchronously via Server 2
@@ -361,10 +435,52 @@ async def predict(
             context["image"]["raw_path"] = relative_image_path
 
             public_res = _public_result(context)
+            if plot_info:
+                public_res["plot"] = plot_info
+            if farm_info:
+                public_res["farm"] = farm_info
+
             new_pred = record_prediction(session, user_id, public_res)
             if plot_id:
                 new_pred.plot_id = plot_id
-            new_pred.status = "completed"
+
+            # Check confidence and near-tie for expert review escalation
+            disease_thresh = getattr(settings, "DISEASE_CONFIDENCE_THRESHOLD", 0.7)
+            crop_thresh = getattr(settings, "CROP_CONFIDENCE_THRESHOLD", 0.7)
+            disease_conf = public_res.get("disease", {}).get("confidence") or 0.0
+            crop_conf = public_res.get("crop", {}).get("confidence") or 0.0
+            is_near_tie = public_res.get("disease", {}).get("is_near_tie", False)
+
+            is_unsupported_crop = (
+                public_res.get("crop", {}).get("status") == "unsupported_crop"
+                or public_res.get("status", {}).get("decision_routing") == "unsupported_crop"
+                or crop_conf < crop_thresh
+            )
+
+            review_reason: str | None = None
+            if is_unsupported_crop:
+                crop_name = public_res.get("crop", {}).get("label") or "Unknown Crop"
+                review_reason = (
+                    f"Crop '{crop_name}' is unsupported or identified with low confidence ({crop_conf * 100:.1f}%). "
+                    "Automated disease models support Cotton, Groundnut, Pepper Bell, Potato, and Tomato."
+                )
+                public_res.setdefault("status", {})["mask_advisory"] = True
+            elif is_near_tie:
+                could_also_be_data = public_res.get("disease", {}).get("could_also_be", {})
+                lbl = could_also_be_data.get("label", "alternative candidate") if isinstance(could_also_be_data, dict) else "alternative candidate"
+                review_reason = f"Near-tie diagnosis with alternative candidate '{lbl}'. Flagged for expert verification."
+            elif disease_conf < disease_thresh:
+                review_reason = "Disease confidence is below configured threshold."
+
+            if review_reason:
+                ensure_expert_review(session, new_pred, review_reason)
+                new_pred.status = "pending_expert_review"
+                public_res.setdefault("status", {})["expert_review"] = "pending"
+                public_res.setdefault("status", {})["pipeline"] = "completed"
+            else:
+                new_pred.status = "completed"
+                public_res.setdefault("status", {})["pipeline"] = "completed"
+
             session.commit()
 
             public_res["prediction_id"] = new_pred.id
@@ -375,6 +491,8 @@ async def predict(
             try:
                 from app.core.redis_rest import redis_rest
                 await redis_rest.set(f"sf:dedup:{hash_val}", final_res, ex=86400)
+                if client_uuid:
+                    await redis_rest.set(f"sf:uuid:{client_uuid}", final_res, ex=86400)
             except Exception:
                 pass
 
@@ -490,13 +608,71 @@ async def prediction_detail(
         hist.reverse()
         result["historical_images"] = hist
 
+    # Attach plot and farm if present
+    if getattr(prediction, "plot", None):
+        result.setdefault("plot", {
+            "id": prediction.plot.id,
+            "name": prediction.plot.name,
+            "crop_type": getattr(prediction.plot, "crop", None),
+            "area_acres": prediction.plot.area_acres,
+        })
+        if getattr(prediction.plot, "farm", None):
+            result.setdefault("farm", {
+                "id": prediction.plot.farm.id,
+                "name": prediction.plot.farm.name,
+                "total_area_acres": getattr(prediction.plot.farm, "area_acres", None),
+            })
+    elif getattr(prediction, "plot_id", None) and not result.get("plot"):
+        try:
+            from app.models.plot import Plot
+            p_obj = session.get(Plot, prediction.plot_id)
+            if p_obj:
+                result["plot"] = {
+                    "id": p_obj.id,
+                    "name": p_obj.name,
+                    "crop_type": getattr(p_obj, "crop", None),
+                    "area_acres": p_obj.area_acres,
+                }
+                if getattr(p_obj, "farm", None):
+                    result["farm"] = {
+                        "id": p_obj.farm.id,
+                        "name": p_obj.farm.name,
+                        "total_area_acres": getattr(p_obj.farm, "area_acres", None),
+                    }
+        except Exception:
+            pass
+
+    # Attach treatment progress if this is a follow-up rescan
+    if prediction.parent and not result.get("treatment_progress"):
+        try:
+            from app.services.prediction_job import calculate_treatment_progress
+            current_dis = result.get("disease", {}).get("label", "Unknown")
+            current_sev = float(result.get("severity", {}).get("percent", 0.0) or 0.0)
+            current_bkt = result.get("severity", {}).get("bucket", "Unknown")
+            result["treatment_progress"] = calculate_treatment_progress(
+                prediction.parent,
+                current_dis,
+                current_sev,
+                current_bkt,
+            )
+        except Exception as exc:
+            _LOGGER.warning("Failed to calculate treatment progress in prediction_detail: %s", exc)
+
     # Check for expert review
-    if prediction.expert_review and prediction.status == "verified":
+    if prediction.expert_review:
         result["expert_review_data"] = {
             "decision": prediction.expert_review.decision,
             "corrected_disease": prediction.expert_review.corrected_disease,
+            "corrected_severity": prediction.expert_review.corrected_severity,
             "farmer_guidance": prediction.expert_review.farmer_guidance,
+            "status": prediction.expert_review.status,
         }
+        if prediction.expert_review.status == "verified" or prediction.status == "verified":
+            result.setdefault("status", {})["expert_review"] = "verified"
+            if prediction.expert_review.corrected_disease:
+                result.setdefault("disease", {})["label"] = prediction.expert_review.corrected_disease
+            if prediction.expert_review.corrected_severity is not None:
+                result.setdefault("severity", {})["percent"] = prediction.expert_review.corrected_severity
 
     # Check for follow_ups
     if hasattr(prediction, "follow_ups") and prediction.follow_ups:
@@ -508,6 +684,20 @@ async def prediction_detail(
         # and correctly detects a failed one.
         _apply_pipeline_status(fu_res, latest_follow_up.status)
         _enrich_image_urls(fu_res)
+        if not fu_res.get("treatment_progress"):
+            try:
+                from app.services.prediction_job import calculate_treatment_progress
+                fu_dis = fu_res.get("disease", {}).get("label", "Unknown")
+                fu_sev = float(fu_res.get("severity", {}).get("percent", 0.0) or 0.0)
+                fu_bkt = fu_res.get("severity", {}).get("bucket", "Unknown")
+                fu_res["treatment_progress"] = calculate_treatment_progress(
+                    prediction,
+                    fu_dis,
+                    fu_sev,
+                    fu_bkt,
+                )
+            except Exception:
+                pass
         if latest_follow_up.expert_review and latest_follow_up.status == "verified":
             fu_res["expert_review_data"] = {
                 "decision": latest_follow_up.expert_review.decision,
@@ -615,9 +805,41 @@ async def rescan_prediction(
         old_res = dict(old_prediction.result or {})
         old_user = old_res.get("user", {}) or {}
         location = old_user.get("location", old_res.get("location", "Unknown"))
-        lat = old_user.get("lat", 52.2297)
-        lon = old_user.get("lon", 21.0122)
-        language = old_user.get("language", old_res.get("language", "English"))
+        lat = old_user.get("lat") or getattr(settings, "DEFAULT_LAT", 21.7645)
+        # Enrich farm and plot context
+        effective_plot_id = plot_id or old_prediction.plot_id
+        farm_info = {}
+        plot_info = {}
+        if effective_plot_id:
+            from app.models import Plot, Farm
+            plot_obj = session.get(Plot, effective_plot_id)
+            if plot_obj:
+                plot_info = {
+                    "id": plot_obj.id,
+                    "name": plot_obj.name,
+                    "crop": plot_obj.crop,
+                    "area_acres": plot_obj.area_acres,
+                    "status": plot_obj.status,
+                }
+                if plot_obj.farm:
+                    farm_info = {
+                        "id": plot_obj.farm.id,
+                        "name": plot_obj.farm.name,
+                        "location": plot_obj.farm.location,
+                        "area_acres": plot_obj.farm.area_acres,
+                        "crop_history": plot_obj.farm.crop_history or [],
+                    }
+        if not farm_info:
+            from app.models import Farm
+            farm_obj = session.query(Farm).filter(Farm.user_id == user_id).first()
+            if farm_obj:
+                farm_info = {
+                    "id": farm_obj.id,
+                    "name": farm_obj.name,
+                    "location": farm_obj.location,
+                    "area_acres": farm_obj.area_acres,
+                    "crop_history": farm_obj.crop_history or [],
+                }
 
         context = create_context(
             image_path=relative_image_path,
@@ -626,6 +848,8 @@ async def rescan_prediction(
             lat=lat,
             lon=lon,
             language=language,
+            farm=farm_info,
+            plot=plot_info,
         )
 
         image_bytes = upload_path.read_bytes()
@@ -641,9 +865,20 @@ async def rescan_prediction(
             context["image"]["raw_path"] = relative_image_path
 
             public_res = _public_result(context)
+
+            from app.services.prediction_job import calculate_treatment_progress, _as_float
+            cur_disease = public_res.get("disease", {}).get("label") or "Unknown"
+            cur_sev = _as_float(public_res.get("severity", {}).get("percent")) or 0.0
+            cur_bucket = public_res.get("severity", {}).get("bucket") or "Unknown"
+            public_res["treatment_progress"] = calculate_treatment_progress(old_prediction, cur_disease, cur_sev, cur_bucket)
+            if plot_info:
+                public_res["plot"] = plot_info
+            if farm_info:
+                public_res["farm"] = farm_info
+
             new_pred = record_prediction(session, user_id, public_res)
             new_pred.parent_id = old_prediction.id
-            new_pred.plot_id = plot_id or old_prediction.plot_id
+            new_pred.plot_id = effective_plot_id
             new_pred.status = "completed"
             session.commit()
 

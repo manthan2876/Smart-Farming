@@ -21,6 +21,8 @@ class Prediction {
     this.status = 'completed',
     this.qualityScore,
     this.pests = const [],
+    this.pestClassificationStatus,
+    this.isPestAvailable = true,
     this.createdAt,
     this.notes = const [],
     this.translations,
@@ -38,6 +40,9 @@ class Prediction {
     this.weatherHumidity,
     this.weatherCondition,
     this.historicalImages = const [],
+    this.treatmentProgress,
+    this.plotInfo,
+    this.farmInfo,
   });
 
   final int id;
@@ -59,6 +64,8 @@ class Prediction {
   final String status;
   final double? qualityScore;
   final List<String> pests;
+  final String? pestClassificationStatus;
+  final bool isPestAvailable;
   final String? createdAt;
   final List<String> notes;
   final Map<String, dynamic>? translations;
@@ -76,6 +83,21 @@ class Prediction {
   final int? weatherHumidity;
   final String? weatherCondition;
   final List<Map<String, dynamic>> historicalImages;
+  final Map<String, dynamic>? treatmentProgress;
+  final Map<String, dynamic>? plotInfo;
+  final Map<String, dynamic>? farmInfo;
+
+  bool get isPestUnavailable =>
+      !isPestAvailable ||
+      pestClassificationStatus == 'unavailable' ||
+      pestClassificationStatus == 'skipped';
+
+  bool get isUnsupportedCrop =>
+      crop.toLowerCase().contains('unsupported') ||
+      disease.toLowerCase().contains('unsupported') ||
+      status == 'unsupported_crop';
+
+  bool get isVerified => expertReviewStatus == 'verified' || status == 'verified';
 
   String? get processedPath => imagePath;
 
@@ -258,6 +280,8 @@ class Prediction {
     String? status,
     double? qualityScore,
     List<String>? pests,
+    String? pestClassificationStatus,
+    bool? isPestAvailable,
     String? createdAt,
     List<String>? notes,
     Map<String, dynamic>? translations,
@@ -275,6 +299,9 @@ class Prediction {
     int? weatherHumidity,
     String? weatherCondition,
     List<Map<String, dynamic>>? historicalImages,
+    Map<String, dynamic>? treatmentProgress,
+    Map<String, dynamic>? plotInfo,
+    Map<String, dynamic>? farmInfo,
   }) {
     return Prediction(
       id: id ?? this.id,
@@ -296,6 +323,8 @@ class Prediction {
       status: status ?? this.status,
       qualityScore: qualityScore ?? this.qualityScore,
       pests: pests ?? this.pests,
+      pestClassificationStatus: pestClassificationStatus ?? this.pestClassificationStatus,
+      isPestAvailable: isPestAvailable ?? this.isPestAvailable,
       createdAt: createdAt ?? this.createdAt,
       notes: notes ?? this.notes,
       translations: translations ?? this.translations,
@@ -313,6 +342,9 @@ class Prediction {
       weatherHumidity: weatherHumidity ?? this.weatherHumidity,
       weatherCondition: weatherCondition ?? this.weatherCondition,
       historicalImages: historicalImages ?? this.historicalImages,
+      treatmentProgress: treatmentProgress ?? this.treatmentProgress,
+      plotInfo: plotInfo ?? this.plotInfo,
+      farmInfo: farmInfo ?? this.farmInfo,
     );
   }
 
@@ -430,6 +462,12 @@ class Prediction {
             .where((label) => label.isNotEmpty)
             .toList() ??
         [];
+    final pestClassRaw = target['pest_classification'] as Map?;
+    final pestClassStatus = pestClassRaw?['status']?.toString() ??
+        (target['status'] is Map ? (target['status'] as Map)['pest_detection']?.toString() : null);
+    final isPestAvailable = pestClassRaw != null
+        ? (pestClassRaw['available'] == true && pestClassStatus != 'unavailable')
+        : (pestClassStatus != 'unavailable' && pestClassStatus != 'skipped');
 
     // 7. Robust status parsing
     final rawStatus = target['status'];
@@ -477,6 +515,10 @@ class Prediction {
     final rawTranslations = (target['translations'] as Map?)?.cast<String, dynamic>() ??
         (target['result'] is Map ? (target['result']['translations'] as Map?)?.cast<String, dynamic>() : null);
 
+    final treatmentProgress = (target['treatment_progress'] as Map?)?.cast<String, dynamic>();
+    final plotInfo = (target['plot'] as Map?)?.cast<String, dynamic>();
+    final farmInfo = (target['farm'] as Map?)?.cast<String, dynamic>();
+
     return Prediction(
       id: (target['prediction_id'] as num?)?.toInt() ?? (target['id'] as num?)?.toInt() ?? 0,
       crop: cropLabel,
@@ -495,6 +537,8 @@ class Prediction {
       processedUrl: processedUrl,
       qualityScore: (image['quality_score'] as num?)?.toDouble(),
       pests: pestsList,
+      pestClassificationStatus: pestClassStatus,
+      isPestAvailable: isPestAvailable,
       status: statusStr,
       expertReviewStatus: expertReviewStatus,
       isFallback: isFallback,
@@ -510,6 +554,9 @@ class Prediction {
       weatherHumidity: weatherHumidity,
       weatherCondition: weatherCondition,
       historicalImages: historicalImages,
+      treatmentProgress: treatmentProgress,
+      plotInfo: plotInfo,
+      farmInfo: farmInfo,
       createdAt: target['created_at']?.toString(),
       notes: (target['notes'] as List?)?.map((n) => n.toString()).toList() ?? [],
       translations: rawTranslations,

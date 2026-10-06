@@ -48,9 +48,14 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
 
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     tensor = _EVAL_TF(image=image_rgb)["image"].unsqueeze(0).to(DEVICE)
+    temperature = float(crop_cfg.get("temperature", 1.0))
+    is_calibrated = bool(temperature > 0 and temperature != 1.0)
     with torch.no_grad():
         logits = model(tensor)
-        probs = torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()
+        if is_calibrated:
+            probs = torch.softmax(logits / temperature, dim=1).squeeze(0).cpu().numpy()
+        else:
+            probs = torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()
 
     top_idx = int(np.argmax(probs))
     label = classes[top_idx]
@@ -61,6 +66,8 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
     context["crop"]["model_name"] = "EfficientNet-B0"
     context["crop"]["model_file"] = "crop_identifier_v1.pth"
     context["crop"]["model_version"] = "v1.0"
+    context["crop"]["is_calibrated"] = is_calibrated
+    context["crop"]["temperature"] = temperature
     context["status"]["crop_identification"] = "completed"
 
     threshold = config["thresholds"].get("crop_confidence", 0.7)

@@ -15,14 +15,25 @@ def fetch_weather(context: dict, config: dict | None = None) -> dict:
         config = {}
     
     user_info = context.get("user", {})
-    lat = user_info.get("lat", 52.2297)
-    lon = user_info.get("lon", 21.0122)
+    lat = user_info.get("lat")
+    lon = user_info.get("lon")
     api_key = os.environ.get("OPENWEATHER_API")
-
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
 
     from datetime import datetime, timezone
     now_iso = datetime.now(timezone.utc).isoformat()
+
+    if lat is None or lon is None:
+        context["weather"] = {
+            "provider": "OpenWeatherMap",
+            "timestamp": now_iso,
+            "is_degraded": True,
+            "status": "missing_coordinates",
+            "message": "Coordinates not provided for weather lookup.",
+        }
+        context["status"]["weather"] = "skipped"
+        return context
+
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
 
     try:
         response = requests.get(url, timeout=5)
