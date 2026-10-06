@@ -1,136 +1,162 @@
 # UI/UX Specification — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
 
 ---
 
-This document is the canonical design reference for the frontend implementation. It supersedes the legacy `screen_specifications.md` and documents the Tailwind CSS design system and Vercel edge deployment.
+This document is the canonical design reference for the frontend implementation. It documents the anti-vibecoded design system, Tailwind CSS architecture, trilingual localization (EN, GU, HI), and Vercel edge deployment.
 
 ## Table of Contents
 
 1. [Frontend Tech Stack](#1-frontend-tech-stack)
 2. [Application Routes & Pages](#2-application-routes--pages)
-3. [Design System — Component Reference](#3-design-system--component-reference)
+3. [Design System — Anti-Vibecoded Component Reference](#3-design-system--anti-vibecoded-component-reference)
 4. [Layout Architecture](#4-layout-architecture)
 5. [Key UX Flows](#5-key-ux-flows)
-6. [i18n Strategy](#6-i18n-strategy)
+6. [i18n & Localization Strategy](#6-i18n--localization-strategy)
 7. [Design Principles](#7-design-principles)
+8. [Mobile Application UI (Flutter)](#8-mobile-application-ui-flutter)
 
 ---
 
 ## 1. Frontend Tech Stack
 
-| Concern         | Technology                                              |
-|-----------------|---------------------------------------------------------|
-| Framework       | React 18 + TypeScript                                   |
-| Build Tool      | Vite                                                    |
-| Styling         | **Tailwind CSS** (migrated from CSS Modules)            |
-| Routing         | React Router v6                                         |
-| State           | React Context (`AuthContext`)                           |
-| HTTP Client     | Axios — JWT bearer token injected via request interceptor |
-| Internationalisation | `src/i18n/` — English / Hindi / Gujarati           |
-| Real-time       | WebSocket (scan processing progress)                    |
-
-> **Migration Note:** All new and refactored components must use Tailwind utility classes exclusively. CSS Module files (`.module.css`) should not be added during or after this migration.
+| Concern | Technology | Details |
+|---|---|---|
+| Framework | React 18 + TypeScript 5.6 | Strict typing across components and translation keys |
+| Build Tool | Vite 6 | Fast HMR and optimized production bundle |
+| Styling | Tailwind CSS | Utility-first with custom farmer-green and warm-neutral theme |
+| Iconography | Custom SVG Icon Set (`src/components/icons/`) | Purpose-built SVG icons; third-party icon packages replaced |
+| Routing | React Router v6 | Client-side routing with role-aware protected route guards |
+| State | React Context (`AuthContext`, `ThemeContext`) | Authentication state, user profile, theme, and language state |
+| HTTP Client | Axios | JWT bearer token interceptor with automatic 401 refresh |
+| Internationalization | `src/i18n/` | 670+ translation keys with 100% compile-time parity across EN, GU, HI |
+| Real-time | WebSocket | Live diagnostic pipeline stage progress tracker |
 
 ---
 
 ## 2. Application Routes & Pages
 
-### 2.1 Public Routes _(no authentication required)_
+### 2.1 Public Routes (no authentication required)
 
-| Route           | Page Component    | Purpose                                                                 |
-|-----------------|-------------------|-------------------------------------------------------------------------|
-| `/`             | `LandingPage`     | Product intro: hero section, how-it-works, features                    |
-| `/auth/login`   | `LoginPage`       | Email or phone + password login form                                    |
-| `/auth/register`| `RegisterPage`    | Multi-step registration                                                 |
-| `/about`        | `AboutPage`       | Project background and team information                                 |
-| `/services`     | `ServicesPage`    | Feature showcase and capability overview                                |
-| `/crops`        | `CropsPage`       | Supported crops catalogue (also accessible without auth)                |
-| `/docs`         | External redirect | Redirects to backend Swagger UI at `{API_URL}/docs`                    |
+| Route | Page Component | Purpose |
+|---|---|---|
+| `/` | `LandingPage` | Product overview with interactive live diagnostic pipeline demo and Grad-CAM viewer |
+| `/auth/login` | `LoginPage` | Email or phone and password authentication |
+| `/auth/register` | `RegisterPage` | Account registration with preferred language selection |
+| `/auth/forgot-password` | `ForgotPasswordPage` | Request password reset token via email |
+| `/auth/reset-password` | `ResetPasswordPage` | Set new password using email verification token |
+| `/about` | `AboutPage` | Project mission, agronomic context, and engineering background |
+| `/services` | `ServicesPage` | Feature showcase and capabilities |
+| `/crops` | `CropsPage` | Supported crop catalogue, symptoms, and pathogen reference |
+| `/terms` | `TermsPage` | Terms of Service agreement (linked in footer) |
+| `/privacy` | `PrivacyPage` | Data privacy and telemetry retention policy (linked in footer) |
+| `/docs` | External redirect | Redirects to backend Swagger UI at `{API_URL}/docs` |
 
-### 2.2 Farmer Routes _(accessible by `farmer`, `expert`, `admin` roles)_
+### 2.2 Farmer Routes (accessible by `farmer`, `expert`, `admin` roles)
 
-| Route                         | Page Component        | Purpose                                                                                                     |
-|-------------------------------|-----------------------|-------------------------------------------------------------------------------------------------------------|
-| `/dashboard`                  | `DashboardPage`       | Personalised welcome, recent scan summary cards                                                             |
-| `/scan`                       | `ScanPage`            | Upload a leaf photo; select output language                                                                 |
-| `/predictions/:id/processing` | `ProcessingPage`      | Live pipeline progress tracker                                                                              |
-| `/predictions/:id`            | `PredictionResultPage`| Full diagnosis results                                                                                      |
-| `/history`                    | `HistoryPage`         | Paginated scan history                                                                                      |
-| `/farm/settings`              | `FarmSettingsPage`    | Farm details, boundary map, plot management                                                                 |
-| `/weather`                    | `WeatherPage`         | Current conditions + proactive alerts                                                                       |
-| `/alerts`                     | `AlertsPage`          | Notification inbox                                                                                          |
-| `/settings`                   | `SettingsPage`        | Language preference, password change                                                                        |
+| Route | Page Component | Purpose |
+|---|---|---|
+| `/dashboard` | `DashboardPage` | Personalized greeting, weather summary, recent scans, and quick actions |
+| `/scan` | `ScanPage` | Drag-and-drop leaf photo upload with language selector |
+| `/predictions/:id/processing` | `ProcessingPage` | Live pipeline progress tracker with skeleton loader states |
+| `/predictions/:id` | `PredictionResultPage` | Full diagnosis report: disease, severity, pests, Grad-CAM viewer, audio advisory |
+| `/history` | `HistoryPage` | Diagnostic Archive: longitudinal scan history with filter and pagination |
+| `/farm/settings` | `FarmSettingsPage` | Farm details, field boundary map, and plot CRUD management |
+| `/weather` | `WeatherPage` | Meteorological intelligence dashboard with TTS audio advisory |
+| `/alerts` | `AlertsPage` | Notification center with auto-read on navigation |
+| `/settings` | `SettingsPage` | Language selection, appearance theme, and password change |
 
-### 2.3 Expert Routes _(accessible by `expert`, `admin` roles)_
+### 2.3 Expert Routes (accessible by `expert`, `admin` roles)
 
-| Route                 | Page Component      | Purpose                                                                                       |
-|-----------------------|---------------------|-----------------------------------------------------------------------------------------------|
-| `/expert/queue`       | `ExpertQueuePage`   | Pending-review card list showing crop, disease, confidence level, submission date             |
-| `/expert/reviews/:id` | `ExpertReviewPage`  | Full diagnosis view with leaf images; approve / override / request-rescan workflow            |
-| `/admin/feedback`     | `AdminFeedbackPage` | Aggregated farmer feedback with expert review controls                                        |
+| Route | Page Component | Purpose |
+|---|---|---|
+| `/admin/expert` | `ExpertQueuePage` | Agronomist triage desk for low-confidence (<70%) scans |
+| `/admin/expert/:id` | `ExpertReviewPage` | Side-by-side verification: original leaf vs. Grad-CAM, diagnosis override |
+| `/admin/feedback` | `AdminFeedbackPage` | Agronomist Review Desk: aggregated farmer feedback and review queue |
 
-### 2.4 Admin Routes _(accessible by `admin` role only)_
+### 2.4 Admin Routes (accessible by `admin` role only)
 
-| Route            | Page Component     | Purpose                                                                                                                      |
-|------------------|--------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `/admin/metrics` | `AdminMetricsPage` | System dashboard: user stats, scan counts, model accuracy, drift signals, disease-distribution chart, confidence histogram   |
-| `/admin/users`   | `AdminUsersPage`   | User management: searchable/filterable list, role assignment                                                                 |
+| Route | Page Component | Purpose |
+|---|---|---|
+| `/admin/metrics` | `AdminMetricsPage` | System dashboard: user metrics, scan volume, model accuracy, drift signals |
+| `/admin/users` | `AdminUsersPage` | User directory, role assignment, and account management |
 
 ---
 
-## 3. Design System — Component Reference
+## 3. Design System — Anti-Vibecoded Component Reference
 
-All shared UI primitives live in **`src/components/ui/`**. Import from this path; do not re-implement primitives inline.
+All shared UI primitives live in **`src/components/ui/`** and **`src/components/icons/`**.
+
+### Design Philosophy
+The design avoids AI-generated styling patterns:
+- **No harsh gradients or radial glow orbs:** Surfaces use deliberate flat colors or subtle single-hue tints.
+- **No drop shadows:** Depth is achieved using clean borders (`border border-neutral-200 dark:border-neutral-800`) and tonal contrast.
+- **No bubbly, oversized corner radii:** Controlled sharp radius system (`rounded-sm` to `rounded-md`) applied consistently.
+- **No glassmorphism:** Surfaces use solid, high-contrast backgrounds (`bg-neutral-50`, `bg-neutral-900`) for legibility in outdoor agricultural conditions.
+- **No Lucide or generic icons:** Replaced with a unified custom SVG icon library in `src/components/icons/`.
+- **No decorative emojis in copy or UI:** Clean, concrete agronomic terminology.
+- **No em dashes in copy:** Commas, periods, or colons are used throughout.
 
 ---
 
 ### 3.1 `Button.tsx`
 
-A polymorphic action trigger. Renders `<button>` by default.
+Polymorphic action trigger with sharp borders and distinct interaction states.
 
 #### Props
 
-| Prop        | Type                                           | Default     | Notes                                  |
-|-------------|------------------------------------------------|-------------|----------------------------------------|
-| `variant`   | `'primary' \| 'secondary' \| 'danger' \| 'ghost'` | `'primary'` | Controls fill and colour               |
-| `size`      | `'sm' \| 'md' \| 'lg'`                         | `'md'`      | Controls padding and font size         |
-| `isLoading` | `boolean`                                      | `false`     | Shows spinner; disables interaction    |
-| `disabled`  | `boolean`                                      | `false`     |                                        |
-| `onClick`   | `() => void`                                   | —           |                                        |
-| `type`      | `'button' \| 'submit' \| 'reset'`              | `'button'`  |                                        |
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `variant` | `'primary' \| 'secondary' \| 'danger' \| 'ghost'` | `'primary'` | Visual style |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Padding and font size |
+| `isLoading` | `boolean` | `false` | Shows spinner; disables interaction |
+| `disabled` | `boolean` | `false` | Disables interaction |
+| `onClick` | `() => void` | — | Click handler |
+| `type` | `'button' \| 'submit' \| 'reset'` | `'button'` | HTML button type |
 
-#### Tailwind Style Reference
+#### Style Tokens
 
-| Variant     | Base Classes                                                          |
-|-------------|-----------------------------------------------------------------------|
-| `primary`   | `bg-green-600 text-white hover:bg-green-700 focus:ring-green-500`     |
-| `secondary` | `border border-green-600 text-green-700 hover:bg-green-50`            |
-| `danger`    | `bg-red-600 text-white hover:bg-red-700 focus:ring-red-500`           |
-| `ghost`     | `text-green-700 hover:bg-green-50 underline-offset-2`                 |
-
-All variants share: `rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`
+| Variant | Base Classes |
+|---|---|
+| `primary` | `bg-green-700 text-white hover:bg-green-800 active:bg-green-900 focus:ring-green-600 rounded-sm` |
+| `secondary` | `border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-sm` |
+| `danger` | `bg-red-700 text-white hover:bg-red-800 active:bg-red-900 focus:ring-red-600 rounded-sm` |
+| `ghost` | `text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-sm` |
 
 ---
 
 ### 3.2 `Card.tsx`
 
-A surface container for grouped content.
+Surface container with tonal border depth instead of drop shadows.
+
+```tsx
+<div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-sm overflow-hidden">
+  {children}
+</div>
+```
+
+---
+
+### 3.3 `LanguageToggle.tsx`
+
+Language switcher supporting dropdown, segmented, and icon variants.
 
 #### Props
 
-| Prop       | Type          | Notes                               |
-|------------|---------------|-------------------------------------|
-| `header`   | `ReactNode`   | Optional titled header slot         |
-| `footer`   | `ReactNode`   | Optional action footer slot         |
-| `children` | `ReactNode`   | Main body content                   |
-| `className`| `string`      | Allows extending styles             |
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `variant` | `'dropdown' \| 'segmented' \| 'icon'` | `'dropdown'` | Render style |
+| `showCode` | `boolean` | `true` | Show 2-letter uppercase code (EN, GU, HI) next to Globe icon |
+| `className` | `string` | `''` | Extra CSS class names |
 
-**Base classes:** `bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden`
+- **Dropdown variant:** Globe icon + 2-letter uppercase code (`EN`, `GU`, `HI`). Clicking opens a clean dropdown with language options in their native script.
+- **Segmented variant:** Horizontal button group showing all three languages as pill buttons.
+- **Icon variant:** Globe icon only, with tooltip showing current language.
+- Present in `PublicNav`, `Sidebar`, `Footer`, `LoginPage`, `RegisterPage`, `ForgotPasswordPage`, `ResetPasswordPage`.
 
 **Usage contexts:** prediction summary cards, weather widget, expert review queue items, dashboard quick-action tiles.
 
@@ -332,103 +358,126 @@ Progress indicator: step dots at top of `Card`, back/next `Button` navigation.
 
 ---
 
-## 6. i18n Strategy
+## 6. i18n & Localization Strategy
 
 ### File Structure
 
 ```
 src/i18n/
-├── index.ts       ← Sets up translation function (t()), exposes useTranslation hook
-├── en.ts          ← English translation key map
-├── hi.ts          ← Hindi translation key map
-├── gu.ts          ← Gujarati translation key map
-└── domain.ts      ← Domain-specific terms: crop names, disease names (all three languages)
+├── index.ts       ← Re-exports Language type and dictionaries
+├── en.ts          ← English source of truth (670+ camelCase translation keys)
+├── hi.ts          ← Hindi translation key map: Record<keyof typeof en, string>
+├── gu.ts          ← Gujarati translation key map: Record<keyof typeof en, string>
+└── domain.ts      ← Runtime domain translators (crops, diseases, pests, severity, weather, alerts)
 ```
 
-### Language Selection
+### Compile-Time Key Parity
+Type safety is strictly enforced at TypeScript compile time:
+```ts
+// gu.ts and hi.ts are typed against en.ts
+import { en } from './en';
+export const gu: Record<keyof typeof en, string> = { ... };
+export const hi: Record<keyof typeof en, string> = { ... };
+```
+Adding a key to `en.ts` without corresponding entries in `gu.ts` and `hi.ts` triggers a `tsc` compilation error (`Property is missing in type`).
 
-| Trigger               | Behaviour                                                             |
-|-----------------------|-----------------------------------------------------------------------|
-| Registration Step 3   | User selects preferred language; stored in user profile via API       |
-| `/settings`           | Language can be changed post-registration                             |
-| Unauthenticated pages | Browser `navigator.language` detected; falls back to English         |
-| Per-scan override     | `/scan` page allows selecting a different language for TTS output only |
+### Language Selection & Toggles
+
+| Component / Trigger | Location | Presentation & Behavior |
+|---|---|---|
+| `LanguageToggle` (dropdown) | `PublicNav`, `Sidebar`, `Footer` | Globe icon + uppercase 2-letter code (`EN`, `GU`, `HI`). Dropdown displays full vernacular labels. |
+| `LanguageToggle` (compact/icon) | Modals / Compact headers | Globe icon with current language tooltip. |
+| Auth forms | `LoginPage`, `RegisterPage`, `ForgotPasswordPage`, `ResetPasswordPage` | Globe icon + code toggle anchored in header or top corner. |
+| User Settings | `/settings` | Saved to user profile via `PUT /api/v1/profile` and cached in `localStorage`. |
+| Per-scan TTS | `/scan` | Selects output audio language for Google Cloud TTS generation. |
 
 ### Translation Key Convention
 
+Keys use camelCase naming across feature domains:
 ```ts
-// Namespace-prefixed dot notation
-t('scan.uploadPrompt')
-t('results.severity.moderate')
-t('expert.override.farmerGuidance')
-t('common.button.submit')
+t('scanReference')         // "Scan Reference"
+t('diagnosticArchive')     // "Diagnostic Archive"
+t('agronomistReviewDesk')  // "Agronomist Review Desk"
+t('termsTitle')            // "Terms of Service"
+t('privacyTitle')          // "Privacy Policy"
 ```
 
-### TTS Audio Localisation
+### Runtime Domain Translators (`domain.ts`)
 
-- TTS narration is generated server-side in the language selected at scan time
-- Audio language is independent of UI language (farmer can use Hindi UI but receive a Gujarati audio report)
-- Playback component: `<audio>` element wrapped in a styled play/pause button with duration display
+Dynamic API backend strings are mapped to localized terms at runtime:
+- `translateCrop(crop, lang)`: Localizes crop names (`Tomato` → `ટમેટા` / `टमाटर`)
+- `translateDisease(disease, lang)`: Localizes diagnosis labels (`Early Blight` → `અગાઉનો સુકારો` / `अगेती झुलसा`)
+- `translatePest(pest, lang)`: Localizes detected agricultural pests
+- `translateSeverityBucket(bucket, lang)`: Localizes severity tiers (Healthy, Low, Medium, High)
+- `translateWeather(condition, lang)`: Localizes meteorological status terms
+- `translateAlertTitle(title, lang)`: Localizes system and agronomist triage alerts
 
-### Domain Terms (`domain.ts`)
-
-Crop and disease names are stored separately in `domain.ts` to support:
-- Consistent use across UI labels, TTS scripts, and expert override dropdowns
-- Easier extension when adding new crops/diseases without touching general translation files
+### Mobile Flutter Localization
+The Flutter mobile app mirrors the web translation architecture via `mobile/lib/i18n/app_translations.dart` and `mobile/lib/i18n/domain_translations.dart`, using `context.tr('key')`.
 
 ---
 
 ## 7. Design Principles
 
-| Principle                        | Implementation                                                                                                  |
-|----------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| **Mobile-first**                 | All layouts designed for 375 px wide first; breakpoints `md` and `lg` add complexity. Farmers primarily use smartphones in the field. |
-| **High contrast for outdoors**   | Minimum WCAG AA contrast ratio. Prefer `text-gray-900` on white. Avoid light-gray-on-white combinations.        |
-| **Progressive disclosure**       | Show only what the user needs at each step. Processing page is intentionally minimal. Results page uses tabs.   |
-| **Confidence transparency**      | Confidence `Badge` is shown at every prediction surface — scan card, results hero, expert queue card.           |
-| **Minimal cognitive load**       | One primary action per screen. Secondary actions are lower-contrast or below the fold.                          |
-| **Heatmap visual semantics**     | Blue = diseased | Yellow/Green = healthy | Red = background. Consistent across all result and review pages.  |
-| **Accessible by default**        | All interactive elements: keyboard-navigable, ARIA labels on icon-only buttons, `role` and `aria-live` on progress stages. |
-| **Localisation-aware layout**    | Text containers must accommodate Hindi/Gujarati string lengths (typically 20–40% longer than English). Avoid fixed-width text containers. |
+| Principle | Implementation |
+|---|---|
+| **Anti-Vibecoded Visuals** | Flat colors or subtle single-hue tints only. No harsh gradients, glowing blobs, dot grids, or glassmorphism. |
+| **Authentic Agronomic Palette** | Deep agricultural greens (`#15803d`), warm neutrals, and crisp contrast. No purple-and-black or neon colors. |
+| **Sharp Radius System** | Deliberate, sharp corner radius system (`rounded-sm` / `rounded-xs`). No bubbly oversized curves. |
+| **Custom SVG Iconography** | Fully custom SVG icons in `src/components/icons/`. Zero reliance on generic third-party icon libraries. |
+| **No Emojis or Em Dashes** | Clean, professional copy without decorative emojis. Punctuated with commas, colons, or periods. |
+| **Real Product Demonstration** | The landing page features a real interactive diagnostic pipeline demo with Grad-CAM visualization. |
+| **Complete Transparency** | Full Terms of Service (`/terms`) and Privacy Policy (`/privacy`) pages, linked in the public footer. |
+| **Loading and Error Resilience** | High-fidelity skeleton loaders for all asynchronous states, plus structured empty and error states. |
+| **Outdoor Contrast & Legibility** | High contrast ratios for outdoor direct sunlight field use (minimum WCAG AA). |
 
 ---
 
-## Appendix A — Colour Palette (Tailwind Classes)
+## Appendix A — Colour Palette (Tailwind Tokens)
 
-| Token            | Tailwind Class       | Hex       | Usage                                    |
-|------------------|----------------------|-----------|------------------------------------------|
-| Brand Primary    | `green-600`          | `#16a34a` | Primary buttons, active nav, accents     |
-| Brand Light      | `green-50`           | `#f0fdf4` | Active nav background, badge backgrounds |
-| Danger           | `red-600`            | `#dc2626` | Danger buttons, severe severity badge    |
-| Warning          | `yellow-500`         | `#eab308` | Moderate severity, processing status     |
-| Info             | `blue-500`           | `#3b82f6` | Pending badge, heatmap diseased area     |
-| Surface          | `white`              | `#ffffff` | Card backgrounds                         |
-| Border           | `gray-100`           | `#f3f4f6` | Card and input borders                   |
-| Text Primary     | `gray-900`           | `#111827` | Body text                                |
-| Text Muted       | `gray-500`           | `#6b7280` | Helper text, secondary labels            |
+| Token | Tailwind Class | Hex Value | Usage |
+|---|---|---|---|
+| Primary | `green-700` | `#15803d` | Brand primary buttons, active tabs, core highlights |
+| Primary Dark | `green-800` | `#166534` | Hover and active interaction states |
+| Primary Light | `green-50` | `#f0fdf4` | Soft agricultural background tints |
+| Surface Light | `white` / `neutral-50` | `#ffffff` / `#fafafa` | Card surfaces and page canvas |
+| Surface Dark | `neutral-900` | `#171717` | Dark mode surface background |
+| Border | `neutral-200` / `neutral-800` | `#e5e5e5` / `#262626` | Structural borders providing depth |
+| Text Primary | `neutral-900` / `neutral-100` | `#171717` / `#f5f5f5` | Main body copy and headings |
+| Text Muted | `neutral-600` / `neutral-400` | `#525252` / `#a3a3a3` | Secondary labels and helper text |
+| Danger | `red-700` | `#b91c1c` | High severity, destructive actions, error badges |
+| Warning | `amber-600` | `#d97706` | Moderate severity, pending triage notices |
 
 ---
 
 ## Appendix B — Route–Role Access Matrix
 
-| Route                | Farmer | Expert | Admin |
-|----------------------|:------:|:------:|:-----:|
-| `/`                  | ✓      | ✓      | ✓     |
-| `/dashboard`         | ✓      | ✓      | ✓     |
-| `/scan`              | ✓      | ✓      | ✓     |
-| `/processing`        | ✓      | ✓      | ✓     |
-| `/results/:id`       | ✓      | ✓      | ✓     |
-| `/history`           | ✓      | ✓      | ✓     |
-| `/farm`              | ✓      | ✓      | ✓     |
-| `/weather`           | ✓      | ✓      | ✓     |
-| `/crops`             | ✓      | ✓      | ✓     |
-| `/alerts`            | ✓      | ✓      | ✓     |
-| `/settings`          | ✓      | ✓      | ✓     |
-| `/expert/queue`      | —      | ✓      | ✓     |
-| `/expert/reviews/:id`| —      | ✓      | ✓     |
-| `/admin/feedback`    | —      | ✓      | ✓     |
-| `/admin/metrics`     | —      | —      | ✓     |
-| `/admin/users`       | —      | —      | ✓     |
+| Route | Farmer | Expert | Admin |
+|---|:---:|:---:|:---:|
+| `/` | Yes | Yes | Yes |
+| `/about` | Yes | Yes | Yes |
+| `/services` | Yes | Yes | Yes |
+| `/crops` | Yes | Yes | Yes |
+| `/terms` | Yes | Yes | Yes |
+| `/privacy` | Yes | Yes | Yes |
+| `/auth/login` | Yes | Yes | Yes |
+| `/auth/register` | Yes | Yes | Yes |
+| `/auth/forgot-password` | Yes | Yes | Yes |
+| `/auth/reset-password` | Yes | Yes | Yes |
+| `/dashboard` | Yes | Yes | Yes |
+| `/scan` | Yes | Yes | Yes |
+| `/predictions/:id/processing` | Yes | Yes | Yes |
+| `/predictions/:id` | Yes | Yes | Yes |
+| `/history` | Yes | Yes | Yes |
+| `/farm/settings` | Yes | Yes | Yes |
+| `/weather` | Yes | Yes | Yes |
+| `/alerts` | Yes | Yes | Yes |
+| `/settings` | Yes | Yes | Yes |
+| `/admin/expert` | No | Yes | Yes |
+| `/admin/expert/:id` | No | Yes | Yes |
+| `/admin/feedback` | No | Yes | Yes |
+| `/admin/metrics` | No | No | Yes |
+| `/admin/users` | No | No | Yes |
 
 ---
 
@@ -500,4 +549,4 @@ Activated when tapping "Draw Boundary" for a farm or plot in `FarmScreen`.
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*

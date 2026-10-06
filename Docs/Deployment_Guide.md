@@ -1,8 +1,8 @@
 # Smart Farming — Deployment Guide
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -187,6 +187,11 @@ The table below lists all environment variables that must be configured for a co
 | `GOOGLE_TTS_API_KEY` | Google Cloud Text-to-Speech API key | ✅ (prod) |
 | `GOOGLE_TRANSLATION_API_KEY` | Google Cloud Translation API key | ✅ (prod) |
 | `GEMINI_API_KEY` | Google Gemini API key (advisory fallback + translation) | ✅ (prod) |
+| `SMTP_HOST` | SMTP server host for password reset email delivery (e.g. `smtp.gmail.com`) | ✅ (prod) |
+| `SMTP_PORT` | SMTP server port (587 for TLS) | ✅ (prod) |
+| `SMTP_USER` | SMTP username / sender account | ✅ (prod) |
+| `SMTP_PASSWORD` | SMTP password / app-specific password | ✅ (prod) |
+| `SMTP_TLS` | Enable TLS for SMTP (default: True) | ✅ (prod) |
 | `REDIS_URL` | Standard Redis URL (`redis://…`) — self-hosted / ARQ worker only | self-hosted |
 | `DEBUG` | `True` \| `False` | optional |
 
@@ -306,6 +311,10 @@ VITE_API_BASE_URL=http://localhost:8000
 ```bash
 # 4. Start the Vite development server
 npm run dev
+
+# 5. Build verification (TypeScript strict check + Vite bundle)
+#    Enforces 100% key parity across en.ts, gu.ts, and hi.ts dictionaries
+npm run build
 ```
 
 The React app will be available at `http://localhost:5173` with hot module replacement enabled.
@@ -1368,5 +1377,5 @@ docker compose ps
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*
 

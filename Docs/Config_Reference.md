@@ -1,8 +1,8 @@
 # Configuration Reference — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -230,6 +230,19 @@ These are used as fallback values only when `config.yaml` cannot be loaded. The 
 | `GOOGLE_TTS_API_KEY` | string | `""` | Google Cloud Text-to-Speech API key for Gujarati, Hindi, and English voice synthesis. |
 | `GOOGLE_TRANSLATION_API_KEY` | string | `""` | Google Cloud Translation API key for dynamic advisory localization. |
 
+### SMTP Email Service (Password Reset Tokens)
+
+Used to dispatch secure, ephemeral password reset tokens via TLS email.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SMTP_HOST` | string | `smtp.gmail.com` | SMTP relay server hostname. |
+| `SMTP_PORT` | int | `587` | SMTP port (typically 587 for STARTTLS or 465 for SSL). |
+| `SMTP_USER` | string | `""` | Authenticated email address / sender account. |
+| `SMTP_PASSWORD` | string | `""` | SMTP application password or account credentials. |
+| `SMTP_TLS` | bool | `True` | Enable STARTTLS encryption. |
+| `SMTP_FROM_EMAIL` | string | `""` | From address header (defaults to `SMTP_USER` if omitted). |
+
 ### Object Storage (AWS S3 & Google Cloud Storage)
 
 The backend provides a unified, S3-compatible storage abstraction (`storage.py`) supporting local disk, Google Cloud Storage (GCS), and AWS S3 / MinIO.
@@ -376,4 +389,4 @@ API Process
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*

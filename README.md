@@ -1,4 +1,4 @@
-# 🌾 Smart Farming — AI-Powered Crop Disease Diagnosis & Precision Agronomy
+# Smart Farming: AI-Powered Crop Disease Diagnosis and Precision Agronomy
 
 > Enterprise-grade, distributed AI platform for rapid crop disease diagnosis, pest detection, treatment recommendations, multilingual voice advisories, and precision agronomy management.
 
@@ -16,8 +16,8 @@
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.3  
-**Date:** 02 October 2026  
+**Version:** 2.4  
+**Date:** 06 October 2026  
 **Status:** Active / Production Ready  
 
 ---
@@ -30,6 +30,7 @@
 - [Tech Stack](#tech-stack)
 - [Repository Structure](#repository-structure)
 - [Diagnostic Pipeline](#diagnostic-pipeline)
+- [Internationalization & Design System](#internationalization--design-system)
 - [Quick Start](#quick-start)
   - [1-Click Unified Runner (Recommended)](#1-click-unified-runner-recommended)
   - [Manual Service Startup](#manual-service-startup)
@@ -51,18 +52,18 @@
 
 **Smart Farming** is a production-grade, distributed computer vision and precision agronomy platform. When a farmer captures or uploads a leaf photograph, the platform executes an end-to-end automated diagnostic and advisory workflow:
 
-1. **Leaf Validation & Preprocessing** — OpenCV evaluates image sharpness (Laplacian variance), illumination, and leaf presence.
-2. **Crop Identification** — EfficientNet-B0 classifies the crop species (`Cotton`, `Groundnut`, `Pepper Bell`, `Potato`, `Tomato`).
-3. **Decision Routing** — Dynamically dispatches the validated leaf to the crop-specific disease classifier.
-4. **Disease Classification** — Dedicated per-crop EfficientNet-B2 models classify diseases with confidence and uncertainty scores.
-5. **Severity Estimation** — Adaptive HSV thresholding estimates affected surface area percentage and severity tier (`Healthy`, `Low`, `Medium`, `High`).
-6. **Pest Detection** — Ultralytics YOLOv8 identifies agricultural pest infestations.
-7. **Visual Evidence (Grad-CAM)** — Generates activation attention heatmaps overlaid on the original leaf for farmer and expert inspection.
-8. **Real-Time Weather Context** — Fetches live meteorological conditions (temperature, humidity, rainfall) via OpenWeather API.
-9. **LLM Agronomy Advisory** — Google Gemini 2.5 Flash (with Hugging Face Qwen fallback) synthesizes diagnosis, weather, and farm telemetry into organic, chemical, and preventive treatment plans.
-10. **Multilingual Voice & Audio** — Localized into English, Hindi, and Gujarati with Google Cloud Text-to-Speech (TTS) audio narration.
-11. **Human-in-the-Loop Triage** — Sub-threshold (<70% confidence) diagnoses are routed to an Agronomist Expert Queue for review and MLOps retraining candidate collection.
-12. **Asynchronous Processing & Scheduled Crons** — Background tasks run via ARQ workers with Upstash Redis queues and serverless cron schedules orchestrated via Upstash QStash.
+1. **Leaf Validation & Preprocessing**: OpenCV evaluates image sharpness (Laplacian variance), illumination, and leaf presence.
+2. **Crop Identification**: EfficientNet-B0 classifies the crop species (`Cotton`, `Groundnut`, `Pepper Bell`, `Potato`, `Tomato`).
+3. **Decision Routing**: Dynamically dispatches the validated leaf to the crop-specific disease classifier.
+4. **Disease Classification**: Dedicated per-crop EfficientNet-B2 models classify diseases with confidence and uncertainty scores.
+5. **Severity Estimation**: Adaptive HSV thresholding estimates affected surface area percentage and severity tier (`Healthy`, `Low`, `Medium`, `High`).
+6. **Pest Detection**: Ultralytics YOLOv8 identifies agricultural pest infestations.
+7. **Visual Evidence (Grad-CAM)**: Generates activation attention heatmaps overlaid on the original leaf for farmer and expert inspection.
+8. **Real-Time Weather Context**: Fetches live meteorological conditions (temperature, humidity, rainfall) via OpenWeather API.
+9. **LLM Agronomy Advisory**: Google Gemini 2.5 Flash (with Hugging Face Qwen fallback) synthesizes diagnosis, weather, and farm telemetry into organic, chemical, and preventive treatment plans.
+10. **Multilingual Voice & Audio**: Localized into English, Hindi, and Gujarati with Google Cloud Text-to-Speech (TTS) audio narration.
+11. **Human-in-the-Loop Triage**: Sub-threshold (<70% confidence) diagnoses are routed to an Agronomist Expert Queue for review and MLOps retraining candidate collection.
+12. **Asynchronous Processing & Scheduled Crons**: Background tasks run via ARQ workers with Upstash Redis queues and serverless cron schedules orchestrated via Upstash QStash.
 
 ---
 
@@ -131,7 +132,7 @@ Smart Farming maintains strict separation between Development and Production env
 
 | Layer | Technologies & Services | Details |
 |---|---|---|
-| **Frontend (Web)** | React 18, TypeScript 5.6, Vite 6, Tailwind CSS, Lucide Icons | High-performance dashboard, interactive Grad-CAM viewer, multilingual UI |
+| **Frontend (Web)** | React 18, TypeScript 5.6, Vite 6, Tailwind CSS, Custom SVG Icon Set | High-performance dashboard, interactive Grad-CAM viewer, multilingual UI (EN/HI/GU, 670+ translation keys) |
 | **Mobile App** | Flutter 3.x (Dart), `flutter_map`, `latlong2`, `shared_preferences`, `flutter_tts` | Farmer-only native Android app with center-crosshair GIS boundary drawing, Supabase Remote Config, JWT auth, offline scan queue |
 | **Backend Gateway** | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic | RESTful API gateway, RBAC, background job orchestration |
 | **Model Microservice** | PyTorch 2.6 (CPU-optimised), timm, Ultralytics YOLOv8, OpenCV | Pure inference server, in-memory model pre-warming, Grad-CAM generation |
@@ -220,20 +221,49 @@ Smart-Farming/
 │
 ├── frontend/                               # React 18 + Vite Web Application (Server 3)
 │   ├── src/
-│   │   ├── pages/                          # Application pages
+│   │   ├── pages/                          # Application pages (all fully localized)
+│   │   │   ├── LandingPage.tsx             # Public marketing page with live diagnostic demo
+│   │   │   ├── AboutPage.tsx               # Project background and mission
+│   │   │   ├── ServicesPage.tsx            # Feature showcase
+│   │   │   ├── CropsPage.tsx               # Supported crop catalogue (public)
+│   │   │   ├── TermsPage.tsx               # Terms of Service (linked in footer)
+│   │   │   ├── PrivacyPage.tsx             # Privacy Policy (linked in footer)
+│   │   │   ├── LoginPage.tsx               # Authentication interface
+│   │   │   ├── RegisterPage.tsx            # Multi-step registration
+│   │   │   ├── ForgotPasswordPage.tsx      # Password reset request
+│   │   │   ├── ResetPasswordPage.tsx       # Email token-based password reset
 │   │   │   ├── DashboardPage.tsx           # Telemetry & quick action hub
 │   │   │   ├── ScanPage.tsx                # Drag-and-drop diagnostic leaf capture
+│   │   │   ├── ProcessingPage.tsx          # Live pipeline progress tracker
 │   │   │   ├── PredictionResultPage.tsx    # Diagnosis report, Grad-CAM viewer, audio player
+│   │   │   ├── HistoryPage.tsx             # Longitudinal scan records (Diagnostic Archive)
+│   │   │   ├── FarmSettingsPage.tsx        # Farm details, boundary map, plot management
+│   │   │   ├── WeatherPage.tsx             # Meteorological intelligence dashboard
 │   │   │   ├── AlertsPage.tsx              # Notifications with scan link & auto-read
+│   │   │   ├── SettingsPage.tsx            # Language preference, password change, theme
 │   │   │   ├── ExpertQueuePage.tsx         # Agronomist triage desk
 │   │   │   ├── ExpertReviewPage.tsx        # Side-by-side diagnostic verification interface
-│   │   │   ├── HistoryPage.tsx             # Longitudinal scan records
-│   │   │   ├── LoginPage.tsx               # Authentication interface
-│   │   │   └── ResetPasswordPage.tsx       # Email token-based password reset interface
+│   │   │   ├── AdminFeedbackPage.tsx       # Aggregated farmer feedback with expert controls
+│   │   │   ├── AdminUsersPage.tsx          # User management with role assignment
+│   │   │   └── AdminMetricsPage.tsx        # System telemetry, model accuracy, drift signals
 │   │   ├── components/                     # Reusable UI component library
+│   │   │   ├── icons/                      # Custom SVG icon set (replaces third-party icon libs)
+│   │   │   ├── ui/                         # Primitives: Button, Card, Input, Badge, Modal, Table
+│   │   │   ├── LanguageToggle.tsx          # Globe + 2-letter code dropdown (EN/GU/HI)
+│   │   │   ├── ThemeToggle.tsx             # Light/dark mode toggle
+│   │   │   ├── Sidebar.tsx                 # Role-aware navigation sidebar
+│   │   │   ├── PublicNav.tsx               # Header for public/unauthenticated pages
+│   │   │   └── Footer.tsx                  # Footer with Terms and Privacy links
 │   │   ├── api/                            # Typed HTTP client modules
-│   │   ├── context/                        # AuthContext & LanguageContext
-│   │   └── i18n/                           # Localised dictionaries (EN, HI, GU)
+│   │   ├── context/
+│   │   │   ├── AuthContext.tsx             # Provides { language, setLanguage, t, user, token, ... }
+│   │   │   └── ThemeContext.tsx
+│   │   └── i18n/                           # Localised dictionaries (EN/HI/GU)
+│   │       ├── en.ts                       # Source of truth — 670+ translation keys
+│   │       ├── gu.ts                       # Gujarati — typed as Record<keyof typeof en, string>
+│   │       ├── hi.ts                       # Hindi — typed as Record<keyof typeof en, string>
+│   │       ├── domain.ts                   # Runtime domain translators (crops, diseases, pests, weather, alerts)
+│   │       └── index.ts                    # Re-exports + Language type
 │   ├── package.json
 │   └── vite.config.ts
 │
@@ -323,6 +353,30 @@ Smart-Farming/
     • Sub-70% confidence diagnoses automatically enter the Agronomist Expert Queue.
     • Generates notification alert in the farmer's alerts inbox.
 ```
+
+---
+
+## Internationalization & Design System
+
+### Trilingual Localization (EN / GU / HI)
+
+The platform provides complete trilingual localization across all 24 web pages and the Flutter mobile client:
+
+- **670+ Translation Keys**: Complete UI localization coverage across navigation, authentication, diagnostics, triage desks, admin telemetry, legal terms, and notifications.
+- **Compile-Time Parity Enforcement**: In the web application (`frontend/src/i18n`), `gu.ts` and `hi.ts` are strictly typed as `Record<keyof typeof en, string>`. Any missing key or typo triggers a TypeScript compile error during `npm run build`.
+- **Runtime Domain Translators**: Dynamic server responses are localized at runtime via `frontend/src/i18n/domain.ts` and `mobile/lib/i18n/domain_translations.dart` for crops, diseases, pests, severity tiers, weather conditions, and alert titles.
+- **Language Selection**: Powered by `LanguageToggle.tsx`, which displays a Globe icon with an uppercase 2-letter language code (`EN`, `GU`, `HI`). Supports dropdown, segmented pill, and icon-only variants with tooltips. Embedded in public navigation, sidebar, footer, and authentication screens.
+
+### Anti-Vibecoded Design System
+
+The frontend interface was built from the ground up to eliminate generic AI design artifacts:
+
+- **Iconography**: Fully custom SVG icon set in `frontend/src/components/icons/` (zero dependencies on generic icon packages like Lucide).
+- **Color Architecture**: Single agricultural green primary (`#15803d` / `green-700`) paired with a warm neutral scale. No neon colors, no purple-and-black schemes, and no multi-color or liquid gradients.
+- **Elevation and Depth**: Tonal borders (`border-neutral-200 dark:border-neutral-800`) and spatial contrast provide structural depth instead of default drop shadows.
+- **Radius System**: Controlled sharp corner radii (`rounded-sm` to `rounded-md`). No bubbly, oversized pill containers.
+- **Copy and Typography**: Clean, concrete agronomic language without decorative emojis or em dashes. Deliberately paired type scale optimized for sunlight legibility.
+- **Substance & Transparency**: Real interactive diagnostic pipeline demonstration with Grad-CAM visualization, skeleton loaders for all loading states, and full Terms of Service (`/terms`) and Privacy Policy (`/privacy`) pages linked in the footer.
 
 ---
 
@@ -581,21 +635,22 @@ Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at b
 
 ## User Roles & Workflows
 
-### 🧑‍🌾 Farmer
+### Farmer
 - Submits leaf photographs via mobile camera or desktop file upload.
 - Views instant diagnostic breakdowns: disease name, confidence score, severity percentage, and pest warnings.
 - Interacts with the Grad-CAM visual evidence slider to inspect model focus areas.
 - Listens to audio treatment advisories in their native language (English, Hindi, Gujarati).
+- Toggles UI language at any time via the Globe icon in the navigation sidebar, public nav, and auth pages.
 - Receives automated alerts when specialist agronomists verify or adjust a treatment plan.
 - Navigating to a scan directly from the notifications inbox automatically marks the alert as read.
 
-### 🌿 Expert (Field Agronomist)
+### Expert (Field Agronomist)
 - Reviews low-confidence (<70%) or safety-flagged cases in the Expert Review Queue.
 - Inspects side-by-side visual evidence: original high-resolution leaf vs. AI Grad-CAM activation heatmap.
 - Verifies model accuracy, overrides diagnosis or severity when appropriate, and enters bespoke treatment dosage instructions.
 - Flags problematic samples to the dataset retraining candidate pool for continuous model improvement.
 
-### 🛠️ Administrator
+### Administrator
 - Monitors real-time pipeline telemetry, throughput, and error rates via Cloud Run logs.
 - Manages user accounts and role assignments.
 - Audits expert review turnaround times and agreement rates.
@@ -661,4 +716,4 @@ Comprehensive documentation is available in the [`Docs/`](Docs/) directory:
 ---
 
 *AI-Powered Smart Farming Platform*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*

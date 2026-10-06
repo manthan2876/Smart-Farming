@@ -1,8 +1,8 @@
 # Architecture & System Design Document
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -52,31 +52,31 @@ The system is architected around four core tenets:
 
 ```mermaid
 flowchart TD
-    subgraph CLIENT["🌐 Client Layer (Vercel)"]
-        SPA["React + TypeScript SPA (Vercel)\nVite · Tailwind CSS · SPA Rewrites\ni18n: EN / HI / GU\nRoles: Farmer · Expert · Admin"]
+    subgraph CLIENT["Client Layer (Vercel)"]
+        SPA["React 18 + TypeScript SPA (Vercel)\nVite 6 · Tailwind CSS · Anti-Vibecoded\nCustom SVG Icons · Sharp Radii\ni18n: EN / HI / GU (670+ keys)\nRoles: Farmer · Expert · Admin"]
     end
 
-    subgraph GCP["☁️ Google Cloud Platform (us-central1)"]
-        subgraph GATEWAY["⚙️ Cloud Run Service #1: Main Backend"]
+    subgraph GCP["Google Cloud Platform (us-central1)"]
+        subgraph GATEWAY["Cloud Run Service #1: Main Backend"]
             API["FastAPI · uvicorn (512MiB / 1 vCPU)\nPublic Ingress · CORS · Rate Limiting (slowapi)\nJWT Auth · GCS S3-compatible client\nREQUIRE_REDIS=False → Sync (Production Default)\nREQUIRE_REDIS=True  → ARQ Queue Mode"]
         end
 
-        subgraph INFERENCE["🧠 Cloud Run Service #2: Model Inference"]
+        subgraph INFERENCE["Cloud Run Service #2: Model Inference"]
             INF["FastAPI + PyTorch CPU (2GiB / 2 vCPU)\nPrivate Ingress (GCP OIDC Auth)\n7x Preloaded Models (Crop, Disease, Pest)"]
         end
 
-        subgraph OBJ["🪣 Object Storage"]
+        subgraph OBJ["Object Storage"]
             GCS["Google Cloud Storage\nBucket: smart-farming-data\nPresigned URLs (AES-256)"]
         end
     end
 
-    subgraph PERSIST["🗄️ Persistence & State Layer"]
+    subgraph PERSIST["Persistence & State Layer"]
         DB["Supabase PostgreSQL\nManaged DB (Session Pooler / SSL)"]
         UPSTASH["Upstash Serverless Redis REST\nHTTPS Token Auth\n• Translation Cache (en/hi/gu)\n• Image Dedup Cache (SHA-256)\n• Dynamic ML Threshold Sync\n• Lazy Weather Cron Locks"]
     end
 
-    subgraph EXTERNAL["🌍 External AI & Scheduling Services"]
-        HF["HuggingFace Inference API\n(Qwen3-4B Agronomist)"]
+    subgraph EXTERNAL["External AI & Scheduling Services"]
+        HF["HuggingFace Inference API / Gemini\n(Agronomist LLM)"]
         OWM["OpenWeather API"]
         QSTASH["Upstash QStash\nServerless Cron & Webhook Delivery\nHTTPS webhooks → /api/v1/internal-cron\nVerified via CRON_SECRET"]
     end
@@ -99,14 +99,15 @@ flowchart TD
 
 | Property | Detail |
 |---|---|
-| **Framework** | React 18 + TypeScript, bundled with Vite |
-| **Styling** | Tailwind CSS utility classes + custom UI component library |
-| **Routing** | React Router v6 (client-side, SPA) |
-| **State** | `AuthContext` (JWT + profile); local component state |
-| **HTTP Client** | Axios with Bearer token injection interceptor |
-| **Real-time** | Native WebSocket API for live pipeline progress |
-| **i18n** | Three-locale support — English, Hindi (`hi`), Gujarati (`gu`) |
-| **Roles** | `farmer` · `expert` · `admin` (route-level guards) |
+| **Framework** | React 18 + TypeScript 5.6, bundled with Vite 6 |
+| **Styling** | Tailwind CSS utility classes with anti-vibecoded design system (sharp radii `rounded-sm`, border elevation, farmer-green and warm-neutral theme) |
+| **Iconography** | Custom SVG icon library in `src/components/icons/` (zero third-party icon dependencies) |
+| **Routing** | React Router v6 (client-side SPA with role-based protected route guards) |
+| **State** | `AuthContext` (JWT + profile + i18n language), `ThemeContext`, and local component state |
+| **HTTP Client** | Axios with Bearer token injection and automatic 401 refresh interceptors |
+| **Real-time** | Native WebSocket API for live pipeline progress tracking |
+| **i18n & Localization** | Trilingual (EN, HI, GU) with 670+ translation keys and 100% compile-time TypeScript key parity (`gu.ts` and `hi.ts` typed against `en.ts`), runtime domain translators (`domain.ts`), and `LanguageToggle` component |
+| **Roles** | `farmer`, `expert`, `admin` |
 
 > **Note:** A native Flutter mobile client (`mobile/`) serves the farmer-facing use case independently from the React web dashboard. It authenticates via the same JWT API, uses `RemoteConfigService` to dynamically discover the backend URL from Supabase `app_config`, and includes a center-crosshair GIS boundary drawing screen with magnetic farm-boundary snapping.
 
@@ -692,82 +693,79 @@ flowchart LR
 
 ## 10. Frontend Architecture
 
-### Page Inventory
-
-| Page | Role Access | Description |
-|---|---|---|
 ### Route Inventory
 
 **Public routes** (no auth required):
 
-| Route | Page | Description |
+| Route | Page Component | Description |
 |---|---|---|
-| `/` | `Landing` | Marketing / intro page |
-| `/about` | `About` | About the platform |
-| `/services` | `Services` | Feature overview |
-| `/auth/login` | `Login` | Auth login form |
-| `/auth/register` | `Register` | Auth registration form |
-| `/crops` | `Crops` | Public crop information |
-| `/docs` | — | External redirect to documentation |
+| `/` | `LandingPage` | Product overview with interactive live diagnostic pipeline demo |
+| `/about` | `AboutPage` | Project background and agricultural context |
+| `/services` | `ServicesPage` | Feature showcase and capabilities |
+| `/crops` | `CropsPage` | Supported crop catalogue, pathogens, and symptoms |
+| `/terms` | `TermsPage` | Terms of Service agreement |
+| `/privacy` | `PrivacyPage` | Privacy and telemetry policy |
+| `/auth/login` | `LoginPage` | Authentication interface |
+| `/auth/register` | `RegisterPage` | Multi-step user registration |
+| `/auth/forgot-password` | `ForgotPasswordPage` | Password reset request |
+| `/auth/reset-password` | `ResetPasswordPage` | Password reset confirmation with token |
+| `/docs` | — | External redirect to Swagger documentation |
 
 **Authenticated routes** (Farmer+):
 
-| Route | Page | Description |
+| Route | Page Component | Description |
 |---|---|---|
-| `/dashboard` | `Dashboard` | Overview: recent scans, alerts, weather |
-| `/scan` | `Scan` | Upload leaf photo, start prediction |
-| `/predictions/:id/processing` | `Processing` | Live WebSocket progress view |
-| `/predictions/:id` | `PredictionResult` | Full result: disease, severity, pests, recommendation |
-| `/history` | `History` | Past predictions with filter/search |
-| `/farm/settings` | `FarmSettings` | Farm and plot management |
-| `/settings` | `Settings` | User profile settings |
-| `/weather` | `Weather` | Farm weather dashboard |
-| `/alerts` | `Alerts` | Notification centre (disease + weather) |
+| `/dashboard` | `DashboardPage` | Overview: recent scans, alerts, weather |
+| `/scan` | `ScanPage` | Upload leaf photo, start prediction |
+| `/predictions/:id/processing` | `ProcessingPage` | Live WebSocket progress view with skeleton states |
+| `/predictions/:id` | `PredictionResultPage` | Full diagnosis: disease, severity, pests, Grad-CAM, audio |
+| `/history` | `HistoryPage` | Diagnostic Archive: past predictions with search/filter |
+| `/farm/settings` | `FarmSettingsPage` | Farm and plot management with boundary maps |
+| `/settings` | `SettingsPage` | User preferences, theme, and language settings |
+| `/weather` | `WeatherPage` | Meteorological intelligence dashboard with TTS advisory |
+| `/alerts` | `AlertsPage` | Notification center (auto-marks read on navigation) |
 
 **Admin + Expert routes** (`adminOnly` guard — accessible to both admin and expert roles):
 
-| Route | Page | Description |
+| Route | Page Component | Description |
 |---|---|---|
-| `/admin/feedback` | `AdminFeedback` | Farmer feedback moderation |
-| `/admin/expert` | `ExpertQueue` | List of pending expert review items |
-| `/admin/expert/:id` | `ExpertReview` | Detailed review and action form |
+| `/admin/feedback` | `AdminFeedbackPage` | Agronomist review desk for farmer feedback |
+| `/admin/expert` | `ExpertQueuePage` | Triage desk for low-confidence scans (<70%) |
+| `/admin/expert/:id` | `ExpertReviewPage` | Side-by-side verification and diagnosis override |
 
 **Admin-only routes** (`strictAdminOnly` guard):
 
-| Route | Page | Description |
+| Route | Page Component | Description |
 |---|---|---|
-| `/admin/metrics` | `AdminMetrics` | System-wide ML and usage metrics |
-| `/admin/users` | `AdminUsers` | User management |
+| `/admin/metrics` | `AdminMetricsPage` | System-wide ML telemetry, drift signals, and usage metrics |
+| `/admin/users` | `AdminUsersPage` | User directory and role assignment |
 
 > [!NOTE]
-> Expert queue/review routes live under `/admin/expert` and `/admin/expert/:id`, **not** `/expert/queue` or `/expert/reviews/:id`. Both expert and admin roles can access these routes via the `adminOnly` guard.
+> Expert queue/review routes live under `/admin/expert` and `/admin/expert/:id`. Both expert and admin roles can access these routes via the `adminOnly` guard.
 
 ### Component Architecture
 
 ```mermaid
 flowchart TD
-    APP["App.tsx\nReact Router v6\nAuthContext Provider"]
+    APP["App.tsx\nReact Router v6\nAuthContext & ThemeContext"]
 
-    subgraph PAGES["Pages"]
-        PUB["Public Pages\nLanding · About · Services\nLogin · Register · Crops · Docs"]
+    subgraph PAGES["Pages (All Trilingual Localized)"]
+        PUB["Public Pages\nLanding · About · Services · Crops\nTerms · Privacy · Login · Register"]
         FARMER["Farmer Pages\nDashboard · Scan · Processing\nPredictionResult · History · Alerts\nWeather · FarmSettings · Settings"]
         EXPERT_ADMIN["Expert + Admin Pages\nExpertQueue (/admin/expert)\nExpertReview (/admin/expert/:id)\nAdminFeedback"]
         ADMIN["Admin-Only Pages\nAdminMetrics · AdminUsers"]
     end
 
-    subgraph UI["UI Component Library — src/components/ui/"]
-        BTN["Button"]
-        CRD["Card"]
-        INP["Input"]
-        BDG["Badge"]
-        MDL["Modal"]
-        TBL["Table"]
+    subgraph UI["UI Primitives & Custom Icons"]
+        ICONS["Custom SVG Icons\nsrc/components/icons/\n(Replaces Lucide)"]
+        UI_PRIM["UI Primitives\nButton · Card · Input · Badge · Modal · Table"]
+        TOGGLES["Toggles\nLanguageToggle (Globe + Code)\nThemeToggle"]
     end
 
-    subgraph SERVICES["Services"]
+    subgraph SERVICES["Services & Localization"]
         AXIOS["Axios Client\nBearer token interceptor\nAuto-refresh on 401"]
         WS["WebSocket Manager\nReconnect logic"]
-        I18N["i18n Module\nEN · HI · GU translations"]
+        I18N["i18n Dictionaries\nEN (670+ keys) · GU · HI\nCompile-time Record Parity\nRuntime Domain Translators"]
     end
 
     APP --> PAGES
@@ -777,7 +775,7 @@ flowchart TD
 
 ### i18n Strategy
 
-All user-visible strings are loaded from locale JSON files. The active locale is stored in `AuthContext` alongside the user profile (language preference persisted to the user record in the DB). Locale switching requires no page reload.
+All user-visible strings are loaded from typed translation dictionaries (`src/i18n/en.ts`, `gu.ts`, `hi.ts`). Compile-time parity is strictly enforced in TypeScript (`Record<keyof typeof en, string>`). The active language is managed via `AuthContext`, persisted in `localStorage` and the database user profile, and toggleable instantaneously via `LanguageToggle` without requiring page reloads. Dynamic entity and meteorological terms are resolved at runtime via `src/i18n/domain.ts`.
 
 ---
 
@@ -868,4 +866,4 @@ flowchart LR
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*

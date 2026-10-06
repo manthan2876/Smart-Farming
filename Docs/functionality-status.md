@@ -1,8 +1,8 @@
 # Smart Farming Functionality Status
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -1014,19 +1014,21 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Public routes: Landing (`/`), About (`/about`), Services (`/services`), Crops (`/crops`), Login (`/auth/login`), Register (`/auth/register`). `/crops` is fully public and does **not** require authentication.
+- Public routes: Landing (`/`), About (`/about`), Services (`/services`), Crops (`/crops`), Terms (`/terms`), Privacy (`/privacy`), Login (`/auth/login`), Register (`/auth/register`), Forgot Password (`/auth/forgot-password`), Reset Password (`/auth/reset-password`).
 - Protected routes (wrapped in `AppShell` + `ProtectedRoute`): Dashboard, Scan, Processing, Result, History, Settings, Weather, Alerts, Farm Settings, Expert Queue, Expert Review, Admin Metrics, Admin Feedback, Admin Users.
+- Anti-vibecoded design system: complete UI redesign featuring custom SVG icon set in `src/components/icons/` (replacing Lucide), sharp border radii (`rounded-sm`), border depth instead of drop shadows, authentic agricultural color palette, real interactive diagnostic pipeline demo with Grad-CAM visualization, and skeleton loading states for asynchronous views.
+- Terms of Service (`/terms`) and Privacy Policy (`/privacy`) pages fully integrated and linked in public footer.
 - `ProtectedRoute` accepts two optional boolean props that gate routes by role:
   - `adminOnly` — allows `admin` **or** `expert` roles. Used for: `/admin/feedback`, `/admin/expert`, `/admin/expert/:id`.
   - `strictAdminOnly` — allows `admin` role only. Used for: `/admin/metrics`, `/admin/users`.
   - When neither prop is set, any authenticated user is admitted.
-  - While auth state is loading, a spinner is displayed instead of redirecting.
+  - While auth state is loading, a skeleton loader is displayed instead of redirecting.
 - `AuthContext` (`context/AuthContext.tsx`) provides the following to all consumers:
   - **State:** `user` (`Profile | null`), `token` (`string | null`), `isAuthenticated`, `isLoading`, `language`, `units`.
-  - **Helpers:** `t(key)` translation function, `setLanguage(lang)` (persists to localStorage and backend), `setUnits(units)` (localStorage only).
+  - **Helpers:** `t(key)` translation function with compile-time type safety over 670+ keys, `setLanguage(lang)` (persists to localStorage and backend), `setUnits(units)` (localStorage only).
   - **Auth actions:** `signIn(identifier, password)`, `signUp(payload)`, `signOut()`, `refreshProfile()`.
   - The context does **not** expose `login()` or `logout()` — callers must use `signIn`/`signOut`.
-- The sidebar (`Sidebar.tsx`) renders a completely different navigation tree depending on role (`farmer`, `expert`, `admin`) and provides an in-sidebar notification panel for unread alerts, polling every 15 seconds.
+- The sidebar (`Sidebar.tsx`) renders a role-aware navigation tree depending on role (`farmer`, `expert`, `admin`), embeds the compact `LanguageToggle` (Globe + 2-letter uppercase code) and `ThemeToggle`, and provides an in-sidebar notification panel for unread alerts.
 - On 401, the shared API client automatically attempts a token refresh via the HttpOnly cookie. Deduplication prevents parallel refresh calls.
 
 **Known gaps:**
@@ -1110,9 +1112,11 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- Full UI translation dictionaries in English, Hindi (`hi`), and Gujarati (`gu`) (`i18n/en.ts`, `hi.ts`, `gu.ts`).
-- Curated agricultural domain lexicon for crops, diseases, pests, severity levels, weather conditions, and alert titles (`i18n/domain.ts`).
-- Language preference is persisted in `localStorage` and synced to the backend user profile via `updateProfile()` (a `PATCH /profile`-equivalent call) inside `AuthContext.setLanguage()`. On login, the language stored in the profile is loaded and applied.
+- Full UI translation dictionaries in English, Hindi (`hi`), and Gujarati (`gu`) (`i18n/en.ts`, `hi.ts`, `gu.ts`) with **670+ keys each**, providing 100% localization coverage across all 24 page components.
+- Strict compile-time key parity: `gu.ts` and `hi.ts` are typed as `Record<keyof typeof en, string>`, causing `tsc` to fail if any key is missing or mismatched.
+- Redesigned `LanguageToggle` component supporting dropdown (Globe + 2-letter uppercase code `EN`/`GU`/`HI`), segmented pill, and icon-only variants with tooltips. Embedded in PublicNav, Sidebar, Footer, and all auth pages.
+- Curated agricultural domain lexicon for crops, diseases, pests, severity levels, weather conditions, and alert titles (`i18n/domain.ts`) with runtime translation helpers (`translateCrop`, `translateDisease`, `translatePest`, `translateSeverityBucket`, `translateWeather`, `translateAlertTitle`).
+- Language preference is persisted in `localStorage` and synced to the backend user profile via `updateProfile()` inside `AuthContext.setLanguage()`. On login, the language stored in the profile is loaded and applied.
 - `t()` translation function and `language`/`units` state are provided via context.
 - Backend translation service (`services/translation/service.py`) supports: `en`, `hi`, `gu`, `mr`, `te`, `ta` (Marathi, Telugu, Tamil) via `normalize_language_code`.
 - Primary translation engine: Google Cloud Translation API v2 (`translate_batch_google`).
@@ -1585,4 +1589,4 @@ The web frontend is a functional multi-role application with a shared typed API 
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*

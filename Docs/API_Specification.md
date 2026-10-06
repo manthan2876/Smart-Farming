@@ -1,8 +1,8 @@
 # Smart Farming — Backend API Specification
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -397,6 +397,83 @@ Updates the authenticated user's password.
 |---|---|
 | `401 Unauthorized` | Old password is incorrect |
 | `422 Unprocessable Entity` | New password shorter than 8 characters |
+
+---
+
+### 5.6 Forgot Password
+
+```
+POST /auth/forgot-password
+```
+
+Requests an ephemeral password reset token delivered to the registered user's email address via SMTP.
+
+**Authentication:** None required.
+
+#### Request Body (`application/json`)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `email` | string | ✅ | Email address associated with the account |
+
+#### Example Request
+
+```json
+{
+  "email": "farmer@example.com"
+}
+```
+
+#### Example Response `200 OK`
+
+```json
+{
+  "detail": "If that email is registered, a password reset link has been sent."
+}
+```
+
+---
+
+### 5.7 Reset Password
+
+```
+POST /auth/reset-password
+```
+
+Resets account password using a single-use verification token received via email.
+
+**Authentication:** None required.
+
+#### Request Body (`application/json`)
+
+| Field | Type | Required | Constraints | Description |
+|---|---|---|---|---|
+| `token` | string | ✅ | Valid ephemeral reset token | Token sent to email |
+| `new_password` | string | ✅ | Min 8 characters | New account password |
+
+#### Example Request
+
+```json
+{
+  "token": "d7a4b8c9e0f1...",
+  "new_password": "NewStrongPassword#2026"
+}
+```
+
+#### Example Response `200 OK`
+
+```json
+{
+  "detail": "Password has been reset successfully."
+}
+```
+
+#### Error Responses
+
+| Status | Condition |
+|---|---|
+| `400 Bad Request` | Invalid or expired token |
+| `422 Unprocessable Entity` | Missing required fields or password too short |
 
 ---
 
@@ -2358,4 +2435,4 @@ Boundary fields accept a standard GeoJSON Polygon geometry object:
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*

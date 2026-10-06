@@ -1,10 +1,10 @@
 # Model Cards — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
-**Last Verified Against Codebase:** 02 October 2026  
+**Last Verified Against Codebase:** 06 October 2026  
 
 ---
 
@@ -442,11 +442,10 @@ The severity estimator is a deterministic, hand-engineered image processing pipe
 
 | Field | Details |
 |---|---|
-| **Model** | `Qwen/Qwen3-4B-Instruct-2507` |
-| **Provider** | HuggingFace Inference Providers |
-| **Backend** | nscale |
-| **Task** | Generate structured, actionable agricultural recommendations |
-| **Prompt Version** | v1.0 |
+| **Primary Model** | Google Gemini 2.5 Flash (`google-genai`) |
+| **Fallback Model** | `Qwen/Qwen3-4B-Instruct-2507` (via HuggingFace Inference API / nscale) |
+| **Task** | Generate structured, actionable agricultural recommendations with safety guidelines |
+| **Prompt Version** | v2.0 |
 
 ### Inference Parameters
 
@@ -565,4 +564,4 @@ All image-based ML models (Crop Identifier, Disease Classifiers, Pest Classifier
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*

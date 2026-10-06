@@ -1,8 +1,8 @@
 # Authentication & Roles / Permissions Reference
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 1.0  
-**Date:** 02 October 2026  
+**Version:** 2.0  
+**Date:** 06 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -32,7 +32,7 @@
 | **Refresh token lifetime** | 30 days |
 | **Refresh token storage** | HttpOnly cookie — `refresh_token` |
 | **Refresh token rotation** | Each `/auth/refresh` call issues a **new** access + refresh pair |
-| **Password hashing** | `pwdlib` (argon2 or bcrypt recommended) |
+| **Password hashing** | Argon2id (Version 19, 64 MB memory cost, 3 iterations, 4 parallel threads) via `pwdlib[argon2]` |
 
 > [!CAUTION]
 > **Production guard:** The server refuses to start if `JWT_SECRET_KEY` is left at its default value. This prevents accidental deployment with an insecure secret.
@@ -47,6 +47,8 @@
 |---|---|---|---|
 | `POST` | `/auth/register` | Create a new account | Phone **or** email required |
 | `POST` | `/auth/login` | Obtain access + refresh tokens | Rate-limited: **5 requests / minute** |
+| `POST` | `/auth/forgot-password` | Request password reset token | Dispatches secure, ephemeral single-use token via SMTP email |
+| `POST` | `/auth/reset-password` | Set new password with email token | Validates token expiry and resets password |
 | `POST` | `/auth/refresh` | Rotate token pair | Reads `refresh_token` HttpOnly cookie; issues new pair |
 | `POST` | `/auth/logout` | Invalidate session | Clears the `refresh_token` cookie |
 | `POST` | `/auth/change-password` | Change own password | Requires current password; auth required |
@@ -284,4 +286,4 @@ if target_user.role == "admin" AND admin_count == 1 AND new_role != "admin":
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 02 October 2026*
+*Last Updated: 06 October 2026*
