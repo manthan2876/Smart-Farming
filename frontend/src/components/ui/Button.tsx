@@ -9,16 +9,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-farmer-700 text-white shadow-soft hover:bg-farmer-800",
-  secondary: "border border-line bg-surface text-ink hover:border-farmer-300 hover:bg-farmer-50",
-  ghost: "text-muted hover:bg-farmer-50 hover:text-ink",
-  danger: "bg-danger text-white hover:bg-red-800",
+  primary: "bg-farmer-700 text-white hover:bg-farmer-800 border border-farmer-800",
+  secondary: "border border-line bg-surface text-ink hover:bg-farmer-50 hover:border-farmer-400",
+  ghost: "text-muted hover:bg-canvas hover:text-ink border border-transparent",
+  danger: "bg-danger text-white hover:bg-red-900 border border-red-950",
 };
 
 const sizeClasses = {
-  sm: "min-h-9 px-3 text-sm",
-  md: "min-h-11 px-4 text-sm",
-  lg: "min-h-13 px-5 text-base",
+  sm: "min-h-8 px-3 text-xs",
+  md: "min-h-10 px-4 text-sm",
+  lg: "min-h-12 px-5 text-base",
 };
 
 export default function Button({

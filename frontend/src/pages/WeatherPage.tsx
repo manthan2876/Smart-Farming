@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
-import { Cloud, Loader2, Pause, Volume2 } from "lucide-react";
+import { Cloud, Loader2, Pause, Volume2 } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { weather as fetchWeather } from "../api/predictions";
 import { request } from "../api/client";
-import { Button, Card } from "../components/ui";
+import { Button, Card, Skeleton } from "../components/ui";
 import { formatTemperature, formatWindSpeed } from "../lib/format";
 import { translateWeather } from "../i18n/domain";
 
@@ -107,73 +107,94 @@ export default function WeatherPage() {
   };
 
   if (isLoading) return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted">
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" />
-      <span className="ml-3">{t("loadingWeatherData")}</span>
+    <div className="space-y-6 pb-12">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+      <div className="rounded-sm border border-line bg-surface p-8 space-y-4">
+        <Skeleton className="h-14 w-36" />
+        <Skeleton className="h-5 w-52" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-sm border border-line bg-surface p-6 space-y-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="rounded-sm border border-line bg-surface p-6 space-y-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="rounded-sm border border-line bg-surface p-6 space-y-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </div>
     </div>
   );
   if (isError || !data) return (
-    <div className="rounded-md border border-red-100 bg-red-50 p-6 text-danger">
+    <div className="rounded-sm border border-red-300 bg-red-50 p-6 text-sm text-danger dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
       {t("failedWeatherData")}
     </div>
   );
 
   const temp = formatTemperature(data.temperature_celsius, units);
-  const hum = data.humidity_percent ?? "--";
+  const hum = data.humidity_percent ?? "N/A";
   const wind = formatWindSpeed(data.wind_speed_mps, units);
   const conditionTranslated = translateWeather(data.condition, language);
 
   const AudioButton = ({ text }: { text: string }) => (
     <Button variant="secondary" size="sm" onClick={() => toggleAudio(text)} disabled={isLoadingAudio || !text}>
       {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
-      {isLoadingAudio ? "Loading..." : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
+      {isLoadingAudio ? t("loading") : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
     </Button>
   );
 
   return (
-    <motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+    <div className="space-y-6 pb-12">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl text-ink sm:text-4xl">{t("regionalWeatherContext")}</h1>
-          <p className="mt-2 text-muted">{t("currentConditionsAroundFarm")}</p>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("meteorologicalIntelligence")}</span>
+          <h1 className="mt-1 font-display text-2xl sm:text-3xl text-ink">{t("regionalWeatherContext")}</h1>
+          <p className="mt-1 text-xs text-muted">{t("currentConditionsAroundFarm")}</p>
         </div>
         <Link to="/dashboard"><Button variant="secondary" size="sm">{t("backToDashboard")}</Button></Link>
       </div>
 
-      <div className="flex flex-col justify-between gap-8 rounded-lg border border-farmer-800 bg-farmer-900 p-7 text-farmer-100 shadow-card sm:flex-row sm:items-center sm:p-10">
+      <div className="flex flex-col justify-between gap-8 rounded-sm border border-line bg-surface p-6 sm:flex-row sm:items-center sm:p-8">
         <div>
-          <h2 className="font-display text-6xl text-farmer-200">{temp}</h2>
-          <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-farmer-100/90">
-            {conditionTranslated.toUpperCase()} • {user?.location || t("farmLocation")}
+          <h2 className="font-display text-5xl text-ink">{temp}</h2>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-muted">
+            {conditionTranslated.toUpperCase()} - {user?.location || t("farmLocation")}
           </p>
         </div>
-        <div className="text-farmer-300">
-          <Cloud size={100} />
+        <div className="text-farmer-700 dark:text-farmer-300">
+          <Cloud size={64} />
         </div>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card className="text-center">
-          <h4 className="text-xs font-bold uppercase tracking-wide text-muted">{t("humidity")}</h4>
-          <p className="mt-3 font-display text-3xl text-ink">{hum}%</p>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("humidity")}</h4>
+          <p className="mt-2 font-display text-2xl text-ink">{hum}%</p>
         </Card>
         <Card className="text-center">
-          <h4 className="text-xs font-bold uppercase tracking-wide text-muted">{t("windSpeed")}</h4>
-          <p className="mt-3 font-display text-3xl text-ink">{wind}</p>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("windSpeed")}</h4>
+          <p className="mt-2 font-display text-2xl text-ink">{wind}</p>
         </Card>
         <Card className="text-center">
-          <h4 className="text-xs font-bold uppercase tracking-wide text-muted">{t("status")}</h4>
-          <p className="mt-3 font-display text-3xl text-farmer-700 dark:text-emerald-400 font-semibold">{t("active")}</p>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("status")}</h4>
+          <p className="mt-2 font-display text-2xl text-farmer-700 dark:text-farmer-300 font-semibold">{t("active")}</p>
         </Card>
       </div>
 
-      <Card className="border-farmer-200 bg-farmer-50 dark:border-farmer-800 dark:bg-farmer-900/60 shadow-card" padding="lg">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <Card className="border-line bg-surface" padding="lg">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
           <div className="flex items-center gap-3">
-            <h3 className="font-display text-2xl text-farmer-900 dark:text-farmer-200">{t("agronomicWeatherAdvisory")}</h3>
+            <h3 className="font-display text-xl text-ink">{t("agronomicWeatherAdvisory")}</h3>
             {isTranslating && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-farmer-700 dark:text-farmer-300">
-                <Loader2 size={12} className="animate-spin" /> {t("translating")}
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+                <Loader2 size={12} className="animate-spin text-farmer-700" /> {t("translating")}
               </span>
             )}
           </div>
@@ -183,6 +204,6 @@ export default function WeatherPage() {
           {activeAdvisory}
         </p>
       </Card>
-    </motion.div>
+    </div>
   );
 }

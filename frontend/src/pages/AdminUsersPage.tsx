@@ -15,7 +15,7 @@ import {
   CheckCircle2,
   RefreshCw,
   UserCheck
-} from "lucide-react";
+} from "../components/icons";
 
 export default function AdminUsersPage() {
   const { user: currentUser, token, t } = useAuth();
@@ -212,13 +212,13 @@ export default function AdminUsersPage() {
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-muted">
-                    Loading users...
+                    {t("loadingUsers")}
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-muted">
-                    No users found matching your search.
+                    {t("noUsersFound")}
                   </td>
                 </tr>
               ) : (
@@ -239,10 +239,10 @@ export default function AdminUsersPage() {
                           </div>
                           <div>
                             <div className="font-semibold text-ink flex items-center gap-2">
-                              {u.name || "Unnamed User"}
+                              {u.name || t("unnamedUser")}
                               {u.id === currentUser?.id && (
                                 <span className="rounded bg-farmer-100 px-1.5 py-0.2 text-[0.65rem] font-bold text-farmer-800 dark:bg-farmer-900/80 dark:text-farmer-200 dark:border dark:border-farmer-700">
-                                  You
+                                  {t("you")}
                                 </span>
                               )}
                             </div>
@@ -251,18 +251,12 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-ink">{u.email || "—"}</div>
-                        <div className="text-xs text-muted">{u.phone || "—"}</div>
+                        <div className="text-ink">{u.email || "N/A"}</div>
+                        <div className="text-xs text-muted">{u.phone || "N/A"}</div>
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex whitespace-nowrap items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            u.role === "admin"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 dark:border dark:border-blue-800/80"
-                              : u.role === "expert"
-                              ? "bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 dark:border dark:border-purple-800/80"
-                              : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/80"
-                          }`}
+                          className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-xs border border-line bg-canvas px-2 py-0.5 text-xs font-semibold text-ink"
                         >
                           {u.role === "admin" && <ShieldCheck size={13} />}
                           {u.role === "expert" && <GraduationCap size={13} />}
@@ -271,14 +265,14 @@ export default function AdminUsersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-ink font-medium">{u.farm_name || "No farm registered"}</div>
-                        <div className="text-xs text-muted">{u.farm_location || "—"}</div>
+                        <div className="text-ink font-medium">{u.farm_name || t("noFarmRegistered")}</div>
+                        <div className="text-xs text-muted">{u.farm_location || "N/A"}</div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className="font-semibold text-ink">{u.scan_count}</span>
                       </td>
                       <td className="px-6 py-4 text-xs text-muted">
-                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : "N/A"}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button
@@ -302,7 +296,7 @@ export default function AdminUsersPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-line px-6 py-3 bg-canvas/40">
             <span className="text-xs text-muted">
-              Showing page {page + 1} of {totalPages} ({total} users)
+              {t("showingPage")} {page + 1} {t("of")} {totalPages} ({total} {t("users")})
             </span>
             <div className="flex gap-2">
               <Button
@@ -311,7 +305,7 @@ export default function AdminUsersPage() {
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
               >
-                Previous
+                {t("previous")}
               </Button>
               <Button
                 variant="secondary"
@@ -319,7 +313,7 @@ export default function AdminUsersPage() {
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {t("next")}
               </Button>
             </div>
           </div>
@@ -329,7 +323,7 @@ export default function AdminUsersPage() {
       {/* Role Change Modal */}
       <Modal
         open={!!selectedUser}
-        title="Modify User Platform Role"
+        title={t("modifyUserRole")}
         onClose={() => {
           if (!mutation.isPending) setSelectedUser(null);
         }}
@@ -337,10 +331,10 @@ export default function AdminUsersPage() {
         {selectedUser && (
           <form onSubmit={handleSaveRole} className="space-y-4">
             <div className="rounded-md bg-canvas p-4 text-sm">
-              <div className="font-semibold text-ink">{selectedUser.name || "Unnamed User"}</div>
+              <div className="font-semibold text-ink">{selectedUser.name || t("unnamedUser")}</div>
               <div className="text-xs text-muted">{selectedUser.email || selectedUser.phone}</div>
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-muted">Current Role:</span>
+                <span className="text-xs text-muted">{t("currentRole")}:</span>
                 <span className="rounded bg-surface px-2 py-0.5 text-xs font-bold capitalize text-ink border border-line">
                   {selectedUser.role}
                 </span>
@@ -351,33 +345,32 @@ export default function AdminUsersPage() {
               <div className="flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/80">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>
-                  <strong>Self-Demotion Lockout Guard:</strong> You cannot demote your own account from Administrator. 
-                  Another administrator must adjust your credentials if needed.
+                  <strong>{t("selfDemotionGuard")}:</strong> {t("selfDemotionDesc")}
                 </span>
               </div>
             )}
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-ink">Select New Role</label>
+              <label className="mb-1 block text-xs font-semibold text-ink">{t("selectNewRole")}</label>
               <Select
                 value={newRole}
                 onChange={(val) => setNewRole(val as "farmer" | "expert" | "admin")}
                 disabled={isSelf && newRole === "admin"}
                 theme="admin"
                 options={[
-                  { value: "farmer", label: "Farmer / Grower (Field Diagnostics & Farm Management)", icon: <Sprout size={14} className="text-farmer-600 shrink-0" /> },
-                  { value: "expert", label: "Field Expert / Specialist (Agronomy Queue & Overrides)", icon: <GraduationCap size={14} className="text-expert-700 shrink-0" /> },
-                  { value: "admin", label: "Administrator (Full Platform Control & Model Gates)", icon: <ShieldCheck size={14} className="text-admin-700 shrink-0" /> },
+                  { value: "farmer", label: `Farmer / Grower (${t("farmerFieldAccuracy")})`, icon: <Sprout size={14} className="text-farmer-600 shrink-0" /> },
+                  { value: "expert", label: `Field Expert / Specialist (${t("expertTriageQueue")})`, icon: <GraduationCap size={14} className="text-expert-700 shrink-0" /> },
+                  { value: "admin", label: `Administrator (${t("administrators")})`, icon: <ShieldCheck size={14} className="text-admin-700 shrink-0" /> },
                 ]}
               />
             </div>
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-ink">
-                Audit Reason <span className="text-muted font-normal">(optional)</span>
+                {t("auditReason")} <span className="text-muted font-normal">({t("optional")})</span>
               </label>
               <Input
-                placeholder="Reason for role change (e.g. Certified agronomist onboarded)..."
+                placeholder={t("auditReasonPlaceholder")}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
               />
@@ -404,7 +397,7 @@ export default function AdminUsersPage() {
                 onClick={() => setSelectedUser(null)}
                 disabled={mutation.isPending}
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 type="submit"
@@ -412,7 +405,7 @@ export default function AdminUsersPage() {
                 className="flex items-center gap-2"
               >
                 <UserCheck size={16} />
-                <span>{mutation.isPending ? "Updating..." : "Save Role"}</span>
+                <span>{mutation.isPending ? t("updating") : t("saveRole")}</span>
               </Button>
             </div>
           </form>

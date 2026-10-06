@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { InputHTMLAttributes, ReactNode } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "../icons";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -29,8 +29,8 @@ export default function Input({
     isPassword && enableToggle ? (showPassword ? "text" : "password") : type;
 
   return (
-    <label className="block space-y-2" htmlFor={id}>
-      {label && <span className="block text-sm font-semibold text-ink">{label}</span>}
+    <label className="block space-y-1.5" htmlFor={id}>
+      {label && <span className="block text-xs font-semibold uppercase tracking-wider text-muted">{label}</span>}
       <span className="relative block">
         {leadingIcon && (
           <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
@@ -40,7 +40,7 @@ export default function Input({
         <input
           id={id}
           type={effectiveType}
-          className={`min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/70 focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100 ${
+          className={`min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/60 transition-colors focus:border-farmer-700 focus:outline-none focus:ring-1 focus:ring-farmer-700 ${
             leadingIcon ? "pl-10" : ""
           } ${enableToggle && isPassword ? "pr-10" : trailingIcon ? "pr-10" : ""} ${className}`}
           {...props}
@@ -64,7 +64,7 @@ export default function Input({
           </span>
         ) : null}
       </span>
-      {error && <span className="block text-sm text-danger">{error}</span>}
+      {error && <span className="block text-xs font-medium text-danger">{error}</span>}
     </label>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check } from "../icons";
 
 export interface SelectOption {
   value: string | number;
@@ -30,79 +30,79 @@ interface ThemeStyle {
 const themeStyles: Record<SelectTheme, ThemeStyle> = {
   farmer: {
     triggerBase: "border-line bg-surface text-ink",
-    triggerHover: "hover:border-farmer-400",
-    triggerOpen: "border-farmer-500 ring-4 ring-farmer-100",
-    triggerFocus: "focus:border-farmer-500 focus:ring-4 focus:ring-farmer-100",
+    triggerHover: "hover:border-farmer-700",
+    triggerOpen: "border-farmer-700 ring-1 ring-farmer-700",
+    triggerFocus: "focus:border-farmer-700 focus:ring-1 focus:ring-farmer-700",
     chevronColor: "text-muted",
-    chevronOpenColor: "text-farmer-600",
-    menuBase: "border-farmer-500 bg-surface text-ink shadow-lg shadow-farmer-900/10",
+    chevronOpenColor: "text-farmer-700",
+    menuBase: "border-line bg-surface text-ink",
     optionBase: "border border-transparent text-ink",
-    optionHover: "hover:border-farmer-300 hover:bg-farmer-50 hover:text-farmer-800",
-    optionSelected: "border-farmer-400 bg-farmer-100 text-farmer-800 font-semibold shadow-xs hover:bg-farmer-200/50",
+    optionHover: "hover:bg-farmer-100/60 hover:text-ink",
+    optionSelected: "border-line bg-farmer-100 text-ink font-semibold",
     checkColor: "text-farmer-700",
-    leadingIconColor: "text-farmer-600",
+    leadingIconColor: "text-farmer-700",
     sublabelColor: "text-muted",
     placeholderColor: "text-muted",
   },
   light: {
     triggerBase: "border-line bg-surface text-ink",
-    triggerHover: "hover:border-farmer-400",
-    triggerOpen: "border-farmer-500 ring-4 ring-farmer-100",
-    triggerFocus: "focus:border-farmer-500 focus:ring-4 focus:ring-farmer-100",
+    triggerHover: "hover:border-farmer-700",
+    triggerOpen: "border-farmer-700 ring-1 ring-farmer-700",
+    triggerFocus: "focus:border-farmer-700 focus:ring-1 focus:ring-farmer-700",
     chevronColor: "text-muted",
-    chevronOpenColor: "text-farmer-600",
-    menuBase: "border-farmer-500 bg-surface text-ink shadow-lg shadow-farmer-900/10",
+    chevronOpenColor: "text-farmer-700",
+    menuBase: "border-line bg-surface text-ink",
     optionBase: "border border-transparent text-ink",
-    optionHover: "hover:border-farmer-300 hover:bg-farmer-50 hover:text-farmer-800",
-    optionSelected: "border-farmer-400 bg-farmer-100 text-farmer-800 font-semibold shadow-xs hover:bg-farmer-200/50",
+    optionHover: "hover:bg-farmer-100/60 hover:text-ink",
+    optionSelected: "border-line bg-farmer-100 text-ink font-semibold",
     checkColor: "text-farmer-700",
-    leadingIconColor: "text-farmer-600",
+    leadingIconColor: "text-farmer-700",
     sublabelColor: "text-muted",
     placeholderColor: "text-muted",
   },
   expert: {
     triggerBase: "border-line bg-surface text-ink",
-    triggerHover: "hover:border-expert-500/60",
-    triggerOpen: "border-expert-500 ring-4 ring-expert-100",
-    triggerFocus: "focus:border-expert-500 focus:ring-4 focus:ring-expert-100",
+    triggerHover: "hover:border-farmer-700",
+    triggerOpen: "border-farmer-700 ring-1 ring-farmer-700",
+    triggerFocus: "focus:border-farmer-700 focus:ring-1 focus:ring-farmer-700",
     chevronColor: "text-muted",
-    chevronOpenColor: "text-expert-700",
-    menuBase: "border-expert-500 bg-surface text-ink shadow-lg shadow-expert-700/10",
+    chevronOpenColor: "text-farmer-700",
+    menuBase: "border-line bg-surface text-ink",
     optionBase: "border border-transparent text-ink",
-    optionHover: "hover:border-expert-500/40 hover:bg-expert-50 hover:text-expert-700",
-    optionSelected: "border-expert-500/70 bg-expert-100 text-expert-700 font-semibold shadow-xs hover:bg-expert-200/50",
-    checkColor: "text-expert-700",
-    leadingIconColor: "text-expert-500",
+    optionHover: "hover:bg-farmer-100/60 hover:text-ink",
+    optionSelected: "border-line bg-farmer-100 text-ink font-semibold",
+    checkColor: "text-farmer-700",
+    leadingIconColor: "text-farmer-700",
     sublabelColor: "text-muted",
     placeholderColor: "text-muted",
   },
   admin: {
     triggerBase: "border-line bg-surface text-ink",
-    triggerHover: "hover:border-admin-500/60",
-    triggerOpen: "border-admin-500 ring-4 ring-admin-100",
-    triggerFocus: "focus:border-admin-500 focus:ring-4 focus:ring-admin-100",
+    triggerHover: "hover:border-farmer-700",
+    triggerOpen: "border-farmer-700 ring-1 ring-farmer-700",
+    triggerFocus: "focus:border-farmer-700 focus:ring-1 focus:ring-farmer-700",
     chevronColor: "text-muted",
-    chevronOpenColor: "text-admin-700",
-    menuBase: "border-admin-500 bg-surface text-ink shadow-lg shadow-admin-700/10",
+    chevronOpenColor: "text-farmer-700",
+    menuBase: "border-line bg-surface text-ink",
     optionBase: "border border-transparent text-ink",
-    optionHover: "hover:border-admin-500/40 hover:bg-admin-50 hover:text-admin-700",
-    optionSelected: "border-admin-500/70 bg-admin-100 text-admin-700 font-semibold shadow-xs hover:bg-admin-200/50",
-    checkColor: "text-admin-700",
-    leadingIconColor: "text-admin-500",
+    optionHover: "hover:bg-farmer-100/60 hover:text-ink",
+    optionSelected: "border-line bg-farmer-100 text-ink font-semibold",
+    checkColor: "text-farmer-700",
+    leadingIconColor: "text-farmer-700",
     sublabelColor: "text-muted",
     placeholderColor: "text-muted",
   },
   dark: {
-    triggerBase: "border-farmer-700/60 bg-farmer-950/40 text-farmer-100 placeholder:text-farmer-300/40",
-    triggerHover: "hover:border-farmer-500/60",
-    triggerOpen: "border-farmer-400 ring-4 ring-farmer-400/20",
-    triggerFocus: "focus:border-farmer-400 focus:ring-4 focus:ring-farmer-400/20",
+    triggerBase: "border-farmer-700/60 bg-farmer-950 text-farmer-100 placeholder:text-farmer-300/40",
+    triggerHover: "hover:border-farmer-400",
+    triggerOpen: "border-farmer-400 ring-1 ring-farmer-400",
+    triggerFocus: "focus:border-farmer-400 focus:ring-1 focus:ring-farmer-400",
     chevronColor: "text-farmer-200",
     chevronOpenColor: "text-farmer-300",
-    menuBase: "border-farmer-400 bg-farmer-900 text-farmer-50 shadow-2xl shadow-black/60",
+    menuBase: "border-farmer-700 bg-farmer-900 text-farmer-50",
     optionBase: "border border-transparent text-farmer-100",
-    optionHover: "hover:border-farmer-400/50 hover:bg-farmer-800/80 hover:text-white",
-    optionSelected: "border-farmer-400 bg-farmer-800 text-farmer-200 font-semibold shadow-xs hover:bg-farmer-700/60",
+    optionHover: "hover:bg-farmer-800 hover:text-white",
+    optionSelected: "border-farmer-700 bg-farmer-800 text-farmer-200 font-semibold",
     checkColor: "text-farmer-300",
     leadingIconColor: "text-farmer-200",
     sublabelColor: "text-farmer-300",
@@ -143,7 +143,6 @@ export default function Select({
   const selectedOption = options.find((opt) => opt.value === value);
   const currentTheme = themeStyles[theme] || themeStyles.farmer;
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -159,7 +158,6 @@ export default function Select({
     };
   }, [isOpen]);
 
-  // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
 
@@ -202,7 +200,7 @@ export default function Select({
         disabled={disabled}
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
         onKeyDown={handleKeyDown}
-        className={`group flex min-h-11 w-full items-center justify-between rounded-sm border px-3 text-left text-sm transition focus:outline-none ${
+        className={`group flex min-h-11 w-full items-center justify-between rounded-sm border px-3 text-left text-sm transition-colors focus:outline-none ${
           currentTheme.triggerBase
         } ${currentTheme.triggerHover} ${
           isOpen ? currentTheme.triggerOpen : currentTheme.triggerFocus
@@ -230,7 +228,7 @@ export default function Select({
         </span>
         <ChevronDown
           size={16}
-          className={`shrink-0 transition-transform duration-200 ${
+          className={`shrink-0 transition-transform duration-150 ${
             isOpen ? `rotate-180 ${currentTheme.chevronOpenColor}` : currentTheme.chevronColor
           }`}
         />
@@ -241,7 +239,7 @@ export default function Select({
           id={id ? `${id}-listbox` : undefined}
           role="listbox"
           onClick={(e) => e.stopPropagation()}
-          className={`absolute left-0 top-full z-50 mt-1.5 max-h-60 w-full overflow-y-auto rounded-sm border p-1.5 space-y-1 transition-all ${currentTheme.menuBase} ${menuClassName}`}
+          className={`absolute left-0 top-full z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-sm border p-1 space-y-0.5 custom-scrollbar ${currentTheme.menuBase} ${menuClassName}`}
         >
           {options.map((option) => {
             const isSelected = option.value === value;
@@ -256,7 +254,7 @@ export default function Select({
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`flex cursor-pointer select-none items-center justify-between rounded-sm border px-3 py-2 text-sm transition-all duration-150 ${
+                className={`flex cursor-pointer select-none items-center justify-between rounded-xs px-3 py-2 text-sm transition-colors ${
                   isSelected
                     ? currentTheme.optionSelected
                     : `${currentTheme.optionBase} ${currentTheme.optionHover}`
@@ -273,7 +271,7 @@ export default function Select({
                 </div>
                 {isSelected && (
                   <Check
-                    size={16}
+                    size={15}
                     className={`ml-2 shrink-0 ${currentTheme.checkColor}`}
                   />
                 )}

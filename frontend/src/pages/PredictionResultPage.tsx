@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import imageCompression from "browser-image-compression";
-import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { getPrediction, requestExpertReview } from "../api/predictions";
 import { Badge, Button, Card, Input } from "../components/ui";
@@ -161,7 +161,7 @@ export default function PredictionResultPage() {
 
   const AudioButton = ({ text }: { text: string }) => <Button variant="secondary" size="sm" className="no-print" onClick={() => toggleAudio(text)} disabled={isLoadingAudio}>
     {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
-    {isLoadingAudio ? "Loading..." : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
+    {isLoadingAudio ? t("loading") : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
   </Button>;
 
   const Advisory = ({ predictionData }: { predictionData: any }) => {
@@ -171,8 +171,8 @@ export default function PredictionResultPage() {
     const expertGuidance = predictionData.expert_review_data?.farmer_guidance;
     const isFallback = rawRec.is_fallback === true;
     const masked = (predictionData.status as any)?.mask_advisory === true || ((predictionData.status as any)?.expert_review === "pending" && !recommendation.immediate_action);
-    if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">Advisory Masked (Review Required)</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">To ensure farm safety, AI treatment recommendations are held until an expert verifies the diagnosis.</p></Card>;
-    if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl text-ink dark:text-cyan-200"><CheckCircle2 size={22} className="text-cyan-400" /> Specialist Verified Advisory Plan</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/40"><h4 className="font-semibold text-farmer-800 dark:text-emerald-300">Agronomist Guidance</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800 dark:text-emerald-100">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
+    if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">{t("advisoryMasked")}</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">{t("advisoryMaskedDesc")}</p></Card>;
+    if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl text-ink dark:text-cyan-200"><CheckCircle2 size={22} className="text-cyan-400" /> {t("specialistVerifiedPlan")}</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/40"><h4 className="font-semibold text-farmer-800 dark:text-emerald-300">{t("agronomistGuidance")}</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800 dark:text-emerald-100">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
     if (!Object.keys(recommendation).length) return null;
     const advisoryText = [recommendation.immediate_action, recommendation.action, recommendation.fertilizer, recommendation.treatment, recommendation.pesticide, recommendation.prevention, recommendation.prevention_tips, recommendation.monitoring, recommendation.irrigation].filter(Boolean).join(". ");
     const sections = [
@@ -185,19 +185,19 @@ export default function PredictionResultPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-2xl text-farmer-200">{isFallback ? t("standardAdvisory") : t("aiAdvisoryPlan")}</h3>
-          {isFallback && <Badge tone="warning">Standard Rules (AI Fallback)</Badge>}
+          {isFallback && <Badge tone="warning">{t("standardRulesFallback")}</Badge>}
           {isTranslating && <span className="inline-flex items-center gap-1.5 text-xs text-farmer-300"><Loader2 size={12} className="animate-spin" /> {t("translating")}</span>}
         </div>
         <AudioButton text={advisoryText} />
       </div>
-      {isFallback && <div className="mt-4 rounded-sm border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-200 leading-5">Note: Live AI generation was unavailable. Safety-validated standard agricultural treatment rules are displayed above.</div>}
+      {isFallback && <div className="mt-4 rounded-sm border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-200 leading-5">{t("standardRulesNote")}</div>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div>
       <p className="mt-5 border-l-4 border-danger bg-red-50 dark:bg-red-950/40 p-3 text-xs leading-5 text-danger dark:text-red-300"><strong>{t("important")}:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
     </Card>;
   };
 
   const PredictionBlock = ({ predictionData }: { predictionData: any }) => {
-    if (predictionData.error || (predictionData.status as any)?.pipeline === "failed") return <div className="rounded-md border border-red-200 bg-red-50 p-6 text-danger"><h3 className="flex items-center gap-2 font-display text-xl"><AlertCircle size={22} /> ML Pipeline Error</h3><p className="mt-3">{predictionData.error || "The analysis could not be completed."}</p><p className="mt-3 text-sm">Please capture another scan with better lighting.</p></div>;
+    if (predictionData.error || (predictionData.status as any)?.pipeline === "failed") return <div className="rounded-md border border-red-200 bg-red-50 p-6 text-danger"><h3 className="flex items-center gap-2 font-display text-xl"><AlertCircle size={22} /> {t("pipelineError")}</h3><p className="mt-3">{predictionData.error || t("analysisNotCompleted")}</p><p className="mt-3 text-sm">{t("captureBetterLighting")}</p></div>;
     const rawImage = predictionData.image?.raw_url || predictionData.raw_url || (predictionData.image?.raw_path ? getAssetUrl(predictionData.image.raw_path) : (predictionData.raw_path ? getAssetUrl(predictionData.raw_path) : null));
     const processedImage = predictionData.image?.processed_url || predictionData.processed_url || (predictionData.image?.processed_path ? getAssetUrl(predictionData.image.processed_path) : (predictionData.processed_path ? getAssetUrl(predictionData.processed_path) : null));
     const diseaseConfidence = (predictionData.disease?.confidence || 0) * 100;
@@ -221,7 +221,7 @@ export default function PredictionResultPage() {
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
               <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700"}`} style={{ width: `${diseaseConfidence}%` }} />
             </div>
-            {isLowConfidence && <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">Tentative diagnosis: Model confidence is low. Field inspection or requesting specialist verification is recommended.</div>}
+            {isLowConfidence && <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">{t("tentativeDiagnosisDesc")}</div>}
           </div>
           <div className="rounded-sm bg-canvas p-4">
             <h2 className="font-display text-xl text-ink">{t("severity")}: {translateSeverityBucket(predictionData.severity?.bucket, language)}</h2>
@@ -230,8 +230,8 @@ export default function PredictionResultPage() {
           </div>
           <div className="text-xs uppercase tracking-wide text-muted space-y-1.5">
             <p><strong>{t("crop")}:</strong> {translateCrop(predictionData.crop?.label, language)} {predictionData.crop?.confidence && `(${(predictionData.crop.confidence * 100).toFixed(1)}%)`}</p>
-            <p><strong>{t("pests")}:</strong> {pestOffline ? <span className="italic text-amber-600">Offline / Detector Not Available</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => translatePest(p.label, language)).join(", ") : t("noPests")}</p>
-            <p><strong>{t("weather")} {t("context")}:</strong> {weatherDegraded ? <span className="italic text-amber-600">Unavailable during scan</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% ${t("humidity").toLowerCase()} (${translateWeather(predictionData.weather?.condition, language)})`}</p>
+            <p><strong>{t("pests")}:</strong> {pestOffline ? <span className="italic text-amber-600">{t("offlineNotAvailable")}</span> : predictionData.pests?.length ? predictionData.pests.map((p: any) => translatePest(p.label, language)).join(", ") : t("noPests")}</p>
+            <p><strong>{t("weather")} {t("context")}:</strong> {weatherDegraded ? <span className="italic text-amber-600">{t("unavailableDuringScan")}</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% ${t("humidity").toLowerCase()} (${translateWeather(predictionData.weather?.condition, language)})`}</p>
           </div>
           <div className="flex flex-wrap items-center justify-between border-t border-line pt-3 text-[11px] text-muted">
             <span>Model: {predictionData.provenance?.models?.disease?.name || predictionData.disease?.model_used || "EfficientNet-B2"}</span>
@@ -250,8 +250,8 @@ export default function PredictionResultPage() {
       {isUploading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4 no-print">
           <Loader2 size={52} className="animate-spin text-farmer-700" />
-          <h2 className="mt-6 font-display text-2xl text-ink">Re-running AI Pipeline...</h2>
-          <p className="mt-2 text-muted">Analyzing your follow-up photo.</p>
+          <h2 className="mt-6 font-display text-2xl text-ink">{t("rerunningPipeline")}</h2>
+          <p className="mt-2 text-muted">{t("analyzingFollowUpPhoto")}</p>
         </div>
       )}
       <motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -259,9 +259,9 @@ export default function PredictionResultPage() {
         <div className="hidden print-only mb-6 border-b border-gray-300 pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Smart Farming Diagnostic & Treatment Report</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t("diagnosticReportTitle")}</h1>
               <p className="text-xs text-gray-600 mt-1">
-                Scan Reference: #{primary.prediction_id || id} | Generated: {new Date().toLocaleString()}
+                {t("scanReference")}: #{primary.prediction_id || id} | Generated: {new Date().toLocaleString()}
               </p>
             </div>
             <div className="text-right">
@@ -277,7 +277,7 @@ export default function PredictionResultPage() {
               &larr; {t("backToHistory")}
             </Link>
             <h1 className="mt-2 font-display text-3xl text-ink sm:text-4xl">
-              Scan #{primary.prediction_id || id} Diagnosis {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}
+              {t("scanDiagnosis")} #{primary.prediction_id || id} {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}
             </h1>
           </div>
           <Button
@@ -356,7 +356,7 @@ export default function PredictionResultPage() {
         {original && (
           <Card>
             <details>
-              <summary className="cursor-pointer font-display text-xl text-ink">View Original Prediction Details</summary>
+              <summary className="cursor-pointer font-display text-xl text-ink">{t("viewOriginalDetails")}</summary>
               <div className="mt-6">
                 <PredictionBlock predictionData={original} />
               </div>

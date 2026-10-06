@@ -166,26 +166,27 @@ class DomainTranslations {
     if (entry != null && entry[code] != null) return entry[code]!;
 
     if (code != 'en') {
-      final lower = title.toLowerCase();
+      final sanitized = title.replaceAll('\u2014', ':');
+      final lower = sanitized.toLowerCase();
       if (lower.contains('early blight') || lower.contains('leaf spot')) {
-        final prefix = code == 'gu' ? '🍃 પાનના ટપકાં / સુકારો જોખમ ચેતવણી' : '🍃 अगेती झुलसा / पत्ती धब्बा जोखिम चेतावनी';
-        final split = title.split('—');
-        return split.length > 1 ? '$prefix — ${split.last.trim()}' : prefix;
+        final prefix = code == 'gu' ? 'પાનના ટપકાં / સુકારો જોખમ ચેતવણી' : 'अगेती झुलसा / पत्ती धब्बा जोखिम चेतावनी';
+        final split = sanitized.split(':');
+        return split.length > 1 ? '$prefix: ${split.last.trim()}' : prefix;
       }
       if (lower.contains('extreme heat') || lower.contains('heat stress')) {
-        final prefix = code == 'gu' ? '🌡️ અતિશય ગરમીની ચેતવણી' : '🌡️ अत्यधिक गर्मी की चेतावनी';
-        final split = title.split('—');
-        return split.length > 1 ? '$prefix — ${split.last.trim()}' : prefix;
+        final prefix = code == 'gu' ? 'અતિશય ગરમીની ચેતવણી' : 'अत्यधिक गर्मी की चेतावनी';
+        final split = sanitized.split(':');
+        return split.length > 1 ? '$prefix: ${split.last.trim()}' : prefix;
       }
       if (lower.contains('heavy rain') || lower.contains('waterlogging') || lower.contains('flood')) {
-        final prefix = code == 'gu' ? '🌧️ ભારે વરસાદ / પાણી ભરાવાની ચેતવણી' : '🌧️ भारी बारिश / जलभराव की चेतावनी';
-        final split = title.split('—');
-        return split.length > 1 ? '$prefix — ${split.last.trim()}' : prefix;
+        final prefix = code == 'gu' ? 'ભારે વરસાદ / પાણી ભરાવાની ચેતવણી' : 'भारी बारिश / जलभराव की चेतावनी';
+        final split = sanitized.split(':');
+        return split.length > 1 ? '$prefix: ${split.last.trim()}' : prefix;
       }
       if (lower.contains('expert review') || lower.contains('specialist')) {
-        final prefix = code == 'gu' ? '✓ નિષ્ણાત સમીક્ષા પૂર્ણ' : '✓ विशेषज्ञ समीक्षा पूर्ण';
-        final split = title.split('—');
-        return split.length > 1 ? '$prefix — ${split.last.trim()}' : prefix;
+        final prefix = code == 'gu' ? 'નિષ્ણાત સમીક્ષા પૂર્ણ' : 'विशेषज्ञ समीक्षा पूर्ण';
+        final split = sanitized.split(':');
+        return split.length > 1 ? '$prefix: ${split.last.trim()}' : prefix;
       }
     }
 

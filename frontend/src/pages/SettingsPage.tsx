@@ -19,7 +19,7 @@ import {
   Sun,
   KeyRound,
   ShieldCheck
-} from "lucide-react";
+} from "../components/icons";
 import { motion } from "motion/react";
 import { Button, Card, Input, Select } from "../components/ui";
 import ThemeToggle from "../components/ThemeToggle";
@@ -169,10 +169,10 @@ export default function SettingsPage() {
           <div>
             <h3 className="flex items-center gap-2 font-display text-xl text-ink">
               <Sun size={20} className="text-farmer-700" />
-              <span>Appearance & Theme</span>
+              <span>{t("appearanceTheme")}</span>
             </h3>
             <p className="mt-2 text-sm text-muted">
-              Choose between light, dark, or automatic system theme.
+              {t("appearanceThemeDesc")}
             </p>
           </div>
           <ThemeToggle variant="segmented" />
@@ -322,8 +322,8 @@ export default function SettingsPage() {
 
       {isAdmin && (
         <>
-          <motion.div className="rounded-md border border-line border-t-4 border-t-expert-500 bg-surface p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Database size={20} className="text-expert-500" /> {t("mlopsEngine")}</h3>
+          <div className="rounded-sm border border-line bg-surface p-5 sm:p-6">
+            <h3 className="flex items-center gap-2 font-display text-lg text-ink"><Database size={18} className="text-farmer-700 dark:text-farmer-300" /> {t("mlopsEngine")}</h3>
             <p className="mt-2 text-sm text-muted">{t("mlopsSubtitle")}</p>
             
             <div className="mt-6 rounded-sm bg-canvas p-4">
@@ -404,10 +404,10 @@ export default function SettingsPage() {
                 <Cloud size={18} /> {t("syncS3")}
               </Button>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div className="rounded-md border border-line bg-surface p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Sliders size={20} className="text-farmer-700" /> {t("decisionThresholds")}</h3>
+          <div className="rounded-sm border border-line bg-surface p-5 sm:p-6">
+            <h3 className="flex items-center gap-2 font-display text-lg text-ink"><Sliders size={18} className="text-farmer-700" /> {t("decisionThresholds")}</h3>
             <p className="mt-2 text-sm text-muted">{t("thresholdsSubtitle")}</p>
             
             <div className="mt-6">
@@ -424,10 +424,10 @@ export default function SettingsPage() {
               {updateConfig.isPending ? t("saving") : t("saveConfigParams")}
             </Button>
             {configSaved && <span className="ml-4 inline-flex items-center gap-1 text-sm font-semibold text-farmer-700"><CheckCircle2 size={16} /> {t("saved")}</span>}
-          </motion.div>
+          </div>
 
-          <motion.div className="rounded-md border border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/30 p-5 shadow-soft sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h3 className="flex items-center gap-2 font-display text-xl text-danger dark:text-red-400"><AlertTriangle size={20} /> {t("dangerZone")}</h3>
+          <div className="rounded-sm border border-red-300 bg-red-50 dark:border-red-900/60 dark:bg-red-950/30 p-5 sm:p-6">
+            <h3 className="flex items-center gap-2 font-display text-lg text-danger dark:text-red-400"><AlertTriangle size={18} /> {t("dangerZone")}</h3>
             
             <div className="mt-6 flex flex-wrap gap-3">
               <Button type="button" variant="danger" onClick={() => setShowDeleteModal(true)}>
@@ -437,13 +437,13 @@ export default function SettingsPage() {
                 <Trash2 size={16} /> {t("purgeBlobs")}
               </Button>
             </div>
-          </motion.div>
+          </div>
         </>
       )}
 
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-md bg-surface p-6 shadow-lift">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4">
+          <div className="w-full max-w-md rounded-sm border border-line bg-surface p-6">
             <h3 className="font-display text-xl text-danger">{t("confirmPurge")}</h3>
             <p className="mt-2 text-sm text-muted">{t("typeDeleteBelow")}</p>
             <Input id="delete-confirmation" className="mt-4" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE" />

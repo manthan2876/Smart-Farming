@@ -7,11 +7,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from "recharts";
-import { Loader2, Download, Filter, Sprout, Image, FileText } from "lucide-react";
-import { Card, Button, Select } from "../components/ui";
+import { Loader2, Download, Filter, Sprout, Image, FileText } from "../components/icons";
+import { Card, Button, Select, Skeleton } from "../components/ui";
 import { translateCrop, translateDisease } from "../i18n/domain";
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['#284b35', '#4d6f3d', '#8f6520', '#9e382b', '#6b7280'];
 const CROP_OPTIONS = ["All Crops", "Tomato", "Cotton", "Groundnut", "Pepper Bell", "Potato"];
 const STATUS_OPTIONS = ["Any", "pending_review", "added_to_dataset", "rejected"];
 
@@ -247,14 +247,14 @@ export default function AdminMetricsPage() {
               <h3 className="font-display text-xl text-ink">{t("modelRegistryHealth")}</h3>
               <p className="mt-1 text-sm text-muted">
                 {modelHealth.overall_status === "healthy"
-                  ? `✓ ${t("allModelsLoaded")}`
-                  : `⚠ ${t("someModelsMissing")}`}
+                  ? t("allModelsLoaded")
+                  : t("someModelsMissing")}
               </p>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            <span className={`rounded-xs px-2.5 py-0.5 text-xs font-semibold border ${
               modelHealth.overall_status === "healthy"
-                ? "bg-green-100 text-green-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800"
-                : "bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800"
+                ? "bg-farmer-100 text-farmer-800 border-farmer-300 dark:bg-farmer-900/60 dark:text-farmer-200 dark:border-farmer-700"
+                : "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800"
             }`}>
               {modelHealth.overall_status === "healthy" ? t("healthy") : modelHealth.overall_status}
             </span>
@@ -262,7 +262,7 @@ export default function AdminMetricsPage() {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-xs font-semibold uppercase tracking-wide text-muted">
+                <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-muted">
                   <th className="pb-2 pr-4">{t("model")}</th>
                   <th className="pb-2 pr-4">{t("version")}</th>
                   <th className="pb-2 pr-4">{t("status")}</th>
@@ -274,16 +274,16 @@ export default function AdminMetricsPage() {
                 {Object.entries(modelHealth.models as Record<string, any>).map(([key, m]) => (
                   <tr key={key} className="border-b border-line last:border-0">
                     <td className="py-2 pr-4 font-medium text-ink">{modelNameMap[key] || key.replace(/_/g, " ")}</td>
-                    <td className="py-2 pr-4 text-muted">{m.active_version ?? "—"}</td>
+                    <td className="py-2 pr-4 text-muted">{m.active_version ?? "N/A"}</td>
                     <td className="py-2 pr-4">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        m.status === "ok" ? "bg-green-50 text-green-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800" : "bg-red-50 text-red-700 dark:bg-rose-950/80 dark:text-rose-300 dark:border dark:border-rose-800"
+                      <span className={`inline-flex items-center rounded-xs px-2 py-0.5 text-xs font-medium border ${
+                        m.status === "ok" ? "bg-farmer-100 text-farmer-800 border-farmer-300 dark:bg-farmer-900/60 dark:text-farmer-200 dark:border-farmer-700" : "bg-red-50 text-red-900 border-red-300 dark:bg-red-950/40 dark:text-red-200 dark:border-red-800"
                       }`}>
-                        {m.status === "ok" ? "✓ OK" : "✗ Missing"}
+                        {m.status === "ok" ? "Ready" : "Missing"}
                       </span>
                     </td>
-                    <td className="py-2 pr-4 text-muted">{m.val_acc != null ? `${(m.val_acc * 100).toFixed(1)}%` : "—"}</td>
-                    <td className="py-2 text-muted">{m.test_acc != null ? `${(m.test_acc * 100).toFixed(1)}%` : "—"}</td>
+                    <td className="py-2 pr-4 text-muted">{m.val_acc != null ? `${(m.val_acc * 100).toFixed(1)}%` : "N/A"}</td>
+                    <td className="py-2 text-muted">{m.test_acc != null ? `${(m.test_acc * 100).toFixed(1)}%` : "N/A"}</td>
                   </tr>
                 ))}
               </tbody>

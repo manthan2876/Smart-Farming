@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPrediction } from "../api/predictions";
-import { AlertCircle, Loader2, Check, Wheat, Leaf, TreeDeciduous, Sprout, Clover, Sparkles } from "lucide-react";
+import { AlertCircle, Loader2, Check, Wheat, Leaf, TreeDeciduous, Sprout, Clover, Activity } from "../components/icons";
 import { Button, Card } from "../components/ui";
 import { getWebSocketUrl } from "../api/client";
+import { translateCrop, translateDisease } from "../i18n/domain";
 
 interface StageStatus {
   preprocessing: boolean;
@@ -44,7 +45,7 @@ export default function ProcessingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const predictionId = Number(id);
-  const { token } = useAuth();
+  const { token, t, language } = useAuth();
   const queryClient = useQueryClient();
 
   // Local state for tracking real-time pipeline events
@@ -318,15 +319,15 @@ export default function ProcessingPage() {
   const isAdvisoryDone = stages.recommendation || stages.pipeline;
 
   const cropConfStr = detectedCrop?.confidence ? ` (${(detectedCrop.confidence * 100).toFixed(1)}%)` : "";
-  const cropText = detectedCrop?.label ? `${detectedCrop.label}${cropConfStr}` : (isCropDone ? "Identified" : "Scanning species...");
+  const cropText = detectedCrop?.label ? `${translateCrop(detectedCrop.label, language)}${cropConfStr}` : (isCropDone ? t("identifiedPrefix") : t("scanningSpecies"));
 
   const diseaseConfStr = detectedDisease?.confidence ? ` (${(detectedDisease.confidence * 100).toFixed(1)}%)` : "";
-  const diseaseText = detectedDisease?.label ? `${detectedDisease.label}${diseaseConfStr}` : (isDiseaseDone ? "Identified" : "Analyzing pathology...");
+  const diseaseText = detectedDisease?.label ? `${translateDisease(detectedDisease.label, language)}${diseaseConfStr}` : (isDiseaseDone ? t("identifiedPrefix") : t("analyzingPathology"));
 
   const pestText = detectedPests.length > 0
     ? detectedPests.map((p) => p.label || "Pest").join(", ")
     : isPestDone
-    ? "No Pests Detected"
+    ? t("noPestsDetected")
     : null;
 
   const CROP_ICONS = [<Wheat size={20} key="1" />, <Leaf size={20} key="2" />, <TreeDeciduous size={20} key="3" />, <Sprout size={20} key="4" />, <Clover size={20} key="5" />];
@@ -365,10 +366,10 @@ export default function ProcessingPage() {
   if (error && !prediction) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center text-center text-danger dark:text-rose-400">
-        <h2 className="font-display text-2xl">Error Loading Status</h2>
-        <p className="mt-2 text-sm text-muted">Something went wrong. Please check your network connection.</p>
+        <h2 className="font-display text-2xl">{t("errorLoadingStatus")}</h2>
+        <p className="mt-2 text-sm text-muted">{t("networkCheckMsg")}</p>
         <Button variant="secondary" className="mt-5" onClick={() => navigate("/dashboard")}>
-          Back to Dashboard
+          {t("backToDashboard")}
         </Button>
       </div>
     );
@@ -380,10 +381,10 @@ export default function ProcessingPage() {
         <Card padding="lg">
           <div className="text-center">
             <AlertCircle size={48} className="mx-auto text-danger dark:text-rose-400" />
-            <h2 className="mt-6 font-display text-2xl text-ink">Analysis Failed</h2>
+            <h2 className="mt-6 font-display text-2xl text-ink">{t("analysisFailedTitle")}</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted">{failure}</p>
             <Button variant="secondary" className="mt-6" onClick={() => navigate("/dashboard")}>
-              Back to Dashboard
+              {t("backToDashboard")}
             </Button>
           </div>
         </Card>
@@ -396,8 +397,8 @@ export default function ProcessingPage() {
       <Card padding="lg">
         <div className="text-center">
           <Loader2 size={48} className="mx-auto animate-spin text-farmer-600 dark:text-emerald-400" />
-          <h2 className="mt-6 font-display text-2xl text-ink">Running AI Pipeline</h2>
-          <p className="mt-2 text-sm text-muted">Analyzing your crop and generating diagnostics in real-time...</p>
+          <h2 className="mt-6 font-display text-2xl text-ink">{t("runningAiPipeline")}</h2>
+          <p className="mt-2 text-sm text-muted">{t("analyzingBackground")}</p>
           {liveMessage && !stages.pipeline && (
             <p className="mt-2 text-xs font-medium text-expert-700 dark:text-cyan-300" aria-live="polite">
               {liveMessage}
@@ -405,72 +406,72 @@ export default function ProcessingPage() {
           )}
         </div>
         <div className="mt-10 space-y-8">
-          {renderStage(1, "Image Preprocessing", true, isPreprocDone, null, "Verified leaf presence and clarity.")}
+          {renderStage(1, t("stagePreprocessing"), true, isPreprocDone, null, t("stagePreprocDetail"))}
 
           {renderStage(
             2,
-            "Crop Identification",
+            t("stageCrop"),
             true,
             isCropDone,
             isCropDone ? null : CROP_ICONS[activeCropIdx],
             isCropDone ? (
-              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Detected: {cropText}</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">{t("detectedPrefix")} {cropText}</span>
             ) : (
-              "Scanning species..."
+              t("scanningSpecies")
             )
           )}
 
           {renderStage(
             3,
-            "Disease Classification",
+            t("stageDisease"),
             isCropDone || isDiseaseDone,
             isDiseaseDone,
             isCropDone ? <Loader2 size={22} className="animate-spin text-farmer-600 dark:text-emerald-400" /> : null,
             isDiseaseDone ? (
-              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Identified: {diseaseText}</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">{t("identifiedPrefix")} {diseaseText}</span>
             ) : isCropDone ? (
               <span className="inline-flex items-center gap-2 text-muted">
                 <span className="h-2 w-24 animate-pulse rounded-full bg-line" />
-                Analyzing pathology...
+                {t("analyzingPathology")}
               </span>
             ) : (
-              "Waiting for crop identification..."
+              t("scanningSpecies")
             )
           )}
 
           {renderStage(
             4,
-            "Pest Detection",
+            t("stagePest"),
             isDiseaseDone || isPestDone,
             isPestDone,
             isDiseaseDone ? <Loader2 size={22} className="animate-spin text-farmer-600 dark:text-emerald-400" /> : null,
             isPestDone ? (
-              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Result: {pestText || "No Pests Detected"}</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">{pestText || t("noPestsDetected")}</span>
             ) : isDiseaseDone ? (
               <span className="inline-flex items-center gap-2 text-muted">
                 <span className="h-2 w-24 animate-pulse rounded-full bg-line" />
-                Scanning for insects...
+                {t("scanningPests")}
               </span>
             ) : (
-              "Waiting for disease classification..."
+              t("analyzingPathology")
             )
           )}
 
           {renderStage(
             5,
-            "Advisory Generation",
+            t("stageAdvisory"),
             isPestDone || isAdvisoryDone,
             isAdvisoryDone,
-            isPestDone ? <Sparkles size={22} className="animate-pulse text-expert-600 dark:text-cyan-400" /> : null,
+            isPestDone ? <Loader2 size={20} className="animate-spin text-farmer-700 dark:text-farmer-300" /> : null,
             isAdvisoryDone ? (
-              <span className="font-semibold text-farmer-700 dark:text-emerald-400">Advisory Ready.</span>
+              <span className="font-semibold text-farmer-700 dark:text-emerald-400">{t("advisoryReady")}</span>
             ) : isPestDone ? (
-              <span className="inline-flex items-center gap-2 text-expert-700 dark:text-cyan-300">
-                <Sparkles size={18} className="animate-pulse" />
-                Synthesizing expert recommendations...
+              <span className="inline-flex items-center gap-2 text-muted">
+                <Loader2 size={16} className="animate-spin text-farmer-700" />
+                {t("synthesizingAdvice")}
               </span>
             ) : (
-              "Waiting for pest detection..."
+              t("synthesizingAdvice")
             )
           )}
         </div>

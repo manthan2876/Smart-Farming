@@ -21,6 +21,8 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import ExpertQueuePage from "./pages/ExpertQueuePage";
 import ExpertReviewPage from "./pages/ExpertReviewPage";
 import AlertsPage from "./pages/AlertsPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
 import { AuthProvider } from "./context/AuthContext";
@@ -42,6 +44,8 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/services" element={<ServicesPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/register" element={<RegisterPage />} />
       <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />

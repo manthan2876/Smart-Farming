@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { forgotPassword } from "../api/auth";
-import { Sprout, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Sprout, Mail, ArrowLeft, CheckCircle2 } from "../components/icons";
 import { motion } from "motion/react";
 import { Button, Input } from "../components/ui";
 import ThemeToggle from "../components/ThemeToggle";
+import LanguageToggle from "../components/LanguageToggle";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -30,7 +31,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="relative grid min-h-screen bg-canvas lg:grid-cols-2">
-      <div className="absolute right-4 top-4 z-20">
+      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+        <LanguageToggle />
         <ThemeToggle />
       </div>
 
@@ -43,7 +45,7 @@ export default function ForgotPasswordPage() {
           <Sprout className="mb-7 text-farmer-700 dark:text-farmer-300" size={40} />
 
           {submitted ? (
-            <div className="rounded-md border border-line bg-surface p-6 text-center shadow-soft">
+            <div className="rounded-sm border border-line bg-surface p-6 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-farmer-100 text-farmer-700 dark:bg-farmer-950 dark:text-farmer-300">
                 <CheckCircle2 size={32} />
               </div>
@@ -68,7 +70,7 @@ export default function ForgotPasswordPage() {
                 {t("forgotPasswordTitle")}
               </h2>
               <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-muted">
-                [PASSWORD RECOVERY]
+                [{t("platformControl")}]
               </p>
               <p className="mt-3 text-sm text-muted">
                 {t("forgotPasswordSubtitle")}
@@ -83,7 +85,7 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                 <Input
                   id="forgot-email"
-                  label="Registered Email"
+                  label={t("registeredEmail")}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -106,7 +108,7 @@ export default function ForgotPasswordPage() {
                 </Link>
                 <div className="mt-5">
                   <Link className="text-muted hover:text-ink" to="/">
-                    ← Back to Home
+                    {t("backToHome")}
                   </Link>
                 </div>
               </div>
@@ -119,10 +121,10 @@ export default function ForgotPasswordPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20" />
         <div className="relative z-10 text-white">
           <h2 className="max-w-xl font-display text-4xl leading-tight">
-            "Your crops and account are always secure. Instant recovery whenever you need it."
+            {t("securityBannerTitle")}
           </h2>
           <p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-farmer-300">
-            [SMART FARMING SECURITY]
+            [{t("loginBannerSubtitle")}]
           </p>
         </div>
       </div>

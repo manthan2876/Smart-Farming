@@ -162,10 +162,10 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
 
     if (wasSnapped) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xfff57f17),
-          content: Text('🧲 Corner snapped directly to farm boundary.'),
-          duration: Duration(seconds: 1),
+        SnackBar(
+          backgroundColor: const Color(0xfff57f17),
+          content: Text(context.tr('cornerSnappedToBoundary')),
+          duration: const Duration(seconds: 1),
         ),
       );
     }
@@ -223,7 +223,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
       SnackBar(
         backgroundColor: wasSnapped ? const Color(0xfff57f17) : AppColors.primary,
         content: Text(wasSnapped
-            ? '🧲 Corner snapped and saved to farm boundary.'
+            ? context.tr('cornerSnappedAndSaved')
             : 'Corner location updated.'),
         duration: const Duration(seconds: 1),
       ),
@@ -688,7 +688,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                             : (isHoveringStart
                                 ? 'Start Point · Tap + to Close'
                                 : (isSnapping
-                                    ? '🧲 Snapping to Farm Boundary'
+                                    ? context.tr('snappingToBoundary')
                                     : 'Targeting Corner #${_hoveredPointIndex! + 1}')),
                         style: const TextStyle(
                           color: Colors.white,

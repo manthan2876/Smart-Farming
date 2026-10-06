@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CloudSun, History, MapPin, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CloudSun, History, MapPin, ShieldAlert } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { getExpertReview, submitExpertReview } from "../api/expert";
 import { getAssetUrl } from "../api/client";
@@ -45,8 +45,8 @@ export default function ExpertReviewPage() {
     },
   });
 
-  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted">Loading clinical review...</div>;
-  if (!review) return <Card className="text-danger">Review not found</Card>;
+  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted">{t("loadingClinicalReview")}</div>;
+  if (!review) return <Card className="text-danger">{t("reviewNotFound")}</Card>;
 
   const rawImage = getAssetUrl(review.raw_url || review.raw_path);
   const processedImage = getAssetUrl(review.processed_url || review.processed_path) || rawImage;
@@ -72,7 +72,7 @@ export default function ExpertReviewPage() {
               <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950"><span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("rawLeaf")}</span><img className="h-full w-full object-contain" src={rawImage} alt="Raw leaf" /></div>
               <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950"><span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("gradcamHeatmap")}</span><img className="h-full w-full object-contain" src={processedImage} alt="Heatmap base" /><div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} /></div>
             </div>
-            <label className="mt-5 flex items-center gap-3 text-sm text-muted">Opacity <input className="flex-1 accent-farmer-700 dark:accent-farmer-400" type="range" min="0" max="100" value={heatmapOpacity} onChange={event => setHeatmapOpacity(Number(event.target.value))} /><span>{heatmapOpacity}%</span></label>
+            <label className="mt-5 flex items-center gap-3 text-sm text-muted">{t("opacity")} <input className="flex-1 accent-farmer-700 dark:accent-farmer-400" type="range" min="0" max="100" value={heatmapOpacity} onChange={event => setHeatmapOpacity(Number(event.target.value))} /><span>{heatmapOpacity}%</span></label>
           </Card>
 
 
@@ -100,9 +100,9 @@ export default function ExpertReviewPage() {
                     onChange={(val) => setCorrectedDisease(val)}
                     theme="expert"
                     leadingIcon={<ShieldAlert size={15} className="text-expert-700" />}
-                    placeholder="Select Disease..."
+                    placeholder={t("selectDisease")}
                     options={[
-                      { value: "", label: "Select Disease..." },
+                      { value: "", label: t("selectDisease") },
                       { value: "Early Blight", label: "Early Blight" },
                       { value: "Late Blight", label: "Late Blight" },
                       { value: "Fusarium Wilt", label: "Fusarium Wilt" },
@@ -116,7 +116,7 @@ export default function ExpertReviewPage() {
                   className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 font-normal text-ink focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500"
                   value={correctedSeverity}
                   onChange={(event) => setCorrectedSeverity(event.target.value)}
-                  placeholder="Affected percentage"
+                  placeholder={t("affectedPercentage")}
                 />
               </label>
             </div>
@@ -128,7 +128,7 @@ export default function ExpertReviewPage() {
               <input type="checkbox" checked={addToRetraining} onChange={event => setAddToRetraining(event.target.checked)} className="h-4 w-4 rounded border-line accent-farmer-600 dark:accent-farmer-400" />
               <span>{t("flagRetraining")}</span>
             </label>
-            <textarea className="min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink placeholder:text-muted focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500" placeholder="Notes for model retraining team..." value={internalNote} onChange={event => setInternalNote(event.target.value)} />
+            <textarea className="min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink placeholder:text-muted focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500" placeholder={t("retrainingNotesPlaceholder")} value={internalNote} onChange={event => setInternalNote(event.target.value)} />
           </div>
           <div className="mt-8 flex gap-3 border-t border-line pt-5"><Button variant="secondary" className="flex-1" onClick={() => navigate("/admin/expert")}>{t("cancel")}</Button><Button className="flex-1" onClick={() => mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending ? t("submitting") : t("submitReview")}</Button></div>
         </Card>

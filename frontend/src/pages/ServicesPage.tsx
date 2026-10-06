@@ -1,105 +1,181 @@
-import { ScanSearch, Map, Bell, ShieldCheck, Activity, Users } from "lucide-react";
-import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import PublicNav from "../components/PublicNav";
+import Footer from "../components/Footer";
+import { ScanSearch, Map, Activity, ArrowRight } from "../components/icons";
+import { useAuth } from "../context/AuthContext";
 
 export default function ServicesPage() {
+  const { t } = useAuth();
+
   return (
-    <div className="min-h-screen overflow-hidden bg-canvas">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <PublicNav />
 
-      <section className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8 lg:py-28">
-        <motion.h1 className="font-display text-display text-ink" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          Comprehensive Crop Intelligence
-        </motion.h1>
-        <motion.p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          Bridging deep learning vision with actionable agronomy from field to harvest.
-        </motion.p>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8 lg:pb-24">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><ScanSearch size={24} /></div>
-            <h3 className="mt-6 font-display text-xl text-ink">Intelligent Disease Diagnosis</h3>
-            <p>Fast, objective disease identification before visual symptoms spread. Detects exact leaf damage percentage and flags visible pests instantly.</p>
-          </motion.div>
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Map size={24} /></div>
-            <h3 className="mt-6 font-display text-xl text-ink">Explainable AI (XAI)</h3>
-            <p>Eliminate the black-box nature of deep learning. View Grad-CAM attention heatmaps to verify the diagnosis is based on actual foliage lesions.</p>
-          </motion.div>
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Activity size={24} /></div>
-            <h3 className="mt-6 font-display text-xl text-ink">Context-Aware Advisory</h3>
-            <p>Practical guidance adapted to current weather conditions. Receive step-by-step action plans spanning treatment, prevention, and monitoring.</p>
-          </motion.div>
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><ShieldCheck size={24} /></div>
-            <h3 className="mt-6 font-display text-xl text-ink">Plot-Level Health Tracking</h3>
-            <p>Track condition progression over time. Identify chronic hot-spots across specific acreage rather than treating the farm uniformly.</p>
-          </motion.div>
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Bell size={24} /></div>
-            <h3 className="mt-6 font-display text-xl text-ink">Proactive Risk Alerts</h3>
-            <p>Continuous monitoring of regional meteorological indicators to warn farmers before fungal or bacterial outbreaks occur.</p>
-          </motion.div>
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><Users size={24} /></div>
-            <h3 className="mt-6 font-display text-xl text-ink">Expert Verification (HITL)</h3>
-            <p>Low-confidence predictions are automatically flagged for review by agricultural experts, ensuring safe and reliable chemical advice.</p>
-          </motion.div>
+      {/* Hero */}
+      <section className="border-b border-line bg-surface">
+        <div className="mx-auto max-w-5xl px-5 py-16 sm:px-8 lg:py-24 text-center">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("servicesBadge")}</span>
+          <h1 className="mt-3 font-display text-display text-ink">
+            {t("servicesTitle")}
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted">
+            {t("servicesSubtitle")}
+          </p>
         </div>
       </section>
 
-      <section className="border-y border-farmer-800 bg-farmer-900 px-5 py-16 text-farmer-100 sm:px-8 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-        <h2 className="font-display text-3xl text-farmer-200">How We Deliver</h2>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="border-l-2 border-farmer-400 pl-4">
-            <h4 className="font-semibold text-farmer-200">[01] Preprocessing Validation</h4>
-            <p className="mt-2 text-sm text-farmer-100/90">OpenCV filters out blurry or non-foliage images to save compute.</p>
+      {/* Alternating Technical Feature Sections */}
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24 w-full space-y-16">
+        {/* Capability 1 */}
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+          <div className="space-y-4">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xs bg-farmer-100 dark:bg-farmer-900/60 text-farmer-800 dark:text-farmer-200">
+              <ScanSearch size={22} />
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl text-ink">
+              {t("service1Title")}
+            </h2>
+            <p className="text-sm leading-7 text-muted">
+              {t("service1Desc")}
+            </p>
+            <div className="border-t border-line pt-4 text-xs text-muted space-y-1.5">
+              <div>{t("service1Output")}</div>
+              <div>{t("service1Turnaround")}</div>
+            </div>
           </div>
-          <div className="border-l-2 border-farmer-400 pl-4">
-            <h4 className="font-semibold text-farmer-200">[02] Multi-Stage Neural Pipeline</h4>
-            <p className="mt-2 text-sm text-farmer-100/90">Crop-specific routing using EfficientNet and YOLO detection.</p>
-          </div>
-          <div className="border-l-2 border-farmer-400 pl-4">
-            <h4 className="font-semibold text-farmer-200">[03] Contextual LLM Advisory</h4>
-            <p className="mt-2 text-sm text-farmer-100/90">Generating region-aware plans tailored to weather.</p>
-          </div>
-          <div className="border-l-2 border-farmer-400 pl-4">
-            <h4 className="font-semibold text-farmer-200">[04] Expert Guardrails</h4>
-            <p className="mt-2 text-sm text-farmer-100/90">Deterministic safety checks prevent speculative recommendations.</p>
-          </div>
-        </div></div>
-      </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
-        <h2 className="text-center font-display text-3xl text-ink">Who It's For</h2>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          <div className="rounded-md border border-line bg-surface p-6 shadow-soft">
-            <h3>Individual Farmers</h3>
-            <p>Easy mobile scans and localized advice to save time and reduce chemical waste.</p>
+          <div className="rounded-sm border border-line bg-surface p-6 sm:p-8 space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("serviceSpecsBadge")}</h3>
+            <div className="space-y-3 text-xs">
+              <div className="border-b border-line pb-2.5">
+                <span className="font-semibold text-ink">Tomato:</span>
+                <span className="text-muted ml-2">Early Blight, Late Blight, Septoria Leaf Spot, Yellow Leaf Curl Virus, Bacterial Spot</span>
+              </div>
+              <div className="border-b border-line pb-2.5">
+                <span className="font-semibold text-ink">Potato:</span>
+                <span className="text-muted ml-2">Early Blight, Late Blight, Blackleg, Mosaic Virus</span>
+              </div>
+              <div className="border-b border-line pb-2.5">
+                <span className="font-semibold text-ink">Cotton:</span>
+                <span className="text-muted ml-2">Bacterial Blight, Alternaria Leaf Spot, Grey Mildew, Leaf Curl</span>
+              </div>
+              <div>
+                <span className="font-semibold text-ink">Additional Crops:</span>
+                <span className="text-muted ml-2">Groundnut, Pepper Bell, Corn, Rice, Wheat</span>
+              </div>
+            </div>
           </div>
-          <div className="rounded-md border border-line bg-surface p-6 shadow-soft">
-            <h3>Extension Officers</h3>
-            <p>Batch triage and validation tools to support more farmers efficiently.</p>
+        </div>
+
+        {/* Capability 2 */}
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center border-t border-line pt-16">
+          <div className="rounded-sm border border-line bg-surface p-6 sm:p-8 space-y-4 order-2 lg:order-1">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("serviceXaiTitle")}</h3>
+            <p className="text-xs leading-6 text-muted">
+              {t("serviceXaiDesc")}
+            </p>
+            <div className="rounded-xs border border-line bg-canvas p-4 text-xs text-ink/90">
+              {t("serviceXaiBox")}
+            </div>
           </div>
-          <div className="rounded-md border border-line bg-surface p-6 shadow-soft">
-            <h3>Farm Managers & Co-ops</h3>
-            <p>Multi-plot analytics and condition history across large acreage.</p>
+
+          <div className="space-y-4 order-1 lg:order-2">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xs bg-farmer-100 dark:bg-farmer-900/60 text-farmer-800 dark:text-farmer-200">
+              <Map size={22} />
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl text-ink">
+              {t("service2Title")}
+            </h2>
+            <p className="text-sm leading-7 text-muted">
+              {t("service2Desc")}
+            </p>
+          </div>
+        </div>
+
+        {/* Capability 3 */}
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center border-t border-line pt-16">
+          <div className="space-y-4">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xs bg-farmer-100 dark:bg-farmer-900/60 text-farmer-800 dark:text-farmer-200">
+              <Activity size={22} />
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl text-ink">
+              {t("service3Title")}
+            </h2>
+            <p className="text-sm leading-7 text-muted">
+              {t("service3Desc")}
+            </p>
+            <div className="border-t border-line pt-4 text-xs text-muted space-y-1.5">
+              <div>Telemetry: Open-Meteo hourly temperature, humidity, wind velocity, precipitation index</div>
+              <div>Languages: English, Hindi, and Gujarati with transliterated botanical names</div>
+            </div>
+          </div>
+
+          <div className="rounded-sm border border-line bg-surface p-6 sm:p-8 space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("serviceWeatherRulesTitle")}</h3>
+            <div className="space-y-3 text-xs leading-6 text-ink/90">
+              <div className="border-b border-line pb-2.5">
+                <span className="font-semibold text-ink">Relative Humidity &gt; 85%:</span>
+                <span className="text-muted ml-2">{t("serviceWeatherRule1")}</span>
+              </div>
+              <div className="border-b border-line pb-2.5">
+                <span className="font-semibold text-ink">Wind Speed &gt; 15 km/h:</span>
+                <span className="text-muted ml-2">{t("serviceWeatherRule2")}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-ink">Ambient Temp &gt; 35°C:</span>
+                <span className="text-muted ml-2">{t("serviceWeatherRule3")}</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="border-t border-farmer-800 bg-farmer-900 px-5 py-16 text-center text-farmer-100 sm:px-8 lg:py-20">
-        <h2 className="font-display text-3xl text-farmer-200">Ready to transform your farm?</h2>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/auth/register" className="rounded-sm bg-farmer-400 px-5 py-3 text-sm font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors">Create Farm Account</Link>
-          <Link to="/scan" className="rounded-sm border border-farmer-400 px-5 py-3 text-sm font-bold text-farmer-200 hover:bg-farmer-800 transition-colors">Scan Your First Crop</Link>
+      {/* User Workflows */}
+      <section className="border-t border-line bg-surface">
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
+          <div className="max-w-2xl mb-12">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("serviceDeploymentBadge")}</span>
+            <h2 className="mt-2 font-display text-3xl text-ink">{t("serviceDeploymentTitle")}</h2>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-sm border border-line bg-canvas p-6 space-y-3">
+              <h3 className="font-display text-xl text-ink">{t("serviceTopology1Title")}</h3>
+              <p className="text-xs leading-6 text-muted">
+                {t("serviceTopology1Desc")}
+              </p>
+              <div className="pt-2 text-xs font-semibold text-farmer-800 dark:text-farmer-300">
+                Core: Offline sync queue &amp; quantized models
+              </div>
+            </div>
+
+            <div className="rounded-sm border border-line bg-canvas p-6 space-y-3">
+              <h3 className="font-display text-xl text-ink">{t("serviceTopology2Title")}</h3>
+              <p className="text-xs leading-6 text-muted">
+                {t("serviceTopology2Desc")}
+              </p>
+              <div className="pt-2 text-xs font-semibold text-farmer-800 dark:text-farmer-300">
+                Core: Cooperative cloud cluster &amp; MLOps
+              </div>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* CTA */}
+      <section className="border-t border-line bg-canvas px-5 py-12 text-center sm:px-8">
+        <h2 className="font-display text-2xl text-ink">{t("landingBottomCtaTitle")}</h2>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link to="/scan" className="rounded-sm bg-farmer-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-farmer-800 transition-colors">
+            {t("landingCtaScan")}
+          </Link>
+          <Link to="/crops" className="rounded-sm border border-line bg-surface px-5 py-2.5 text-sm font-semibold text-ink hover:bg-farmer-50 transition-colors">
+            {t("navCrops")}
+          </Link>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

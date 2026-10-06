@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { getFarm } from '../api/farm';
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Upload, Camera, MapPin, Globe, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, Camera, MapPin, Globe, AlertCircle, Loader2 } from "../components/icons";
 import { motion } from "motion/react";
 import imageCompression from 'browser-image-compression';
 import { get, set, update } from 'idb-keyval';
@@ -52,7 +52,7 @@ export default function ScanPage() {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
       if (selected.size > 24 * 1024 * 1024) {
-        setError("File size exceeds 24MB limit.");
+        setError(t("fileSizeLimit"));
         return;
       }
       
@@ -68,7 +68,7 @@ export default function ScanPage() {
         setError(null);
       } catch (error) {
         console.error("Image compression error:", error);
-        setError("Failed to compress image.");
+        setError(t("compressFailed"));
       }
     }
   };
@@ -76,7 +76,7 @@ export default function ScanPage() {
 const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setError("Please select a leaf image file first.");
+      setError(t("selectLeafFirst"));
       return;
     }
 
@@ -86,7 +86,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     if (!navigator.onLine) {
       const offlineData = { id: Date.now(), file, location, plotId, lat, lon, language };
       await update('offline_scans', (val: any) => val ? [...val, offlineData] : [offlineData]);
-      alert("You are offline. Scan saved locally and will sync when you regain connection.");
+      alert(t("offlineSavedAlert"));
       setLoading(false);
       return;
     }
@@ -169,7 +169,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               {previewUrl ? (
                 <div className="group relative h-full min-h-[25rem] w-full">
                   <img src={previewUrl} alt="Leaf Preview" className="h-full min-h-[25rem] w-full object-contain" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white opacity-0 transition group-hover:opacity-100 backdrop-blur-[2px]">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 text-white opacity-0 transition-opacity group-hover:opacity-100">
                     <Camera size={24} />
                     <span className="mt-2 text-sm font-semibold">{t("replaceImage")}</span>
                   </div>
@@ -216,7 +216,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Enter farm location..."
+                  placeholder={t("enterFarmLocation")}
                   required
                   className="min-h-11 w-full rounded-sm border border-farmer-700/60 bg-farmer-950/40 pl-10 pr-3 text-sm text-farmer-100 placeholder:text-farmer-300/40 transition hover:border-farmer-500/60 focus:border-farmer-400 focus:outline-none focus:ring-4 focus:ring-farmer-400/20"
                 />
@@ -269,7 +269,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
             <Button 
               type="submit" 
-              className="mt-2 w-full bg-farmer-400 font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors" 
+              className="mt-2 w-full bg-farmer-700 font-semibold text-white hover:bg-farmer-800 transition-colors" 
               disabled={loading || !file}
             >
               {loading ? (

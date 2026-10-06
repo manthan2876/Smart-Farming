@@ -1,92 +1,174 @@
 import { Link } from "react-router-dom";
-import { User, Cpu, Shield, Globe } from "lucide-react";
-import { motion } from "motion/react";
 import PublicNav from "../components/PublicNav";
+import Footer from "../components/Footer";
+import { User, Cpu, Shield, Globe } from "../components/icons";
+import { useAuth } from "../context/AuthContext";
 
 export default function AboutPage() {
+  const { t } = useAuth();
+
   return (
-    <div className="min-h-screen overflow-hidden bg-canvas">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <PublicNav />
 
-      <section className="mx-auto max-w-5xl px-5 py-20 text-center sm:px-8 lg:py-28">
-        <motion.h1 className="font-display text-display text-ink" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          Cultivating Precision, Empowering Every Farmer.
-        </motion.h1>
-        <motion.p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          To democratize agronomic diagnostics by delivering accurate, timely, and context-aware crop health intelligence to smallholder and commercial farmers alike.
-        </motion.p>
-        <motion.div className="mx-auto mt-8 inline-flex rounded-full border border-farmer-200 bg-farmer-100 px-4 py-2 text-sm font-semibold text-farmer-800 dark:border-farmer-700 dark:bg-farmer-900/60 dark:text-farmer-200" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.4 }}>
-          Developed under IT452 Minor Project & Smart India Hackathon (SIH 25099)
-        </motion.div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-16 sm:px-8 lg:grid-cols-2 lg:pb-24">
-        <div className="rounded-md border border-red-100 bg-red-50 p-7 sm:p-9 dark:border-red-900/40 dark:bg-red-950/20">
-          <h2 className="font-display text-2xl text-ink">The Traditional Reality</h2>
-          <ul className="mt-5 space-y-3 text-sm leading-6 text-muted">
-            <li>Delayed disease detection leading to irreversible damage</li>
-            <li>Inaccessible agronomic expertise constrained by geography</li>
-            <li>Subjective and manual damage estimation</li>
-            <li>Unrecognized pest pressure during initial stages</li>
-          </ul>
-        </div>
-        <div className="rounded-md border border-farmer-200 bg-farmer-50 p-7 sm:p-9 dark:border-farmer-800 dark:bg-farmer-900/30">
-          <h2 className="font-display text-2xl text-ink">Our Intervention</h2>
-          <ul className="mt-5 space-y-3 text-sm leading-6 text-muted">
-            <li>Instant real-time leaf-level diagnosis</li>
-            <li>Context-aware advice tailored to local weather patterns</li>
-            <li>Quantitative and objective surface severity percentage</li>
-            <li>Visual attention maps to explain AI decisions</li>
-          </ul>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
-        <h2 className="font-display text-3xl text-ink">Our Core Pillars</h2>
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Cpu className="text-farmer-700 dark:text-farmer-300" /> CV & Neural Architectures</h3>
-            <p>Fail-fast preprocessing prevents wasted compute. We use specialized, crop-specific models rather than forcing a single model to learn everything.</p>
-          </motion.div>
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Shield className="text-farmer-700 dark:text-farmer-300" /> Responsible AI & Safety</h3>
-            <p>Grad-CAM visualizations ensure transparency. Human-in-the-Loop review holds low-confidence outputs, and deterministic guardrails restrict hazardous advice.</p>
-          </motion.div>
-          <motion.div className="rounded-md border border-line bg-surface p-6 shadow-soft" whileHover={{ y: -4 }}>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Globe className="text-farmer-700 dark:text-farmer-300" /> Field Ready</h3>
-            <p>AI predictions alone don't cure crops. We enrich diagnostics with regional meteorological indicators like temperature and humidity for true field readiness.</p>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
-        <h2 className="font-display text-3xl text-ink">Project Leadership</h2>
-        <div className="mt-8 grid gap-5 sm:grid-cols-3">
-          <div className="rounded-md border border-line bg-surface p-6 text-center shadow-soft">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><User size={32} /></div>
-            <h4>Prof. Rajnik Katariya</h4>
-            <p>Project Guide</p>
+      {/* Header */}
+      <section className="border-b border-line bg-surface">
+        <div className="mx-auto max-w-5xl px-5 py-16 sm:px-8 lg:py-24 text-center">
+          <div className="inline-flex rounded-xs border border-line bg-canvas px-3 py-1 text-xs font-semibold text-muted">
+            {t("academicProjectBadge")}
           </div>
-          <div className="rounded-md border border-line bg-surface p-6 text-center shadow-soft">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><User size={32} /></div>
-            <h4>Kunj Lunagariya</h4>
-            <p>Core Contributor</p>
-          </div>
-          <div className="rounded-md border border-line bg-surface p-6 text-center shadow-soft">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-farmer-200 bg-farmer-100 text-farmer-700 dark:border-farmer-700 dark:bg-farmer-900/80 dark:text-farmer-300"><User size={32} /></div>
-            <h4>Manthan Kuvadiya</h4>
-            <p>Core Contributor</p>
+          <h1 className="mt-4 font-display text-display text-ink">
+            {t("aboutTitle")}
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted">
+            {t("aboutSubtitle")}
+          </p>
+        </div>
+      </section>
+
+      {/* Traditional Reality vs System Intervention (Structured Table Comparison) */}
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24 w-full">
+        <div className="mb-8">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("aboutFieldContext")}</span>
+          <h2 className="mt-1 font-display text-2xl sm:text-3xl text-ink">{t("aboutTableTitle")}</h2>
+        </div>
+
+        <div className="overflow-x-auto rounded-sm border border-line bg-surface">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line bg-canvas text-xs uppercase tracking-wider text-muted">
+                <th className="px-6 py-4 font-semibold">{t("aboutColAspect")}</th>
+                <th className="px-6 py-4 font-semibold">{t("aboutColConventional")}</th>
+                <th className="px-6 py-4 font-semibold text-farmer-800 dark:text-farmer-300">{t("aboutColIntervention")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line text-ink/90">
+              <tr>
+                <td className="px-6 py-4 font-semibold text-ink">{t("aboutRow1Aspect")}</td>
+                <td className="px-6 py-4 text-muted">{t("aboutRow1Conv")}</td>
+                <td className="px-6 py-4">{t("aboutRow1Interv")}</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 font-semibold text-ink">{t("aboutRow2Aspect")}</td>
+                <td className="px-6 py-4 text-muted">{t("aboutRow2Conv")}</td>
+                <td className="px-6 py-4">{t("aboutRow2Interv")}</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 font-semibold text-ink">{t("aboutRow3Aspect")}</td>
+                <td className="px-6 py-4 text-muted">{t("aboutRow3Conv")}</td>
+                <td className="px-6 py-4">{t("aboutRow3Interv")}</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 font-semibold text-ink">{t("aboutRow4Aspect")}</td>
+                <td className="px-6 py-4 text-muted">{t("aboutRow4Conv")}</td>
+                <td className="px-6 py-4">{t("aboutRow4Interv")}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Core Architectural Pillars */}
+      <section className="border-t border-line bg-surface">
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
+          <div className="grid gap-12 lg:grid-cols-[0.4fr_0.6fr]">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("aboutPillarsBadge")}</span>
+              <h2 className="mt-2 font-display text-3xl text-ink">{t("aboutPillarsTitle")}</h2>
+              <p className="mt-3 text-sm leading-6 text-muted">
+                {t("aboutPillarsSubtitle")}
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-sm border border-line bg-canvas p-6">
+                <div className="flex items-center gap-2.5 font-display text-lg text-ink">
+                  <Cpu size={20} className="text-farmer-700 dark:text-farmer-300" />
+                  <h3>{t("aboutPrinciple1Title")}</h3>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {t("aboutPrinciple1Desc")}
+                </p>
+              </div>
+
+              <div className="rounded-sm border border-line bg-canvas p-6">
+                <div className="flex items-center gap-2.5 font-display text-lg text-ink">
+                  <Shield size={20} className="text-farmer-700 dark:text-farmer-300" />
+                  <h3>{t("aboutPrinciple2Title")}</h3>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {t("aboutPrinciple2Desc")}
+                </p>
+              </div>
+
+              <div className="rounded-sm border border-line bg-canvas p-6">
+                <div className="flex items-center gap-2.5 font-display text-lg text-ink">
+                  <Globe size={20} className="text-farmer-700 dark:text-farmer-300" />
+                  <h3>{t("aboutPrinciple3Title")}</h3>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {t("aboutPrinciple3Desc")}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="border-t border-farmer-800 bg-farmer-900 px-5 py-16 text-center text-farmer-100 sm:px-8 lg:py-20">
-        <h2 className="font-display text-3xl text-farmer-200">Ready to inspect your crop health?</h2>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/services" className="rounded-sm border border-farmer-400 px-5 py-3 text-sm font-bold text-farmer-200 hover:bg-farmer-800 transition-colors">Explore Our Services</Link>
-          <Link to="/scan" className="rounded-sm bg-farmer-400 px-5 py-3 text-sm font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors">Scan Your Crop</Link>
+      {/* Academic Attribution */}
+      <section className="border-t border-line bg-canvas">
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Academic Credentials</span>
+            <h2 className="mt-2 font-display text-3xl text-ink">Project Guidance &amp; Contributors</h2>
+            <p className="mt-2 text-sm text-muted">{t("aboutAttributionDesc")}</p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="rounded-sm border border-line bg-surface p-6 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xs bg-farmer-100 dark:bg-farmer-900/60 text-farmer-800 dark:text-farmer-200">
+                <User size={24} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-ink">Prof. Rajnik Katariya</h3>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">Project Guide &amp; Faculty</p>
+              <p className="mt-2 text-xs text-muted">Department of Information Technology, BVM</p>
+            </div>
+
+            <div className="rounded-sm border border-line bg-surface p-6 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xs bg-farmer-100 dark:bg-farmer-900/60 text-farmer-800 dark:text-farmer-200">
+                <User size={24} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-ink">Kunj Lunagariya</h3>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">Core Contributor</p>
+              <p className="mt-2 text-xs text-muted">Computer Vision &amp; Backend Engineering</p>
+            </div>
+
+            <div className="rounded-sm border border-line bg-surface p-6 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xs bg-farmer-100 dark:bg-farmer-900/60 text-farmer-800 dark:text-farmer-200">
+                <User size={24} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-ink">Manthan Kuvadiya</h3>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">Core Contributor</p>
+              <p className="mt-2 text-xs text-muted">Full-Stack Development &amp; MLOps</p>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* CTA */}
+      <section className="border-t border-line bg-surface px-5 py-12 text-center sm:px-8">
+        <h2 className="font-display text-2xl text-ink">{t("landingBottomCtaTitle")}</h2>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link to="/scan" className="rounded-sm bg-farmer-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-farmer-800 transition-colors">
+            {t("landingBottomCtaBtn")}
+          </Link>
+          <Link to="/crops" className="rounded-sm border border-line bg-canvas px-5 py-2.5 text-sm font-semibold text-ink hover:bg-farmer-50 transition-colors">
+            {t("navCrops")}
+          </Link>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

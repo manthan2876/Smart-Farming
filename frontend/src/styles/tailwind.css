@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,32 +6,22 @@
 
 @layer base {
   :root {
-    --color-canvas: 245 242 235;
-    --color-surface: 255 255 255;
-    --color-ink: 36 53 45;
-    --color-muted: 107 119 111;
-    --color-line: 227 230 223;
+    --color-canvas: 247 245 240;
+    --color-surface: 252 251 247;
+    --color-ink: 30 38 33;
+    --color-muted: 105 116 108;
+    --color-line: 224 220 212;
 
-    --color-farmer-50: 242 247 231;
-    --color-farmer-100: 228 239 199;
-    --color-farmer-200: 207 227 157;
-    --color-farmer-700: 61 93 42;
-    --color-farmer-800: 48 74 41;
-    --color-farmer-900: 38 61 43;
+    --color-farmer-50: 244 246 240;
+    --color-farmer-100: 230 236 224;
+    --color-farmer-200: 206 218 196;
+    --color-farmer-700: 46 72 40;
+    --color-farmer-800: 36 57 32;
+    --color-farmer-900: 26 42 24;
 
-    --color-expert-50: 240 245 244;
-    --color-expert-100: 220 233 231;
-    --color-expert-500: 75 119 115;
-    --color-expert-700: 49 87 83;
-
-    --color-admin-50: 255 247 232;
-    --color-admin-100: 252 232 186;
-    --color-admin-500: 193 132 40;
-    --color-admin-700: 129 87 29;
-
-    --shadow-soft: 0 2px 10px rgba(36, 53, 45, 0.05);
-    --shadow-card: 0 10px 30px rgba(36, 53, 45, 0.08);
-    --shadow-lift: 0 18px 45px rgba(36, 53, 45, 0.12);
+    --shadow-soft: none;
+    --shadow-card: none;
+    --shadow-lift: 0 1px 2px rgba(25, 35, 29, 0.05);
 
     color: rgb(var(--color-ink));
     background-color: rgb(var(--color-canvas));
@@ -42,32 +32,22 @@
   }
 
   .dark {
-    --color-canvas: 18 26 21;
-    --color-surface: 26 38 31;
-    --color-ink: 237 244 239;
-    --color-muted: 150 168 156;
-    --color-line: 43 60 50;
+    --color-canvas: 19 25 21;
+    --color-surface: 27 35 30;
+    --color-ink: 236 241 237;
+    --color-muted: 147 160 151;
+    --color-line: 41 53 45;
 
-    --color-farmer-50: 24 38 29;
-    --color-farmer-100: 220 238 226;
-    --color-farmer-200: 184 217 141;
-    --color-farmer-700: 46 76 38;
-    --color-farmer-800: 28 45 33;
-    --color-farmer-900: 19 31 23;
+    --color-farmer-50: 24 33 27;
+    --color-farmer-100: 215 230 219;
+    --color-farmer-200: 172 199 150;
+    --color-farmer-700: 46 72 40;
+    --color-farmer-800: 36 57 32;
+    --color-farmer-900: 20 30 22;
 
-    --color-expert-50: 25 41 39;
-    --color-expert-100: 215 235 233;
-    --color-expert-500: 95 155 150;
-    --color-expert-700: 130 190 185;
-
-    --color-admin-50: 45 36 21;
-    --color-admin-100: 250 230 190;
-    --color-admin-500: 225 165 70;
-    --color-admin-700: 245 195 110;
-
-    --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.3);
-    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
-    --shadow-lift: 0 18px 45px rgba(0, 0, 0, 0.6);
+    --shadow-soft: none;
+    --shadow-card: none;
+    --shadow-lift: none;
 
     color-scheme: dark;
   }
@@ -85,7 +65,7 @@
     background-color: rgb(var(--color-canvas));
     color: rgb(var(--color-ink));
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
   }
 
   button,
@@ -100,14 +80,14 @@
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 3px solid rgba(111, 150, 54, 0.45);
+    outline: 2px solid rgb(var(--color-farmer-700));
     outline-offset: 2px;
   }
 
-  /* Sleek modern scrollbars matching theme */
+  /* Refined, low-distraction scrollbars */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(var(--color-muted) / 0.3) transparent;
+    scrollbar-color: rgba(var(--color-muted) / 0.25) transparent;
   }
 
   ::-webkit-scrollbar {
@@ -120,35 +100,26 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(var(--color-muted) / 0.3);
-    border-radius: 9999px;
+    background-color: rgba(var(--color-muted) / 0.25);
+    border-radius: 2px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(var(--color-muted) / 0.55);
-  }
-
-  ::-webkit-scrollbar-button {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: transparent;
+    background-color: rgba(var(--color-muted) / 0.45);
   }
 }
 
 @layer components {
   .font-display {
     font-family: "Fraunces", "Newsreader", Georgia, serif;
+    letter-spacing: -0.015em;
   }
 }
 
 @layer utilities {
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(var(--color-muted) / 0.35) transparent;
+    scrollbar-color: rgba(var(--color-muted) / 0.3) transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -162,17 +133,18 @@
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: rgba(var(--color-muted) / 0.3);
-    border-radius: 9999px;
+    border-radius: 2px;
   }
+}
 
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(var(--color-muted) / 0.6);
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-button {
-    display: none;
-    width: 0;
-    height: 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -194,4 +166,3 @@
     size: auto;
   }
 }
-

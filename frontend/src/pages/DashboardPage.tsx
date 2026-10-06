@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
-import { CloudSun, Activity, Scan, ArrowRight } from "lucide-react";
+import { CloudSun, Activity, Scan, ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
-import { motion } from "motion/react";
-import { Badge, Button, Card } from "../components/ui";
+import { Badge, Button, Card, Skeleton } from "../components/ui";
 import { formatTemperature, formatWindSpeed } from "../lib/format";
 import { translateCrop, translateDisease, translateSeverityBucket, translateWeather } from "../i18n/domain";
 
@@ -27,7 +26,7 @@ interface WeatherData {
 export default function DashboardPage() {
   const { user, token, units, language, t } = useAuth();
 
-  const { data: history = [] } = useQuery<ScanItem[]>({
+  const { data: history = [], isLoading: isHistoryLoading } = useQuery<ScanItem[]>({
     queryKey: ["scanHistorySummary"],
     queryFn: () => request<ScanItem[]>("/history?limit=3", {}, token!),
     enabled: !!token,
@@ -36,7 +35,7 @@ export default function DashboardPage() {
   const lat = user?.latitude || 22.2587;
   const lon = user?.longitude || 71.1924;
 
-  const { data: weather } = useQuery<WeatherData>({
+  const { data: weather, isLoading: isWeatherLoading } = useQuery<WeatherData>({
     queryKey: ["dashboardWeather", lat, lon],
     queryFn: () => request<WeatherData>(`/weather?lat=${lat}&lon=${lon}`, {}, token!),
     enabled: !!token,
@@ -48,15 +47,18 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <header className="flex flex-col gap-6 rounded-lg border border-farmer-800 bg-farmer-900 p-7 text-farmer-100 shadow-card sm:p-10 lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-6 rounded-sm border border-line bg-surface p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="font-display text-3xl text-farmer-200 sm:text-4xl">{t("greeting")}, {user?.name || "Farmer"}!</h1>
-          <p className="mt-3 max-w-2xl leading-7 text-farmer-100/90">{t("scanCtaCopy")}</p>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("farmStatus")}</span>
+          <h1 className="mt-1 font-display text-2xl sm:text-3xl text-ink">
+            {t("greeting")}, {user?.name || "Farmer"}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{t("scanCtaCopy")}</p>
         </div>
         <div>
           <Link to="/scan">
-            <Button className="bg-farmer-400 font-bold text-farmer-950 hover:bg-farmer-300 shadow-soft transition-colors">
-            <Scan size={18} /> {t("scanCta")}
+            <Button className="bg-farmer-700 font-semibold text-white hover:bg-farmer-800 transition-colors">
+              <Scan size={18} /> {t("scanCta")}
             </Button>
           </Link>
         </div>
@@ -64,98 +66,118 @@ export default function DashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Quick Weather Widget */}
-        <motion.div 
-          className="relative overflow-hidden rounded-md border border-line bg-surface p-6 shadow-soft before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-expert-500"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><CloudSun className="text-expert-500" size={20} /> {t("liveWeather")}</h3>
-            <Link to="/weather" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200">{t("details")} <ArrowRight size={14} /></Link>
+        <div className="rounded-sm border border-line bg-surface p-6">
+          <div className="flex items-center justify-between gap-4 border-b border-line pb-4">
+            <h3 className="flex items-center gap-2 font-display text-lg text-ink">
+              <CloudSun className="text-farmer-700 dark:text-farmer-300" size={18} /> {t("liveWeather")}
+            </h3>
+            <Link to="/weather" className="inline-flex items-center gap-1 text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200">
+              {t("details")} <ArrowRight size={13} />
+            </Link>
           </div>
-          {weather ? (
-            <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
+
+          {isWeatherLoading ? (
+            <div className="mt-6 space-y-4">
+              <div className="flex justify-between items-end">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <Skeleton className="h-4 w-48" />
+            </div>
+          ) : weather ? (
+            <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
               <div>
-                <span className="font-display text-5xl text-ink">{formatTemperature(weather.temperature_celsius, units)}</span>
-                <span className="mt-1 block text-sm text-muted">{translateWeather(weather.condition, language)}</span>
+                <span className="font-display text-4xl text-ink">{formatTemperature(weather.temperature_celsius, units)}</span>
+                <span className="mt-1 block text-xs text-muted">{translateWeather(weather.condition, language)}</span>
               </div>
               <div className="flex gap-6 text-right">
-                <div><span className="block text-xs text-muted">{t("humidity")}</span><strong className="text-lg text-ink">{weather.humidity_percent ?? "--"}%</strong></div>
-                <div><span className="block text-xs text-muted">{t("wind")}</span><strong className="text-lg text-ink">{formatWindSpeed(weather.wind_speed_mps, units)}</strong></div>
+                <div>
+                  <span className="block text-xs text-muted">{t("humidity")}</span>
+                  <strong className="text-base text-ink">{weather.humidity_percent ?? "N/A"}%</strong>
+                </div>
+                <div>
+                  <span className="block text-xs text-muted">{t("wind")}</span>
+                  <strong className="text-base text-ink">{formatWindSpeed(weather.wind_speed_mps, units)}</strong>
+                </div>
               </div>
             </div>
           ) : (
-            <p className="mt-8 text-sm text-muted">Loading weather telemetry...</p>
+            <p className="mt-6 text-xs text-muted">{t("failedWeatherData")}</p>
           )}
-        </motion.div>
+        </div>
 
         {/* System & Farm Stats */}
-        <motion.div 
-          className="relative overflow-hidden rounded-md border border-line bg-surface p-6 shadow-soft before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-farmer-500"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div>
-            <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Activity className="text-farmer-700 dark:text-emerald-400" size={20} /> {t("farmStatus")}</h3>
+        <div className="rounded-sm border border-line bg-surface p-6">
+          <div className="border-b border-line pb-4">
+            <h3 className="flex items-center gap-2 font-display text-lg text-ink">
+              <Activity className="text-farmer-700 dark:text-farmer-300" size={18} /> {t("farmStatus")}
+            </h3>
           </div>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2">
-            <div className="rounded-sm bg-canvas p-4">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-muted">{t("location")}</span>
-              <div className="mt-2 font-semibold text-ink">{user?.location || "Unknown"}</div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xs border border-line bg-canvas p-4">
+              <span className="block text-xs font-semibold uppercase tracking-wider text-muted">{t("location")}</span>
+              <div className="mt-1.5 font-semibold text-ink text-sm">{user?.location || t("unknown")}</div>
             </div>
-            <div className="rounded-sm bg-canvas p-4">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-muted">{t("crop")}</span>
-              <div className="mt-2 font-semibold text-ink">{user?.crop_history?.length || 0} active</div>
+            <div className="rounded-xs border border-line bg-canvas p-4">
+              <span className="block text-xs font-semibold uppercase tracking-wider text-muted">{t("crop")}</span>
+              <div className="mt-1.5 font-semibold text-ink text-sm">{user?.crop_history?.length || 0} active plots</div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
-      <motion.div 
-        className="rounded-md border border-line bg-surface p-5 shadow-soft sm:p-6"
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <div className="flex items-center justify-between gap-4">
-          <h3 className="font-display text-xl text-ink">{t("recentDiagnostics")}</h3>
-          <Link to="/history" className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200 transition-colors">{t("viewAll")} <ArrowRight size={14} /></Link>
+      <div className="rounded-sm border border-line bg-surface p-6">
+        <div className="flex items-center justify-between gap-4 border-b border-line pb-4">
+          <h3 className="font-display text-lg text-ink">{t("recentDiagnostics")}</h3>
+          <Link to="/history" className="inline-flex items-center gap-1 text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200 transition-colors">
+            {t("viewAll")} <ArrowRight size={13} />
+          </Link>
         </div>
         
-        {history.length === 0 ? (
-          <div className="mt-6 rounded-sm bg-canvas p-6 text-center">
+        {isHistoryLoading ? (
+          <div className="mt-5 space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex justify-between items-center rounded-xs border border-line p-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-40" />
+                </div>
+                <Skeleton className="h-6 w-24" />
+              </div>
+            ))}
+          </div>
+        ) : history.length === 0 ? (
+          <div className="mt-6 rounded-xs border border-line bg-canvas p-6 text-center">
             <p className="text-sm text-muted">{t("noRecentScans")}</p>
-            <Link to="/scan" className="mt-4 inline-block"><Button variant="secondary" size="sm">{t("startFirstScan")}</Button></Link>
+            <Link to="/scan" className="mt-4 inline-block">
+              <Button variant="secondary" size="sm">{t("startFirstScan")}</Button>
+            </Link>
           </div>
         ) : (
           <div className="mt-5 space-y-3">
             {history.map((scan) => (
-              <Link to={`/predictions/${scan.prediction_id}`} key={scan.prediction_id} className="flex flex-col gap-4 rounded-sm border border-line p-4 transition hover:-translate-y-0.5 hover:border-farmer-300 hover:shadow-soft sm:flex-row sm:items-center sm:justify-between">
+              <Link 
+                to={`/predictions/${scan.prediction_id}`} 
+                key={scan.prediction_id} 
+                className="flex flex-col gap-3 rounded-xs border border-line p-4 transition-colors hover:border-farmer-700 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <div>
                   <Badge>{translateCrop(scan.crop?.label, language)}</Badge>
-                  <h4 className="mt-2 font-display text-lg text-ink">{translateDisease(scan.disease?.label, language)}</h4>
+                  <h4 className="mt-1.5 font-display text-base text-ink">{translateDisease(scan.disease?.label, language)}</h4>
                 </div>
                 <div className="flex items-center gap-3 sm:flex-col sm:items-end">
                   <Badge tone={scan.severity?.bucket?.toLowerCase() === "severe" || scan.severity?.bucket?.toLowerCase() === "critical" ? "danger" : scan.severity?.bucket?.toLowerCase() === "moderate" ? "warning" : "success"}>
                     {translateSeverityBucket(scan.severity?.bucket, language)}
                   </Badge>
                   <span className="text-xs text-muted">
-                    {scan.created_at ? new Date(scan.created_at).toLocaleDateString() : "Just now"}
+                    {scan.created_at ? new Date(scan.created_at).toLocaleDateString() : t("recently")}
                   </span>
                 </div>
               </Link>
             ))}
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }
-
-
-
-
-
-

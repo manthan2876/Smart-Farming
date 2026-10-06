@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Bell, CheckCircle2, ShieldAlert, AlertTriangle, Info, Check, ArrowRight } from "lucide-react";
+import { Bell, CheckCircle2, ShieldAlert, AlertTriangle, Info, Check, ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { fetchAlerts, markAlertRead, markAllAlertsRead, AlertItem } from "../api/alerts";
-import { motion } from "motion/react";
-import { Badge, Button, Card } from "../components/ui";
+import { Badge, Button, Card, Skeleton } from "../components/ui";
 import { translateAlertTitle, translateSeverityBucket } from "../i18n/domain";
 
 export default function AlertsPage() {
@@ -128,24 +127,29 @@ export default function AlertsPage() {
         </button>
       </div>
 
-      {/* Alerts List */}
-      <motion.div
-        className="space-y-4"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <div className="space-y-4">
         {isLoading ? (
-          <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" />
-            <span className="ml-3">{t("loadingAlerts")}</span>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-4 rounded-sm border border-line bg-surface p-5">
+                <Skeleton className="h-10 w-10 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : error ? (
           <Card className="text-danger">{t("failedAlerts")}</Card>
         ) : filteredAlerts.length === 0 ? (
-          <div className="flex flex-col items-center rounded-md border border-line bg-surface p-12 text-center shadow-soft">
-            <CheckCircle2 size={48} className="text-farmer-700" />
+          <div className="flex flex-col items-center rounded-sm border border-line bg-surface p-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xs bg-farmer-100 dark:bg-farmer-900/60 text-farmer-800 dark:text-farmer-200">
+              <CheckCircle2 size={24} />
+            </div>
             <h3 className="mt-4 font-display text-xl text-ink">{t("noAlertsFound")}</h3>
-            <p className="mt-2 text-sm text-muted">{t("noAlertsFilterDesc")}</p>
+            <p className="mt-2 text-xs text-muted">{t("noAlertsFilterDesc")}</p>
           </div>
         ) : (
           filteredAlerts.map((alert) => {
@@ -155,10 +159,10 @@ export default function AlertsPage() {
             return (
               <div
                 key={alert.id}
-                className={`relative flex flex-col justify-between gap-4 rounded-md border p-5 shadow-soft transition-all duration-200 sm:flex-row sm:items-center ${
+                className={`relative flex flex-col justify-between gap-4 rounded-sm border p-5 transition-colors sm:flex-row sm:items-center ${
                   alert.is_read
                     ? "border-line bg-surface opacity-90"
-                    : "border-farmer-300 bg-farmer-50/70"
+                    : "border-farmer-300 bg-farmer-50/50 dark:border-farmer-700 dark:bg-farmer-900/30"
                 }`}
               >
                 <div className="flex items-start gap-4">
@@ -237,7 +241,7 @@ export default function AlertsPage() {
             );
           })
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

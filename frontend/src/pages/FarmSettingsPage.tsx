@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { request } from "../api/client";
 import { createPlot, deletePlot } from "../api/farm";
-import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite } from "lucide-react";
+import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite } from "../components/icons";
 import { APIProvider, Circle, Map as GoogleMap, Marker, Polygon, useMap } from "@vis.gl/react-google-maps";
 import { motion } from "motion/react";
 import { Button, Card, Input } from "../components/ui";
@@ -558,12 +558,12 @@ export default function FarmSettingsPage() {
               <div>
                 <strong className="block text-base font-semibold text-ink">{plot.name}</strong>
                 <span className="mt-1 block text-xs text-muted">
-                  {t("crop")}: {translateCrop(plot.crop, language)} &bull; {t("areaLabel")}: {plot.area_acres ? `${plot.area_acres} ${t("areaUnit")}` : "Unknown"}
+                  {t("crop")}: {translateCrop(plot.crop, language)} &bull; {t("areaLabel")}: {plot.area_acres ? `${plot.area_acres} ${t("areaUnit")}` : t("unknown")}
                 </span>
               </div>
               <button 
                 onClick={() => {
-                  if (confirm('Are you sure you want to delete this plot?')) {
+                  if (confirm(t("confirmDeletePlot"))) {
                     deletePlotMutation.mutate(plot.id);
                   }
                 }}
