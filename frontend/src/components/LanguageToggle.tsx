@@ -4,7 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { type Language } from "../i18n";
 
 interface LanguageToggleProps {
-  variant?: "dropdown" | "segmented";
+  variant?: "dropdown" | "segmented" | "icon";
+  showCode?: boolean;
   className?: string;
 }
 
@@ -14,7 +15,11 @@ const LANGUAGES: { code: Language; label: string; short: string; vernacular: str
   { code: "Hindi", label: "Hindi", short: "HI", vernacular: "हिन्दी" },
 ];
 
-export default function LanguageToggle({ variant = "dropdown", className = "" }: LanguageToggleProps) {
+export default function LanguageToggle({ 
+  variant = "dropdown", 
+  showCode = true,
+  className = "" 
+}: LanguageToggleProps) {
   const { language, setLanguage } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,26 +63,33 @@ export default function LanguageToggle({ variant = "dropdown", className = "" }:
   }
 
   const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
+  const isIconOnly = variant === "icon" || !showCode;
 
   return (
     <div className={`relative inline-block ${className}`} ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-canvas focus:outline-none focus-visible:ring-1 focus-visible:ring-farmer-700"
+        className={
+          isIconOnly
+            ? "relative inline-flex items-center justify-center rounded-sm p-2 text-muted transition-colors hover:bg-canvas hover:text-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-farmer-700"
+            : "inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface px-2 py-1 text-xs font-semibold text-ink transition-colors hover:bg-canvas focus:outline-none focus-visible:ring-1 focus-visible:ring-farmer-700"
+        }
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        title="Change application language"
+        title={`Language: ${currentLang.vernacular} (${currentLang.short})`}
+        aria-label={`Language: ${currentLang.vernacular} (${currentLang.short})`}
       >
-        <Globe size={14} className="text-farmer-700 dark:text-farmer-300" />
-        <span className="font-semibold">{currentLang.vernacular}</span>
-        <span className="text-[0.65rem] text-muted">({currentLang.short})</span>
+        <Globe size={isIconOnly ? 18 : 14} className={isIconOnly ? "text-muted hover:text-ink" : "text-farmer-700 dark:text-farmer-300 shrink-0"} />
+        {!isIconOnly && (
+          <span className="text-[0.72rem] font-bold uppercase tracking-wider">{currentLang.short}</span>
+        )}
       </button>
 
       {isOpen && (
         <div
           role="listbox"
-          className="absolute right-0 top-full z-50 mt-1 min-w-[10rem] rounded-sm border border-line bg-surface p-1 shadow-none"
+          className="absolute right-0 top-full z-50 mt-1 min-w-[9.5rem] rounded-sm border border-line bg-surface p-1 shadow-soft"
         >
           {LANGUAGES.map((lang) => {
             const isSelected = language === lang.code;

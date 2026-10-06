@@ -89,7 +89,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="relative flex items-center justify-between border-b border-line px-4 py-4 sm:px-5">
+        <div className="relative flex items-center justify-between border-b border-line px-3.5 py-3.5 sm:px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-farmer-700 text-sm font-bold text-white">
               SF
