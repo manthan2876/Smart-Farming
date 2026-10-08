@@ -55,7 +55,7 @@ The Smart Farming backend is an AI-powered crop disease detection and advisory p
 | **Real-time** | WebSocket | `/ws/predictions/{id}` |
 | **ML Models** | EfficientNet-B0/B2, YOLOv8 | Qwen3-4B Agronomist LLM via HuggingFace API |
 | **Text-to-Speech** | Google Cloud TTS | Audio narration in English, Hindi, and Gujarati (`GOOGLE_TTS_API_KEY`) |
-| **Translation** | Google Cloud Translation | Dynamic advisory localization |
+| **Translation** | IndicTrans2 / Hugging Face | Dynamic advisory localization into Hindi and Gujarati (`TRANSLATION_SERVER_URL`) |
 | **Advisory Fallback** | Gemini API | Google AI — multimodal advisory fallback when primary LLM is unavailable |
 
 ---
@@ -1941,7 +1941,7 @@ Generates an audio narration from text using the Google Cloud Text-to-Speech API
 POST /translation
 ```
 
-Translates text between languages using the Google Cloud Translation API. Used for dynamic advisory localization not covered by pre-computed `entity_translations`.
+Translates text between languages using the IndicTrans2 dedicated microservice. Used for dynamic advisory localization not covered by pre-computed `entity_translations`.
 
 **Authentication:** Bearer token required.
 

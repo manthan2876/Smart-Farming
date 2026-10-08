@@ -228,7 +228,8 @@ These are used as fallback values only when `config.yaml` cannot be loaded. The 
 | `OPENWEATHER_API` | string | `""` | OpenWeatherMap API key used to enrich disease diagnostics with live ambient temperature, humidity, and rainfall. |
 | `GEMINI_API_KEY` | string | `""` | Google Gemini API key used for multimodal agronomist advisory fallback and multilingual translations. |
 | `GOOGLE_TTS_API_KEY` | string | `""` | Google Cloud Text-to-Speech API key for Gujarati, Hindi, and English voice synthesis. |
-| `GOOGLE_TRANSLATION_API_KEY` | string | `""` | Google Cloud Translation API key for dynamic advisory localization. |
+| `TRANSLATION_SERVER_URL` | string | `""` | Base URL of dedicated IndicTrans2 translation microservice (e.g. Colab ngrok tunnel or Hugging Face Space). Powers dynamic agricultural advisory translation into Hindi and Gujarati. |
+| `TRANSLATION_SERVER_TIMEOUT` | float | `15.0` | HTTP request timeout in seconds when calling the IndicTrans2 translation server before falling back to HF Qwen / original English. |
 
 ### SMTP Email Service (Password Reset Tokens)
 

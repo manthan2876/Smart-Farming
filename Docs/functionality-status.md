@@ -305,7 +305,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 - The `GET /weather` endpoint resolves coordinates from request parameters or falls back to the farmer's registered farm in profile (`user.farm.latitude`, `user.farm.longitude`); rejects with HTTP 400 if neither is configured.
 - Implements two layers of caching: Upstash Redis REST cache (`sf:weather:{cache_key}`) with 10-minute TTL and in-memory cache `_WEATHER_CACHE` (10-minute TTL).
 - Generates a farm-specific advisory paragraph via `generate_weather_advisory()` (calling Qwen3-4B with crop history and weather context) with automatic fallback to `_generate_rule_based_advisory()`.
-- On-demand advisory translation is supported via `POST /weather/translate` and inline parameter `GET /weather?language=...` using Google Cloud Translation API.
+- On-demand advisory translation is supported via `POST /weather/translate` and inline parameter `GET /weather?language=...` using IndicTrans2 translation microservice.
 
 **Known gaps:**
 
@@ -1124,8 +1124,8 @@ The web frontend is a functional multi-role application with a shared typed API 
 - Language preference is persisted in `localStorage` and synced to the backend user profile via `updateProfile()` inside `AuthContext.setLanguage()`. On login, the language stored in the profile is loaded and applied.
 - `t()` translation function and `language`/`units` state are provided via context.
 - Backend translation service (`services/translation/service.py`) supports: `en`, `hi`, `gu`, `mr`, `te`, `ta` (Marathi, Telugu, Tamil) via `normalize_language_code`.
-- Primary translation engine: Google Cloud Translation API v2 (`translate_batch_google`).
-- Fallback engine: HuggingFace Qwen LLM via nscale (`translate_batch_hf_fallback`) — used when Google API fails.
+- Primary translation engine: IndicTrans2 dedicated microservice (`translate_batch_indictrans`) on GPU/Colab/HF Space.
+- Fallback engine: HuggingFace Qwen LLM via nscale (`translate_batch_hf_fallback`) — used when IndicTrans2 server is unavailable.
 - Both async (FastAPI) and sync (ARQ worker) variants are provided.
 - Auto-translation at pipeline end for non-English requests: `translate_recommendation_sync()`.
 - On-demand translation: `POST /predictions/{id}/translate?target_language=...` translates and caches in DB; returns from cache on subsequent calls.

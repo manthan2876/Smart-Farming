@@ -185,7 +185,7 @@ The table below lists all environment variables that must be configured for a co
 | `QSTASH_NEXT_SIGNING_KEY` | Next signing key used during key-rotation events | ✅ (prod) |
 | `CRON_SECRET` | Shared secret protecting the internal cron endpoint (`/api/v1/internal-cron/*`) | ✅ (prod) |
 | `GOOGLE_TTS_API_KEY` | Google Cloud Text-to-Speech API key | ✅ (prod) |
-| `GOOGLE_TRANSLATION_API_KEY` | Google Cloud Translation API key | ✅ (prod) |
+| `TRANSLATION_SERVER_URL` | Base URL of dedicated IndicTrans2 translation microservice | optional |
 | `GEMINI_API_KEY` | Google Gemini API key (advisory fallback + translation) | ✅ (prod) |
 | `SMTP_HOST` | SMTP server host for password reset email delivery (e.g. `smtp.gmail.com`) | ✅ (prod) |
 | `SMTP_PORT` | SMTP server port (587 for TLS) | ✅ (prod) |
@@ -246,7 +246,7 @@ HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Optional — only needed for TTS / translation features
 GOOGLE_TTS_API_KEY=
-GOOGLE_TRANSLATION_API_KEY=
+TRANSLATION_SERVER_URL=
 
 CORS_ORIGINS=http://localhost:5173
 ```
@@ -375,7 +375,7 @@ AWS_S3_BUCKET=smart-farming-media
 # External API keys
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 GOOGLE_TTS_API_KEY=your-google-tts-key
-GOOGLE_TRANSLATION_API_KEY=your-google-translate-key
+TRANSLATION_SERVER_URL=https://your-indictrans2-server.ngrok-free.app
 
 # CORS — set to your actual frontend domain in production
 CORS_ORIGINS=https://yourfrontend.com
@@ -473,7 +473,7 @@ services:
       REQUIRE_REDIS: "True"
       HF_TOKEN: ${HF_TOKEN}
       GOOGLE_TTS_API_KEY: ${GOOGLE_TTS_API_KEY}
-      GOOGLE_TRANSLATION_API_KEY: ${GOOGLE_TRANSLATION_API_KEY}
+      TRANSLATION_SERVER_URL: ${TRANSLATION_SERVER_URL}
       CORS_ORIGINS: ${CORS_ORIGINS:-https://yourfrontend.com}
     volumes:
       - ./backend/models:/app/models:ro   # ML models — read-only mount
@@ -509,7 +509,7 @@ services:
       DEBUG: "False"
       HF_TOKEN: ${HF_TOKEN}
       GOOGLE_TTS_API_KEY: ${GOOGLE_TTS_API_KEY}
-      GOOGLE_TRANSLATION_API_KEY: ${GOOGLE_TRANSLATION_API_KEY}
+      TRANSLATION_SERVER_URL: ${TRANSLATION_SERVER_URL}
     volumes:
       - ./backend/models:/app/models:ro
       - backend_data:/app/data

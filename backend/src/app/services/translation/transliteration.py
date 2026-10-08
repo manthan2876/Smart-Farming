@@ -17,9 +17,9 @@ def has_indic_chars(text: str) -> bool:
 def transliterate_name(text: str, target_lang: str) -> str:
     """Transliterate proper nouns (person names, farm names, plot names) into Gujarati or Hindi.
 
-    Forces source='en' so Google Cloud Translation does not treat Latin-script Indian names as untranslatable.
+    Uses IndicTrans2 translation server or Gemini phonetic transliteration.
     Validates that the returned text contains true Indic script characters.
-    Falls back to original English if all APIs fail.
+    Falls back to original English if external services fail.
     """
     clean_text = (text or "").strip()
     if not clean_text or target_lang in ("en", "english"):
@@ -34,27 +34,14 @@ def transliterate_name(text: str, target_lang: str) -> str:
     if target_code == "hi" and any("\u0900" <= c <= "\u097F" for c in clean_text):
         return clean_text
 
-    # 1. Try Google Cloud Translation API v2 with explicit source="en"
-    api_key = settings.GOOGLE_TRANSLATION_API_KEY or settings.GOOGLE_TTS_API_KEY
-    if api_key:
-        try:
-            url = f"https://translation.googleapis.com/language/translate/v2?key={api_key}"
-            payload = {
-                "q": [clean_text],
-                "source": "en",
-                "target": target_code,
-                "format": "text",
-            }
-            resp = httpx.post(url, json=payload, timeout=6.0)
-            if resp.status_code == 200:
-                data = resp.json().get("data", {})
-                translations = data.get("translations", [])
-                if translations:
-                    res = translations[0].get("translatedText", "").strip()
-                    if res and has_indic_chars(res):
-                        return res
-        except Exception as exc:
-            logger.warning("Google Translate transliteration failed for '%s': %s", clean_text, exc)
+    # 1. Try IndicTrans2 translation server
+    try:
+        from app.services.translation.service import translate_batch_sync
+        res = translate_batch_sync([clean_text], target_code)
+        if res and res[0] and has_indic_chars(res[0]):
+            return res[0].strip()
+    except Exception as exc:
+        logger.debug("IndicTrans2 transliteration failed for '%s': %s", clean_text, exc)
 
     # 2. Fallback to Gemini REST API if GEMINI_API_KEY is configured
     if settings.GEMINI_API_KEY:

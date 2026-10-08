@@ -31,7 +31,7 @@ async def translate_prediction_recommendation(
 
     - If requested in English, returns the canonical English recommendation.
     - If already translated and cached in prediction.result["translations"][lang_code], returns from cache (0 ms).
-    - Otherwise, translates using Google Cloud Translation API v2, caches in the database, and returns.
+    - Otherwise, translates using IndicTrans2 on Colab/GPU server, caches in the database, and returns.
     """
     pred = session.get(Prediction, prediction_id)
     if not pred:
@@ -129,6 +129,14 @@ async def translate_prediction_recommendation(
         session.add(pred)
         session.commit()
         session.refresh(pred)
+
+        return {
+            "prediction_id": prediction_id,
+            "language": target_code,
+            "cached": False,
+            "recommendation": translated_rec,
+            "translations": translations,
+        }
 
     except Exception as exc:
         logger.warning(

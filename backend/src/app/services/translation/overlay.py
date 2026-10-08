@@ -100,8 +100,8 @@ def overlay_entity_translations(
                         from app.services.translation.transliteration import transliterate_name
                         trans_val = transliterate_name(clean_source, lang_code)
                     else:
-                        from app.services.translation.service import translate_batch_google_sync
-                        batch_res = translate_batch_google_sync([clean_source], lang_code)
+                        from app.services.translation.service import translate_batch_sync
+                        batch_res = translate_batch_sync([clean_source], lang_code)
                         trans_val = batch_res[0] if batch_res else clean_source
 
                     if trans_val and trans_val != clean_source:
@@ -207,8 +207,8 @@ def overlay_dict_translations(
                     from app.services.translation.transliteration import transliterate_name
                     trans_val = transliterate_name(clean_source, lang_code)
                 else:
-                    from app.services.translation.service import translate_batch_google_sync
-                    batch_res = translate_batch_google_sync([clean_source], lang_code)
+                    from app.services.translation.service import translate_batch_sync
+                    batch_res = translate_batch_sync([clean_source], lang_code)
                     trans_val = batch_res[0] if batch_res else clean_source
 
                 if trans_val and trans_val != clean_source:

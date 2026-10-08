@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.translation import EntityTranslation
-from app.services.translation.service import translate_batch_google_sync
+from app.services.translation.service import translate_batch_sync
 from app.services.translation.transliteration import transliterate_name
 
 logger = logging.getLogger("smart-farming.translation.manager")
@@ -79,7 +79,7 @@ def process_entity_translation_sync(
                     if is_name:
                         translated_val = transliterate_name(clean_text, lang)
                     else:
-                        batch_res = translate_batch_google_sync([clean_text], lang)
+                        batch_res = translate_batch_sync([clean_text], lang)
                         translated_val = batch_res[0] if batch_res else clean_text
 
                     if translated_val and translated_val != clean_text:
