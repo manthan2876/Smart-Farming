@@ -116,7 +116,7 @@ class LocalStorageBackend(StorageBackend):
 
 
 class S3StorageBackend(StorageBackend):
-    """S3 and Google Cloud Storage (HMAC) object storage implementation with secure presigned URLs."""
+    """AWS S3 object storage implementation with AES256 encryption and secure presigned URLs."""
 
     def __init__(
         self,
@@ -127,27 +127,17 @@ class S3StorageBackend(StorageBackend):
         endpoint_url: str | None = None,
         **kwargs: Any,
     ) -> None:
-        backend_type = (settings.STORAGE_BACKEND or "local").lower()
-        self.bucket_name = (
-            bucket_name
-            or getattr(settings, "GCS_BUCKET", None)
-            or settings.AWS_S3_BUCKET
-        )
+        self.bucket_name = bucket_name or settings.AWS_S3_BUCKET
         self.region = region or kwargs.get("region_name") or settings.AWS_REGION
         self.region_name = self.region
         self.access_key_id = access_key_id or kwargs.get("access_key") or settings.AWS_ACCESS_KEY_ID
         self.secret_access_key = secret_access_key or kwargs.get("secret_key") or settings.AWS_SECRET_ACCESS_KEY
-
-        # Determine endpoint URL (defaults to Google Cloud Storage if backend is gcs)
-        endpoint = (
+        self.endpoint_url = (
             endpoint_url
             or getattr(settings, "STORAGE_ENDPOINT_URL", None)
             or getattr(settings, "AWS_ENDPOINT_URL", None)
             or kwargs.get("endpoint_url")
         )
-        if not endpoint and backend_type == "gcs":
-            endpoint = "https://storage.googleapis.com"
-        self.endpoint_url = endpoint
         self._client: Any = None
 
     @property
@@ -156,12 +146,9 @@ class S3StorageBackend(StorageBackend):
             import boto3
             from botocore.config import Config
 
-            is_gcs = bool(self.endpoint_url and "storage.googleapis.com" in self.endpoint_url)
-            sig_version = "s3" if is_gcs else "s3v4"
-
             boto_config = Config(
                 region_name=self.region,
-                signature_version=sig_version,
+                signature_version="s3v4",
                 retries={"max_attempts": 3, "mode": "standard"},
             )
             kwargs: dict[str, Any] = {"config": boto_config}
@@ -187,12 +174,8 @@ class S3StorageBackend(StorageBackend):
             "Key": key,
             "Body": content,
             "ContentType": content_type,
+            "ServerSideEncryption": "AES256",
         }
-        # Only pass ServerSideEncryption for AWS S3; GCS automatically encrypts with AES-256
-        is_gcs = bool(self.endpoint_url and "storage.googleapis.com" in self.endpoint_url)
-        if not is_gcs:
-            put_kwargs["ServerSideEncryption"] = "AES256"
-
         self.client.put_object(**put_kwargs)
         return key
 
@@ -216,7 +199,7 @@ class S3StorageBackend(StorageBackend):
             self.client.delete_object(Bucket=self.bucket_name, Key=norm_key)
             return True
         except Exception as exc:
-            logger.warning("Object storage delete failed for %s: %s", norm_key, exc)
+            logger.warning("S3 delete object failed for %s: %s", norm_key, exc)
             return False
 
     def exists(self, key: str) -> bool:
@@ -237,9 +220,6 @@ class S3StorageBackend(StorageBackend):
         return keys
 
 
-# GCSStorageBackend is an alias to S3StorageBackend using GCS S3-compatible XML API
-GCSStorageBackend = S3StorageBackend
-
 _STORAGE_INSTANCE: StorageBackend | None = None
 
 
@@ -248,9 +228,8 @@ def get_storage() -> StorageBackend:
     global _STORAGE_INSTANCE
     if _STORAGE_INSTANCE is None:
         backend_type = (settings.STORAGE_BACKEND or "local").lower()
-        if backend_type in ("s3", "gcs"):
-            target_bucket = getattr(settings, "GCS_BUCKET", None) or settings.AWS_S3_BUCKET
-            logger.info("Initializing %s storage backend for bucket: %s", backend_type.upper(), target_bucket)
+        if backend_type == "s3":
+            logger.info("Initializing S3 storage backend for bucket: %s (%s)", settings.AWS_S3_BUCKET, settings.AWS_REGION)
             _STORAGE_INSTANCE = S3StorageBackend()
         else:
             logger.info("Initializing LocalStorageBackend at: %s", settings.DATA_ROOT)
@@ -370,8 +349,8 @@ def purge_orphaned_blobs(
     s3_would_delete: list[str] = []
     s3_error: str | None = None
 
-    target_bucket = getattr(settings, "GCS_BUCKET", None) or settings.AWS_S3_BUCKET
-    if target_bucket and (settings.STORAGE_BACKEND or "local").lower() in ("s3", "gcs"):
+    target_bucket = settings.AWS_S3_BUCKET
+    if target_bucket and (settings.STORAGE_BACKEND or "local").lower() == "s3":
         try:
             s3_backend = S3StorageBackend()
             client = s3_backend.client

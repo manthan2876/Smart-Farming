@@ -86,14 +86,14 @@ The platform operates as a decoupled microservices architecture designed for fau
 │  ├── Weather Service (OpenWeather API)                                                                  │
 │  ├── LLM Advisory Engine (Google Gemini 2.5 Flash / Hugging Face Qwen Fallback)                         │
 │  ├── Google Cloud Translation (Write-time async translation) & Google Cloud TTS Audio                   │
-│  ├── Storage Abstraction (Google Cloud Storage / AWS S3 with 15-minute Presigned URLs)                  │
+│  ├── Storage Abstraction (AWS S3 with 15-minute Presigned URLs)                                          │
 │  ├── ARQ Job Enqueuer & In-process Serverless Fallback                                                  │
 │  └── Notifications & Triage Alerts Engine (Auto-mark read on scan navigation)                           │
 └───┬───────────────────────────────┬────────────────────────────────┬───────────────────────────────┬────┘
-    │ HTTP / Multipart              │ Database Connection            │ Redis Protocol (TLS)          │ S3 / HMAC API
+    │ HTTP / Multipart              │ Database Connection            │ Redis Protocol (TLS)          │ AWS S3 API
     ▼                               ▼                                ▼                               ▼
 ┌─────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐
-│ Google Cloud Run        │   │ Cloud PostgreSQL          │   │ Upstash Cloud Redis       │   │ Google Cloud Storage      │
+│ Google Cloud Run        │   │ Cloud PostgreSQL          │   │ Upstash Cloud Redis       │   │ AWS S3 Object Storage     │
 │ inference-service       │   │                           │   │ & Serverless QStash       │   │ Bucket: smart-farming-data│
 │ (Port 8001)             │   │ • Prod: Supabase Cloud    │   │                           │   │                           │
 │                         │   │   (Session Pooler: 5432)  │   │ • ARQ Job Queue           │   │ • uploads/ (Raw Leaf)     │
@@ -140,7 +140,7 @@ Smart Farming maintains strict separation between Development and Production env
 | **Database** | Aiven PostgreSQL (Dev) & Supabase PostgreSQL (Prod) | Managed cloud PostgreSQL instances with connection pooling & SSL |
 | **Remote Config** | Supabase `public.app_config` table via PostgREST | Farmer app backend URL discovery without app rebuilds; read-only via anon RLS policy |
 | **Caching & Dedup** | Upstash Serverless Redis REST | Sub-15ms translation hit caching, SHA-256 image deduplication, rate limiting |
-| **Object Storage** | Google Cloud Storage (GCS) / AWS S3 S3-compatible API | Raw leaves, Grad-CAM heatmaps, TTS audio narration with presigned URLs |
+| **Object Storage** | AWS S3 Object Storage | Raw leaves, Grad-CAM heatmaps, TTS audio narration with presigned URLs |
 | **Generative AI** | Google Gemini 2.5 Flash (`google-genai`), Qwen3-4B-Instruct | Context-aware agronomic advisory generation |
 | **Translation & TTS** | Google Cloud Translation API, Google Cloud Text-to-Speech | Dynamic Hindi (`hi`) and Gujarati (`gu`) translations and voice generation |
 | **Email Service** | SMTP / TLS (Gmail / SendGrid compatible) | Password reset email tokens and security notifications |
@@ -196,7 +196,7 @@ Smart-Farming/
 │   │   ├── verify_qstash_and_events.py     # Validates QStash webhook event delivery
 │   │   ├── verify_upstash_features.py      # Tests Upstash Redis connection & caching
 │   │   ├── test_smtp.py                    # Validates email sending & SMTP credentials
-│   │   └── verify_gcs_storage.py           # Validates GCS HMAC connectivity & upload
+│   │   └── verify_s3_storage.py            # Validates AWS S3 connectivity, upload & URLs
 │   ├── alembic/                            # Versioned database migrations
 │   ├── seed_users.py                       # Seeds initial Admin, Expert, and Farmer accounts
 │   ├── requirements.txt                    # Backend dependencies
@@ -671,7 +671,7 @@ Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at b
 - **Vision Microservice**: Google Cloud Run (`us-central1`) with CPU optimization.
 - **Frontend Dashboard**: Vercel Edge Network.
 - **Database**: Supabase Cloud PostgreSQL.
-- **Storage**: Google Cloud Storage (`smart-farming-data`).
+- **Storage**: AWS S3 (`smart-farming-data`).
 
 ---
 

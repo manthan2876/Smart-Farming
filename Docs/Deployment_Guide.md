@@ -28,7 +28,7 @@
 9. [ML Model Placement](#9-ml-model-placement)
 10. [Production Cloud Deployment (Vercel & Google Cloud Run)](#10-production-cloud-deployment-vercel--google-cloud-run)
     - 10.1 [Overview & Serverless Zero-Idle Strategy](#101-overview--serverless-zero-idle-strategy)
-    - 10.2 [Google Cloud Storage (GCS) Provisioning & HMAC Keys](#102-google-cloud-storage-gcs-provisioning--hmac-keys)
+    - 10.2 [AWS S3 Object Storage Provisioning](#102-aws-s3-object-storage-provisioning)
     - 10.3 [Supabase PostgreSQL Database](#103-supabase-postgresql-database)
     - 10.4 [Upstash Serverless Redis REST Provisioning](#104-upstash-serverless-redis-rest-provisioning)
     - 10.5 [Cloud Run Service #2: inference-service](#105-cloud-run-service-2-inference-service)
@@ -66,8 +66,8 @@ A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform
            GCP OIDC HTTPS Auth │           │ S3 HMAC   │ SSL     │ HTTPS Token
                ┌───────────────┘           │ XML API   │         │
     ┌──────────▼───────────────┐   ┌───────▼──────┐  ┌─▼───────┐ ┌▼──────────────┐
-    │ Cloud Run Service #2:    │   │ Google Cloud │  │ Supabase│ │ Upstash       │
-    │ inference-service        │   │ Storage (GCS)│  │ Postgres│ │ Redis REST    │
+    │ Cloud Run Service #2:    │   │ AWS S3       │  │ Supabase│ │ Upstash       │
+    │ inference-service        │   │ Object Store │  │ Postgres│ │ Redis REST    │
     │ (PyTorch CPU · 2GiB)     │   │ Bucket: data │  │ Pooler  │ │ Serverless    │
     │ Private Ingress          │   └──────────────┘  └─────────┘ └───────────────┘
     └──────────────────────────┘
@@ -78,7 +78,7 @@ A decoupled, zero-idle-cost cloud architecture deployed on Google Cloud Platform
 | **Frontend** | Vercel Edge | React 18 + Vite SPA, Tailwind CSS | Public HTTPS (`*.vercel.app`) |
 | **API Gateway** | Google Cloud Run (Service #1) | FastAPI, Python 3.11, 1 vCPU, 512 MiB RAM | Public HTTPS (`--allow-unauthenticated`) |
 | **ML Inference** | Google Cloud Run (Service #2) | FastAPI + PyTorch CPU, 2 vCPU, 2 GiB RAM | Private HTTPS (`--no-allow-unauthenticated`, GCP OIDC) |
-| **Object Storage** | Google Cloud Storage (GCS) | Multi-regional bucket (`smart-farming-data`) | S3 HMAC XML API (`signature_version="s3"`) |
+| **Object Storage** | AWS S3 Object Storage | S3 bucket (`smart-farming-data`) with AES-256 | AWS S3 API (`signature_version="s3v4"`) |
 | **Database** | Supabase PostgreSQL | Managed PostgreSQL 15+ with SSL | Encrypted external SSL (`sslmode=require`) |
 | **Serverless Cache** | Upstash Redis REST | Serverless Redis (HTTPS Token Auth) | Outbound HTTPS REST (`sf:*` namespace) |
 | **External AI** | Hugging Face & OpenWeather | Qwen3-4B Agronomist LLM & Weather API | Outbound HTTPS |
@@ -165,12 +165,12 @@ The table below lists all environment variables that must be configured for a co
 | `SECRET_KEY` | Application-level secret (32+ char hex) | ✅ |
 | `JWT_SECRET_KEY` | JWT signing secret (32+ char hex) | ✅ |
 | `ENVIRONMENT` | Runtime mode: `development` \| `production` | ✅ |
-| `STORAGE_BACKEND` | Storage driver: `local` \| `gcs` \| `s3` | ✅ |
-| `AWS_ACCESS_KEY_ID` | GCS HMAC access key (production) or MinIO root user (self-hosted) | ✅ |
-| `AWS_SECRET_ACCESS_KEY` | GCS HMAC secret key (production) or MinIO root password (self-hosted) | ✅ |
-| `AWS_REGION` | GCS region (`auto`) or AWS/MinIO region | ✅ |
-| `AWS_S3_BUCKET` | GCS bucket name (e.g. `smart-farming-data`) or S3/MinIO bucket | ✅ |
-| `AWS_ENDPOINT_URL` | `https://storage.googleapis.com` for GCS; MinIO URL for self-hosted | ✅ |
+| `STORAGE_BACKEND` | Storage driver: `local` \| `s3` | ✅ |
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key ID (production) or MinIO root user (self-hosted) | ✅ |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret access key (production) or MinIO root password (self-hosted) | ✅ |
+| `AWS_REGION` | AWS region (`us-east-1`, `ap-south-1`, etc.) | ✅ |
+| `AWS_S3_BUCKET` | AWS S3 bucket name (e.g. `smart-farming-data`) | ✅ |
+| `AWS_ENDPOINT_URL` | Optional custom S3 endpoint (leave blank for native AWS S3) | ✅ |
 | `HF_TOKEN` | Hugging Face bearer token for Qwen3-4B Agronomist LLM | ✅ |
 | `OPENWEATHER_API` | OpenWeatherMap API key for live weather data | ✅ |
 | `CORS_ORIGINS` | Comma-separated allowed frontend origins | ✅ |
@@ -965,46 +965,66 @@ In production, the platform is decoupled into two independent microservices and 
 
 ---
 
-### 10.2 Google Cloud Storage (GCS) Provisioning & HMAC Keys
+### 10.2 AWS S3 Object Storage Provisioning
 
-Google Cloud Storage stores raw leaf scans, processed bounding boxes, Grad-CAM heatmaps, and TTS audio files.
+AWS S3 stores raw leaf scans, processed bounding boxes, Grad-CAM heatmaps, and TTS audio files with AES-256 server-side encryption.
 
-#### Step 1: Create the GCS Bucket
-Using Google Cloud Console or `gcloud`:
+#### Step 1: Create the S3 Bucket
+Using AWS Console or AWS CLI:
 
 ```bash
-gcloud storage buckets create gs://smart-farming-data \
-  --project=<YOUR_GCP_PROJECT_ID> \
-  --location=us-central1 \
-  --default-storage-class=STANDARD \
-  --uniform-bucket-level-access
+aws s3api create-bucket \
+  --bucket smart-farming-data \
+  --region us-east-1
 ```
 
-#### Step 2: Generate S3 Interoperability HMAC Keys
-1. In Google Cloud Console, navigate to **Cloud Storage** → **Settings** → **Interoperability**.
-2. Click **Create a key** for your user account or service account.
-3. Save the **Access Key** (`<YOUR_GCS_HMAC_ACCESS_KEY>`) and **Secret** (`<YOUR_GCS_HMAC_SECRET_KEY>`).
+Enable default server-side encryption:
 
-#### Step 3: Signature Version Configuration
-> [!IMPORTANT]
-> Google Cloud Storage's S3 XML API requires **SigV2** (`signature_version="s3"`). AWS SigV4 chunked payload signing fails on GCS with `SignatureDoesNotMatch`.
-> The backend `src/app/core/storage.py` automatically applies `signature_version="s3"` whenever `STORAGE_BACKEND=gcs` or `AWS_ENDPOINT_URL` contains `storage.googleapis.com`.
+```bash
+aws s3api put-bucket-encryption \
+  --bucket smart-farming-data \
+  --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
+```
 
-#### Step 4: Verify GCS Connectivity
+#### Step 2: Configure IAM Permissions
+Ensure your IAM user or role has the following minimum S3 permissions for `arn:aws:s3:::smart-farming-data/*`:
+- `s3:PutObject`
+- `s3:GetObject`
+- `s3:DeleteObject`
+- `s3:ListBucket`
+
+Save the **AWS Access Key ID** and **AWS Secret Access Key**.
+
+#### Step 3: Verify S3 Connectivity
 Run the verification script from the backend directory:
 
 ```bash
 cd backend
-python scripts/verify_gcs_storage.py
+python scripts/verify_s3_storage.py
 ```
 
 Expected output:
 ```
-[GCS Test] Uploading test object... SUCCESS
-[GCS Test] Generating Presigned URL... SUCCESS
-[GCS Test] Verifying HTTP GET from Presigned URL... HTTP 200 OK
-[GCS Test] Deleting test object... SUCCESS
-All GCS tests passed!
+============================================================
+AWS S3 Object Storage Verification Script
+============================================================
+Backend Type : s3
+Target Bucket: smart-farming-data
+Region       : us-east-1
+------------------------------------------------------------
+1. Testing bucket list operation...
+   [SUCCESS] Successfully connected and listed objects.
+2. Testing upload to 'uploads/test_connectivity_...txt'...
+   [SUCCESS] Uploaded successfully with AES256 encryption.
+3. Testing read/retrieve...
+   [SUCCESS] Data retrieved and matches byte-for-byte!
+4. Testing presigned URL generation...
+   [SUCCESS] Presigned URL generated.
+5. Cleaning up test file...
+   [SUCCESS] Cleaned up temporary test file.
+============================================================
+ALL STORAGE TESTS PASSED! AWS S3 is fully operational.
+============================================================
 ```
 
 ---
@@ -1175,12 +1195,11 @@ gcloud run deploy smart-farming-backend \
 ENVIRONMENT=production,\
 DEBUG=False,\
 REQUIRE_REDIS=False,\
-STORAGE_BACKEND=gcs,\
-AWS_ACCESS_KEY_ID=<YOUR_GCS_HMAC_ACCESS_KEY>,\
-AWS_SECRET_ACCESS_KEY=<YOUR_GCS_HMAC_SECRET_KEY>,\
-AWS_REGION=auto,\
+STORAGE_BACKEND=s3,\
+AWS_ACCESS_KEY_ID=<YOUR_AWS_ACCESS_KEY_ID>,\
+AWS_SECRET_ACCESS_KEY=<YOUR_AWS_SECRET_ACCESS_KEY>,\
+AWS_REGION=us-east-1,\
 AWS_S3_BUCKET=smart-farming-data,\
-AWS_ENDPOINT_URL=https://storage.googleapis.com,\
 MODEL_SERVER_URL=https://inference-service-<PROJECT_HASH>.<REGION>.run.app,\
 DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>/<DB_NAME>?sslmode=require,\
 UPSTASH_REDIS_REST_URL=https://<YOUR_UPSTASH_DB_NAME>.upstash.io,\
@@ -1288,9 +1307,9 @@ Work through this checklist before going live.
 
 ### Object Storage
 
-- [ ] Google Cloud Storage bucket `smart-farming-data` created in `us-central1`.
-- [ ] GCS HMAC keys active with `STORAGE_BACKEND=gcs` and `signature_version="s3"`.
-- [ ] Verified upload, read, and signed URL generation via `scripts/verify_gcs_storage.py`.
+- [ ] AWS S3 bucket `smart-farming-data` created with AES-256 encryption.
+- [ ] IAM credentials active with `STORAGE_BACKEND=s3` and `signature_version="s3v4"`.
+- [ ] Verified upload, read, and signed URL generation via `scripts/verify_s3_storage.py`.
 
 ### External API Keys
 
@@ -1361,7 +1380,7 @@ docker compose ps
 
 | Symptom | Likely Cause | Fix |
 |---|---|---|
-| `SignatureDoesNotMatch` on GCS upload | AWS SigV4 chunking used on GCS XML API | Set `STORAGE_BACKEND=gcs` or configure `signature_version="s3"` in botocore client. |
+| `AccessDenied` or `InvalidAccessKeyId` on S3 upload | Invalid AWS IAM credentials or bucket policy | Verify `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `s3:PutObject` permissions. |
 | `ImportError: libGL.so.1` or `libxcb.so.1` in inference service | Missing Debian system libraries in Docker image | Add `libgl1 libglib2.0-0 libxcb1 libx11-6 libxext6 libxrender1` to `apt-get install` in Dockerfile. |
 | Cloud Run container terminated with exit code `137` (OOM) | Memory limit exceeded during PyTorch model loading | Increase memory allocation to at least `2Gi` on `inference-service`. |
 | `403 Forbidden` calling `inference-service` from backend | Missing IAM invoker permission | Add `roles/run.invoker` binding for the compute service account on `inference-service`. |

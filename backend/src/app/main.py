@@ -138,7 +138,7 @@ _DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 @app.get("/data/{file_path:path}", include_in_schema=False)
 async def serve_data_file(file_path: str):
-    """Serve static asset from local disk or redirect to GCS/S3 presigned URL."""
+    """Serve static asset from local disk or redirect to S3 presigned URL."""
     clean_subpath = file_path.replace("\\", "/").strip("/")
     local_file = (_DATA_DIR / clean_subpath).resolve()
     try:
@@ -149,7 +149,7 @@ async def serve_data_file(file_path: str):
         pass
 
     backend_type = (os.getenv("STORAGE_BACKEND") or "local").lower()
-    if backend_type in ("s3", "gcs"):
+    if backend_type == "s3":
         try:
             from app.core.storage import get_storage
             storage = get_storage()

@@ -475,34 +475,20 @@ Use this checklist every time you run a training cycle. Store it alongside the r
 
 ---
 
-## 13. Storage Backend (GCS / Production)
+## 13. Storage Backend (AWS S3 / Production)
 
-When moving to a production environment, migrate local image and model files to GCS:
-
-```bash
-python backend/scripts/migrate_to_s3.py
-```
-
-After migration, update `.env`:
+When moving to a production environment, store image and model files in AWS S3:
 
 ```bash
-STORAGE_BACKEND=gcs
-AWS_S3_BUCKET=smart-farming-data        # GCS bucket accessed via S3 HMAC API
-AWS_REGION=auto                          # or specific region
-AWS_ENDPOINT_URL=https://storage.googleapis.com  # HMAC endpoint
-AWS_ACCESS_KEY_ID=<hmac_key_id>          # GCS HMAC key ID
-AWS_SECRET_ACCESS_KEY=<hmac_secret>      # GCS HMAC secret
+# Configure AWS S3 in .env:
+STORAGE_BACKEND=s3
+AWS_S3_BUCKET=smart-farming-data
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=<your_aws_access_key_id>
+AWS_SECRET_ACCESS_KEY=<your_aws_secret_access_key>
 ```
 
-The `migrate_to_s3.py` script handles:
-- Uploading all local model checkpoints and label files
-- Re-writing paths in `model_registry.json` to GCS URIs
-- Uploading exported datasets and raw image files
-- Verifying upload integrity via SHA-256 checksums
-
-> **Note:** GCS is accessed via its S3-compatible HMAC API. The SDK treats it as S3 (boto3) with a custom endpoint (`AWS_ENDPOINT_URL`). No boto3 code change is needed compared to AWS S3 — only the environment variables differ.
-
-> **Important:** Test inference end-to-end in staging with `STORAGE_BACKEND=gcs` before rolling to production. GCS latency on first load is higher than local disk — consider pre-loading models into memory on worker startup.
+> **Important:** Test inference end-to-end in staging with `STORAGE_BACKEND=s3` before rolling to production. S3 latency on first load is higher than local disk — pre-warm models into memory on worker startup.
 
 
 ---

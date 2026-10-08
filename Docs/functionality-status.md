@@ -32,7 +32,7 @@ The core AI diagnosis pipeline supports two execution modes controlled by `REQUI
 
 1. The user uploads a JPEG, PNG, or WebP leaf image via `POST /predict`.
 2. The backend validates the content-type and extension, verifies the file bytes with PIL `Image.verify()` (magic-byte check), hashes the image, and checks the Upstash Redis REST dedup cache (`sf:dedup:{hash}`, 24 h TTL). A cached completed result is returned immediately.
-3. The image is saved to the active storage backend (local disk + GCS in production).
+3. The image is saved to the active storage backend (local disk or AWS S3 in production).
 4. `run_pipeline()` is called **synchronously** in the request: calls the model service (Cloud Run Service #2) via HTTPS with OIDC auth, runs the 8-stage pipeline (preprocessing → crop identification → decision routing → disease classification → severity estimation → pest detection → weather → recommendation), then persists to PostgreSQL.
 5. A RAG retriever injects verified agronomic safety guidelines (pesticide bans, PHI constraints) into the LLM prompt.
 6. The completed result is saved to Upstash Redis REST dedup cache and returned immediately in the same HTTP response. `FastAPI BackgroundTasks` pre-translates the recommendation into Hindi and Gujarati, storing them in the `entity_translations` table for instant future lookups.
@@ -749,7 +749,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 **What works:**
 
 - `GET /expert/queue` returns all pending `ExpertReview` records with crop, disease, confidence, severity, and timestamps. Ordered by most recent.
-- `GET /expert/reviews/{review_id}` returns full review details including raw/processed presigned GCS image URLs and all prediction fields. Accepts a `lang` query parameter — if provided, `farmer_guidance` is translated via the `entity_translations` overlay before returning.
+- `GET /expert/reviews/{review_id}` returns full review details including raw/processed presigned S3 image URLs and all prediction fields. Accepts a `lang` query parameter — if provided, `farmer_guidance` is translated via the `entity_translations` overlay before returning.
 - `POST /expert/reviews/{review_id}` processes a review:
   - Accepts three `action` values: `'Override / Correct Findings'`, `'Request Rescan'`, or approve (any other value).
   - Persists: `decision`, `status="verified"`, `expert_id`, `farmer_guidance`, `internal_note`, `corrected_disease`, `corrected_severity`.
@@ -1420,8 +1420,8 @@ The web frontend is a functional multi-role application with a shared typed API 
 - Storage directories: `DATA_ROOT`, `UPLOAD_ROOT`, `PROCESSED_ROOT`, `AUDIO_ROOT` — all resolved from `settings`.
 - Modular storage backend abstraction (`core/storage.py`):
   - `LocalStorageBackend`: Local filesystem storage with direct file I/O and relative URL serving.
-  - `S3StorageBackend`: Object storage client supporting Google Cloud Storage (GCS) via its S3-compatible HMAC API (`https://storage.googleapis.com`) using `signature_version="s3"` for signature compatibility.
-  - `get_storage()` factory instantiates the active backend based on `STORAGE_BACKEND` (`"local"`, `"s3"`, `"gcs"`).
+  - `S3StorageBackend`: Object storage client supporting AWS S3 with AES-256 server-side encryption and SigV4 authentication.
+  - `get_storage()` factory instantiates the active backend based on `STORAGE_BACKEND` (`"local"`, `"s3"`).
   - Presigned URL generation for secure client media access (`storage.get_url(...)` with configurable expiration).
   - Orphaned blob purge utility (`purge_orphaned_blobs`) supporting `dry_run` previews and configurable grace periods.
 

@@ -42,6 +42,7 @@ _UPLOAD_DIR = settings.UPLOAD_ROOT
 _MAX_UPLOAD_BYTES = settings.UPLOAD_MAX_BYTES
 _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _LOGGER = logging.getLogger("smart-farming.api")
+logger = _LOGGER
 
 # DB `Prediction.status` values that mean the pipeline finished successfully.
 _SUCCESS_STATUSES = {"ready", "completed", "verified", "pending_expert_review"}
@@ -70,7 +71,7 @@ def _apply_pipeline_status(result: dict[str, Any], db_status: str | None) -> dic
 
 def _enrich_image_urls(result: dict) -> dict:
     """If S3 storage is enabled, generate fresh presigned S3 URLs for raw and processed images."""
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("s3", "gcs"):
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
         try:
             from app.core.storage import get_storage
             storage = get_storage()
@@ -122,7 +123,10 @@ def _ensure_processed_image_for_prediction(prediction, result: dict, session: Se
         b64_str = cv_res.get("image", {}).get("processed_image_base64")
         if b64_str:
             proc_bytes = base64.b64decode(b64_str)
-            storage.save(proc_bytes, f"processed/{clean_name}", content_type="image/jpeg")
+            try:
+                storage.save(proc_bytes, f"processed/{clean_name}", content_type="image/jpeg")
+            except Exception as exc:
+                logger.warning("Object storage upload failed for processed image: %s", exc)
             local_p = settings.DATA_ROOT / "processed" / clean_name
             local_p.parent.mkdir(parents=True, exist_ok=True)
             local_p.write_bytes(proc_bytes)
@@ -349,10 +353,13 @@ async def predict(
                 if location == "Unknown":
                     location = getattr(settings, "DEFAULT_LOCATION", "Gujarat, India")
 
-        # Save to active storage backend (Local disk or AWS S3 / GCS)
+        # Save to active storage backend (Local disk or AWS S3)
         from app.core.storage import get_storage
         storage = get_storage()
-        storage.save(image_bytes, f"uploads/{filename}", content_type=file.content_type)
+        try:
+            storage.save(image_bytes, f"uploads/{filename}", content_type=file.content_type)
+        except Exception as exc:
+            logger.warning("Object storage upload failed (%s), relying on local disk copy", exc)
 
         # Ensure local disk copy exists for immediate OpenCV preprocessing
         if not upload_path.exists():
@@ -1207,7 +1214,7 @@ async def get_prediction_media_stream(
     if not key:
         raise HTTPException(status_code=404, detail=f"No {media_type} asset found for this prediction.")
 
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("s3", "gcs"):
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
         presigned_url = storage.get_url(key, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
         return RedirectResponse(url=presigned_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 

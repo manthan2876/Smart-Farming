@@ -127,7 +127,7 @@ class OfflineQueueDb {
   Future<String> _saveImageBytesLocally(Uint8List bytes, String clientUuid, String originalFileName) async {
     final storageDir = await _getStorageDirectory();
     final ext = p.extension(originalFileName).isNotEmpty ? p.extension(originalFileName) : '.jpg';
-    final filePath = p.join(storageDir.path, 'scan_${clientUuid}$ext');
+    final filePath = p.join(storageDir.path, 'scan_$clientUuid$ext');
     final file = File(filePath);
     await file.writeAsBytes(bytes, flush: true);
     return filePath;

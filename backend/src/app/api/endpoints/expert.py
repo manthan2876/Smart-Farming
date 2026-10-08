@@ -69,7 +69,7 @@ async def get_expert_review(
 
     raw_url = None
     processed_url = None
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("s3", "gcs"):
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
         try:
             from app.core.storage import get_storage
             storage = get_storage()

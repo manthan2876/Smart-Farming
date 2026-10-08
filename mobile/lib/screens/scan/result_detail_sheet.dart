@@ -1185,7 +1185,7 @@ ${context.tr('reportGeneratedBy')}
                   decoration: BoxDecoration(
                     color: badgeBg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: badgeText.withOpacity(0.3)),
+                    border: Border.all(color: badgeText.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     children: [

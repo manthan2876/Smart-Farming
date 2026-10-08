@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-verify_gcs_storage.py — Test and verify Google Cloud Storage connectivity and permissions.
+verify_s3_storage.py — Test and verify AWS S3 object storage connectivity and permissions.
 
 Usage:
-  python backend/scripts/verify_gcs_storage.py
+  python backend/scripts/verify_s3_storage.py
 """
 
 from __future__ import annotations
@@ -21,12 +21,13 @@ from app.core.storage import get_storage
 
 def main() -> int:
     print("=" * 60)
-    print("Google Cloud Storage Verification Script")
+    print("AWS S3 Object Storage Verification Script")
     print("=" * 60)
     print(f"Backend Type : {settings.STORAGE_BACKEND}")
     print(f"Target Bucket: {settings.AWS_S3_BUCKET}")
-    print(f"Endpoint URL : {settings.AWS_ENDPOINT_URL}")
-    print(f"Access Key ID: {settings.AWS_ACCESS_KEY_ID[:10]}...")
+    print(f"Region       : {settings.AWS_REGION}")
+    key_preview = f"{settings.AWS_ACCESS_KEY_ID[:8]}..." if settings.AWS_ACCESS_KEY_ID else "(None)"
+    print(f"Access Key ID: {key_preview}")
     print("-" * 60)
 
     storage = get_storage()
@@ -44,18 +45,18 @@ def main() -> int:
     except Exception as exc:
         print(f"   [FAILED] Could not list objects: {exc}")
         print("\n   [ACTION REQUIRED]")
-        print("   Grant 'Storage Object Admin' to your service account:")
-        print("   ais-gemini-key-bdcc6b45af234e9@17713614069.iam.gserviceaccount.com")
-        print("   on the Google Cloud Storage bucket 'smart-farming-data'.")
+        print("   Ensure AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)")
+        print(f"   have s3:ListBucket, s3:PutObject, s3:GetObject, s3:DeleteObject")
+        print(f"   permissions on bucket '{settings.AWS_S3_BUCKET}'.")
         return 1
 
-    # 2. Test Write
+    # 2. Test Write (AES256)
     test_key = f"uploads/test_connectivity_{uuid.uuid4().hex[:8]}.txt"
-    test_data = b"Smart Farming GCS Connection Test Passed!"
+    test_data = b"Smart Farming AWS S3 Connection Test Passed!"
     print(f"\n2. Testing upload to '{test_key}'...")
     try:
         saved_key = storage.save(test_data, test_key, content_type="text/plain")
-        print(f"   [SUCCESS] Uploaded successfully: {saved_key}")
+        print(f"   [SUCCESS] Uploaded successfully with AES256 encryption: {saved_key}")
     except Exception as exc:
         print(f"   [FAILED] Upload failed: {exc}")
         return 1
@@ -74,12 +75,12 @@ def main() -> int:
         return 1
 
     # 4. Test Presigned URL
-    print("\n4. Testing signed URL generation...")
+    print("\n4. Testing presigned URL generation...")
     try:
         url = storage.get_url(saved_key, expires_in=300)
-        print(f"   [SUCCESS] Signed URL generated:\n   {url}")
+        print(f"   [SUCCESS] Presigned URL generated:\n   {url}")
     except Exception as exc:
-        print(f"   [FAILED] Signed URL generation failed: {exc}")
+        print(f"   [FAILED] Presigned URL generation failed: {exc}")
         return 1
 
     # 5. Test Cleanup
@@ -91,10 +92,11 @@ def main() -> int:
         print(f"   [WARNING] Could not delete temporary test file: {exc}")
 
     print("\n" + "=" * 60)
-    print("ALL STORAGE TESTS PASSED! GCS is fully operational.")
+    print("ALL STORAGE TESTS PASSED! AWS S3 is fully operational.")
     print("=" * 60)
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+

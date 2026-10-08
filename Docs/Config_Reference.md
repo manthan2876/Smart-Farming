@@ -243,22 +243,22 @@ Used to dispatch secure, ephemeral password reset tokens via TLS email.
 | `SMTP_TLS` | bool | `True` | Enable STARTTLS encryption. |
 | `SMTP_FROM_EMAIL` | string | `""` | From address header (defaults to `SMTP_USER` if omitted). |
 
-### Object Storage (AWS S3 & Google Cloud Storage)
+### Object Storage (AWS S3)
 
-The backend provides a unified, S3-compatible storage abstraction (`storage.py`) supporting local disk, Google Cloud Storage (GCS), and AWS S3 / MinIO.
+The backend provides a unified, S3-compatible storage abstraction (`storage.py`) supporting local disk and AWS S3 / MinIO.
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `STORAGE_BACKEND` | string | `local` | Storage driver. Options: `local`, `gcs`, or `s3`. |
-| `AWS_ACCESS_KEY_ID` | string | — | Access key ID. For Google Cloud Storage, use the **GCS HMAC Access ID** (format: `<YOUR_GCS_HMAC_ACCESS_KEY>`). |
-| `AWS_SECRET_ACCESS_KEY` | string | — | Secret access key. For Google Cloud Storage, use the **GCS HMAC Secret**. |
-| `AWS_REGION` | string | `us-east-1` | AWS region (or `auto` / `us-central1` for GCS). |
-| `AWS_S3_BUCKET` / `GCS_BUCKET` | string | `smart-farming-data` | Target bucket name. |
-| `AWS_ENDPOINT_URL` | string | — | S3 endpoint override. For Google Cloud Storage, set to `https://storage.googleapis.com`. |
+| `STORAGE_BACKEND` | string | `s3` | Storage driver. Options: `s3` or `local`. |
+| `AWS_ACCESS_KEY_ID` | string | — | AWS IAM access key ID with S3 permissions. |
+| `AWS_SECRET_ACCESS_KEY` | string | — | AWS IAM secret access key. |
+| `AWS_REGION` | string | `us-east-1` | AWS region (e.g. `us-east-1`, `ap-south-1`). |
+| `AWS_S3_BUCKET` | string | `smart-farming-data` | Target AWS S3 bucket name. |
+| `AWS_ENDPOINT_URL` | string | — | S3 endpoint override (used for local testing with MinIO or LocalStack). |
 | `S3_PRESIGNED_EXPIRY_SECONDS` | int | `900` | Expiration lifetime in seconds for signed download URLs (default: 15 minutes). |
 
 > [!NOTE]
-> When `STORAGE_BACKEND=gcs` or `AWS_ENDPOINT_URL` contains `storage.googleapis.com`, the storage client automatically enforces `signature_version="s3"` (SigV2) to match Google Cloud Storage XML API interoperability specifications.
+> All S3 objects are uploaded with standard server-side AES-256 encryption (`ServerSideEncryption="AES256"`) and signed using AWS SigV4 (`signature_version="s3v4"`).
 
 ---
 

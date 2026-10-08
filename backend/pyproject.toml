@@ -27,6 +27,7 @@ dependencies = [
     "uvicorn[standard]>=0.22.0",
     "pytest>=8.0.0",
     "passlib>=1.7.4",
+    "boto3>=1.28.0",
 ]
 
 [project.optional-dependencies]
