@@ -13,10 +13,9 @@ This directory contains the Cloudflare Worker gateway for the Smart Farming proj
 3. Name your worker: `smart-farming-gateway` and click **Deploy**.
 4. Click **Edit code** and paste the entire contents of [`worker.js`](worker.js). Click **Deploy**.
 5. Go to Worker **Settings** -> **Variables and Secrets**:
-   - Add Secret: `GATEWAY_API_KEY` (e.g. `smart-farming-cf-gateway-secret-2026`)
-   - Add Variable: `VISION_URL` (e.g. `https://xxx.trycloudflare.com`)
-   - Add Variable: `TRANSLATION_URL` (e.g. `https://yyy.trycloudflare.com`)
-   - Add Variable: `ADVISORY_URL` (e.g. `https://zzz.trycloudflare.com`)
+   - Under **Secrets**, add `GATEWAY_API_KEY` (e.g. `smart-farming-cf-gateway-secret-2026`).
+   - **For Zero-Touch Auto-Sync (Recommended)**: Leave `VISION_URL`, `TRANSLATION_URL`, and `ADVISORY_URL` empty! The Colab notebook will automatically create and update them as Secrets. *(Note: Do NOT add them as plain Environment Variables, otherwise Cloudflare returns error 10053 "Binding name already in use".)*
+   - **For Manual Updates**: Under **Environment Variables**, add `VISION_URL`, `TRANSLATION_URL`, and `ADVISORY_URL`.
 
 ### Option 2: Via Wrangler CLI
 
