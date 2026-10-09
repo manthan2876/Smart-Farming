@@ -1,152 +1,162 @@
 /**
- * Smart Farming API Gateway - Cloudflare Worker
- * 
- * Provides a stable endpoint for the Smart Farming backend while Google Colab
- * runs the heavy AI models (Vision, IndicTrans2 Translation, and Qwen Advisory)
- * behind ephemeral Cloudflare Quick Tunnels.
+ * Smart Farming API Gateway
+ *
+ * Stable Cloudflare Worker gateway for Colab-hosted services.
+ * KV namespace binding: UPSTREAMS
+ * KV keys: VISION_URL, TRANSLATION_URL, ADVISORY_URL
+ * Secret: GATEWAY_API_KEY
  */
+
+const ROUTES = [
+  { prefix: "/vision", key: "VISION_URL" },
+  { prefix: "/translation", key: "TRANSLATION_URL" },
+  { prefix: "/advisory", key: "ADVISORY_URL" },
+];
+
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+function jsonResponse(body, status = 200, extraHeaders = {}) {
+  return Response.json(body, {
+    status,
+    headers: { ...corsHeaders(), ...extraHeaders },
+  });
+}
+
+async function readUpstream(env, key) {
+  if (!env.UPSTREAMS) {
+    throw new Error("Worker KV binding 'UPSTREAMS' is missing.");
+  }
+  return (await env.UPSTREAMS.get(key))?.trim() || null;
+}
+
+function validateUpstream(rawUrl) {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error("Stored upstream URL is not a valid URL.");
+  }
+  if (url.protocol !== "https:" || !url.hostname) {
+    throw new Error("Upstream URL must be a valid HTTPS URL.");
+  }
+  if (url.username || url.password) {
+    throw new Error("Upstream URL must not contain embedded credentials.");
+  }
+  return url;
+}
 
 export default {
   async fetch(request, env) {
     const incoming = new URL(request.url);
 
-    // 1. Handle CORS Preflight
+    // CORS preflight requests do not need the gateway key.
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, ngrok-skip-browser-warning",
-          "Access-Control-Max-Age": "86400",
-        },
+      return new Response(null, { status: 204, headers: corsHeaders() });
+    }
+
+    // Public diagnostic endpoint: reports configuration, never reveals URLs or secrets.
+    if (incoming.pathname === "/" || incoming.pathname === "/gateway/status") {
+      const routes = {};
+      for (const route of ROUTES) {
+        try {
+          routes[route.key.replace("_URL", "").toLowerCase()] =
+            (await readUpstream(env, route.key)) ? "configured" : "missing";
+        } catch {
+          routes[route.key.replace("_URL", "").toLowerCase()] = "kv_binding_missing";
+        }
+      }
+
+      return jsonResponse({
+        service: "smart-farming-gateway",
+        status: "active",
+        routes,
+        has_auth_key: Boolean(env.GATEWAY_API_KEY),
+        timestamp: new Date().toISOString(),
       });
     }
 
-    // 2. Built-in Gateway Diagnostic Status Route (Unprotected for health monitoring)
-    if (incoming.pathname === "/gateway/status" || incoming.pathname === "/") {
-      return Response.json(
-        {
-          service: "smart-farming-gateway",
-          status: "active",
-          routes: {
-            vision: env.VISION_URL ? "configured" : "missing",
-            translation: env.TRANSLATION_URL ? "configured" : "missing",
-            advisory: env.ADVISORY_URL ? "configured" : "missing",
-          },
-          has_auth_key: Boolean(env.GATEWAY_API_KEY),
-          timestamp: new Date().toISOString(),
-        },
-        {
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    // 3. Authenticate Gateway Key (Protects upstream Colab compute resources)
+    // Protect the Colab services from unauthorized use.
     const authHeader = request.headers.get("Authorization");
     if (!env.GATEWAY_API_KEY || authHeader !== `Bearer ${env.GATEWAY_API_KEY}`) {
-      return Response.json(
-        {
-          error: "Unauthorized",
-          message: "Invalid or missing Bearer token in Authorization header.",
-        },
-        {
-          status: 401,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return jsonResponse({
+        error: "Unauthorized",
+        message: "Provide a valid Bearer token in the Authorization header.",
+      }, 401);
     }
 
-    // 4. Match Route Prefix to Target Upstream Service
-    const routes = [
-      { prefix: "/vision", origin: env.VISION_URL },
-      { prefix: "/translation", origin: env.TRANSLATION_URL },
-      { prefix: "/advisory", origin: env.ADVISORY_URL },
-    ];
-
-    const route = routes.find(
+    const route = ROUTES.find(
       (item) =>
         incoming.pathname === item.prefix ||
         incoming.pathname.startsWith(item.prefix + "/")
     );
 
     if (!route) {
-      return Response.json(
-        {
-          error: "Unknown service route",
-          path: incoming.pathname,
-          available_routes: ["/vision/*", "/translation/*", "/advisory/*"],
-        },
-        {
-          status: 404,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      return jsonResponse({
+        error: "Unknown service route",
+        path: incoming.pathname,
+        available_routes: ["/vision/*", "/translation/*", "/advisory/*"],
+      }, 404);
     }
 
-    if (!route.origin) {
-      return Response.json(
-        {
-          error: "Service URL not configured",
-          message: `The upstream tunnel URL for '${route.prefix}' is not configured in Worker environment variables.`,
-        },
-        {
-          status: 503,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    // 5. Construct Upstream Target URL preserving suffix and query params
+    let rawUpstream;
     try {
-      const target = new URL(route.origin);
+      rawUpstream = await readUpstream(env, route.key);
+    } catch (error) {
+      return jsonResponse({
+        error: "Gateway configuration error",
+        message: String(error),
+      }, 500);
+    }
+
+    if (!rawUpstream) {
+      return jsonResponse({
+        error: "Service URL not configured",
+        message: `No KV value is set for ${route.key}. Start the corresponding Colab notebook and verify its KV URL sync.`,
+      }, 503);
+    }
+
+    try {
+      const target = validateUpstream(rawUpstream);
       const suffix = incoming.pathname.slice(route.prefix.length);
-      target.pathname = target.pathname.replace(/\/+$/, "") + (suffix || "/");
+      const basePath = target.pathname.replace(/\/+$/, "");
+      target.pathname = `${basePath}${suffix || "/"}`;
       target.search = incoming.search;
 
-      // 6. Forward Request to Colab Quick Tunnel
-      // Upstream request forwards headers, body stream (including multipart image data), and HTTP method
-      const upstreamRequest = new Request(target.toString(), request);
-      const upstreamResponse = await fetch(upstreamRequest);
+      // Do not forward the gateway credential to the upstream service.
+      const forwardedHeaders = new Headers(request.headers);
+      forwardedHeaders.delete("Authorization");
 
-      // 7. Inject CORS Headers into Upstream Response
-      const headers = new Headers(upstreamResponse.headers);
-      headers.set("Access-Control-Allow-Origin", "*");
+      const upstreamRequest = new Request(target.toString(), {
+        method: request.method,
+        headers: forwardedHeaders,
+        body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+        redirect: "follow",
+      });
+
+      const upstreamResponse = await fetch(upstreamRequest);
+      const responseHeaders = new Headers(upstreamResponse.headers);
+      for (const [key, value] of Object.entries(corsHeaders())) {
+        responseHeaders.set(key, value);
+      }
 
       return new Response(upstreamResponse.body, {
         status: upstreamResponse.status,
         statusText: upstreamResponse.statusText,
-        headers,
+        headers: responseHeaders,
       });
-    } catch (err) {
-      return Response.json(
-        {
-          error: "Upstream service unavailable",
-          message: "Check that Google Colab is running and its Cloudflare Quick Tunnel URL is current.",
-          detail: String(err),
-        },
-        {
-          status: 502,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    } catch (error) {
+      return jsonResponse({
+        error: "Upstream service unavailable",
+        message: "Check that the relevant Colab runtime is running and its current tunnel URL has been synced to KV.",
+        detail: String(error),
+      }, 502);
     }
   },
 };
-

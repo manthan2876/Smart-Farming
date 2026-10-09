@@ -2,13 +2,12 @@ name = "smart-farming-gateway"
 main = "worker.js"
 compatibility_date = "2026-09-01"
 
-# Environment Variables (Public upstream mappings)
-# You can set initial placeholder URLs or real trycloudflare.com URLs here.
-[vars]
-VISION_URL = ""
-TRANSLATION_URL = ""
-ADVISORY_URL = ""
+# Create a KV namespace first:
+#   npx wrangler kv namespace create UPSTREAMS
+# Then replace the placeholder below with the returned namespace ID.
+[[kv_namespaces]]
+binding = "UPSTREAMS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
 
-# Secrets:
-# Run: npx wrangler secret put GATEWAY_API_KEY
-
+# Set the gateway credential separately:
+#   npx wrangler secret put GATEWAY_API_KEY
