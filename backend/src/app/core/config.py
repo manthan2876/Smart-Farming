@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     TRANSLATION_SERVER_URL: str = Field(default="")
     TRANSLATION_SERVER_TIMEOUT: float = Field(default=45.0)
 
+    # Advisory Server (Qwen3-4B on Colab)
+    ADVISORY_SERVER_URL: str = Field(default="")
+    ADVISORY_SERVER_TIMEOUT: float = Field(default=60.0)
+
     # Storage (AWS S3)
     STORAGE_BACKEND: str = Field(default="s3")
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)

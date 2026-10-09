@@ -1,0 +1,396 @@
+{
+  "Cotton|Bacterial Blight": {
+    "disease_type": "Bacterial disease",
+    "immediate_action": "Avoid handling wet plants, overhead irrigation and movement through the crop when foliage is wet. Photograph symptoms and inspect whether spots have water-soaked edges or spread to stems and fruit.",
+    "treatment": "There is no safe universal chemical prescription for this diagnosis. Confirm bacterial disease with a local plant-protection specialist; use only a product specifically registered for this crop and disease if recommended.",
+    "prevention": "Use clean seed or seedlings, rotate with non-host crops, remove crop debris as advised, improve airflow, and sanitize tools. Avoid saving seed from affected plants.",
+    "monitoring": "Track whether spots enlarge, develop halos or affect stems and fruit. Check neighboring plants and seek confirmation before spraying.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Cotton|Curl Virus": {
+    "disease_type": "Viral disease",
+    "immediate_action": "Mark affected plants and inspect nearby plants for similar symptoms. Remove severely affected plants only when local extension guidance recommends it; avoid moving potentially infected plant material.",
+    "treatment": "Viruses cannot be cured by a foliar pesticide. Manage confirmed insect vectors only using crop-specific, locally approved recommendations from a KVK or agriculture officer.",
+    "prevention": "Use healthy seed or seedlings, remove volunteer and weed hosts where appropriate, control vectors through integrated pest management, and clean tools between affected areas.",
+    "monitoring": "Check new growth and nearby plants for curling, mosaic patterns, yellowing or stunting. Confirm the diagnosis because nutrient stress and herbicide injury can look similar.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Cotton|Fusarium Wilt": {
+    "disease_type": "Fungal wilt disease",
+    "immediate_action": "Inspect several plants and both leaf surfaces, photograph the symptoms, and remove badly affected plant material only when practical and recommended by local extension staff.",
+    "treatment": "Confirm the diagnosis before treatment. Ask a KVK or agriculture officer for current crop-specific advice; this file intentionally does not prescribe pesticide products or doses.",
+    "prevention": "Use healthy planting material, rotate crops where appropriate, maintain balanced irrigation and nutrition, improve airflow, and remove crop residues according to local recommendations.",
+    "monitoring": "Check new growth regularly and record whether symptoms spread. If symptoms are severe, rapidly increasing or affecting many plants, seek a local expert diagnosis.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Cotton|Leaf Reddening": {
+    "disease_type": "Physiological symptom or stress",
+    "immediate_action": "Inspect several plants and both leaf surfaces, photograph the symptoms, and remove badly affected plant material only when practical and recommended by local extension staff.",
+    "treatment": "Confirm the diagnosis before treatment. Ask a KVK or agriculture officer for current crop-specific advice; this file intentionally does not prescribe pesticide products or doses.",
+    "prevention": "Use healthy planting material, rotate crops where appropriate, maintain balanced irrigation and nutrition, improve airflow, and remove crop residues according to local recommendations.",
+    "monitoring": "Check new growth regularly and record whether symptoms spread. If symptoms are severe, rapidly increasing or affecting many plants, seek a local expert diagnosis.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Cotton|Healthy": {
+    "disease_type": "Healthy classification",
+    "immediate_action": "The image classifier marked this sample as healthy. Check several plants and both leaf surfaces because image-based results can be wrong.",
+    "treatment": "No disease treatment is indicated from this image alone. Do not apply pesticides preventively without a diagnosed need.",
+    "prevention": "Use locally recommended varieties and healthy planting material; maintain suitable spacing, irrigation, nutrition and field sanitation.",
+    "monitoring": "Inspect the crop regularly and take clear photos of any new spots, yellowing, wilting or pest colonies. Recheck if symptoms appear.",
+    "escalate_to_expert": false,
+    "chemical_recommendation": "none",
+    "source_refs": [
+      "ICAR IPM principles; see source links in the accompanying guidance"
+    ]
+  },
+  "Cotton|Alternaria Leaf Spot": {
+    "disease_type": "Fungal leaf spot",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Cotton|Cercospora Leaf Spot": {
+    "disease_type": "Fungal leaf spot",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Cotton|Powdery Mildew": {
+    "disease_type": "Fungal disease",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Groundnut|Early Leaf Spot": {
+    "disease_type": "Fungal leaf spot",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Groundnut|Late Leaf Spot": {
+    "disease_type": "Fungal leaf spot",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Groundnut|Rust": {
+    "disease_type": "Fungal disease",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Groundnut|Healthy": {
+    "disease_type": "Healthy classification",
+    "immediate_action": "The image classifier marked this sample as healthy. Check several plants and both leaf surfaces because image-based results can be wrong.",
+    "treatment": "No disease treatment is indicated from this image alone. Do not apply pesticides preventively without a diagnosed need.",
+    "prevention": "Use locally recommended varieties and healthy planting material; maintain suitable spacing, irrigation, nutrition and field sanitation.",
+    "monitoring": "Inspect the crop regularly and take clear photos of any new spots, yellowing, wilting or pest colonies. Recheck if symptoms appear.",
+    "escalate_to_expert": false,
+    "chemical_recommendation": "none",
+    "source_refs": [
+      "ICAR IPM principles; see source links in the accompanying guidance"
+    ]
+  },
+  "Pepper_Bell|Bacterial Spot": {
+    "disease_type": "Bacterial leaf and fruit disease",
+    "immediate_action": "Avoid handling wet plants, overhead irrigation and movement through the crop when foliage is wet. Photograph symptoms and inspect whether spots have water-soaked edges or spread to stems and fruit.",
+    "treatment": "There is no safe universal chemical prescription for this diagnosis. Confirm bacterial disease with a local plant-protection specialist; use only a product specifically registered for this crop and disease if recommended.",
+    "prevention": "Use clean seed or seedlings, rotate with non-host crops, remove crop debris as advised, improve airflow, and sanitize tools. Avoid saving seed from affected plants.",
+    "monitoring": "Track whether spots enlarge, develop halos or affect stems and fruit. Check neighboring plants and seek confirmation before spraying.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Pepper_Bell|Healthy": {
+    "disease_type": "Healthy classification",
+    "immediate_action": "The image classifier marked this sample as healthy. Check several plants and both leaf surfaces because image-based results can be wrong.",
+    "treatment": "No disease treatment is indicated from this image alone. Do not apply pesticides preventively without a diagnosed need.",
+    "prevention": "Use locally recommended varieties and healthy planting material; maintain suitable spacing, irrigation, nutrition and field sanitation.",
+    "monitoring": "Inspect the crop regularly and take clear photos of any new spots, yellowing, wilting or pest colonies. Recheck if symptoms appear.",
+    "escalate_to_expert": false,
+    "chemical_recommendation": "none",
+    "source_refs": [
+      "ICAR IPM principles; see source links in the accompanying guidance"
+    ]
+  },
+  "Potato|Early Blight": {
+    "disease_type": "Fungal disease",
+    "immediate_action": "Inspect the whole plant and nearby plants promptly. Avoid overhead irrigation and working in wet foliage; remove heavily affected plant material where practical and locally advised.",
+    "treatment": "Blight can spread quickly, especially in cool, humid or rainy weather. Contact a KVK or agriculture officer promptly for a confirmed diagnosis and current crop-specific fungicide advice; do not guess a product or dose.",
+    "prevention": "Use healthy planting material, maintain airflow, avoid prolonged leaf wetness, remove volunteer plants and crop residues as locally recommended, and monitor weather favourable to blight.",
+    "monitoring": "Check leaves, stems and fruit daily during humid or rainy periods. Escalate quickly if dark, water-soaked lesions or rapid spread are observed.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Potato|Late Blight": {
+    "disease_type": "Oomycete disease",
+    "immediate_action": "Inspect the whole plant and nearby plants promptly. Avoid overhead irrigation and working in wet foliage; remove heavily affected plant material where practical and locally advised.",
+    "treatment": "Blight can spread quickly, especially in cool, humid or rainy weather. Contact a KVK or agriculture officer promptly for a confirmed diagnosis and current crop-specific fungicide advice; do not guess a product or dose.",
+    "prevention": "Use healthy planting material, maintain airflow, avoid prolonged leaf wetness, remove volunteer plants and crop residues as locally recommended, and monitor weather favourable to blight.",
+    "monitoring": "Check leaves, stems and fruit daily during humid or rainy periods. Escalate quickly if dark, water-soaked lesions or rapid spread are observed.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Potato|Healthy": {
+    "disease_type": "Healthy classification",
+    "immediate_action": "The image classifier marked this sample as healthy. Check several plants and both leaf surfaces because image-based results can be wrong.",
+    "treatment": "No disease treatment is indicated from this image alone. Do not apply pesticides preventively without a diagnosed need.",
+    "prevention": "Use locally recommended varieties and healthy planting material; maintain suitable spacing, irrigation, nutrition and field sanitation.",
+    "monitoring": "Inspect the crop regularly and take clear photos of any new spots, yellowing, wilting or pest colonies. Recheck if symptoms appear.",
+    "escalate_to_expert": false,
+    "chemical_recommendation": "none",
+    "source_refs": [
+      "ICAR IPM principles; see source links in the accompanying guidance"
+    ]
+  },
+  "Tomato|Bacterial Spot": {
+    "disease_type": "Bacterial disease",
+    "immediate_action": "Avoid handling wet plants, overhead irrigation and movement through the crop when foliage is wet. Photograph symptoms and inspect whether spots have water-soaked edges or spread to stems and fruit.",
+    "treatment": "There is no safe universal chemical prescription for this diagnosis. Confirm bacterial disease with a local plant-protection specialist; use only a product specifically registered for this crop and disease if recommended.",
+    "prevention": "Use clean seed or seedlings, rotate with non-host crops, remove crop debris as advised, improve airflow, and sanitize tools. Avoid saving seed from affected plants.",
+    "monitoring": "Track whether spots enlarge, develop halos or affect stems and fruit. Check neighboring plants and seek confirmation before spraying.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Early Blight": {
+    "disease_type": "Fungal disease",
+    "immediate_action": "Inspect the whole plant and nearby plants promptly. Avoid overhead irrigation and working in wet foliage; remove heavily affected plant material where practical and locally advised.",
+    "treatment": "Blight can spread quickly, especially in cool, humid or rainy weather. Contact a KVK or agriculture officer promptly for a confirmed diagnosis and current crop-specific fungicide advice; do not guess a product or dose.",
+    "prevention": "Use healthy planting material, maintain airflow, avoid prolonged leaf wetness, remove volunteer plants and crop residues as locally recommended, and monitor weather favourable to blight.",
+    "monitoring": "Check leaves, stems and fruit daily during humid or rainy periods. Escalate quickly if dark, water-soaked lesions or rapid spread are observed.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Late Blight": {
+    "disease_type": "Oomycete disease",
+    "immediate_action": "Inspect the whole plant and nearby plants promptly. Avoid overhead irrigation and working in wet foliage; remove heavily affected plant material where practical and locally advised.",
+    "treatment": "Blight can spread quickly, especially in cool, humid or rainy weather. Contact a KVK or agriculture officer promptly for a confirmed diagnosis and current crop-specific fungicide advice; do not guess a product or dose.",
+    "prevention": "Use healthy planting material, maintain airflow, avoid prolonged leaf wetness, remove volunteer plants and crop residues as locally recommended, and monitor weather favourable to blight.",
+    "monitoring": "Check leaves, stems and fruit daily during humid or rainy periods. Escalate quickly if dark, water-soaked lesions or rapid spread are observed.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Leaf Mold": {
+    "disease_type": "Fungal disease",
+    "immediate_action": "Inspect several plants and both leaf surfaces, photograph the symptoms, and remove badly affected plant material only when practical and recommended by local extension staff.",
+    "treatment": "Confirm the diagnosis before treatment. Ask a KVK or agriculture officer for current crop-specific advice; this file intentionally does not prescribe pesticide products or doses.",
+    "prevention": "Use healthy planting material, rotate crops where appropriate, maintain balanced irrigation and nutrition, improve airflow, and remove crop residues according to local recommendations.",
+    "monitoring": "Check new growth regularly and record whether symptoms spread. If symptoms are severe, rapidly increasing or affecting many plants, seek a local expert diagnosis.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Septoria Leaf Spot": {
+    "disease_type": "Fungal leaf spot",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Spider Mites": {
+    "disease_type": "Mite infestation",
+    "immediate_action": "Check the undersides of leaves for mites, fine webbing and stippling using a hand lens. Inspect several plants before deciding the infestation is widespread.",
+    "treatment": "Do not treat based on image classification alone. Ask a local agriculture officer to confirm mites and recommend a registered crop-specific option; conserve beneficial insects and avoid unnecessary broad-spectrum sprays.",
+    "prevention": "Monitor leaf undersides regularly, manage weeds that may host pests, avoid excessive nitrogen, and preserve beneficial predatory mites and insects.",
+    "monitoring": "Recheck the same marked plants and nearby plants for stippling, webbing and population increase. Escalate if damage spreads to new growth.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Target Spot": {
+    "disease_type": "Fungal disease",
+    "immediate_action": "Inspect both leaf surfaces and several plants to assess spread. Avoid wetting foliage late in the day and remove badly affected leaves only if practical and recommended locally.",
+    "treatment": "Confirm the disease before treatment. Ask a KVK or agriculture officer for a currently registered crop-specific option; no pesticide or dose is specified here because recommendations depend on the exact diagnosis and local label.",
+    "prevention": "Improve airflow, avoid excess irrigation on foliage, use healthy seed or seedlings, rotate crops where appropriate, and remove infected residues according to local guidance.",
+    "monitoring": "Record the affected area and check new leaves regularly for expanding spots, powdery growth or rust-coloured pustules. Seek expert review if symptoms spread.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Tomato Yellow Leaf Curl Virus": {
+    "disease_type": "Viral disease",
+    "immediate_action": "Mark affected plants and inspect nearby plants for similar symptoms. Remove severely affected plants only when local extension guidance recommends it; avoid moving potentially infected plant material.",
+    "treatment": "Viruses cannot be cured by a foliar pesticide. Manage confirmed insect vectors only using crop-specific, locally approved recommendations from a KVK or agriculture officer.",
+    "prevention": "Use healthy seed or seedlings, remove volunteer and weed hosts where appropriate, control vectors through integrated pest management, and clean tools between affected areas.",
+    "monitoring": "Check new growth and nearby plants for curling, mosaic patterns, yellowing or stunting. Confirm the diagnosis because nutrient stress and herbicide injury can look similar.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Tomato Mosaic Virus": {
+    "disease_type": "Viral disease",
+    "immediate_action": "Mark affected plants and inspect nearby plants for similar symptoms. Remove severely affected plants only when local extension guidance recommends it; avoid moving potentially infected plant material.",
+    "treatment": "Viruses cannot be cured by a foliar pesticide. Manage confirmed insect vectors only using crop-specific, locally approved recommendations from a KVK or agriculture officer.",
+    "prevention": "Use healthy seed or seedlings, remove volunteer and weed hosts where appropriate, control vectors through integrated pest management, and clean tools between affected areas.",
+    "monitoring": "Check new growth and nearby plants for curling, mosaic patterns, yellowing or stunting. Confirm the diagnosis because nutrient stress and herbicide injury can look similar.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Tomato|Healthy": {
+    "disease_type": "Healthy classification",
+    "immediate_action": "The image classifier marked this sample as healthy. Check several plants and both leaf surfaces because image-based results can be wrong.",
+    "treatment": "No disease treatment is indicated from this image alone. Do not apply pesticides preventively without a diagnosed need.",
+    "prevention": "Use locally recommended varieties and healthy planting material; maintain suitable spacing, irrigation, nutrition and field sanitation.",
+    "monitoring": "Inspect the crop regularly and take clear photos of any new spots, yellowing, wilting or pest colonies. Recheck if symptoms appear.",
+    "escalate_to_expert": false,
+    "chemical_recommendation": "none",
+    "source_refs": [
+      "ICAR IPM principles; see source links in the accompanying guidance"
+    ]
+  },
+  "Pepper Bell|Bacterial Spot": {
+    "disease_type": "Bacterial leaf and fruit disease",
+    "immediate_action": "Avoid handling wet plants, overhead irrigation and movement through the crop when foliage is wet. Photograph symptoms and inspect whether spots have water-soaked edges or spread to stems and fruit.",
+    "treatment": "There is no safe universal chemical prescription for this diagnosis. Confirm bacterial disease with a local plant-protection specialist; use only a product specifically registered for this crop and disease if recommended.",
+    "prevention": "Use clean seed or seedlings, rotate with non-host crops, remove crop debris as advised, improve airflow, and sanitize tools. Avoid saving seed from affected plants.",
+    "monitoring": "Track whether spots enlarge, develop halos or affect stems and fruit. Check neighboring plants and seek confirmation before spraying.",
+    "escalate_to_expert": true,
+    "chemical_recommendation": "Requires local diagnosis and current label verification; no product or dose supplied",
+    "safety_note": "Do not mix pesticides or use a dose from an unverified source. Follow the current product label, protective-equipment instructions, pre-harvest interval and local regulations.",
+    "source_refs": [
+      "ICAR integrated pest management principles",
+      "ICAR-NCIPM crop IPM resources and pesticide/fungicide calculators"
+    ]
+  },
+  "Pepper Bell|Healthy": {
+    "disease_type": "Healthy classification",
+    "immediate_action": "The image classifier marked this sample as healthy. Check several plants and both leaf surfaces because image-based results can be wrong.",
+    "treatment": "No disease treatment is indicated from this image alone. Do not apply pesticides preventively without a diagnosed need.",
+    "prevention": "Use locally recommended varieties and healthy planting material; maintain suitable spacing, irrigation, nutrition and field sanitation.",
+    "monitoring": "Inspect the crop regularly and take clear photos of any new spots, yellowing, wilting or pest colonies. Recheck if symptoms appear.",
+    "escalate_to_expert": false,
+    "chemical_recommendation": "none",
+    "source_refs": [
+      "ICAR IPM principles; see source links in the accompanying guidance"
+    ]
+  }
+}

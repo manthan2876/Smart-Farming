@@ -111,9 +111,9 @@ def build_provenance(context: dict, total_duration_ms: int) -> dict[str, Any]:
             "timestamp": weather.get("timestamp"),
         },
         "recommendation_provider": {
-            "provider": recommendation.get("provider", "HuggingFace / nscale"),
-            "model": recommendation.get("model", "Qwen/Qwen3-4B-Instruct-2507"),
-            "prompt_version": recommendation.get("prompt_version", "v1.0"),
+            "provider": recommendation.get("provider", "Colab / Qwen3-4B (4-bit)"),
+            "model": recommendation.get("model", "Qwen/Qwen3-4B"),
+            "prompt_version": recommendation.get("prompt_version", "v3.0"),
             "is_fallback": recommendation.get("is_fallback", False),
             "fallback_reason": recommendation.get("fallback_reason"),
         },
