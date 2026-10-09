@@ -113,7 +113,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
             logger.warning("Failed to sync cached audio to storage backend %s: %s", storage_key, exc)
 
         b64_encoded = base64.b64encode(audio_bytes).decode("utf-8")
-        return {"audioContent": b64_encoded, "cached": True}
+        return {"audioContent": b64_encoded, "format": "wav", "cached": True}
 
     # 2. Generate via AI4Bharat Indic-TTS service
     tts_url = (settings.TTS_SERVER_URL or os.getenv("TTS_SERVER_URL") or "").rstrip("/")
@@ -129,7 +129,8 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
 
     data = {
         "text": payload.text,
-        "language": lang
+        "language": lang,
+        "speaker": "female",
     }
 
     try:
@@ -146,20 +147,38 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
                     raise RuntimeError("TTS service returned empty audio content")
                 audio_bytes = base64.b64decode(b64_audio)
             elif resp.status_code == 404:
+                resp_text = resp.text
+                if "Unknown service route" in resp_text:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=(
+                            "Cloudflare Worker Gateway has not been deployed with the /tts route yet. "
+                            "Please deploy the updated worker by running 'npx wrangler deploy' in the cloudflare_gateway folder."
+                        ),
+                    )
                 # Fallback to direct raw audio endpoint POST /tts
                 direct_url = f"{tts_url}/tts" if not tts_url.endswith("/tts") else tts_url
                 resp_direct = await client.post(direct_url, json=data, headers=headers)
-                if resp_direct.status_code != 200:
+                if resp_direct.status_code == 200:
+                    audio_bytes = resp_direct.content
+                    b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+                else:
                     raise HTTPException(
-                        status_code=resp_direct.status_code,
-                        detail=f"Indic-TTS error: {resp_direct.text}"
+                        status_code=502,
+                        detail=f"Indic-TTS upstream error ({resp_direct.status_code}): {resp_direct.text}",
                     )
-                audio_bytes = resp_direct.content
-                b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+            elif resp.status_code == 503 and "TTS_URL" in resp.text:
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "Indic-TTS service is currently offline. Please run Notebook 3 "
+                        "(03_indic_tts_cloudflare.ipynb) on Colab to start the model and populate TTS_URL."
+                    ),
+                )
             else:
                 raise HTTPException(
-                    status_code=resp.status_code,
-                    detail=f"Indic-TTS error: {resp.text}"
+                    status_code=502,
+                    detail=f"Indic-TTS upstream error ({resp.status_code}): {resp.text}",
                 )
 
         if audio_bytes:
@@ -176,7 +195,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
             except Exception as exc:
                 logger.error("Failed to upload audio file to storage backend %s: %s", storage_key, exc)
 
-        return {"audioContent": b64_audio, "cached": False}
+        return {"audioContent": b64_audio, "format": "wav", "cached": False}
     except HTTPException:
         raise
     except Exception as exc:

@@ -113,7 +113,9 @@ export default function PredictionResultPage() {
       setIsLoadingAudio(true);
       const response: any = await request("/tts", { method: "POST", body: JSON.stringify({ text, language: targetLang }) }, token!);
       if (response?.audioContent) {
-        const audio = new Audio(`data:audio/mp3;base64,${response.audioContent}`);
+        const format = response.format || (response.audioContent.startsWith("UklGR") ? "wav" : "mpeg");
+        const mimeType = format === "wav" ? "audio/wav" : "audio/mpeg";
+        const audio = new Audio(`data:${mimeType};base64,${response.audioContent}`);
         audioRef.current = audio;
         audio.onended = () => setIsPlaying(false);
         audio.onpause = () => setIsPlaying(false);

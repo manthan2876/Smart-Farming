@@ -102,7 +102,7 @@ export default {
       return jsonResponse({
         error: "Unknown service route",
         path: incoming.pathname,
-        available_routes: ["/vision/*", "/translation/*", "/advisory/*"],
+        available_routes: ROUTES.map((item) => `${item.prefix}/*`),
       }, 404);
     }
 
