@@ -21,6 +21,11 @@ async def call_model_service(
     url = f"{settings.MODEL_SERVER_URL.rstrip('/')}/predict"
     headers = {}
 
+    # Support Cloudflare Gateway API Key authentication
+    gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
+    if gateway_key:
+        headers["Authorization"] = f"Bearer {gateway_key}"
+
     # Support GCP OIDC Identity Token when deployed to Cloud Run in the future
     if "run.app" in settings.MODEL_SERVER_URL:
         try:

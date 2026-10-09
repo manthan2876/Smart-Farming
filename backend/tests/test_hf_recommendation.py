@@ -35,6 +35,9 @@ def test_unsupported_crop_guardrail():
 
 
 def test_recommendation_fallback_when_remote_server_unconfigured():
+    from unittest.mock import patch
+    from app.core.config import settings
+
     context = {
         "status": {"preprocessing": "completed"},
         "crop": {"label": "Potato", "confidence": 0.95},
@@ -43,7 +46,8 @@ def test_recommendation_fallback_when_remote_server_unconfigured():
         "weather": {"temperature_celsius": 24, "condition": "Cloudy", "humidity_percent": 70},
         "plot": {"area_acres": 1.0},
     }
-    result = generate_recommendation(context)
+    with patch.object(settings, "ADVISORY_SERVER_URL", ""):
+        result = generate_recommendation(context)
     rec = result.get("recommendation", {})
     assert rec.get("is_fallback") is True
     assert "Mancozeb" in rec.get("treatment") or "Chlorothalonil" in rec.get("treatment")

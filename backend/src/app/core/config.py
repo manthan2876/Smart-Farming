@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     ADVISORY_SERVER_URL: str = Field(default="")
     ADVISORY_SERVER_TIMEOUT: float = Field(default=60.0)
 
+    # Cloudflare Worker API Gateway Authentication
+    GATEWAY_API_KEY: str | None = Field(default=None)
+
     # Storage (AWS S3)
     STORAGE_BACKEND: str = Field(default="s3")
     AWS_ACCESS_KEY_ID: str | None = Field(default=None)

@@ -101,6 +101,10 @@ async def translate_batch_indictrans(texts: list[str], target_lang: str) -> list
         "ngrok-skip-browser-warning": "69420",
         "User-Agent": "SmartFarmingBackend/2.0",
     }
+    gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
+    if gateway_key:
+        headers["Authorization"] = f"Bearer {gateway_key}"
+
     payload = {
         "texts": flat_sentences,
         "target": target_code,
@@ -166,6 +170,10 @@ def translate_batch_indictrans_sync(texts: list[str], target_lang: str) -> list[
         "ngrok-skip-browser-warning": "69420",
         "User-Agent": "SmartFarmingBackend/2.0",
     }
+    gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
+    if gateway_key:
+        headers["Authorization"] = f"Bearer {gateway_key}"
+
     payload = {
         "texts": flat_sentences,
         "target": target_code,

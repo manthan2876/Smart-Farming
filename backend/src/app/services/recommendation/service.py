@@ -163,6 +163,9 @@ def call_remote_advisory_server(payload: dict) -> dict[str, Any] | None:
             "ngrok-skip-browser-warning": "true",
             "User-Agent": "SmartFarmingBackend/2.0",
         }
+        gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
+        if gateway_key:
+            headers["Authorization"] = f"Bearer {gateway_key}"
         with httpx.Client(timeout=timeout_sec) as client:
             resp = client.post(endpoint, json=payload, headers=headers)
             if resp.status_code == 200:

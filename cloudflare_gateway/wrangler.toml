@@ -1,0 +1,14 @@
+name = "smart-farming-gateway"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# Environment Variables (Public upstream mappings)
+# You can set initial placeholder URLs or real trycloudflare.com URLs here.
+[vars]
+VISION_URL = ""
+TRANSLATION_URL = ""
+ADVISORY_URL = ""
+
+# Secrets:
+# Run: npx wrangler secret put GATEWAY_API_KEY
+
