@@ -70,10 +70,18 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
     AUDIO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     storage = get_storage()
 
+    cleaned_text = (payload.text or "").strip()
+    import re
+    if not cleaned_text or not re.search(r"[\w\u0900-\u097F\u0A80-\u0AFF]", cleaned_text):
+        raise HTTPException(
+            status_code=400,
+            detail="Text must contain speakable words to generate audio."
+        )
+
     lang = _resolve_tts_language(payload.language)
 
     # 1. Determine key and cache paths (partitioned by language + text)
-    text_hash = hashlib.sha256(f"{lang}:{payload.text}".encode("utf-8")).hexdigest()
+    text_hash = hashlib.sha256(f"{lang}:{cleaned_text}".encode("utf-8")).hexdigest()
     cache_file = AUDIO_CACHE_DIR / f"{text_hash}.wav"
     storage_key = f"audio/{text_hash}.wav"
 
@@ -128,7 +136,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
         headers["Authorization"] = f"Bearer {settings.GATEWAY_API_KEY}"
 
     data = {
-        "text": payload.text,
+        "text": cleaned_text,
         "language": lang,
         "speaker": "female",
     }

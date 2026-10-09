@@ -50,7 +50,7 @@ class Settings(BaseSettings):
 
     # Text-to-Speech Server (AI4Bharat Indic-TTS on Colab)
     TTS_SERVER_URL: str = Field(default="")
-    TTS_SERVER_TIMEOUT: float = Field(default=45.0)
+    TTS_SERVER_TIMEOUT: float = Field(default=90.0)
 
     # Cloudflare Worker API Gateway Authentication
     GATEWAY_API_KEY: str | None = Field(default=None)

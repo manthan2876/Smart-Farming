@@ -73,6 +73,7 @@ export default function WeatherPage() {
   }, [targetLang, activeAdvisory]);
 
   const toggleAudio = async (text: string) => {
+    if (!text || !text.trim().replace(/[.,!?;:\s-]/g, "").length) return;
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
@@ -145,12 +146,16 @@ export default function WeatherPage() {
   const wind = formatWindSpeed(data.wind_speed_mps, units);
   const conditionTranslated = translateWeather(data.condition, language);
 
-  const AudioButton = ({ text }: { text: string }) => (
-    <Button variant="secondary" size="sm" onClick={() => toggleAudio(text)} disabled={isLoadingAudio || !text}>
-      {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
-      {isLoadingAudio ? t("loading") : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
-    </Button>
-  );
+  const AudioButton = ({ text }: { text?: string | null }) => {
+    const hasSpokenContent = Boolean(text && text.trim().replace(/[.,!?;:\s-]/g, "").length > 0);
+    if (!hasSpokenContent) return null;
+    return (
+      <Button variant="secondary" size="sm" onClick={() => toggleAudio(text!)} disabled={isLoadingAudio}>
+        {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
+        {isLoadingAudio ? t("loading") : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
+      </Button>
+    );
+  };
 
   return (
     <div className="space-y-6 pb-12">
