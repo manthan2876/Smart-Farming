@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     UPLOAD_ROOT: Path = DATA_ROOT / "uploads"
     PROCESSED_ROOT: Path = DATA_ROOT / "processed"
     AUDIO_ROOT: Path = DATA_ROOT / "audio"
-    GOOGLE_TTS_API_KEY: str = Field(default="")
     GEMINI_API_KEY: str = Field(default="")
 
     # Geographic Defaults (Indian agricultural reference region)
@@ -48,6 +47,10 @@ class Settings(BaseSettings):
     # Advisory Server (Qwen3-4B on Colab)
     ADVISORY_SERVER_URL: str = Field(default="")
     ADVISORY_SERVER_TIMEOUT: float = Field(default=60.0)
+
+    # Text-to-Speech Server (AI4Bharat Indic-TTS on Colab)
+    TTS_SERVER_URL: str = Field(default="")
+    TTS_SERVER_TIMEOUT: float = Field(default=45.0)
 
     # Cloudflare Worker API Gateway Authentication
     GATEWAY_API_KEY: str | None = Field(default=None)

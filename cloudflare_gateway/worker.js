@@ -3,7 +3,7 @@
  *
  * Stable Cloudflare Worker gateway for Colab-hosted services.
  * KV namespace binding: UPSTREAMS
- * KV keys: VISION_URL, TRANSLATION_URL, ADVISORY_URL
+ * KV keys: VISION_URL, TRANSLATION_URL, ADVISORY_URL, TTS_URL
  * Secret: GATEWAY_API_KEY
  */
 
@@ -11,6 +11,7 @@ const ROUTES = [
   { prefix: "/vision", key: "VISION_URL" },
   { prefix: "/translation", key: "TRANSLATION_URL" },
   { prefix: "/advisory", key: "ADVISORY_URL" },
+  { prefix: "/tts", key: "TTS_URL" },
 ];
 
 function corsHeaders() {

@@ -9,6 +9,7 @@ This Worker provides a stable public URL for the Smart Farming AI services hoste
 | `/vision/*` | `VISION_URL` | Vision API (port 8001) |
 | `/translation/*` | `TRANSLATION_URL` | IndicTrans2 API (port 8002) |
 | `/advisory/*` | `ADVISORY_URL` | Advisory API (port 8003) |
+| `/tts/*` | `TTS_URL` | AI4Bharat Indic-TTS API (port 8004) |
 | `/gateway/status` | — | Public configuration status |
 
 The Worker strips the service prefix before forwarding. For example, `/vision/predict` is forwarded to the path `/predict` on the current `VISION_URL`.
