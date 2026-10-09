@@ -179,6 +179,16 @@ def call_remote_advisory_server(payload: dict) -> dict[str, Any] | None:
     return None
 
 
+def _safe_float(val: Any, default: float = 0.0) -> float:
+    """Safely converts a value to float, returning default if None, invalid, or non-numeric."""
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
 def generate_recommendation(context: dict, config: dict[str, Any] | None = None) -> dict:
     """
     Pipeline Stage 8: Generate agronomic recommendation.
@@ -202,11 +212,11 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
     plot = context.get("plot", {})
 
     crop_label = crop.get("label", "Unknown Crop") if isinstance(crop, dict) else (crop or "Unknown Crop")
-    crop_confidence = float(crop.get("confidence", 0.0) if isinstance(crop, dict) else 0.0)
+    crop_confidence = _safe_float(crop.get("confidence") if isinstance(crop, dict) else 0.0, 0.0)
     crop_status = crop.get("status") if isinstance(crop, dict) else None
 
     disease_label = disease.get("label", "Unknown") if isinstance(disease, dict) else (disease or "Unknown")
-    disease_confidence = float(disease.get("confidence", 0.0) if isinstance(disease, dict) else 0.0)
+    disease_confidence = _safe_float(disease.get("confidence") if isinstance(disease, dict) else 0.0, 0.0)
 
     sev_raw = context.get("severity_pct")
     if sev_raw is None:
@@ -216,10 +226,7 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
             sev_raw = severity
         else:
             sev_raw = 0.0
-    try:
-        severity_percent = float(sev_raw or 0.0)
-    except (ValueError, TypeError):
-        severity_percent = 0.0
+    severity_percent = _safe_float(sev_raw, 0.0)
     if isinstance(severity, dict):
         severity_bucket = severity.get("bucket", "Unknown")
     elif isinstance(severity, str):
@@ -232,7 +239,7 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
     weather_condition = weather.get("condition", "N/A")
 
     could_be = disease.get("could_also_be") if isinstance(disease, dict) else None
-    plot_acres = float(plot.get("area_acres")) if plot.get("area_acres") else None
+    plot_acres = _safe_float(plot.get("area_acres")) if (isinstance(plot, dict) and plot.get("area_acres") is not None) else None
 
     # Unsupported Crop Gate — enforce safety
     if (
@@ -261,10 +268,11 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
         return context
 
     # 1. Attempt Colab Advisory Server
+    diag_confidence = disease_confidence if disease_confidence > 0.0 else crop_confidence
     advisory_payload = {
         "crop": crop_label,
         "disease": disease_label,
-        "confidence": crop_confidence,
+        "confidence": diag_confidence,
         "severity_pct": severity_percent,
         "severity_bucket": severity_bucket,
         "temperature": str(temperature),

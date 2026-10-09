@@ -59,3 +59,24 @@ def test_weather_advisory_generation():
     weather_data = {"temperature_celsius": 36, "humidity_percent": 40, "condition": "Sunny"}
     adv = generate_weather_advisory(user_profile, weather_data)
     assert "irrigation" in adv.lower() or "temperature" in adv.lower()
+
+
+def test_recommendation_handles_none_confidences():
+    from unittest.mock import patch
+    from app.core.config import settings
+
+    # Simulate scenario where confidence and area are explicitly None
+    context = {
+        "status": {"preprocessing": "completed"},
+        "crop": {"label": "Tomato", "confidence": None},
+        "disease": {"label": "Late Blight", "confidence": None},
+        "severity": {"percent": None, "bucket": None},
+        "weather": {"temperature_celsius": None, "humidity_percent": None, "condition": None},
+        "plot": {"area_acres": None},
+    }
+    with patch.object(settings, "ADVISORY_SERVER_URL", ""):
+        result = generate_recommendation(context)
+    rec = result.get("recommendation", {})
+    assert rec is not None
+    assert rec.get("is_fallback") is True
+    assert "immediate_action" in rec
