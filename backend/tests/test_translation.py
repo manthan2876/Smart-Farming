@@ -110,7 +110,7 @@ async def test_translate_batch_indictrans_unconfigured():
 
 
 @pytest.mark.asyncio
-async def test_translate_batch_cascade_fallback_to_hf():
+async def test_translate_batch_fallback_when_server_fails():
     texts = ["Test recommendation text."]
 
     with patch.object(settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"):
@@ -119,17 +119,9 @@ async def test_translate_batch_cascade_fallback_to_hf():
             "app.services.translation.service.translate_batch_indictrans",
             side_effect=httpx.ConnectTimeout("Connection timed out"),
         ):
-            # Make HF fallback succeed
-            with patch(
-                "app.services.translation.service.translate_batch_hf_fallback",
-                new_callable=AsyncMock,
-                return_value=["अनुवादित पाठ।"],
-            ) as mock_hf:
-                with patch("app.core.redis_rest.redis_rest.mget", new_callable=AsyncMock, return_value=[None]):
-                    with patch("app.core.redis_rest.redis_rest.set", new_callable=AsyncMock, return_value=True):
-                        result = await translate_batch(texts, "hi")
-                        assert result == ["अनुवादित पाठ।"]
-                        assert mock_hf.called
+            with patch("app.core.redis_rest.redis_rest.mget", new_callable=AsyncMock, return_value=[None]):
+                result = await translate_batch(texts, "hi")
+                assert result == ["Test recommendation text."]
 
 
 @pytest.mark.asyncio

@@ -49,9 +49,6 @@ def _get_advisory_kb() -> dict[str, Any]:
     return _KB_CACHE
 
 
-def _get_hf_client():
-    return None
-
 
 def _build_prompt(context: dict) -> str:
     crop = context.get('crop', 'Unknown Crop')

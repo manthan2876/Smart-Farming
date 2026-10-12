@@ -152,16 +152,19 @@ Smart Farming maintains strict separation between Development and Production env
 
 ```
 Smart-Farming/
-├── start_all.bat                           # 1-Click unified launcher for all local services
-├── start_all_with_mobile.bat              # Unified launcher including Flutter mobile hot-reload
+├── start_all.sh                            # 1-Click unified launcher for Linux / Pop!_OS
+├── start_all_with_mobile.sh               # Unified launcher including Flutter mobile web (Linux)
+├── stop_all.sh                             # Stop all running services (Linux)
 ├── scripts/
-│   ├── start_all.ps1                       # Unified non-blocking service orchestrator + ARQ watchdog
-│   ├── start_backend.bat                   # Standalone Backend starter
-│   ├── start_model_server.bat              # Standalone Model Server starter
-│   ├── start_worker.bat                    # Standalone ARQ Worker starter
-│   ├── start_frontend.bat                  # Standalone Frontend starter
-│   ├── start_mobile.bat                    # Standalone Flutter Web starter
-│   └── stop_all.bat                        # Clean shutdown utility
+│   ├── start_all.sh                        # Linux unified non-blocking service orchestrator + ARQ watchdog
+│   ├── start_backend.sh                    # Standalone Backend starter (Port 8000)
+│   ├── start_model_server.sh               # Standalone Model Server starter (Port 8001)
+│   ├── start_worker.sh                     # Standalone ARQ Worker starter (Redis Queue)
+│   ├── start_frontend.sh                   # Standalone Frontend starter (Vite Port 5173)
+│   ├── start_mobile.sh                     # Standalone Flutter Web starter
+│   ├── stop_all.sh                         # Clean shutdown utility
+│   ├── count.py                            # Project structure file counter
+│   └── evaluate_calibration.py             # Calibration and reliability CLI evaluator
 │
 ├── backend/                                # FastAPI API Gateway & Business Core (Server 1)
 │   ├── src/app/
@@ -384,10 +387,17 @@ The frontend interface was built from the ground up to eliminate generic AI desi
 
 ### 1-Click Unified Runner (Recommended)
 
-To launch all 4 services concurrently in unified streaming mode with colored logs:
+To launch all services concurrently in unified streaming mode with colored logs:
 
-```cmd
-.\start_all.bat
+**Pop!_OS / Linux:**
+```bash
+./start_all.sh
+
+# Or include Flutter mobile app:
+./start_all_with_mobile.sh
+
+# To stop all services at any time:
+./stop_all.sh
 ```
 
 This starts:
@@ -403,19 +413,19 @@ This starts:
 ### Manual Service Startup
 
 #### 1. Model Inference Microservice (Server 2)
-```powershell
+```bash
 cd model_service
-python -m venv .venv
-.\.venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 #### 2. Backend Gateway Server (Server 1)
-```powershell
+```bash
 cd backend
-python -m venv .venv
-.\.venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your database and API keys
@@ -425,14 +435,14 @@ uvicorn src.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 #### 3. ARQ Background Worker
-```powershell
+```bash
 cd backend
-.\.venv\Scripts\activate
+source .venv/bin/activate
 arq src.app.worker.WorkerSettings
 ```
 
 #### 4. Frontend Dashboard (Server 3)
-```powershell
+```bash
 cd frontend
 npm install
 npm run dev

@@ -134,7 +134,7 @@ def test_pipeline_provenance_and_stages() -> None:
     context["crop"] = {"label": "Tomato", "confidence": 0.95, "model_name": "EfficientNet-B0", "model_version": "v1.0"}
     context["disease"] = {"label": "Early Blight", "confidence": 0.88, "model_name": "EfficientNet-B2", "model_used": "disease_Tomato.pth", "model_version": "v1.0"}
     context["weather"] = {"provider": "OpenWeatherMap", "status": "success", "is_degraded": False}
-    context["recommendation"] = {"provider": "HuggingFace / nscale", "model": "Qwen/Qwen3-4B-Instruct-2507", "is_fallback": False}
+    context["recommendation"] = {"provider": "Colab / Qwen3-4B (4-bit)", "model": "Qwen/Qwen3-4B", "is_fallback": False}
 
     SCHEMA_VERSION = "2.0.0"
     context["schema_version"] = SCHEMA_VERSION

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 evaluate_calibration.py — Calibration Validation & Reliability CLI
 Evaluates confidence calibration across neural network predictions,

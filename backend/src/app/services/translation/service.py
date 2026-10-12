@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import re
 from typing import Any
 import httpx
@@ -203,49 +202,8 @@ def translate_batch_indictrans_sync(texts: list[str], target_lang: str) -> list[
     return results
 
 
-async def translate_batch_hf_fallback(texts: list[str], target_lang: str) -> list[str]:
-    """Fallback translation using Hugging Face Qwen LLM if IndicTrans2 is unavailable."""
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
-        return texts
-
-    target_code = normalize_language_code(target_lang)
-    lang_name = "Hindi" if target_code == "hi" else ("Gujarati" if target_code == "gu" else target_lang)
-
-    try:
-        from huggingface_hub import InferenceClient
-
-        client = InferenceClient(api_key=hf_token, provider="nscale")
-        results: list[str] = []
-        for text in texts:
-            if not text.strip():
-                results.append("")
-                continue
-            resp = client.chat.completions.create(
-                model="Qwen/Qwen3-4B-Instruct-2507",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            f"You are an agricultural advisory translator. "
-                            f"Translate the following agricultural recommendation into {lang_name} accurately. "
-                            f"Return ONLY the translated text without commentary."
-                        ),
-                    },
-                    {"role": "user", "content": text},
-                ],
-                max_tokens=350,
-            )
-            trans = resp.choices[0].message.content.strip()
-            results.append(trans if trans else text)
-        return results
-    except Exception as exc:
-        logger.warning("HF translation fallback failed: %s", exc)
-        return texts
-
-
 async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
-    """Translate a list of texts into target_lang, using Upstash Redis REST caching with Google/HF fallbacks."""
+    """Translate a list of texts into target_lang, using Upstash Redis REST caching with IndicTrans2 server."""
     target_code = normalize_language_code(target_lang)
     if target_code == "en" or not texts:
         return texts
@@ -280,17 +238,16 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
     if missing_texts:
         translated_missing: list[str] | None = None
 
-        # 1. Primary: IndicTrans2 (Colab / GPU server)
+        # Primary: IndicTrans2 (Colab / GPU server via Cloudflare Gateway)
         server_url = (getattr(settings, "TRANSLATION_SERVER_URL", "") or "").strip()
         if server_url and target_code in ("hi", "gu"):
             try:
                 translated_missing = await translate_batch_indictrans(missing_texts, target_code)
             except Exception as exc:
-                logger.warning("IndicTrans2 translation failed (%s), falling back to HF translation...", exc)
+                logger.warning("IndicTrans2 translation failed (%s); using original text.", exc)
 
-        # 2. Secondary Fallback: Hugging Face Qwen LLM
         if translated_missing is None:
-            translated_missing = await translate_batch_hf_fallback(missing_texts, target_code)
+            translated_missing = list(missing_texts)
 
         cache_tasks = []
         for idx, trans_text, orig_text in zip(missing_indices, translated_missing, missing_texts):

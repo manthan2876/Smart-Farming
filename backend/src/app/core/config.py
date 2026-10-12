@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     UPLOAD_ROOT: Path = DATA_ROOT / "uploads"
     PROCESSED_ROOT: Path = DATA_ROOT / "processed"
     AUDIO_ROOT: Path = DATA_ROOT / "audio"
-    GEMINI_API_KEY: str = Field(default="")
 
     # Geographic Defaults (Indian agricultural reference region)
     DEFAULT_LAT: float = Field(default=21.7645)
@@ -40,7 +39,7 @@ class Settings(BaseSettings):
     MODEL_SERVER_URL: str = Field(default="http://127.0.0.1:8001")
     MODEL_SERVER_TIMEOUT: int = Field(default=120)
 
-    # Translation Server (IndicTrans2 on Colab / HuggingFace Spaces)
+    # Translation Server (IndicTrans2 on Colab via Cloudflare Gateway)
     TRANSLATION_SERVER_URL: str = Field(default="")
     TRANSLATION_SERVER_TIMEOUT: float = Field(default=45.0)
 
