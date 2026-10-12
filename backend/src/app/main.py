@@ -90,7 +90,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 allowed_origins = [
-    origin.strip()
+    origin.strip().rstrip("/")
     for origin in os.getenv(
         "CORS_ORIGINS",
         "http://127.0.0.1:5173,http://localhost:5173,http://localhost:3000,http://127.0.0.1:3000",
