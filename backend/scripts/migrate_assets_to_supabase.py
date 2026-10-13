@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 """
-migrate_to_s3.py — Migrate local image and audio assets to AWS S3.
+migrate_assets_to_supabase.py — Migrate local image and audio assets to Supabase Object Storage.
 
-Bucket: smart-farming-data-575509634394-us-east-1-an
-Region: us-east-1
+Uploads local asset files (uploads/, processed/, audio/) to Supabase Object Storage,
+verifies integrity via HeadObject/exists checks, and normalizes file paths in PostgreSQL.
+
+Target Buckets:
+  - Development : smart-farming-data-dev (default)
+  - Production  : smart-farming (--env prod)
 
 Usage:
   # Dry-run audit (inspect files without uploading or modifying DB):
-  python backend/scripts/migrate_to_s3.py --dry-run
+  python backend/scripts/migrate_assets_to_supabase.py --dry-run
 
-  # Execute live migration with checksum verification:
-  python backend/scripts/migrate_to_s3.py --verify
+  # Execute live migration to DEV bucket with verification:
+  python backend/scripts/migrate_assets_to_supabase.py --verify
 
-  # Execute live migration and delete local files after verified upload:
-  python backend/scripts/migrate_to_s3.py --verify --delete-local
+  # Execute live migration to PROD bucket:
+  python backend/scripts/migrate_assets_to_supabase.py --env prod --verify
+
+  # Execute live migration and remove local files after verified upload:
+  python backend/scripts/migrate_assets_to_supabase.py --verify --delete-local
 """
 
 from __future__ import annotations
@@ -22,21 +29,45 @@ import argparse
 import hashlib
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
-# Ensure app imports resolve
+# Parse arguments early to configure target environment before config is imported
+parser = argparse.ArgumentParser(description="Migrate local Smart-Farming images and audio to Supabase Object Storage.")
+parser.add_argument("--env", choices=["dev", "development", "prod", "production"], default=None, help="Target environment (dev or prod)")
+parser.add_argument("--bucket", default=None, help="Explicit bucket name override")
+parser.add_argument("--dry-run", action="store_true", help="Audit local files without uploading to Supabase or modifying DB.")
+parser.add_argument("--verify", action="store_true", help="Verify each uploaded file exists in Supabase storage.")
+parser.add_argument("--delete-local", action="store_true", help="Delete local files after verified upload to Supabase.")
+args, _ = parser.parse_known_args()
+
+if args.env:
+    env_clean = "production" if args.env in ("prod", "production") else "development"
+    os.environ["ENVIRONMENT"] = env_clean
+    os.environ["ENV_FILE"] = ".env.production" if env_clean == "production" else ".env"
+
 backend_dir = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(backend_dir / "src"))
 
+# Optional local cache fallbacks for standalone execution
+import glob
+for _d in glob.glob("/home/manthan/.cache/uv/archive-v0/*"):
+    try:
+        _items = set(os.listdir(_d))
+        if "tests" not in _items and "numpy" not in _items and "cv2" not in _items:
+            sys.path.append(_d)
+    except OSError:
+        pass
+
 from app.core.config import settings
 from app.core.session import _session_factory
-from app.core.storage import S3StorageBackend
+from app.core.storage import get_storage, SupabaseStorageBackend
 from app.models import Image, Prediction
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("migrate-s3")
+logger = logging.getLogger("migrate-assets-supabase")
 
 
 def compute_md5(file_path: Path) -> str:
@@ -62,13 +93,27 @@ def detect_content_type(file_name: str) -> str:
     return "application/octet-stream"
 
 
-def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool = False) -> dict[str, Any]:
-    logger.info("Starting AWS S3 Storage Migration...")
-    logger.info("Target Bucket: %s (%s)", settings.AWS_S3_BUCKET, settings.AWS_REGION)
-    logger.info("Mode: Dry-Run = %s, Verify = %s, Delete Local = %s", dry_run, verify, delete_local)
+def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool = False, bucket_override: str | None = None) -> dict[str, Any]:
+    target_bucket = bucket_override or getattr(settings, "SUPABASE_BUCKET", "smart-farming-data-dev")
+    supabase_url = getattr(settings, "SUPABASE_URL", "")
 
-    s3_storage = S3StorageBackend()
-    data_root = settings.DATA_ROOT.resolve()
+    logger.info("=" * 65)
+    logger.info("Starting Supabase Object Storage Asset Migration")
+    logger.info("=" * 65)
+    logger.info("Environment   : %s", getattr(settings, "ENVIRONMENT", "development").upper())
+    logger.info("Supabase URL  : %s", supabase_url or "(Not configured)")
+    logger.info("Target Bucket : %s", target_bucket)
+    logger.info("Mode          : Dry-Run = %s, Verify = %s, Delete Local = %s", dry_run, verify, delete_local)
+    logger.info("-" * 65)
+
+    if not supabase_url or not getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", None):
+        logger.error("Missing Supabase configuration in environment (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).")
+        raise RuntimeError("Supabase credentials not configured in current environment.")
+
+    if bucket_override and bucket_override != settings.SUPABASE_BUCKET:
+        storage = SupabaseStorageBackend(bucket_name=bucket_override)
+    else:
+        storage = get_storage()
 
     directories = [
         ("uploads", settings.UPLOAD_ROOT),
@@ -77,6 +122,8 @@ def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool 
     ]
 
     stats = {
+        "environment": getattr(settings, "ENVIRONMENT", "development"),
+        "target_bucket": target_bucket,
         "scanned": 0,
         "uploaded": 0,
         "already_exists": 0,
@@ -87,12 +134,12 @@ def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool 
         "errors": [],
     }
 
-    key_mappings: dict[str, str] = {}  # old_path_str -> new_s3_key
+    key_mappings: dict[str, str] = {}
 
     for prefix, folder in directories:
         folder_path = Path(folder)
         if not folder_path.exists():
-            logger.info("Folder %s does not exist on disk, skipping.", prefix)
+            logger.info("Directory %s does not exist on disk, skipping.", prefix)
             continue
 
         for file_path in folder_path.glob("*"):
@@ -114,26 +161,23 @@ def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool 
                 stats["uploaded"] += 1
                 continue
 
-            # Check if file already exists in S3
             try:
-                if s3_storage.exists(rel_key):
+                if storage.exists(rel_key):
                     stats["already_exists"] += 1
-                    logger.info("Object %s already exists in S3, skipping upload.", rel_key)
+                    logger.info("Object %s already exists in Supabase bucket, skipping upload.", rel_key)
                 else:
                     content = file_path.read_bytes()
-                    s3_storage.save(content, rel_key, content_type=content_type)
+                    storage.save(content, rel_key, content_type=content_type)
                     stats["uploaded"] += 1
-                    logger.info("Successfully uploaded: %s -> s3://%s/%s", file_path.name, settings.AWS_S3_BUCKET, rel_key)
+                    logger.info("Successfully uploaded: %s -> %s", file_path.name, rel_key)
 
-                # Verification
                 if verify:
-                    if s3_storage.exists(rel_key):
+                    if storage.exists(rel_key):
                         stats["verified"] += 1
                     else:
-                        raise RuntimeError(f"Verification failed: {rel_key} not found in S3 after upload.")
+                        raise RuntimeError(f"Verification failed: {rel_key} not found in Supabase storage after upload.")
 
-                # Delete local if requested and verified
-                if delete_local and (not verify or s3_storage.exists(rel_key)):
+                if delete_local and (not verify or storage.exists(rel_key)):
                     file_path.unlink()
                     stats["deleted_local"] += 1
                     logger.info("Deleted local file: %s", file_path)
@@ -146,7 +190,7 @@ def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool 
 
     # Database Path Normalization
     if not dry_run:
-        logger.info("Updating database references...")
+        logger.info("Updating database asset references...")
         Session = _session_factory()
         db = Session()
         try:
@@ -194,7 +238,7 @@ def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool 
         finally:
             db.close()
 
-    report_path = backend_dir / "s3_migration_report.json"
+    report_path = backend_dir / "supabase_migration_report.json"
     report_path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
     logger.info("Migration finished. Summary report written to: %s", report_path)
     logger.info(
@@ -210,15 +254,13 @@ def run_migration(dry_run: bool = True, verify: bool = True, delete_local: bool 
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Migrate local Smart-Farming images and audio to AWS S3.")
-    parser.add_argument("--dry-run", action="store_true", help="Audit local files without uploading to S3 or modifying DB.")
-    parser.add_argument("--verify", action="store_true", help="Verify each uploaded file exists in S3 via HeadObject.")
-    parser.add_argument("--delete-local", action="store_true", help="Delete local files after verified upload to S3.")
-    args = parser.parse_args()
-
-    # Default to dry-run if neither --verify nor explicit flags provided
     dry_run = args.dry_run or (not args.verify and not args.delete_local)
-    run_migration(dry_run=dry_run, verify=args.verify, delete_local=args.delete_local)
+    run_migration(
+        dry_run=dry_run,
+        verify=args.verify,
+        delete_local=args.delete_local,
+        bucket_override=args.bucket,
+    )
 
 
 if __name__ == "__main__":

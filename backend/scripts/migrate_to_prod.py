@@ -1,28 +1,29 @@
 """Production & Development Database Migration & Synchronization CLI.
 
-Supports managing Aiven Cloud PostgreSQL (Development) and Supabase Cloud PostgreSQL (Production)
-with flexible options to migrate schema, seed reference data, or sync records between environments.
+Supports managing Supabase Cloud PostgreSQL (Development - smart-farming-dev)
+and Supabase Cloud PostgreSQL (Production - smart-farming) with flexible options
+to migrate schema, seed reference data, or sync records between environments.
 
 Usage:
     # Interactive menu:
     python backend/scripts/migrate_to_prod.py
 
-    # Apply schema updates to Production only (Supabase):
+    # Apply schema updates to Production only (Supabase Prod):
     python backend/scripts/migrate_to_prod.py --schema-only --yes
 
-    # Apply schema updates to Development only (Aiven):
+    # Apply schema updates to Development only (Supabase Dev):
     python backend/scripts/migrate_to_prod.py --dev-only --yes
 
     # Apply schema updates to BOTH Dev and Production:
     python backend/scripts/migrate_to_prod.py --all-dbs --yes
 
-    # Upsert reference tables from Dev (Aiven) to Production (Supabase):
+    # Upsert reference tables from Dev to Production:
     python backend/scripts/migrate_to_prod.py --sync-reference --yes
 
-    # Sync data from Dev (Aiven) to Production (Supabase) [Manual only]:
+    # Sync data from Dev to Production [Manual only]:
     python backend/scripts/migrate_to_prod.py --sync-data --yes
 
-    # Sync data from Production (Supabase) to Dev (Aiven) [Manual only]:
+    # Sync data from Production to Dev [Manual only]:
     python backend/scripts/migrate_to_prod.py --sync-to-dev --yes
 
     # Check connectivity and table counts for both databases:
@@ -42,6 +43,16 @@ from urllib.parse import urlparse
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(backend_dir / "src"))
+
+# Optional local cache fallbacks for standalone execution
+import glob
+for _d in glob.glob("/home/manthan/.cache/uv/archive-v0/*"):
+    try:
+        _items = set(os.listdir(_d))
+        if "tests" not in _items and "numpy" not in _items and "cv2" not in _items:
+            sys.path.append(_d)
+    except OSError:
+        pass
 
 from dotenv import load_dotenv
 
@@ -81,7 +92,7 @@ def get_target_prod_url(cli_target: str | None = None) -> str:
 
 
 def get_dev_source_url(cli_source: str | None = None) -> str:
-    """Resolve development database URL (Aiven Cloud PostgreSQL or local SQLite)."""
+    """Resolve development database URL (Supabase Cloud PostgreSQL or local fallback)."""
     source = (
         cli_source
         or os.getenv("DEV_DATABASE_URL")
@@ -342,8 +353,8 @@ def sync_records(
 
 def check_databases(dev_url: str, prod_url: str) -> None:
     """Check connectivity and compare row counts across both Dev and Prod."""
-    dev_ok = verify_connection(dev_url, "Development Database (Aiven)")
-    prod_ok = verify_connection(prod_url, "Production Database (Supabase)")
+    dev_ok = verify_connection(dev_url, "Development Database (Supabase Dev)")
+    prod_ok = verify_connection(prod_url, "Production Database (Supabase Prod)")
 
     if not dev_ok or not prod_ok:
         print("\n[!] Could not connect to one or more databases.")
@@ -359,7 +370,7 @@ def check_databases(dev_url: str, prod_url: str) -> None:
     table_list = [t for t in all_tables if t != "alembic_version"]
 
     print("\n" + "=" * 65)
-    print(f"{'TABLE NAME':<26} | {'DEV (AIVEN)':<15} | {'PROD (SUPABASE)':<15}")
+    print(f"{'TABLE NAME':<26} | {'DEV (SUPABASE)':<15} | {'PROD (SUPABASE)':<15}")
     print("-" * 65)
 
     with dev_engine.connect() as dev_conn, prod_engine.connect() as prod_conn:
@@ -377,7 +388,7 @@ def check_databases(dev_url: str, prod_url: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Smart Farming - Dev (Aiven) & Prod (Supabase) Database Management Utility"
+        description="Smart Farming - Dev (Supabase Dev) & Prod (Supabase Prod) Database Management Utility"
     )
     parser.add_argument(
         "--target",
@@ -392,17 +403,17 @@ def main():
     parser.add_argument(
         "--schema-only",
         action="store_true",
-        help="Apply schema migrations to Production (Supabase).",
+        help="Apply schema migrations to Production (Supabase Prod).",
     )
     parser.add_argument(
         "--dev-only",
         action="store_true",
-        help="Apply schema migrations to Development (Aiven).",
+        help="Apply schema migrations to Development (Supabase Dev).",
     )
     parser.add_argument(
         "--all-dbs",
         action="store_true",
-        help="Apply schema migrations to BOTH Dev (Aiven) and Production (Supabase).",
+        help="Apply schema migrations to BOTH Dev (Supabase Dev) and Production (Supabase Prod).",
     )
     parser.add_argument(
         "--seed",
@@ -422,12 +433,12 @@ def main():
     parser.add_argument(
         "--sync-data",
         action="store_true",
-        help="Sync rows from Development (Aiven) to Production (Supabase) [Manual only].",
+        help="Sync rows from Development (Supabase Dev) to Production (Supabase Prod) [Manual only].",
     )
     parser.add_argument(
         "--sync-to-dev",
         action="store_true",
-        help="Sync rows from Production (Supabase) to Development (Aiven) [Manual only].",
+        help="Sync rows from Production (Supabase Prod) to Development (Supabase Dev) [Manual only].",
     )
     parser.add_argument(
         "--check",
@@ -448,7 +459,7 @@ def main():
     print("=" * 65)
     print("  SMART FARMING: DATABASE MIGRATION & SYNC UTILITY")
     print("=" * 65)
-    print(f"  Dev  (Aiven)   : {dev_url.split('@')[-1] if '@' in dev_url else dev_url}")
+    print(f"  Dev  (Supabase): {dev_url.split('@')[-1] if '@' in dev_url else dev_url}")
     print(f"  Prod (Supabase): {prod_url.split('@')[-1] if '@' in prod_url else prod_url}")
     print("=" * 65)
 
@@ -484,32 +495,32 @@ def main():
         ok = True
 
         if args.dev_only:
-            ok = verify_connection(dev_url, "Dev (Aiven)") and apply_schema_migrations(dev_url, "Dev (Aiven)")
+            ok = verify_connection(dev_url, "Dev (Supabase Dev)") and apply_schema_migrations(dev_url, "Dev (Supabase Dev)")
         elif args.all_dbs:
             ok = (
-                verify_connection(dev_url, "Dev (Aiven)")
-                and apply_schema_migrations(dev_url, "Dev (Aiven)")
-                and verify_connection(prod_url, "Prod (Supabase)")
-                and apply_schema_migrations(prod_url, "Prod (Supabase)")
+                verify_connection(dev_url, "Dev (Supabase Dev)")
+                and apply_schema_migrations(dev_url, "Dev (Supabase Dev)")
+                and verify_connection(prod_url, "Prod (Supabase Prod)")
+                and apply_schema_migrations(prod_url, "Prod (Supabase Prod)")
             )
         elif args.schema_only:
-            ok = verify_connection(prod_url, "Prod (Supabase)") and apply_schema_migrations(prod_url, "Prod (Supabase)")
+            ok = verify_connection(prod_url, "Prod (Supabase Prod)") and apply_schema_migrations(prod_url, "Prod (Supabase Prod)")
 
         if ok and args.seed:
-            ok = seed_database_defaults(prod_url, "Prod (Supabase)")
+            ok = seed_database_defaults(prod_url, "Prod (Supabase Prod)")
         if ok and args.seed_dev:
-            ok = seed_database_defaults(dev_url, "Dev (Aiven)")
+            ok = seed_database_defaults(dev_url, "Dev (Supabase Dev)")
 
         if ok and args.sync_reference:
             if not REFERENCE_TABLES:
                 print("\n[INFO] REFERENCE_TABLES allow-list is empty. No reference tables to sync.")
             else:
-                ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)", only_tables=REFERENCE_TABLES)
+                ok = sync_records(dev_url, prod_url, "Dev (Supabase Dev)", "Prod (Supabase Prod)", only_tables=REFERENCE_TABLES)
 
         if ok and args.sync_data:
-            ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
+            ok = sync_records(dev_url, prod_url, "Dev (Supabase Dev)", "Prod (Supabase Prod)")
         if ok and args.sync_to_dev:
-            ok = sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
+            ok = sync_records(prod_url, dev_url, "Prod (Supabase Prod)", "Dev (Supabase Dev)")
 
         if not ok:
             print("\n[FAILED] One or more requested operations failed.")
@@ -520,12 +531,12 @@ def main():
 
     # Interactive menu mode
     print("\nSelect Migration Option:")
-    print("  [1] Apply Schema to Production (Supabase)")
-    print("  [2] Apply Schema to Development (Aiven)")
+    print("  [1] Apply Schema to Production (Supabase Prod)")
+    print("  [2] Apply Schema to Development (Supabase Dev)")
     print("  [3] Apply Schema to BOTH Dev & Prod (Recommended for releases)")
-    print("  [4] Upsert Reference Tables: Dev (Aiven) -> Prod (Supabase)")
-    print("  [5] Sync Data: Dev (Aiven) -> Prod (Supabase) [Manual full sync]")
-    print("  [6] Sync Data: Prod (Supabase) -> Dev (Aiven) [Manual full sync]")
+    print("  [4] Upsert Reference Tables: Dev -> Prod")
+    print("  [5] Sync Data: Dev -> Prod [Manual full sync]")
+    print("  [6] Sync Data: Prod -> Dev [Manual full sync]")
     print("  [7] Check Connections & Table Status (Both databases)")
     print("  [8] Cancel")
 
@@ -537,32 +548,32 @@ def main():
 
     ok = True
     if choice == "1":
-        ok = verify_connection(prod_url, "Production (Supabase)") and apply_schema_migrations(prod_url, "Production (Supabase)")
+        ok = verify_connection(prod_url, "Production (Supabase Prod)") and apply_schema_migrations(prod_url, "Production (Supabase Prod)")
     elif choice == "2":
-        ok = verify_connection(dev_url, "Development (Aiven)") and apply_schema_migrations(dev_url, "Development (Aiven)")
+        ok = verify_connection(dev_url, "Development (Supabase Dev)") and apply_schema_migrations(dev_url, "Development (Supabase Dev)")
     elif choice == "3":
         ok = (
-            verify_connection(dev_url, "Development (Aiven)")
-            and apply_schema_migrations(dev_url, "Development (Aiven)")
-            and verify_connection(prod_url, "Production (Supabase)")
-            and apply_schema_migrations(prod_url, "Production (Supabase)")
+            verify_connection(dev_url, "Development (Supabase Dev)")
+            and apply_schema_migrations(dev_url, "Development (Supabase Dev)")
+            and verify_connection(prod_url, "Production (Supabase Prod)")
+            and apply_schema_migrations(prod_url, "Production (Supabase Prod)")
         )
     elif choice == "4":
         if not REFERENCE_TABLES:
             print("\n[INFO] REFERENCE_TABLES allow-list is empty. No reference tables to sync.")
         else:
             if verify_connection(dev_url, "Dev") and verify_connection(prod_url, "Prod"):
-                ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)", only_tables=REFERENCE_TABLES)
+                ok = sync_records(dev_url, prod_url, "Dev (Supabase Dev)", "Prod (Supabase Prod)", only_tables=REFERENCE_TABLES)
     elif choice == "5":
         confirm = input("\nWARNING: This will copy records from Dev to Prod. Proceed? [y/N]: ").strip().lower()
         if confirm in ("y", "yes"):
             if verify_connection(dev_url, "Dev") and verify_connection(prod_url, "Prod"):
-                ok = sync_records(dev_url, prod_url, "Dev (Aiven)", "Prod (Supabase)")
+                ok = sync_records(dev_url, prod_url, "Dev (Supabase Dev)", "Prod (Supabase Prod)")
     elif choice == "6":
         confirm = input("\nWARNING: This will copy records from Prod to Dev. Proceed? [y/N]: ").strip().lower()
         if confirm in ("y", "yes"):
             if verify_connection(prod_url, "Prod") and verify_connection(dev_url, "Dev"):
-                ok = sync_records(prod_url, dev_url, "Prod (Supabase)", "Dev (Aiven)")
+                ok = sync_records(prod_url, dev_url, "Prod (Supabase Prod)", "Dev (Supabase Dev)")
     elif choice == "7":
         check_databases(dev_url, prod_url)
     else:

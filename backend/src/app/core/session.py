@@ -13,11 +13,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 def _find_env_file() -> Path | None:
+    env_name = os.getenv("ENV_FILE") or (".env.production" if os.getenv("ENVIRONMENT") == "production" else ".env")
     candidates = [
-        Path(__file__).resolve().parents[3] / ".env",  # backend/.env
-        Path(__file__).resolve().parents[4] / ".env",  # project/.env
+        Path(__file__).resolve().parents[3] / env_name,  # backend/.env[.production]
+        Path(__file__).resolve().parents[4] / env_name,  # project/.env[.production]
+        Path.cwd() / env_name,
+        Path.cwd() / "backend" / env_name,
+        Path(__file__).resolve().parents[3] / ".env",
         Path.cwd() / ".env",
-        Path.cwd() / "backend" / ".env",
     ]
     for c in candidates:
         if c.exists():

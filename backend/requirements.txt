@@ -27,11 +27,6 @@ PyJWT>=2.8.0
 pwdlib[argon2]>=0.2.0
 passlib[bcrypt]>=1.7.4
 
-# Cloud Storage & GCP Auth
-boto3>=1.34.0
-botocore>=1.34.0
-google-auth>=2.0.0
-
 # External AI & Scheduling
 apscheduler>=3.10.0
 redis>=5.0.0

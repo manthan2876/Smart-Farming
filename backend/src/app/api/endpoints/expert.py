@@ -69,14 +69,14 @@ async def get_expert_review(
 
     raw_url = None
     processed_url = None
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("supabase", "s3"):
         try:
             from app.core.storage import get_storage
             storage = get_storage()
             if raw_path:
-                raw_url = storage.get_url(raw_path, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+                raw_url = storage.get_url(raw_path, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
             if proc_path:
-                processed_url = storage.get_url(proc_path, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+                processed_url = storage.get_url(proc_path, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
         except Exception as exc:
             pass
 

@@ -19,12 +19,14 @@ NC='\033[0m' # No Color
 
 SEPARATE_WINDOWS=false
 INCLUDE_MOBILE=false
+TARGET_ENV="development"
 
 show_help() {
     cat << EOF
 Usage: ./start_all.sh [OPTIONS]
 
 Options:
+  -e, --env <dev|prod>                Target environment (development or production, default: dev)
   -s, --separate-windows, --windows   Launch each service in a separate terminal window
   -m, --mobile, -IncludeMobile        Launch Flutter mobile web app alongside backend & frontend
   -h, --help                          Show this help message
@@ -35,6 +37,14 @@ EOF
 # Parse CLI arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -e|--env|--environment)
+            TARGET_ENV="$2"
+            shift 2
+            ;;
+        --env=*)
+            TARGET_ENV="${1#*=}"
+            shift
+            ;;
         -s|--separate-windows|--windows|-windowed)
             SEPARATE_WINDOWS=true
             shift
@@ -52,6 +62,16 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [[ "$TARGET_ENV" =~ ^(prod|production)$ ]]; then
+    export ENVIRONMENT="production"
+    export ENV_FILE=".env.production"
+    TARGET_BUCKET="smart-farming-data"
+else
+    export ENVIRONMENT="development"
+    export ENV_FILE=".env"
+    TARGET_BUCKET="smart-farming-data-dev"
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -104,6 +124,9 @@ echo -e "${CYAN}              SMART FARMING - STARTING${NC}"
 echo -e "${CYAN}========================================================${NC}"
 echo ""
 echo -e "${GRAY}[SYSTEM] Project Root: ${NC}$ROOT_DIR"
+echo -e "${GRAY}[SYSTEM] Environment:    ${YELLOW}${ENVIRONMENT^^}${NC} (Config: ${ENV_FILE})"
+echo -e "${GRAY}[SYSTEM] Storage Engine: ${BLUE}Supabase Object Storage${NC}"
+echo -e "${GRAY}[SYSTEM] Target Bucket:  ${CYAN}$TARGET_BUCKET${NC}"
 if [ "$INCLUDE_MOBILE" = true ]; then
     echo -e "${GRAY}[SYSTEM] Mobile Mode:  ${CYAN}Enabled (Chrome device target)${NC}"
 fi

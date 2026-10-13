@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -7,7 +8,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
-load_dotenv(BACKEND_ROOT / ".env")
+
+_env_file_name = os.getenv("ENV_FILE") or (".env.production" if os.getenv("ENVIRONMENT") == "production" else ".env")
+_env_path = BACKEND_ROOT / _env_file_name
+if _env_path.exists():
+    load_dotenv(_env_path, override=True)
+else:
+    load_dotenv(BACKEND_ROOT / ".env")
 
 class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="dev-secret-key-change-me") 
@@ -54,15 +61,21 @@ class Settings(BaseSettings):
     # Cloudflare Worker API Gateway Authentication
     GATEWAY_API_KEY: str | None = Field(default=None)
 
-    # Storage (AWS S3)
-    STORAGE_BACKEND: str = Field(default="s3")
-    AWS_ACCESS_KEY_ID: str | None = Field(default=None)
-    AWS_SECRET_ACCESS_KEY: str | None = Field(default=None)
-    AWS_REGION: str = Field(default="us-east-1")
-    AWS_S3_BUCKET: str = Field(default="smart-farming-data")
-    AWS_ENDPOINT_URL: str | None = Field(default=None)
-    STORAGE_ENDPOINT_URL: str | None = Field(default=None)
-    S3_PRESIGNED_EXPIRY_SECONDS: int = 900
+    # Storage (Supabase Object Storage)
+    STORAGE_BACKEND: str = Field(default="supabase")
+    SUPABASE_URL: str = Field(default="")
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(default="")
+    SUPABASE_BUCKET: str = Field(default="smart-farming-data-dev")
+    SUPABASE_SIGNED_URL_EXPIRY_SECONDS: int = Field(default=900)
+
+    # Backward compatibility properties
+    @property
+    def AWS_S3_BUCKET(self) -> str:
+        return self.SUPABASE_BUCKET
+
+    @property
+    def S3_PRESIGNED_EXPIRY_SECONDS(self) -> int:
+        return self.SUPABASE_SIGNED_URL_EXPIRY_SECONDS
 
     # Upstash Serverless Redis REST
     UPSTASH_REDIS_REST_URL: str | None = Field(default=None)
@@ -176,6 +189,9 @@ class Settings(BaseSettings):
 
         return self
 
-    model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(_env_path if _env_path.exists() else BACKEND_ROOT / ".env"),
+        extra="ignore",
+    )
 
 settings = Settings()

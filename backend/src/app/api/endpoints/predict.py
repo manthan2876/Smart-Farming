@@ -70,8 +70,8 @@ def _apply_pipeline_status(result: dict[str, Any], db_status: str | None) -> dic
 
 
 def _enrich_image_urls(result: dict) -> dict:
-    """If S3 storage is enabled, generate fresh presigned S3 URLs for raw and processed images."""
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
+    """If Supabase cloud storage is enabled, generate fresh presigned URLs for raw and processed images."""
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("supabase", "s3"):
         try:
             from app.core.storage import get_storage
             storage = get_storage()
@@ -80,9 +80,9 @@ def _enrich_image_urls(result: dict) -> dict:
                 raw_k = img.get("raw_path")
                 proc_k = img.get("processed_path")
                 if raw_k:
-                    img["raw_url"] = storage.get_url(raw_k, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+                    img["raw_url"] = storage.get_url(raw_k, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
                 if proc_k:
-                    img["processed_url"] = storage.get_url(proc_k, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+                    img["processed_url"] = storage.get_url(proc_k, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
         except Exception as exc:
             _LOGGER.warning("Could not generate presigned S3 URLs: %s", exc)
     return result
@@ -1214,8 +1214,8 @@ async def get_prediction_media_stream(
     if not key:
         raise HTTPException(status_code=404, detail=f"No {media_type} asset found for this prediction.")
 
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() == "s3":
-        presigned_url = storage.get_url(key, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("supabase", "s3"):
+        presigned_url = storage.get_url(key, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
         return RedirectResponse(url=presigned_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
     try:

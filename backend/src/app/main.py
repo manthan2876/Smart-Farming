@@ -153,8 +153,8 @@ async def serve_data_file(file_path: str):
     except ValueError:
         pass
 
-    backend_type = (os.getenv("STORAGE_BACKEND") or "local").lower()
-    if backend_type == "s3":
+    backend_type = (os.getenv("STORAGE_BACKEND") or getattr(settings, "STORAGE_BACKEND", "local") or "local").lower()
+    if backend_type in ("supabase", "s3"):
         try:
             from app.core.storage import get_storage
             storage = get_storage()

@@ -2,8 +2,8 @@
 sync_prod_to_local.py — Update & match Development database to Production.
 
 This utility copies schema and table records from Production (Supabase) into
-Development (Aiven PostgreSQL or local SQLite) so local development exactly matches
-the current state of production.
+Development (Supabase PostgreSQL - smart-farming-dev or local SQLite) so local
+development exactly matches the current state of production.
 
 NOTE: This is strictly a local developer tool and CANNOT be executed inside GitHub Actions.
 """
@@ -30,6 +30,16 @@ except Exception:
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(backend_dir / "src"))
+
+# Optional local cache fallbacks for standalone execution
+import glob
+for _d in glob.glob("/home/manthan/.cache/uv/archive-v0/*"):
+    try:
+        _items = set(os.listdir(_d))
+        if "tests" not in _items and "numpy" not in _items and "cv2" not in _items:
+            sys.path.append(_d)
+    except OSError:
+        pass
 
 from dotenv import load_dotenv
 
@@ -59,7 +69,7 @@ TABLE_DEPENDENCY_ORDER = [
 
 
 def sync_prod_to_dev(force_sqlite: bool = False, skip_confirm: bool = False):
-    """Pulls schema and all table records from Production (Supabase) into Development (Aiven/SQLite)."""
+    """Pulls schema and all table records from Production (Supabase) into Development (Supabase Dev/SQLite)."""
     prod_url = sanitize_db_url(os.getenv("PROD_DATABASE_URL"))
     if not prod_url:
         print("\n[ERROR] PROD_DATABASE_URL not found in backend/.env!")
@@ -71,7 +81,7 @@ def sync_prod_to_dev(force_sqlite: bool = False, skip_confirm: bool = False):
         target_label = f"Local SQLite ({sqlite_path.name})"
     else:
         target_url = sanitize_db_url(os.getenv("DATABASE_URL") or "sqlite:///./dev_database.db")
-        target_label = "Development Database (Aiven)" if "postgres" in target_url else "Development Database"
+        target_label = "Development Database (Supabase Dev)" if "postgres" in target_url else "Development Database"
 
     print("=" * 65)
     print("  SMART FARMING: MATCH DEVELOPMENT DATABASE TO PRODUCTION")
