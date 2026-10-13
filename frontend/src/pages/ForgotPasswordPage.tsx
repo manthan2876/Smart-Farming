@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
         </motion.div>
       </div>
 
-      <div className="relative hidden min-h-[26rem] items-end overflow-hidden border-l border-line bg-farmer-950 bg-[url('https://images.unsplash.com/photo-1592982537447-6f29fbdb9e31?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center p-10 lg:flex lg:p-16">
+      <div className="relative hidden min-h-[26rem] items-end overflow-hidden border-l border-line bg-farmer-950 bg-[url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center p-10 lg:flex lg:p-16">
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20" />
         <div className="relative z-10 text-white">
           <h2 className="max-w-xl font-display text-4xl leading-tight">

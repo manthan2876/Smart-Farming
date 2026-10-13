@@ -10,20 +10,81 @@ type Tokens = {
 };
 export type AuthResponse = { tokens: Tokens; user: Profile };
 
+export function profileFromSupabaseUser(user: any): Profile {
+  const meta = user?.user_metadata || {};
+  return {
+    id: user?.id || "",
+    name: meta.name || user?.email?.split("@")[0] || "User",
+    email: user?.email || "",
+    phone: meta.phone || user?.phone || "",
+    language: meta.language || "English",
+    role: meta.role || "farmer",
+    location: meta.location || "Gujarat, India",
+    farm_name: meta.farm_name || `${meta.name || "My"} Farm`,
+    crop_history: meta.crop_history || [],
+    plots: [],
+  };
+}
+
 export async function login(
   identifier: string,
   password: string,
 ): Promise<AuthResponse> {
-  // 1. Attempt Supabase Auth login
+  const cleanId = identifier.trim();
+  const isEmail = cleanId.includes("@");
+  const credentials = isEmail
+    ? { email: cleanId, password }
+    : { phone: cleanId, password };
+
+  // 1. Authenticate via backend: validates credentials, automatically synchronizes
+  // user password with Supabase Auth via Admin API (preventing 400 invalid_credentials
+  // network console errors for existing users), and returns genuine Supabase session tokens.
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: identifier,
-      password,
+    const backendRes = await request<AuthResponse>("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier: cleanId, password }),
     });
+
+    if (backendRes?.tokens?.access_token) {
+      localStorage.setItem("smart_farm_token", backendRes.tokens.access_token);
+      // Hydrate Supabase client session if Supabase tokens were provided
+      if (backendRes.tokens.refresh_token) {
+        try {
+          await supabase.auth.setSession({
+            access_token: backendRes.tokens.access_token,
+            refresh_token: backendRes.tokens.refresh_token,
+          });
+        } catch (sessErr) {
+          console.warn("Could not set Supabase session from backend tokens:", sessErr);
+        }
+      }
+      return backendRes;
+    }
+  } catch (backendErr: any) {
+    // If backend explicitly returned 401 (invalid credentials), propagate it directly
+    if (backendErr?.status === 401 || backendErr?.message?.toLowerCase().includes("invalid credentials")) {
+      throw new Error("Invalid credentials. Please check your email and password.");
+    }
+    // If backend is offline or unreachable, fall back to direct Supabase Auth
+    console.warn("Backend /auth/login unavailable, falling back to direct Supabase Auth:", backendErr);
+  }
+
+  // 2. Direct Supabase Auth attempt (fallback if backend is offline or unreachable)
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword(credentials);
     if (!error && data?.session?.access_token) {
       const accessToken = data.session.access_token;
       localStorage.setItem("smart_farm_token", accessToken);
-      const userProfile = await profile(accessToken);
+      let userProfile: Profile = profileFromSupabaseUser(data.user);
+      try {
+        const backendProfile = await profile(accessToken);
+        if (backendProfile) {
+          userProfile = { ...userProfile, ...backendProfile };
+        }
+      } catch (profErr) {
+        console.warn("Backend /profile fetch skipped or offline, using Supabase session profile:", profErr);
+      }
       return {
         tokens: {
           access_token: accessToken,
@@ -34,16 +95,14 @@ export async function login(
         user: userProfile,
       };
     }
-  } catch (supaErr) {
-    console.warn("Supabase Auth login attempt failed, trying backend fallback:", supaErr);
+    if (error) {
+      throw error;
+    }
+  } catch (supaErr: any) {
+    throw new Error(supaErr?.message || "Invalid credentials. Please check your email and password.");
   }
 
-  // 2. Fallback to backend authentication route
-  return request<AuthResponse>("/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ identifier, password }),
-  });
+  throw new Error("Invalid credentials. Please check your email and password.");
 }
 
 export async function register(payload: {
@@ -77,7 +136,15 @@ export async function register(payload: {
     if (data?.session?.access_token) {
       const accessToken = data.session.access_token;
       localStorage.setItem("smart_farm_token", accessToken);
-      const userProfile = await profile(accessToken);
+      let userProfile: Profile = profileFromSupabaseUser(data.user);
+      try {
+        const backendProfile = await profile(accessToken);
+        if (backendProfile) {
+          userProfile = { ...userProfile, ...backendProfile };
+        }
+      } catch (profErr) {
+        console.warn("Backend /profile fetch skipped or offline, using Supabase session profile:", profErr);
+      }
       return {
         tokens: {
           access_token: accessToken,

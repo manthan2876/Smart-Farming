@@ -108,7 +108,7 @@ export default function LoginPage() {
           </div>
         </motion.div>
       </div>
-      <div className="relative hidden min-h-[26rem] items-end overflow-hidden bg-farmer-950 bg-[url('https://images.unsplash.com/photo-1592982537447-6f29fbdb9e31?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center p-10 lg:flex lg:p-16 border-l border-line">
+      <div className="relative hidden min-h-[26rem] items-end overflow-hidden bg-farmer-950 bg-[url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center p-10 lg:flex lg:p-16 border-l border-line">
         <div className="absolute inset-0 bg-farmer-950/70" />
         <div className="relative z-10 text-white space-y-3">
           <h2 className="max-w-xl font-display text-3xl leading-tight">{t("loginBannerTitle")}</h2>

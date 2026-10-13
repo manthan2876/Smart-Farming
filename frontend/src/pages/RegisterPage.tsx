@@ -91,7 +91,7 @@ export default function RegisterPage() {
           </div>
         </motion.div>
       </div>
-      <div className="relative hidden min-h-[26rem] items-end overflow-hidden bg-farmer-950 bg-[url('https://images.unsplash.com/photo-1595841696650-622839b207ee?q=80&w=2069&auto=format&fit=crop')] bg-cover bg-center p-10 lg:flex lg:p-16 border-l border-line">
+      <div className="relative hidden min-h-[26rem] items-end overflow-hidden bg-farmer-950 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center p-10 lg:flex lg:p-16 border-l border-line">
         <div className="absolute inset-0 bg-farmer-950/70" />
         <div className="relative z-10 text-white space-y-3">
           <h2 className="max-w-xl font-display text-3xl leading-tight">{t("registerBannerTitle")}</h2>

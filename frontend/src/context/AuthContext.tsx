@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { login, profile, register, logout, updateProfile, AuthResponse } from "../api/auth";
+import { login, profile, register, logout, updateProfile, profileFromSupabaseUser, AuthResponse } from "../api/auth";
 import { Profile } from "../api/types";
 import { Language, Units, t, TranslationKey } from "../i18n";
 import { supabase } from "../lib/supabase";
@@ -47,14 +47,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedLang = localStorage.getItem(PREF_LANG_KEY);
       const effectiveLang = (savedLang === "Gujarati" || savedLang === "Hindi" || savedLang === "English") ? (savedLang as Language) : undefined;
       const userData = await profile(authToken, effectiveLang);
-      setUser(userData);
-      if (effectiveLang) {
-        setLanguageState(effectiveLang);
-      } else if (userData.language && (userData.language === "Gujarati" || userData.language === "Hindi" || userData.language === "English")) {
-        setLanguageState(userData.language as Language);
-        localStorage.setItem(PREF_LANG_KEY, userData.language);
+      if (userData) {
+        setUser(userData);
+        if (effectiveLang) {
+          setLanguageState(effectiveLang);
+        } else if (userData.language && (userData.language === "Gujarati" || userData.language === "Hindi" || userData.language === "English")) {
+          setLanguageState(userData.language as Language);
+          localStorage.setItem(PREF_LANG_KEY, userData.language);
+        }
       }
     } catch {
+      // Backend /profile unavailable: fallback to Supabase session metadata without signing out
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          const fallbackProfile = profileFromSupabaseUser(data.user);
+          setUser((prev) => (prev ? { ...fallbackProfile, ...prev } : fallbackProfile));
+          return;
+        }
+      } catch {}
       signOut();
     } finally {
       setIsLoading(false);
@@ -74,8 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session.access_token !== token) {
           localStorage.setItem("smart_farm_token", session.access_token);
           setToken(session.access_token);
-          fetchUserProfile(session.access_token);
         }
+        if (session.user) {
+          const quickProfile = profileFromSupabaseUser(session.user);
+          setUser((prev) => (prev ? { ...quickProfile, ...prev } : quickProfile));
+        }
+        fetchUserProfile(session.access_token);
       } else if (event === "SIGNED_OUT") {
         localStorage.removeItem("smart_farm_token");
         setToken(null);

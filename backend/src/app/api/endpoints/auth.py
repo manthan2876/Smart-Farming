@@ -1,7 +1,8 @@
-from __future__ import annotations
-
+import logging
 import secrets
 import uuid
+from typing import Any
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from app.core.limiter import limiter
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -30,7 +31,64 @@ from app.crud import (
 )
 from app.services.email import send_reset_password_email
 
+logger = logging.getLogger("smart-farming.auth")
+
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def _sync_supabase_user_password(user_id: str, new_password: str) -> bool:
+    """Updates the user's password in Supabase Auth via the Admin API."""
+    supabase_url = getattr(settings, "SUPABASE_URL", "")
+    service_key = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+    if not supabase_url or not service_key or not user_id:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.put(
+                f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{user_id}",
+                headers={
+                    "apikey": service_key,
+                    "Authorization": f"Bearer {service_key}",
+                    "Content-Type": "application/json",
+                },
+                json={"password": new_password},
+            )
+            return resp.status_code in (200, 201)
+    except Exception as exc:
+        logger.warning("Failed to sync password to Supabase Auth for user %s: %s", user_id, exc)
+        return False
+
+
+async def _fetch_supabase_tokens(email: str, password: str) -> dict[str, Any] | None:
+    """Acquires valid Supabase Auth tokens for a user using password grant."""
+    supabase_url = getattr(settings, "SUPABASE_URL", "")
+    anon_key = (
+        getattr(settings, "SUPABASE_ANON_KEY", "")
+        or getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+    )
+    if not supabase_url or not anon_key or not email:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(
+                f"{supabase_url.rstrip('/')}/auth/v1/token?grant_type=password",
+                headers={
+                    "apikey": anon_key,
+                    "Content-Type": "application/json",
+                },
+                json={"email": email, "password": password},
+            )
+            if resp.status_code == 200:
+                td = resp.json()
+                return {
+                    "access_token": td.get("access_token"),
+                    "refresh_token": td.get("refresh_token"),
+                    "token_type": td.get("token_type", "bearer"),
+                    "expires_in": td.get("expires_in", 3600),
+                }
+    except Exception as exc:
+        logger.warning("Failed to acquire Supabase tokens: %s", exc)
+    return None
 
 def _profile(user, session: Session | None = None, req_lang: str | None = None) -> ProfileResponse:
     farm = user.farm
@@ -90,6 +148,7 @@ async def change_password(
     user.password_hash = hash_password(payload.new_password)
     session.add(user)
     session.commit()
+    await _sync_supabase_user_password(user.id, payload.new_password)
     return MessageResponse(status="success", message="Password changed successfully.")
 
 
@@ -144,6 +203,7 @@ async def reset_password(
     mark_token_used(session, token_record)
     session.add(user)
     session.commit()
+    await _sync_supabase_user_password(user.id, payload.new_password)
     return MessageResponse(
         status="success",
         message="Password has been reset successfully. You can now log in.",
@@ -232,7 +292,13 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials."
         )
     
-    tokens = create_token_pair(user.id)
+    # Synchronize password with Supabase Auth and fetch Supabase tokens
+    supabase_tokens = None
+    if user.email:
+        await _sync_supabase_user_password(user.id, payload.password)
+        supabase_tokens = await _fetch_supabase_tokens(user.email, payload.password)
+
+    tokens = supabase_tokens or create_token_pair(user.id)
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh_token"],
