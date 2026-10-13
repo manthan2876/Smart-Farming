@@ -22,5 +22,6 @@ elif command -v uvicorn >/dev/null 2>&1; then
 else
     UVICORN_BIN="python3 -m uvicorn"
 fi
+export PYTHONPATH="$BACKEND_DIR/src:${PYTHONPATH:-}"
 
-exec $UVICORN_BIN src.app.main:app --host 127.0.0.1 --port 8000 --reload
+exec $UVICORN_BIN app.main:app --app-dir src --host 127.0.0.1 --port 8000 --reload

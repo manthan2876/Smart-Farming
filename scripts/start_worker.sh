@@ -23,5 +23,6 @@ elif command -v arq >/dev/null 2>&1; then
 else
     ARQ_BIN="python3 -m arq"
 fi
+export PYTHONPATH="$BACKEND_DIR/src:${PYTHONPATH:-}"
 
-exec $ARQ_BIN src.app.worker.WorkerSettings
+exec $ARQ_BIN app.worker.WorkerSettings

@@ -9,7 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
+import sys
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+_SRC_DIR = Path(__file__).resolve().parent.parent
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
+
 load_dotenv(_BACKEND_DIR / ".env")
 
 from app.api.endpoints.alerts import router as alerts_router

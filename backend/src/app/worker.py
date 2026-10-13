@@ -1,8 +1,13 @@
 import asyncio
 import logging
+import sys
 import time
 from pathlib import Path
 from urllib.parse import urlparse
+
+_SRC_DIR = Path(__file__).resolve().parent.parent
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
 
 from arq.connections import RedisSettings
 

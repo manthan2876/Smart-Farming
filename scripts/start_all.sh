@@ -61,6 +61,8 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 MODEL_DIR="$ROOT_DIR/model_service"
 MOBILE_DIR="$ROOT_DIR/mobile"
 
+export PYTHONPATH="$BACKEND_DIR/src:${PYTHONPATH:-}"
+
 # Locate uvicorn for Backend
 if [ -n "${VIRTUAL_ENV:-}" ] && [ -x "$VIRTUAL_ENV/bin/uvicorn" ]; then
     UVICORN_BIN="$VIRTUAL_ENV/bin/uvicorn"
@@ -170,7 +172,7 @@ if [ "$SEPARATE_WINDOWS" = true ]; then
         echo ""
 
         echo -e "${GREEN}[1/4] Starting Server 1: Backend API (Port 8000)...${NC}"
-        launch_in_term "Smart Farming - Backend API" "$BACKEND_DIR" "$UVICORN_BIN src.app.main:app --host 127.0.0.1 --port 8000 --reload" "$TERM_EMULATOR"
+        launch_in_term "Smart Farming - Backend API" "$BACKEND_DIR" "export PYTHONPATH=\"$BACKEND_DIR/src:\${PYTHONPATH:-}\" && $UVICORN_BIN app.main:app --app-dir src --host 127.0.0.1 --port 8000 --reload" "$TERM_EMULATOR"
 
         echo -e "${BLUE}[2/4] Starting Server 2: Model Inference Server (Port 8001)...${NC}"
         launch_in_term "Smart Farming - Model Inference Server" "$MODEL_DIR" "$MODEL_UVICORN_BIN main:app --host 127.0.0.1 --port 8001 --reload" "$TERM_EMULATOR"
@@ -179,7 +181,7 @@ if [ "$SEPARATE_WINDOWS" = true ]; then
         launch_in_term "Smart Farming - Frontend UI" "$FRONTEND_DIR" "npm run dev" "$TERM_EMULATOR"
 
         echo -e "${YELLOW}[4/4] Starting Server 4: ARQ Worker (Redis Queue)...${NC}"
-        launch_in_term "Smart Farming - ARQ Worker" "$BACKEND_DIR" "export PYTHONIOENCODING=utf-8 && $ARQ_BIN src.app.worker.WorkerSettings" "$TERM_EMULATOR"
+        launch_in_term "Smart Farming - ARQ Worker" "$BACKEND_DIR" "export PYTHONPATH=\"$BACKEND_DIR/src:\${PYTHONPATH:-}\" && export PYTHONIOENCODING=utf-8 && $ARQ_BIN app.worker.WorkerSettings" "$TERM_EMULATOR"
 
         if [ "$INCLUDE_MOBILE" = true ]; then
             echo -e "${CYAN}[5/5] Starting Server 5: Mobile App (Flutter in Chrome)...${NC}"
@@ -274,7 +276,7 @@ start_service_process() {
 }
 
 # Start Backend
-start_service_process "BACKEND" "$BACKEND_DIR" "$GREEN" $UVICORN_BIN src.app.main:app --host 127.0.0.1 --port 8000 --reload
+start_service_process "BACKEND" "$BACKEND_DIR" "$GREEN" $UVICORN_BIN app.main:app --app-dir src --host 127.0.0.1 --port 8000 --reload
 
 # Start Model Inference Microservice
 start_service_process "MODEL" "$MODEL_DIR" "$BLUE" $MODEL_UVICORN_BIN main:app --host 127.0.0.1 --port 8001 --reload
@@ -289,7 +291,7 @@ start_service_process "FRONTEND" "$FRONTEND_DIR" "$MAGENTA" npm run dev
 # Start ARQ Worker
 start_arq_worker() {
     export PYTHONIOENCODING="utf-8"
-    start_service_process "ARQ" "$BACKEND_DIR" "$YELLOW" $ARQ_BIN src.app.worker.WorkerSettings
+    start_service_process "ARQ" "$BACKEND_DIR" "$YELLOW" $ARQ_BIN app.worker.WorkerSettings
 }
 start_arq_worker
 
