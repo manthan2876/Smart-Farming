@@ -39,6 +39,12 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
+
 # Ensure backend root is in sys.path
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
@@ -195,6 +201,7 @@ def sync_records(
     src_label: str = "Source",
     tgt_label: str = "Target",
     only_tables: set[str] | list[str] | None = None,
+    clear_target: bool = False,
 ) -> bool:
     """Syncs data rows between databases safely using primary key upsert (source wins on conflict)."""
     print("\n" + "=" * 65)
@@ -209,16 +216,8 @@ def sync_records(
 
         src_inspector = inspect(src_engine)
         tgt_inspector = inspect(tgt_engine)
-        tables = [t for t in src_inspector.get_table_names() if t != "alembic_version" and tgt_inspector.has_table(t)]
-
-        if only_tables is not None:
-            tables = [t for t in tables if t in only_tables]
-
-        if not tables:
-            print(f"[INFO] No matching tables found for synchronization (only_tables={only_tables}).")
-            return True
-
-        print(f"[INFO] Inspecting {len(tables)} table(s) in {src_label}...")
+        src_table_set = set(src_inspector.get_table_names())
+        tgt_table_set = set(tgt_inspector.get_table_names())
 
         TABLE_DEPENDENCY_ORDER = [
             "users",
@@ -242,7 +241,16 @@ def sync_records(
             except ValueError:
                 return 999
 
-        ordered_tables = sorted(tables, key=get_order)
+        matching_tables = [t for t in src_table_set if t != "alembic_version" and t in tgt_table_set]
+        if only_tables is not None:
+            matching_tables = [t for t in matching_tables if t in only_tables]
+
+        if not matching_tables:
+            print(f"[INFO] No matching tables found for synchronization (only_tables={only_tables}).")
+            return True
+
+        ordered_tables = sorted(matching_tables, key=get_order)
+        print(f"[INFO] Inspecting {len(ordered_tables)} table(s) in {src_label}...")
 
         with tgt_engine.connect() as tgt_conn:
             is_postgres = "postgres" in target_url
@@ -253,6 +261,37 @@ def sync_records(
                 except Exception:
                     tgt_conn.rollback()
 
+            # If clear_target requested (e.g. Prod -> Dev mirror), clear existing rows cleanly
+            if clear_target:
+                print(f"   [INFO] Clearing {tgt_label} tables before sync...")
+                valid_tables = [f'"{t}"' for t in ordered_tables if t in tgt_table_set]
+                if valid_tables:
+                    try:
+                        tgt_conn.execute(text(f"TRUNCATE TABLE {', '.join(valid_tables)} RESTART IDENTITY CASCADE;"))
+                        tgt_conn.commit()
+                        print(f"   [SUCCESS] {tgt_label} tables truncated cleanly.")
+                    except Exception:
+                        tgt_conn.rollback()
+                        for table in reversed(ordered_tables):
+                            if table in tgt_table_set:
+                                tgt_conn.execute(text(f'DELETE FROM "{table}";'))
+                        tgt_conn.commit()
+                        print(f"   [SUCCESS] {tgt_label} tables cleared cleanly via fallback.")
+
+            # Sync alembic_version revision if present in source
+            if "alembic_version" in src_table_set:
+                try:
+                    with src_engine.connect() as s_conn:
+                        src_alembic = s_conn.execute(text("SELECT version_num FROM alembic_version;")).scalar()
+                        if src_alembic:
+                            tgt_conn.execute(text('CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL, CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num));'))
+                            tgt_conn.execute(text("DELETE FROM alembic_version;"))
+                            tgt_conn.execute(text("INSERT INTO alembic_version (version_num) VALUES (:v);"), {"v": src_alembic})
+                            tgt_conn.commit()
+                            print(f"   [SUCCESS] Alembic migration state synchronized (revision: {src_alembic}).")
+                except Exception as a_exc:
+                    print(f"   [NOTE] Alembic version sync: {a_exc}")
+
             total_synced = 0
             for table in ordered_tables:
                 with src_engine.connect() as s_conn:
@@ -262,6 +301,11 @@ def sync_records(
                     continue
 
                 print(f"   Syncing {table} ({len(rows)} row(s))...")
+                unique_constraints = tgt_inspector.get_unique_constraints(table) or []
+                pk_constraint = tgt_inspector.get_pk_constraint(table) or {}
+                pk_cols = pk_constraint.get("constrained_columns", [])
+
+                prepared_rows = []
                 for row in rows:
                     row_dict = dict(row)
                     for k, v in row_dict.items():
@@ -274,27 +318,46 @@ def sync_records(
                                     row_dict[k] = json.dumps(v)
                             else:
                                 row_dict[k] = json.dumps(v)
+                    prepared_rows.append(row_dict)
 
-                    cols = list(row_dict.keys())
-                    col_names = ", ".join([f'"{c}"' for c in cols])
-                    val_placeholders = ", ".join([f":{c}" for c in cols])
+                if not prepared_rows:
+                    continue
 
-                    pk_constraint = tgt_inspector.get_pk_constraint(table) or {}
-                    pk_cols = pk_constraint.get("constrained_columns", [])
-                    update_cols = [c for c in cols if c not in pk_cols]
+                cols = list(prepared_rows[0].keys())
+                col_names = ", ".join([f'"{c}"' for c in cols])
+                val_placeholders = ", ".join([f":{c}" for c in cols])
+                update_cols = [c for c in cols if c not in pk_cols]
 
-                    if is_postgres and pk_cols and update_cols:
-                        pk_names = ", ".join([f'"{c}"' for c in pk_cols])
-                        update_set = ", ".join([f'"{c}" = EXCLUDED."{c}"' for c in update_cols])
-                        stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT ({pk_names}) DO UPDATE SET {update_set};')
-                    elif is_postgres and pk_cols:
-                        pk_names = ", ".join([f'"{c}"' for c in pk_cols])
-                        stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT ({pk_names}) DO NOTHING;')
-                    else:
-                        stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT DO NOTHING;')
+                if is_postgres and pk_cols and update_cols:
+                    pk_names = ", ".join([f'"{c}"' for c in pk_cols])
+                    update_set = ", ".join([f'"{c}" = EXCLUDED."{c}"' for c in update_cols])
+                    stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT ({pk_names}) DO UPDATE SET {update_set};')
+                elif is_postgres and pk_cols:
+                    pk_names = ", ".join([f'"{c}"' for c in pk_cols])
+                    stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT ({pk_names}) DO NOTHING;')
+                else:
+                    stmt = text(f'INSERT INTO "{table}" ({col_names}) VALUES ({val_placeholders}) ON CONFLICT DO NOTHING;')
 
-                    tgt_conn.execute(stmt, row_dict)
-                    total_synced += 1
+                if clear_target:
+                    # Instant bulk execute for clean mirror
+                    tgt_conn.execute(stmt, prepared_rows)
+                    total_synced += len(prepared_rows)
+                else:
+                    # Row-by-row upsert with unique key deduplication
+                    for row_dict in prepared_rows:
+                        if is_postgres and pk_cols and unique_constraints:
+                            pk_cond = " AND ".join([f'"{pk}" != :{pk}' for pk in pk_cols])
+                            for uq in unique_constraints:
+                                uq_cols = uq.get("column_names") or []
+                                if uq_cols and all(row_dict.get(c) is not None for c in uq_cols):
+                                    uq_cond = " AND ".join([f'"{c}" = :uq_{c}' for c in uq_cols])
+                                    uq_params = {f"uq_{c}": row_dict[c] for c in uq_cols}
+                                    tgt_conn.execute(
+                                        text(f'DELETE FROM "{table}" WHERE {uq_cond} AND {pk_cond};'),
+                                        {**row_dict, **uq_params}
+                                    )
+                        tgt_conn.execute(stmt, row_dict)
+                        total_synced += 1
 
                 tgt_conn.commit()
 
@@ -520,7 +583,7 @@ def main():
         if ok and args.sync_data:
             ok = sync_records(dev_url, prod_url, "Dev (Supabase Dev)", "Prod (Supabase Prod)")
         if ok and args.sync_to_dev:
-            ok = sync_records(prod_url, dev_url, "Prod (Supabase Prod)", "Dev (Supabase Dev)")
+            ok = sync_records(prod_url, dev_url, "Prod (Supabase Prod)", "Dev (Supabase Dev)", clear_target=True)
 
         if not ok:
             print("\n[FAILED] One or more requested operations failed.")
@@ -570,10 +633,10 @@ def main():
             if verify_connection(dev_url, "Dev") and verify_connection(prod_url, "Prod"):
                 ok = sync_records(dev_url, prod_url, "Dev (Supabase Dev)", "Prod (Supabase Prod)")
     elif choice == "6":
-        confirm = input("\nWARNING: This will copy records from Prod to Dev. Proceed? [y/N]: ").strip().lower()
+        confirm = input("\nWARNING: This will replace Development records with Production records. Proceed? [y/N]: ").strip().lower()
         if confirm in ("y", "yes"):
             if verify_connection(prod_url, "Prod") and verify_connection(dev_url, "Dev"):
-                ok = sync_records(prod_url, dev_url, "Prod (Supabase Prod)", "Dev (Supabase Dev)")
+                ok = sync_records(prod_url, dev_url, "Prod (Supabase Prod)", "Dev (Supabase Dev)", clear_target=True)
     elif choice == "7":
         check_databases(dev_url, prod_url)
     else:
