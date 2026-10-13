@@ -276,6 +276,10 @@ class SupabaseStorageBackend(StorageBackend):
                             full_key = f"{norm_prefix}/{name}".strip("/") if norm_prefix else name
                             if item.get("id") is not None:
                                 keys.append(full_key)
+                            else:
+                                # Subdirectory / folder, recurse to fetch nested keys
+                                sub_keys = self.list_objects(prefix=full_key)
+                                keys.extend(sub_keys)
                     if len(items) < limit:
                         break
                     offset += limit
@@ -451,6 +455,8 @@ def purge_orphaned_blobs(
             "unreferenced_files_count": len(local_would_delete) + len(cloud_would_delete),
             "local_unreferenced_count": len(local_would_delete),
             "cloud_unreferenced_count": len(cloud_would_delete),
+            "supabase_unreferenced_count": len(cloud_would_delete),
+            "s3_unreferenced_count": len(cloud_would_delete),
             "files": (local_would_delete + cloud_would_delete)[:50],
             "local_files": local_would_delete[:25],
             "cloud_files": cloud_would_delete[:25],
@@ -462,6 +468,8 @@ def purge_orphaned_blobs(
         "deleted_files": local_deleted + cloud_deleted,
         "local_deleted": local_deleted,
         "cloud_deleted": cloud_deleted,
+        "supabase_deleted": cloud_deleted,
+        "s3_deleted": cloud_deleted,
         "cloud_error": cloud_error,
     }
 

@@ -120,8 +120,8 @@ export default function SettingsPage() {
     try {
       const res = await request<any>("/admin/blobs", { method: "DELETE" }, token!);
       const localCount = res.local_deleted ?? 0;
-      const s3Count = res.s3_deleted ?? 0;
-      alert(`Success! Deleted ${res.deleted_files ?? (localCount + s3Count)} orphaned files (Local: ${localCount}, S3: ${s3Count}).`);
+      const cloudCount = res.supabase_deleted ?? res.cloud_deleted ?? res.s3_deleted ?? 0;
+      alert(`Success! Deleted ${res.deleted_files ?? (localCount + cloudCount)} orphaned files (Local: ${localCount}, Supabase: ${cloudCount}).`);
     } catch (err: any) {
       alert("Failed: " + err.message);
     }
