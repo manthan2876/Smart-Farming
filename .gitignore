@@ -222,3 +222,7 @@ Thumbs.db
 old_files/
 .agents/
 .fastapicloud/
+scripts/
+start_all.sh
+start_all_with_mobile.sh
+stop_all.sh
