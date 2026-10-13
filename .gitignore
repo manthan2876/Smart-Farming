@@ -13,6 +13,11 @@
 !**/.env.example
 !**/.env.production.example
 *.local
+*.jks
+*.keystore
+key.properties
+local.properties
+**/local.properties
 
 # ------------------------------------------------------------------------------
 # Databases & Local Data Stores
@@ -122,6 +127,10 @@ celerybeat.pid
 # ------------------------------------------------------------------------------
 Datasets/
 models/
+*.pt
+*.pth
+*.onnx
+*.h5
 .cache/
 **/.cache/
 wandb/
@@ -130,6 +139,8 @@ runs/
 checkpoints/
 .gradio/
 gradio_cached_examples/
+notebooks/.ipynb_checkpoints/
+notebooks/preprocessing_test_results.csv
 
 # ------------------------------------------------------------------------------
 # Frontend (Node / Vite / React)
@@ -143,10 +154,15 @@ pnpm-debug.log*
 .pnpm-store/
 .vite/
 **/.vite/
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
 
 # ------------------------------------------------------------------------------
 # Mobile (Flutter / Dart / Android / iOS)
 # ------------------------------------------------------------------------------
+mobile/android/.kotlin/
+mobile/linux/flutter/ephemeral/
 **/doc/api/
 **/.dart_tool/
 **/.flutter-plugins
@@ -226,3 +242,8 @@ scripts/
 start_all.sh
 start_all_with_mobile.sh
 stop_all.sh
+*.log
+Docs/name change of folders.txt
+backend/package-lock.json
+
+

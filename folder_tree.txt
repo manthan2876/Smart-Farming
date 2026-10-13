@@ -1,0 +1,431 @@
+Smart-Farming/ (336 files)
+    ├── .github/ (1 files)
+        ├── workflows/ (1 files)
+            ├── db_migration.yml
+    ├── Docs/ (16 files)
+        ├── API_Specification.md
+        ├── Ai-Powered-Smart-Farming.pptx
+        ├── Architecture.md
+        ├── Auth_Roles.md
+        ├── Config_Reference.md
+        ├── DATASET.md
+        ├── Deployment_Guide.md
+        ├── MLOps_Retraining.md
+        ├── Model_Cards.md
+        ├── UI_UX_Spec.md
+        ├── functionality-status.md
+        ├── mlops_training_guide.md
+        ├── screen_specifications.md
+        ├── smart_farming_roadmap.pdf
+        ├── smart_farming_roadmap_stage10_plus.pdf
+        ├── smart_farming_roadmap_v2.pdf
+    ├── backend/ (105 files)
+        ├── alembic/ (3 files)
+            ├── versions/ (2 files)
+                ├── 0001_add_feedback_review_fields.py
+                ├── 0002_add_password_reset_tokens.py
+            ├── env.py
+        ├── src/ (73 files)
+            ├── app/ (72 files)
+                ├── api/ (20 files)
+                    ├── endpoints/ (18 files)
+                        ├── __init__.py
+                        ├── admin.py
+                        ├── alerts.py
+                        ├── auth.py
+                        ├── crops.py
+                        ├── expert.py
+                        ├── farm.py
+                        ├── feedback.py
+                        ├── health.py
+                        ├── history.py
+                        ├── internal_cron.py
+                        ├── mlops.py
+                        ├── model_registry.py
+                        ├── predict.py
+                        ├── profile.py
+                        ├── translation.py
+                        ├── tts.py
+                        ├── weather.py
+                    ├── __init__.py
+                    ├── deps.py
+                ├── core/ (13 files)
+                    ├── __init__.py
+                    ├── arq.py
+                    ├── calibration.py
+                    ├── config.py
+                    ├── database.py
+                    ├── events.py
+                    ├── init_db.py
+                    ├── limiter.py
+                    ├── paths.py
+                    ├── redis_rest.py
+                    ├── security.py
+                    ├── session.py
+                    ├── storage.py
+                ├── crud/ (7 files)
+                    ├── __init__.py
+                    ├── expert_review.py
+                    ├── farm.py
+                    ├── feedback.py
+                    ├── password_reset.py
+                    ├── prediction.py
+                    ├── user.py
+                ├── public/ (1 files)
+                    ├── aphids_tomato.jpeg
+                ├── schemas/ (8 files)
+                    ├── __init__.py
+                    ├── crop.py
+                    ├── farm.py
+                    ├── feedback.py
+                    ├── health.py
+                    ├── plot.py
+                    ├── prediction.py
+                    ├── user.py
+                ├── services/ (15 files)
+                    ├── rag/ (2 files)
+                        ├── __init__.py
+                        ├── retriever.py
+                    ├── recommendation/ (2 files)
+                        ├── __init__.py
+                        ├── service.py
+                    ├── translation/ (4 files)
+                        ├── manager.py
+                        ├── overlay.py
+                        ├── service.py
+                        ├── transliteration.py
+                    ├── weather/ (3 files)
+                        ├── __init__.py
+                        ├── proactive.py
+                        ├── service.py
+                    ├── __init__.py
+                    ├── email.py
+                    ├── model_client.py
+                    ├── prediction_job.py
+                ├── utils/ (3 files)
+                    ├── __init__.py
+                    ├── json_utils.py
+                    ├── logging.py
+                ├── __init__.py
+                ├── context.py
+                ├── main.py
+                ├── pipeline.py
+                ├── worker.py
+            ├── backend/ (1 files)
+                ├── __init__.py
+        ├── tests/ (16 files)
+            ├── test_admin_users.py
+            ├── test_api.py
+            ├── test_auth.py
+            ├── test_batch2_features.py
+            ├── test_batch3_features.py
+            ├── test_batch4_features.py
+            ├── test_cloudflare_gateway.py
+            ├── test_features_extended.py
+            ├── test_hf_recommendation.py
+            ├── test_media_auth.py
+            ├── test_observability.py
+            ├── test_password_management.py
+            ├── test_pipeline.py
+            ├── test_rejection_cases.py
+            ├── test_storage.py
+            ├── test_translation.py
+        ├── .dockerignore
+        ├── .env.example
+        ├── .env.production.example
+        ├── .python-version
+        ├── Dockerfile
+        ├── README.md
+        ├── alembic.ini
+        ├── config.yaml
+        ├── model_registry.json
+        ├── pyproject.toml
+        ├── requirements.txt
+        ├── seed_users.py
+        ├── uv.lock
+    ├── cloudflare_gateway/ (3 files)
+        ├── README.md
+        ├── worker.js
+        ├── wrangler.toml
+    ├── frontend/ (81 files)
+        ├── public/ (3 files)
+            ├── aphids_tomato.jpeg
+            ├── favicon.ico
+            ├── favicon.svg
+        ├── src/ (67 files)
+            ├── api/ (9 files)
+                ├── admin.ts
+                ├── alerts.ts
+                ├── auth.ts
+                ├── client.ts
+                ├── crops.ts
+                ├── expert.ts
+                ├── farm.ts
+                ├── predictions.ts
+                ├── types.ts
+            ├── components/ (18 files)
+                ├── icons/ (1 files)
+                    ├── index.tsx
+                ├── ui/ (9 files)
+                    ├── Badge.tsx
+                    ├── Button.tsx
+                    ├── Card.tsx
+                    ├── Input.tsx
+                    ├── Modal.tsx
+                    ├── Select.tsx
+                    ├── Skeleton.tsx
+                    ├── Table.tsx
+                    ├── index.ts
+                ├── Appshell.tsx
+                ├── Footer.tsx
+                ├── LanguageToggle.tsx
+                ├── ProtectedRoute.tsx
+                ├── PublicNav.tsx
+                ├── Sidebar.tsx
+                ├── ThemeToggle.tsx
+                ├── Toast.tsx
+            ├── context/ (2 files)
+                ├── AuthContext.tsx
+                ├── ThemeContext.tsx
+            ├── hooks/ (2 files)
+                ├── usePredict.ts
+                ├── useToast.ts
+            ├── i18n/ (5 files)
+                ├── domain.ts
+                ├── en.ts
+                ├── gu.ts
+                ├── hi.ts
+                ├── index.ts
+            ├── lib/ (3 files)
+                ├── format.ts
+                ├── routes.ts
+                ├── supabase.ts
+            ├── pages/ (24 files)
+                ├── AboutPage.tsx
+                ├── AdminFeedbackPage.tsx
+                ├── AdminMetricsPage.tsx
+                ├── AdminUsersPage.tsx
+                ├── AlertsPage.tsx
+                ├── CropsPage.tsx
+                ├── DashboardPage.tsx
+                ├── ExpertQueuePage.tsx
+                ├── ExpertReviewPage.tsx
+                ├── FarmSettingsPage.tsx
+                ├── ForgotPasswordPage.tsx
+                ├── HistoryPage.tsx
+                ├── LandingPage.tsx
+                ├── LoginPage.tsx
+                ├── PredictionResultPage.tsx
+                ├── PrivacyPage.tsx
+                ├── ProcessingPage.tsx
+                ├── RegisterPage.tsx
+                ├── ResetPasswordPage.tsx
+                ├── ScanPage.tsx
+                ├── ServicesPage.tsx
+                ├── SettingsPage.tsx
+                ├── TermsPage.tsx
+                ├── WeatherPage.tsx
+            ├── styles/ (1 files)
+                ├── tailwind.css
+            ├── App.tsx
+            ├── main.tsx
+            ├── vite-env.d.ts
+        ├── .env.example
+        ├── index.html
+        ├── package-lock.json
+        ├── package.json
+        ├── postcss.config.js
+        ├── tailwind.config.ts
+        ├── tsconfig.app.json
+        ├── tsconfig.json
+        ├── tsconfig.node.json
+        ├── vercel.json
+        ├── vite.config.ts
+    ├── mobile/ (80 files)
+        ├── android/ (22 files)
+            ├── app/ (14 files)
+                ├── src/ (13 files)
+                    ├── debug/ (1 files)
+                        ├── AndroidManifest.xml
+                    ├── main/ (11 files)
+                        ├── java/ (0 files)
+                            ├── io/ (0 files)
+                                ├── flutter/ (0 files)
+                                    ├── plugins/ (0 files)
+                        ├── kotlin/ (1 files)
+                            ├── com/ (1 files)
+                                ├── example/ (1 files)
+                                    ├── smart_farming_mobile/ (1 files)
+                                        ├── MainActivity.kt
+                        ├── res/ (9 files)
+                            ├── drawable/ (1 files)
+                                ├── launch_background.xml
+                            ├── drawable-v21/ (1 files)
+                                ├── launch_background.xml
+                            ├── mipmap-hdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-mdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-xhdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-xxhdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── mipmap-xxxhdpi/ (1 files)
+                                ├── ic_launcher.png
+                            ├── values/ (1 files)
+                                ├── styles.xml
+                            ├── values-night/ (1 files)
+                                ├── styles.xml
+                        ├── AndroidManifest.xml
+                    ├── profile/ (1 files)
+                        ├── AndroidManifest.xml
+                ├── build.gradle.kts
+            ├── gradle/ (2 files)
+                ├── wrapper/ (2 files)
+                    ├── gradle-wrapper.jar
+                    ├── gradle-wrapper.properties
+            ├── .gitignore
+            ├── build.gradle.kts
+            ├── gradle.properties
+            ├── gradlew
+            ├── gradlew.bat
+            ├── settings.gradle.kts
+        ├── lib/ (30 files)
+            ├── i18n/ (2 files)
+                ├── app_translations.dart
+                ├── domain_translations.dart
+            ├── providers/ (2 files)
+                ├── locale_provider.dart
+                ├── prediction_provider.dart
+            ├── screens/ (15 files)
+                ├── alerts/ (1 files)
+                    ├── alerts_screen.dart
+                ├── auth/ (2 files)
+                    ├── auth_wrapper.dart
+                    ├── login_screen.dart
+                ├── farm/ (2 files)
+                    ├── widgets/ (1 files)
+                        ├── farm_satellite_card.dart
+                    ├── farm_screen.dart
+                ├── history/ (1 files)
+                    ├── history_screen.dart
+                ├── map/ (1 files)
+                    ├── widgets/ (0 files)
+                    ├── field_boundary_screen.dart
+                ├── scan/ (3 files)
+                    ├── create_prediction_sheet.dart
+                    ├── processing_sheet.dart
+                    ├── result_detail_sheet.dart
+                ├── settings/ (1 files)
+                    ├── settings_screen.dart
+                ├── shell/ (1 files)
+                    ├── farmer_shell.dart
+                ├── today/ (1 files)
+                    ├── today_screen.dart
+                ├── weather/ (1 files)
+                    ├── weather_screen.dart
+                ├── camera_screen.dart
+            ├── services/ (5 files)
+                ├── api_service.dart
+                ├── offline_queue_db.dart
+                ├── remote_config_service.dart
+                ├── sync_service.dart
+                ├── tts_service.dart
+            ├── theme/ (1 files)
+                ├── app_theme.dart
+            ├── utils/ (2 files)
+                ├── app_logger.dart
+                ├── geo_math.dart
+            ├── widgets/ (2 files)
+                ├── camera_guide_overlay.dart
+                ├── severity_gauge.dart
+            ├── main.dart
+        ├── linux/ (10 files)
+            ├── flutter/ (4 files)
+                ├── CMakeLists.txt
+                ├── generated_plugin_registrant.cc
+                ├── generated_plugin_registrant.h
+                ├── generated_plugins.cmake
+            ├── runner/ (4 files)
+                ├── CMakeLists.txt
+                ├── main.cc
+                ├── my_application.cc
+                ├── my_application.h
+            ├── .gitignore
+            ├── CMakeLists.txt
+        ├── test/ (4 files)
+            ├── offline_queue_test.dart
+            ├── prediction_history_test.dart
+            ├── remote_config_test.dart
+            ├── widget_test.dart
+        ├── web/ (7 files)
+            ├── icons/ (4 files)
+                ├── Icon-192.png
+                ├── Icon-512.png
+                ├── Icon-maskable-192.png
+                ├── Icon-maskable-512.png
+            ├── favicon.png
+            ├── index.html
+            ├── manifest.json
+        ├── .env.example
+        ├── .gitignore
+        ├── .metadata
+        ├── analysis_options.yaml
+        ├── devtools_options.yaml
+        ├── pubspec.lock
+        ├── pubspec.yaml
+    ├── model_service/ (16 files)
+        ├── src/ (10 files)
+            ├── stages/ (7 files)
+                ├── crop_identifier.py
+                ├── decision_router.py
+                ├── disease_classifier.py
+                ├── leaf_isolator.py
+                ├── pest_detector.py
+                ├── preprocessing.py
+                ├── severity.py
+            ├── calibration.py
+            ├── loader.py
+            ├── pipeline.py
+        ├── advisory_kb.json
+        ├── config.yaml
+        ├── evaluate_calibration.py
+        ├── main.py
+        ├── requirements.txt
+        ├── train_eval.py
+    ├── notebooks/ (31 files)
+        ├── processed/ (10 files)
+            ├── aphids_tomato.jpeg
+            ├── army_worm_cotton.jpeg
+            ├── download.jpeg
+            ├── leaf_miner_tomato.jpeg
+            ├── opencv_test_1.jpg
+            ├── opencv_test_2.jpg
+            ├── opencv_test_3.jpg
+            ├── opencv_test_4.jpg
+            ├── sample.jpg
+            ├── spider_mite_tomato.jpeg
+        ├── 01_prepare_crop_dataset.ipynb
+        ├── 01_save_models_to_drive.ipynb
+        ├── 02_train_crop_identifier.ipynb
+        ├── 02_vision_translation_advisory_cloudflare.ipynb
+        ├── 03_indic_tts_cloudflare.ipynb
+        ├── 03_leaf_segmentation.ipynb
+        ├── 04_evaluation.ipynb
+        ├── 05_test_ui.ipynb
+        ├── 06_prepare_disease_dataset.ipynb
+        ├── 07_train_disease_classifier.ipynb
+        ├── 08_evaluate_disease_classifier.ipynb
+        ├── 09_decision_engine.ipynb
+        ├── 10_test_ui_full_pipeline.ipynb
+        ├── 11_train_pest_classifier.ipynb
+        ├── 12_evaluate_and_test_pest_classifier.ipynb
+        ├── config.yaml
+        ├── configurations.ipynb
+        ├── opencv-pipeline.ipynb
+        ├── opencv_learning.ipynb
+        ├── project_config.py
+        ├── requirements.txt
+    ├── .gitattributes
+    ├── .gitignore
+    ├── README.md
