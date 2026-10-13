@@ -41,7 +41,7 @@ def _resolve_tts_language(language: str | None) -> str:
 
 
 def sync_existing_audio_to_storage() -> dict[str, int]:
-    """Uploads any existing local audio files in AUDIO_CACHE_DIR to the active storage backend (e.g. AWS S3)."""
+    """Uploads any existing local audio files in AUDIO_CACHE_DIR to the active storage backend (e.g. Supabase Storage)."""
     storage = get_storage()
     synced = 0
     skipped = 0
@@ -96,7 +96,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
             except Exception as exc:
                 logger.warning("Failed to read local audio cache %s: %s", candidate, exc)
 
-    # Step 1B: If not found on local disk, check storage backend (e.g. AWS S3)
+    # Step 1B: If not found on local disk, check storage backend (e.g. Supabase Storage)
     if not audio_bytes:
         for candidate_key in [storage_key, f"audio/{text_hash}.mp3"]:
             try:
@@ -196,7 +196,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
             except Exception as exc:
                 logger.warning("Failed to write local audio cache file %s: %s", cache_file, exc)
 
-            # 2. Save to configured storage backend (AWS S3)
+            # 2. Save to configured storage backend (Supabase Storage)
             try:
                 storage.save(audio_bytes, storage_key, content_type="audio/wav")
                 logger.info("Successfully uploaded new audio file to storage backend: %s", storage_key)

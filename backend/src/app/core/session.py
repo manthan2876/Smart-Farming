@@ -73,7 +73,7 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
     """Return appropriate connect_args for the database engine.
 
     For SQLite: disables thread check.
-    For PostgreSQL: resolves cloud hostnames (such as Render) with fallback to
+    For PostgreSQL: resolves cloud hostnames (such as Supabase) with fallback to
     public DNS (8.8.8.8, 1.1.1.1) to prevent 'could not translate host name'
     errors caused by slow or misconfigured local network / Wi-Fi DNS.
     """
@@ -103,8 +103,7 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
                             resolved_ip = r.to_text()
                             break
                     except Exception:
-                        if "singapore-postgres.render.com" in hostname:
-                            resolved_ip = "18.142.152.125"
+                        pass
 
                 if resolved_ip:
                     connect_args["hostaddr"] = resolved_ip
@@ -133,6 +132,10 @@ def create_app_engine(url: str | None = None, **kwargs):
 
     if target_url.startswith("sqlite"):
         return create_engine(target_url, connect_args=connect_args, **kwargs)
+
+    # For PostgreSQL via Supabase Pooler (Supavisor / PgBouncer), disable prepare_threshold for psycopg (psycopg3)
+    if "postgresql+psycopg://" in target_url and "prepare_threshold" not in connect_args:
+        connect_args["prepare_threshold"] = 0
 
     engine_kwargs = {
         "connect_args": connect_args,

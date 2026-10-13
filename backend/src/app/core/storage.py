@@ -28,7 +28,7 @@ class StorageBackend(ABC):
 
     @abstractmethod
     def get_url(self, key: str, expires_in: int = 900) -> str:
-        """Get an authorized download/view URL (presigned URL for S3, static path for local)."""
+        """Get an authorized download/view URL (signed URL for Supabase, static path for local)."""
         pass
 
     @abstractmethod
@@ -318,7 +318,7 @@ def purge_orphaned_blobs(
     grace_seconds: int = 0,
     prefixes: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Purge orphaned leaf blobs and media assets from BOTH object storage (S3) and local disk storage.
+    """Purge orphaned leaf blobs and media assets from BOTH object storage (Supabase) and local disk storage.
 
     A blob is considered orphaned if its path is not referenced in the database by any
     Image (raw_path, processed_path), Prediction (raw_path, processed_path),
@@ -332,7 +332,7 @@ def purge_orphaned_blobs(
         prefixes: Target storage prefixes/folders (default: ["uploads", "processed", "audio"]).
 
     Returns:
-        Summary dict containing overall deleted count, local deleted count, and S3 deleted count.
+        Summary dict containing overall deleted count, local deleted count, and Supabase deleted count.
     """
     prefixes = prefixes or ["uploads", "processed"]
     from app.models import Image, Prediction, DatasetCandidate

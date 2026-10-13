@@ -70,7 +70,7 @@ def _apply_pipeline_status(result: dict[str, Any], db_status: str | None) -> dic
 
 
 def _enrich_image_urls(result: dict) -> dict:
-    """If Supabase cloud storage is enabled, generate fresh presigned URLs for raw and processed images."""
+    """If Supabase cloud storage is enabled, generate fresh signed URLs for raw and processed images."""
     if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("supabase", "s3"):
         try:
             from app.core.storage import get_storage
@@ -84,13 +84,13 @@ def _enrich_image_urls(result: dict) -> dict:
                 if proc_k:
                     img["processed_url"] = storage.get_url(proc_k, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
         except Exception as exc:
-            _LOGGER.warning("Could not generate presigned S3 URLs: %s", exc)
+            _LOGGER.warning("Could not generate signed Supabase URLs: %s", exc)
     return result
 
 
 def _ensure_processed_image_for_prediction(prediction, result: dict, session: Session) -> None:
     """Self-healing helper: if an existing prediction has a raw image but is missing its
-    processed heatmap (e.g. historical scan), generate it on-the-fly and persist to S3."""
+    processed heatmap (e.g. historical scan), generate it on-the-fly and persist to Supabase storage."""
     img = result.setdefault("image", {})
     proc_path = img.get("processed_path") or prediction.processed_path
     raw_path = img.get("raw_path") or prediction.raw_path
@@ -353,7 +353,7 @@ async def predict(
                 if location == "Unknown":
                     location = getattr(settings, "DEFAULT_LOCATION", "Gujarat, India")
 
-        # Save to active storage backend (Local disk or AWS S3)
+        # Save to active storage backend (Local disk or Supabase Object Storage)
         from app.core.storage import get_storage
         storage = get_storage()
         try:
@@ -1151,12 +1151,12 @@ async def get_prediction_media_url(
     if not key:
         raise HTTPException(status_code=404, detail=f"No {media_type} asset recorded for this prediction.")
 
-    url = storage.get_url(key, expires_in=settings.S3_PRESIGNED_EXPIRY_SECONDS)
+    url = storage.get_url(key, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
     return {
         "prediction_id": prediction_id,
         "media_type": norm_type,
         "url": url,
-        "expires_in": settings.S3_PRESIGNED_EXPIRY_SECONDS,
+        "expires_in": settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS,
     }
 
 

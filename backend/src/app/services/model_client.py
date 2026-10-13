@@ -74,7 +74,7 @@ async def call_model_service(
 def merge_and_save_cv_result(context: dict, cv_result: dict, filename: str) -> dict:
     """
     Merges CV results from model_service into pipeline context and persists
-    the processed Grad-CAM/heatmap image to storage (S3/local).
+    the processed Grad-CAM/heatmap image to storage (Supabase/local).
     """
     context.setdefault("crop", {}).update(cv_result.get("crop", {}))
     context.setdefault("disease", {}).update(cv_result.get("disease", {}))
@@ -95,7 +95,7 @@ def merge_and_save_cv_result(context: dict, cv_result: dict, filename: str) -> d
     if "notes" in cv_result:
         context.setdefault("notes", []).extend(cv_result["notes"])
 
-    # Persist the processed Grad-CAM / heatmap image (uploads to S3 + local disk)
+    # Persist the processed Grad-CAM / heatmap image (uploads to Supabase + local disk)
     processed_b64 = cv_result.get("image", {}).get("processed_image_base64")
     if processed_b64:
         import base64

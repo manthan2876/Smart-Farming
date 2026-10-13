@@ -143,7 +143,7 @@ _DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 @app.get("/data/{file_path:path}", include_in_schema=False)
 async def serve_data_file(file_path: str):
-    """Serve static asset from local disk or redirect to S3 presigned URL."""
+    """Serve static asset from local disk or stream from Supabase Object Storage."""
     clean_subpath = file_path.replace("\\", "/").strip("/")
     local_file = (_DATA_DIR / clean_subpath).resolve()
     try:
