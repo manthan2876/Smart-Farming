@@ -69,8 +69,33 @@ export default function ExpertReviewPage() {
           <Card>
             <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("visualModelEvidence")}</h3>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950"><span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("rawLeaf")}</span><img className="h-full w-full object-contain" src={rawImage} alt="Raw leaf" /></div>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950"><span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("gradcamHeatmap")}</span><img className="h-full w-full object-contain" src={processedImage} alt="Heatmap base" /><div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} /></div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950">
+                <span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("rawLeaf")}</span>
+                <img
+                  className="h-full w-full object-contain"
+                  src={rawImage}
+                  alt="Raw leaf"
+                  onError={(e) => {
+                    if (review.raw_url && e.currentTarget.src !== review.raw_url) {
+                      e.currentTarget.src = review.raw_url;
+                    }
+                  }}
+                />
+              </div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-sm border border-line bg-farmer-950">
+                <span className="absolute left-2 top-2 z-10 rounded-sm bg-black/70 px-2 py-1 text-xs text-white">{t("gradcamHeatmap")}</span>
+                <img
+                  className="h-full w-full object-contain"
+                  src={processedImage}
+                  alt="Heatmap base"
+                  onError={(e) => {
+                    if (review.processed_url && e.currentTarget.src !== review.processed_url) {
+                      e.currentTarget.src = review.processed_url;
+                    }
+                  }}
+                />
+                <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(214,119,86,0.8),rgba(214,119,86,0)_70%)] mix-blend-multiply" style={{ opacity: heatmapOpacity / 100 }} />
+              </div>
             </div>
             <label className="mt-5 flex items-center gap-3 text-sm text-muted">{t("opacity")} <input className="flex-1 accent-farmer-700 dark:accent-farmer-400" type="range" min="0" max="100" value={heatmapOpacity} onChange={event => setHeatmapOpacity(Number(event.target.value))} /><span>{heatmapOpacity}%</span></label>
           </Card>

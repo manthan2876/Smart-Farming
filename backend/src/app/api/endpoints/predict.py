@@ -76,13 +76,31 @@ def _enrich_image_urls(result: dict) -> dict:
             from app.core.storage import get_storage
             storage = get_storage()
             img = result.get("image")
-            if isinstance(img, dict):
-                raw_k = img.get("raw_path")
-                proc_k = img.get("processed_path")
-                if raw_k:
-                    img["raw_url"] = storage.get_url(raw_k, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
-                if proc_k:
-                    img["processed_url"] = storage.get_url(proc_k, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
+            if not isinstance(img, dict):
+                img = {}
+                result["image"] = img
+            raw_k = img.get("raw_path") or result.get("raw_path")
+            proc_k = img.get("processed_path") or result.get("processed_path")
+            if raw_k:
+                img["raw_path"] = raw_k
+                url = storage.get_url(raw_k, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
+                img["raw_url"] = url
+                result["raw_url"] = url
+            if proc_k:
+                img["processed_path"] = proc_k
+                url = storage.get_url(proc_k, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
+                img["processed_url"] = url
+                result["processed_url"] = url
+
+            for h in result.get("historical_images", []):
+                if isinstance(h, dict):
+                    if h.get("raw_path"):
+                        h["raw_url"] = storage.get_url(h["raw_path"], expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
+                    if h.get("processed_path"):
+                        h["processed_url"] = storage.get_url(h["processed_path"], expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
+
+            if isinstance(result.get("follow_up"), dict):
+                _enrich_image_urls(result["follow_up"])
         except Exception as exc:
             _LOGGER.warning("Could not generate signed Supabase URLs: %s", exc)
     return result

@@ -197,16 +197,20 @@ class SupabaseStorageBackend(StorageBackend):
                     data = resp.json()
                     signed = data.get("signedURL") or data.get("signedUrl") or ""
                     if signed.startswith("http"):
+                        if ".supabase.co/object/sign/" in signed:
+                            signed = signed.replace(".supabase.co/object/sign/", ".supabase.co/storage/v1/object/sign/")
                         return signed
-                    if signed.startswith("/"):
-                        return f"{self.supabase_url}{signed}"
-                    return f"{self.supabase_url}/{signed}"
+                    if not signed.startswith("/"):
+                        signed = f"/{signed}"
+                    if not signed.startswith("/storage/v1"):
+                        signed = f"/storage/v1{signed}"
+                    return f"{self.supabase_url}{signed}"
                 else:
                     logger.warning("Supabase signed URL error (%s): %s", resp.status_code, resp.text)
         except Exception as exc:
             logger.warning("Supabase signed URL generation failed for %s: %s", norm_key, exc)
 
-        return f"{self.supabase_url}/storage/v1/object/public/{self.bucket_name}/{norm_key}"
+        return f"/data/{norm_key}"
 
     def delete(self, key: str) -> bool:
         import httpx

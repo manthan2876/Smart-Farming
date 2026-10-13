@@ -13,18 +13,26 @@ export function getApiUrl() {
 
 export function getAssetUrl(path: string | null | undefined): string {
   if (!path) return "";
+  // If the path is a direct Supabase signed or public storage URL, route it through the backend proxy
+  // (/data/{path}) to prevent third-party Cloudflare __cf_bm cookie rejection warnings in browsers.
+  if (path.includes(".supabase.co/")) {
+    const match = path.match(/\/(?:storage\/v1\/)?object\/(?:sign|authenticated|public)\/[^/]+\/(.+?)(?:\?|$)/);
+    if (match && match[1]) {
+      return `${API_URL}/data/${match[1]}`;
+    }
+  }
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-  // Normalize Windows backslashes to forward slashes
-  let clean = path.replace(/\\/g, "/");
-  // Extract relative storage key if path contains absolute prefix
+  // Normalize Windows backslashes to forward slashes and trim leading slashes
+  let clean = path.replace(/\\/g, "/").replace(/^\/+/, "");
+  // Extract relative storage key if path contains data/ prefix
   const dataIdx = clean.indexOf("data/");
   if (dataIdx !== -1) {
-    clean = clean.slice(dataIdx);
+    clean = clean.slice(dataIdx + 5);
   }
-  const rel = clean.startsWith("/") ? clean : `/${clean}`;
-  return `${API_URL}${rel}`;
+  clean = clean.replace(/^\/+/, "");
+  return `${API_URL}/data/${clean}`;
 }
 export function getWebSocketUrl(path: string) {
   const url = new URL(API_URL);

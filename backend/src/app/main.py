@@ -145,6 +145,8 @@ _DATA_DIR.mkdir(parents=True, exist_ok=True)
 async def serve_data_file(file_path: str):
     """Serve static asset from local disk or stream from Supabase Object Storage."""
     clean_subpath = file_path.replace("\\", "/").strip("/")
+    if clean_subpath.startswith("data/"):
+        clean_subpath = clean_subpath[5:]
     local_file = (_DATA_DIR / clean_subpath).resolve()
     try:
         local_file.relative_to(_DATA_DIR.resolve())
@@ -170,7 +172,10 @@ async def serve_data_file(file_path: str):
             return Response(
                 content=data,
                 media_type=content_type,
-                headers={"Cache-Control": "public, max-age=86400"},
+                headers={
+                    "Cache-Control": "public, max-age=86400",
+                    "Access-Control-Allow-Origin": "*",
+                },
             )
         except Exception:
             pass

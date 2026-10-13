@@ -287,8 +287,8 @@ export default function PredictionResultPage() {
 
   const PredictionBlock = ({ predictionData }: { predictionData: any }) => {
     if (predictionData.error || (predictionData.status as any)?.pipeline === "failed") return <div className="rounded-md border border-red-200 bg-red-50 p-6 text-danger"><h3 className="flex items-center gap-2 font-display text-xl"><AlertCircle size={22} /> {t("pipelineError")}</h3><p className="mt-3">{predictionData.error || t("analysisNotCompleted")}</p><p className="mt-3 text-sm">{t("captureBetterLighting")}</p></div>;
-    const rawImage = predictionData.image?.raw_url || predictionData.raw_url || (predictionData.image?.raw_path ? getAssetUrl(predictionData.image.raw_path) : (predictionData.raw_path ? getAssetUrl(predictionData.raw_path) : null));
-    const processedImage = predictionData.image?.processed_url || predictionData.processed_url || (predictionData.image?.processed_path ? getAssetUrl(predictionData.image.processed_path) : (predictionData.processed_path ? getAssetUrl(predictionData.processed_path) : null));
+    const rawImage = getAssetUrl(predictionData.image?.raw_url || predictionData.raw_url || predictionData.image?.raw_path || predictionData.raw_path);
+    const processedImage = getAssetUrl(predictionData.image?.processed_url || predictionData.processed_url || predictionData.image?.processed_path || predictionData.processed_path);
     const diseaseConfidence = (predictionData.disease?.confidence || 0) * 100;
     const isLowConfidence = predictionData.disease?.is_uncertain === true || diseaseConfidence < 60;
     const confRating = predictionData.disease?.confidence_rating || (diseaseConfidence >= 85 ? "high" : diseaseConfidence >= 60 ? "moderate" : "low");
@@ -328,7 +328,34 @@ export default function PredictionResultPage() {
           </div>
         </Card>
       )}
-      <Card><h3 className="font-display text-xl text-ink">{t("visualAnalysis")}</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{[[t("originalUpload"), rawImage, ""], [t("gradcamHeatmap"), processedImage, "bg-ink text-farmer-200"]].map(([label, image, labelClass]) => <div key={label || "analysis"}><span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>{label || "Analysis"}</span>{image ? <img className="aspect-square w-full rounded-sm border border-line object-cover" src={image} alt={label || "Analysis image"} /> : <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">{t("imageUnavailable")}</div>}</div>)}</div></Card>
+      <Card>
+        <h3 className="font-display text-xl text-ink">{t("visualAnalysis")}</h3>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {[[t("originalUpload"), rawImage, "", predictionData.image?.raw_url || predictionData.raw_url], [t("gradcamHeatmap"), processedImage, "bg-ink text-farmer-200", predictionData.image?.processed_url || predictionData.processed_url]].map(([label, image, labelClass, directFallback]) => (
+            <div key={label || "analysis"}>
+              <span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>
+                {label || "Analysis"}
+              </span>
+              {image ? (
+                <img
+                  className="aspect-square w-full rounded-sm border border-line object-cover"
+                  src={image}
+                  alt={label || "Analysis image"}
+                  onError={(e) => {
+                    if (directFallback && e.currentTarget.src !== directFallback) {
+                      e.currentTarget.src = directFallback as string;
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex aspect-square items-center justify-center rounded-sm bg-canvas text-sm text-muted">
+                  {t("imageUnavailable")}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-display text-xl text-ink">{t("diagnosticTelemetry")}</h3>
