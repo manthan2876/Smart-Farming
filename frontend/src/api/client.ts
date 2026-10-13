@@ -1,3 +1,5 @@
+import { supabase } from "../lib/supabase";
+
 const host = window.location.hostname || "localhost";
 const configuredApiUrl = import.meta.env.VITE_API_URL ?? `http://${host}:8000`;
 const API_URL = configuredApiUrl.replace(
@@ -60,19 +62,27 @@ export async function request<T>(
     try {
       // Attempt refresh with deduplication
       if (!refreshPromise) {
-        refreshPromise = fetch(`${API_URL}/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
-        }).then(async (res) => {
-          if (res.ok) {
-            const tokens = await res.json();
-            return tokens.access_token;
-          }
+        refreshPromise = (async () => {
+          try {
+            const { data } = await supabase.auth.refreshSession();
+            if (data?.session?.access_token) {
+              return data.session.access_token;
+            }
+          } catch {}
+          try {
+            const res = await fetch(`${API_URL}/auth/refresh`, {
+              method: "POST",
+              credentials: "include",
+            });
+            if (res.ok) {
+              const tokens = await res.json();
+              return tokens.access_token;
+            }
+          } catch {}
           return null;
-        }).catch(() => null)
-          .finally(() => {
-            refreshPromise = null;
-          });
+        })().finally(() => {
+          refreshPromise = null;
+        });
       }
       
       const newAccessToken = await refreshPromise;

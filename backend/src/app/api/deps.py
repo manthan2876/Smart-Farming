@@ -55,14 +55,86 @@ def create_token_pair(user_id: str) -> dict[str, Any]:
     }
 
 
+import time
+import logging
+import httpx
+
+logger = logging.getLogger("smart-farming.auth")
+
+_SUPABASE_USER_CACHE: dict[str, tuple[str, float]] = {}
+
+
+def _verify_supabase_token(token: str) -> str | None:
+    """Verifies a Supabase-issued JWT access token, supporting local secret or Supabase REST check."""
+    # 1. Local signature verification if SUPABASE_JWT_SECRET is provided
+    jwt_secret = getattr(settings, "SUPABASE_JWT_SECRET", None) or os.getenv("SUPABASE_JWT_SECRET")
+    if jwt_secret:
+        try:
+            payload = jwt.decode(
+                token,
+                jwt_secret,
+                algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
+            sub = payload.get("sub")
+            if sub:
+                return str(sub)
+        except jwt.PyJWTError:
+            pass
+
+    # 2. Check local in-memory token cache
+    now = time.time()
+    if token in _SUPABASE_USER_CACHE:
+        user_id, exp_ts = _SUPABASE_USER_CACHE[token]
+        if exp_ts > now:
+            return user_id
+        else:
+            _SUPABASE_USER_CACHE.pop(token, None)
+
+    # 3. Verify via Supabase Auth API
+    supabase_url = getattr(settings, "SUPABASE_URL", "") or os.getenv("SUPABASE_URL", "")
+    anon_key = (
+        getattr(settings, "SUPABASE_ANON_KEY", "")
+        or getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+        or os.getenv("SUPABASE_ANON_KEY", "")
+    )
+    if supabase_url and anon_key:
+        try:
+            url = f"{supabase_url.rstrip('/')}/auth/v1/user"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "apikey": anon_key,
+            }
+            with httpx.Client(timeout=4.0) as client:
+                resp = client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    user_id = data.get("id")
+                    if user_id:
+                        _SUPABASE_USER_CACHE[token] = (str(user_id), now + 60.0)
+                        return str(user_id)
+        except Exception as exc:
+            logger.warning("Supabase auth API verification failed: %s", exc)
+
+    return None
+
+
 def decode_token(token: str, expected_type: str = "access") -> str:
+    # 1. Check Supabase-issued authentication token
+    supabase_user_id = _verify_supabase_token(token)
+    if supabase_user_id:
+        return supabase_user_id
+
+    # 2. Legacy backend JWT verification
     try:
         payload = jwt.decode(token, _secret_key(), algorithms=[_ALGORITHM])
-    except jwt.PyJWTError as exc:
-        raise ValueError("Invalid or expired token.") from exc
-    if payload.get("type") != expected_type or not payload.get("sub"):
-        raise ValueError("Invalid token type.")
-    return str(payload["sub"])
+        if payload.get("sub"):
+            if payload.get("type") == expected_type or payload.get("aud") == "authenticated":
+                return str(payload["sub"])
+    except jwt.PyJWTError:
+        pass
+
+    raise ValueError("Invalid or expired token.")
 
 
 _BEARER = HTTPBearer(auto_error=False)

@@ -61,10 +61,12 @@ class Settings(BaseSettings):
     # Cloudflare Worker API Gateway Authentication
     GATEWAY_API_KEY: str | None = Field(default=None)
 
-    # Storage (Supabase Object Storage)
+    # Storage & Auth (Supabase Object Storage & Supabase Auth)
     STORAGE_BACKEND: str = Field(default="supabase")
     SUPABASE_URL: str = Field(default="")
     SUPABASE_SERVICE_ROLE_KEY: str = Field(default="")
+    SUPABASE_ANON_KEY: str = Field(default="")
+    SUPABASE_JWT_SECRET: str | None = Field(default=None)
     SUPABASE_BUCKET: str = Field(default="smart-farming-data-dev")
     SUPABASE_SIGNED_URL_EXPIRY_SECONDS: int = Field(default=900)
 

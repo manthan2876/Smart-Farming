@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { login, profile, register, logout, updateProfile, AuthResponse } from "../api/auth";
 import { Profile } from "../api/types";
 import { Language, Units, t, TranslationKey } from "../i18n";
+import { supabase } from "../lib/supabase";
 
 interface AuthContextType {
   user: Profile | null;
@@ -67,13 +68,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
 
+    // 1. Listen for Supabase session changes & automatic background token refreshes
+    const { data: authSubscription } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.access_token) {
+        if (session.access_token !== token) {
+          localStorage.setItem("smart_farm_token", session.access_token);
+          setToken(session.access_token);
+          fetchUserProfile(session.access_token);
+        }
+      } else if (event === "SIGNED_OUT") {
+        localStorage.removeItem("smart_farm_token");
+        setToken(null);
+        setUser(null);
+        setIsLoading(false);
+      }
+    });
+
     const handleTokenRefresh = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
       setToken(customEvent.detail);
     };
 
     window.addEventListener("tokenRefreshed", handleTokenRefresh);
-    return () => window.removeEventListener("tokenRefreshed", handleTokenRefresh);
+    return () => {
+      authSubscription?.subscription?.unsubscribe();
+      window.removeEventListener("tokenRefreshed", handleTokenRefresh);
+    };
   }, [token]);
 
   const setLanguage = async (newLang: Language) => {
