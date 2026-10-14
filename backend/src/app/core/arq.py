@@ -18,20 +18,23 @@ async def init_arq():
     except RuntimeError:
         pass
 
+    # If Redis worker is not required, skip connection to prevent startup delays
+    if not getattr(settings, "REQUIRE_REDIS", False):
+        logger.info("REQUIRE_REDIS is False; skipping ARQ Redis connection pool.")
+        arq_pool = None
+        return None
+
+    if not settings.REDIS_URL:
+        logger.info("No REDIS_URL configured; skipping ARQ Redis connection pool.")
+        arq_pool = None
+        return None
+
     try:
         redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
-        # Harden cloud connection timeouts and retries (especially for Upstash TLS over public internet)
-        redis_settings.conn_timeout = 15
-        redis_settings.conn_retries = 10
-        redis_settings.conn_retry_delay = 2
+        redis_settings.conn_timeout = 3
+        redis_settings.conn_retries = 2
+        redis_settings.conn_retry_delay = 1
         redis_settings.retry_on_timeout = True
-        try:
-            from redis.asyncio.retry import Retry
-            from redis.backoff import ExponentialBackoff
-            redis_settings.retry = Retry(ExponentialBackoff(cap=10, base=1), retries=5)
-            redis_settings.retry_on_error = [ConnectionError, TimeoutError, OSError]
-        except Exception:
-            pass
         arq_pool = await create_pool(redis_settings)
         mode = "Local Docker Redis" if settings.REQUIRE_REDIS else "Upstash Cloud Redis"
         logger.info("Initialized ARQ pool [%s: %s]", mode, redis_settings.host)

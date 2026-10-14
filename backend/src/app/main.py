@@ -40,20 +40,37 @@ from app.utils import configure_logging
 
 configure_logging()
 
+import asyncio
 from contextlib import asynccontextmanager
+from app.core.config import settings
 from app.core.arq import init_arq, close_arq
 from app.core.init_db import initialize_database
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    initialize_database()
-    app.state.arq_pool = await init_arq()
+    # In local development, ensure tables exist immediately.
+    # In production, run schema verification in the background so the HTTP port binds instantly (<1s)
+    # and Render/health checks never time out during cold starts.
+    if getattr(settings, "ENVIRONMENT", "development") != "production":
+        initialize_database()
+    else:
+        asyncio.create_task(asyncio.to_thread(initialize_database))
+
+    # Initialize ARQ pool only if Redis worker queue is explicitly required
+    if getattr(settings, "REQUIRE_REDIS", False):
+        app.state.arq_pool = await init_arq()
+    else:
+        app.state.arq_pool = None
+
+    # Offload audio storage sync to a background task so it doesn't block port binding
     try:
         from app.api.endpoints.tts import sync_existing_audio_to_storage
-        sync_existing_audio_to_storage()
+        asyncio.create_task(asyncio.to_thread(sync_existing_audio_to_storage))
     except Exception:
         pass
+
     yield
+
     try:
         from app.core.redis_rest import redis_rest
         await redis_rest.aclose()
