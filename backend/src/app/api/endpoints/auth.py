@@ -210,13 +210,28 @@ async def reset_password(
     )
 
 
-def _cookie_secure() -> bool:
-    return getattr(settings, "ENVIRONMENT", "development") == "production"
+def _cookie_settings(request: Request | None = None) -> dict[str, Any]:
+    """Determine cookie Secure and SameSite attributes.
+
+    In production or across HTTPS cross-site origins (e.g. Vercel frontend calling Render backend),
+    cookies MUST use SameSite=None and Secure=True to be accepted by modern browsers.
+    In local HTTP development, SameSite=Lax and Secure=False avoids browser rejection.
+    """
+    is_prod = getattr(settings, "ENVIRONMENT", "development") == "production"
+    is_https = False
+    if request:
+        proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+        origin = request.headers.get("origin", "")
+        is_https = proto == "https" or origin.startswith("https://")
+
+    if is_prod or is_https:
+        return {"secure": True, "samesite": "none"}
+    return {"secure": False, "samesite": "lax"}
 
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
 async def register(
-    payload: RegisterRequest, response: Response, session: Session = Depends(get_session)
+    request: Request, payload: RegisterRequest, response: Response, session: Session = Depends(get_session)
 ) -> AuthResponse:
     if not payload.phone and not payload.email:
         raise HTTPException(
@@ -248,12 +263,13 @@ async def register(
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
         
     tokens = create_token_pair(user.id)
+    cookie_opts = _cookie_settings(request)
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=_cookie_secure(),
-        samesite="lax",
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
         max_age=30 * 24 * 60 * 60,
     )
 
@@ -299,12 +315,13 @@ async def login(
         supabase_tokens = await _fetch_supabase_tokens(user.email, payload.password)
 
     tokens = supabase_tokens or create_token_pair(user.id)
+    cookie_opts = _cookie_settings(request)
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=_cookie_secure(),
-        samesite="lax",
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
         max_age=30 * 24 * 60 * 60,
     )
     return AuthResponse(
@@ -324,19 +341,26 @@ async def refresh(request: Request, response: Response) -> dict[str, str | int]:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
         
     tokens = create_token_pair(user_id)
+    cookie_opts = _cookie_settings(request)
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=_cookie_secure(),
-        samesite="lax",
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
         max_age=30 * 24 * 60 * 60,
     )
     return tokens
 
 
 @router.post("/logout", response_model=dict[str, str])
-async def logout(response: Response) -> dict[str, str]:
-    response.delete_cookie("refresh_token", httponly=True, secure=_cookie_secure(), samesite="lax")
+async def logout(request: Request, response: Response) -> dict[str, str]:
+    cookie_opts = _cookie_settings(request)
+    response.delete_cookie(
+        "refresh_token",
+        httponly=True,
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
+    )
     return {"status": "success"}
 
