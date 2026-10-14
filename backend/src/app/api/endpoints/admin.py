@@ -244,6 +244,13 @@ class AdminRoleUpdateRequest(BaseModel):
     reason: str | None = None
 
 
+class AdminUserUpdateRequest(BaseModel):
+    name: str | None = None
+    phone: str | None = None
+    role: str | None = None
+    reason: str | None = None
+
+
 @router.get("/users")
 async def get_users_list(
     skip: int = 0,
@@ -339,6 +346,112 @@ async def update_user_role(
         "user_id": target_user_id,
         "old_role": old_role,
         "new_role": new_role,
+        "reason": payload.reason,
+    }
+
+
+@router.patch("/users/{target_user_id}")
+async def update_admin_user(
+    target_user_id: str,
+    payload: AdminUserUpdateRequest,
+    caller_id: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """
+    Admin user management: update name, phone number, and/or role with safety guards.
+    """
+    target_user = session.get(User, target_user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Target user not found.")
+
+    old_role = target_user.role
+
+    # 1. Role update if provided
+    if payload.role is not None:
+        allowed_roles = {"farmer", "expert", "admin"}
+        new_role = payload.role.strip().lower()
+        if new_role not in allowed_roles:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid role '{payload.role}'. Allowed roles: {sorted(list(allowed_roles))}",
+            )
+        # Guard 1: Self-demotion lockout prevention
+        if target_user_id == caller_id and new_role != "admin":
+            raise HTTPException(
+                status_code=400,
+                detail="Security violation: Administrators cannot demote their own account.",
+            )
+        # Guard 2: Last admin demotion prevention
+        if target_user.role == "admin" and new_role != "admin":
+            active_admins = session.query(func.count(User.id)).filter(User.role == "admin").scalar() or 0
+            if active_admins <= 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Operation blocked: Cannot demote the last remaining administrator on the platform.",
+                )
+        target_user.role = new_role
+
+    # 2. Name update if provided
+    if payload.name is not None:
+        trimmed = payload.name.strip()
+        if len(trimmed) < 2 or len(trimmed) > 100:
+            raise HTTPException(status_code=422, detail="Name must be between 2 and 100 characters.")
+        target_user.name = trimmed
+
+    # 3. Phone update if provided
+    clean_phone = None
+    if payload.phone is not None:
+        raw_phone = payload.phone.strip()
+        if raw_phone:
+            import re
+            _phone_regex = re.compile(r"^\+?[0-9]{10,15}$")
+            cleaned = re.sub(r"[\s\-\(\)\.]", "", raw_phone)
+            if not _phone_regex.match(cleaned):
+                raise HTTPException(
+                    status_code=422,
+                    detail="Please provide a valid 10 to 15 digit phone number (e.g. 9999999999 or +919999999999).",
+                )
+            clean_phone = cleaned
+
+            # Uniqueness check
+            digits = "".join(ch for ch in cleaned if ch.isdigit())
+            last10 = digits[-10:] if len(digits) >= 10 else digits
+            phone_variants = [cleaned, digits, f"+91{last10}"]
+            existing = session.scalar(
+                sa.select(User).where(
+                    User.id != target_user_id,
+                    User.phone.in_(phone_variants),
+                )
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail="This phone number is already registered to another account.",
+                )
+            target_user.phone = clean_phone
+        else:
+            target_user.phone = None
+
+    session.add(target_user)
+    session.commit()
+    session.refresh(target_user)
+
+    # Sync updated phone to Supabase Auth via Admin API
+    if clean_phone:
+        from app.api.endpoints.auth import sync_supabase_user_phone
+        try:
+            await sync_supabase_user_phone(target_user.id, clean_phone)
+        except Exception:
+            pass
+
+    return {
+        "status": "success",
+        "user_id": target_user_id,
+        "name": target_user.name,
+        "phone": target_user.phone,
+        "role": target_user.role,
+        "old_role": old_role,
+        "new_role": target_user.role,
         "reason": payload.reason,
     }
 

@@ -50,6 +50,22 @@ export const updateUserRole = async (
   );
 };
 
+export const updateAdminUser = async (
+  token: string,
+  userId: string,
+  payload: { role?: "farmer" | "expert" | "admin"; phone?: string; name?: string; reason?: string }
+): Promise<{ status: string; user_id: string; name?: string; phone?: string; role: string; old_role: string; new_role: string }> => {
+  return request(
+    `/admin/users/${userId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    token
+  );
+};
+
 export const rollbackModel = async (
   token: string,
   modelKey: string,

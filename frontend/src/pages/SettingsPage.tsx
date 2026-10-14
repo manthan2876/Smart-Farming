@@ -18,17 +18,70 @@ import {
   FolderArchive,
   Sun,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  User,
+  Phone
 } from "../components/icons";
 import { motion } from "motion/react";
 import { Button, Card, Input, Select } from "../components/ui";
 import ThemeToggle from "../components/ThemeToggle";
+import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
 
 export default function SettingsPage() {
-  const { user, token, language, units, setLanguage, setUnits, t } = useAuth();
+  const { user, token, language, units, setLanguage, setUnits, updateUserProfile, t } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === "admin";
   
+  // Account Profile / Phone
+  const [profileName, setProfileName] = useState(user?.name || "");
+  const [profilePhone, setProfilePhone] = useState(user?.phone || "");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "");
+      setProfilePhone(user.phone || "");
+    }
+  }, [user]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError("");
+    setProfileSuccess(false);
+
+    const trimmedName = profileName.trim();
+    if (trimmedName && (trimmedName.length < 2 || trimmedName.length > 100)) {
+      setProfileError("Name must be between 2 and 100 characters.");
+      return;
+    }
+
+    const trimmedPhone = profilePhone.trim();
+    let normalizedPhone: string | undefined = undefined;
+    if (trimmedPhone) {
+      if (!isValidPhoneNumber(trimmedPhone)) {
+        setProfileError(t("phoneInvalid"));
+        return;
+      }
+      normalizedPhone = normalizePhoneNumber(trimmedPhone);
+    }
+
+    setProfileLoading(true);
+    try {
+      await updateUserProfile({
+        name: trimmedName || undefined,
+        phone: normalizedPhone !== undefined ? normalizedPhone : (trimmedPhone ? trimmedPhone : ""),
+      });
+      setProfileSuccess(true);
+      setTimeout(() => setProfileSuccess(false), 4000);
+    } catch (err: any) {
+      setProfileError(err?.message || "Failed to update profile details.");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   // General
   const [lang, setLang] = useState(language);
   const [unitPref, setUnitPref] = useState(units);
@@ -163,6 +216,89 @@ export default function SettingsPage() {
         <h1 className="flex items-center gap-3 font-display text-3xl text-ink sm:text-4xl"><SettingsIcon size={28} className="text-farmer-700" /> {t("settings")}</h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">{t("settingsSubtitle")}</p>
       </div>
+
+      {/* Account Information / Mobile Number */}
+      <Card>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink">
+              <User size={20} className="text-farmer-700 dark:text-farmer-300" />
+              <span>{t("accountInformation")}</span>
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              {t("accountInformationDesc")}
+            </p>
+          </div>
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
+              <ShieldCheck size={14} className="text-farmer-600" />
+              <span>
+                {user?.role === "admin"
+                  ? t("roleAdmin")
+                  : user?.role === "expert"
+                  ? t("roleExpert")
+                  : t("roleFarmer")}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {profileError && (
+          <div className="mt-4 rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-danger dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+            {profileError}
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateProfile} className="mt-6 space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <Input
+                label={t("fullName")}
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder={t("enterFullName")}
+                leadingIcon={<User size={16} />}
+              />
+            </div>
+
+            <div>
+              <Input
+                label={t("mobilePhone")}
+                value={profilePhone}
+                onChange={(e) => setProfilePhone(e.target.value)}
+                placeholder="e.g. 9999999999 or +919999999999"
+                leadingIcon={<Phone size={16} />}
+              />
+              <span className="mt-1 block text-xs text-muted">
+                {t("phoneHelp")}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="text-xs text-muted">
+              {user?.email ? (
+                <span>Email linked: <strong className="text-ink">{user.email}</strong></span>
+              ) : (
+                <span>Phone auth authenticated</span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button type="submit" disabled={profileLoading} className="flex items-center gap-2">
+                <Phone size={15} />
+                <span>{profileLoading ? t("updating") : t("saveProfileChanges")}</span>
+              </Button>
+              {profileSuccess && (
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-farmer-700 dark:text-farmer-300 animate-fadeIn">
+                  <CheckCircle2 size={16} />
+                  <span>{t("phoneUpdatedSuccess")}</span>
+                </span>
+              )}
+            </div>
+          </div>
+        </form>
+      </Card>
 
       <Card>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

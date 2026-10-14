@@ -757,5 +757,20 @@ export const en = {
   statusFailed: "Failed",
   totalRecords: "Total Records",
   page: "Page",
+
+  // Account & Phone Profile
+  accountInformation: "Account Information",
+  accountInformationDesc: "Manage your personal profile details and registered phone number used for SMS OTP authentication.",
+  updatePhone: "Update Phone Number",
+  mobilePhone: "Mobile Phone Number",
+  phoneUpdatedSuccess: "Phone number and profile updated successfully!",
+  phoneInvalid: "Please enter a valid 10 to 15 digit phone number (e.g. 9999999999 or +919999999999).",
+  phoneHelp: "Enter 10-digit number or with country code (+91). Used for secure OTP login.",
+  editUser: "Edit User",
+  manageUser: "Manage User",
+  userUpdatedSuccess: "User profile updated successfully.",
+  enterFullName: "Enter your full name",
+  saveProfileChanges: "Save Profile Changes",
+  noEmailLinked: "No email linked (Phone account)",
 };
 

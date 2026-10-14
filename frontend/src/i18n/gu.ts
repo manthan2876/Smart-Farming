@@ -759,5 +759,20 @@ export const gu: Record<keyof typeof en, string> = {
   statusFailed: "નિષ્ફળ",
   totalRecords: "કુલ રેકોર્ડ",
   page: "પાનું",
+
+  // Account & Phone Profile
+  accountInformation: "ખાતાની માહિતી",
+  accountInformationDesc: "SMS OTP પ્રમાણીકરણ માટે વપરાતો તમારો નોંધાયેલ મોબાઇલ નંબર અને પ્રોફાઇલ વિગતો સંચાલિત કરો.",
+  updatePhone: "મોબાઇલ નંબર અપડેટ કરો",
+  mobilePhone: "મોબાઇલ નંબર",
+  phoneUpdatedSuccess: "મોબાઇલ નંબર અને પ્રોફાઇલ સફળતાપૂર્વક અપડેટ થયા!",
+  phoneInvalid: "કૃપા કરીને માન્ય 10 થી 15 અંકનો ફોન નંબર દાખલ કરો (દા.ત. 9999999999 અથવા +919999999999).",
+  phoneHelp: "10-અંકનો નંબર અથવા દેશના કોડ (+91) સાથે દાખલ કરો. સુરક્ષિત OTP લૉગિન માટે વપરાય છે.",
+  editUser: "વપરાશકર્તા સંપાદિત કરો",
+  manageUser: "વપરાશકર્તા સંચાલિત કરો",
+  userUpdatedSuccess: "વપરાશકર્તા પ્રોફાઇલ સફળતાપૂર્વક અપડેટ થઈ.",
+  enterFullName: "તમારું પૂરું નામ દાખલ કરો",
+  saveProfileChanges: "પ્રોફાઇલ ફેરફારો સાચવો",
+  noEmailLinked: "કોઈ ઇમેઇલ લિંક નથી (ફોન એકાઉન્ટ)",
 };
 

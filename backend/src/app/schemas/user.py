@@ -34,6 +34,7 @@ class SessionSyncRequest(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
+    phone: str | None = Field(default=None, max_length=40)
     location: str | None = Field(default=None, max_length=300)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)

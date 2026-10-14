@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { getAdminUsers, updateUserRole } from "../api/admin";
+import { getAdminUsers, updateAdminUser } from "../api/admin";
 import { AdminUser } from "../api/types";
 import { Card, Button, Input, Modal, Badge, Select } from "../components/ui";
 import { 
@@ -14,8 +14,11 @@ import {
   AlertCircle,
   CheckCircle2,
   RefreshCw,
-  UserCheck
+  UserCheck,
+  Phone,
+  User as UserIcon
 } from "../components/icons";
+import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
 
 export default function AdminUsersPage() {
   const { user: currentUser, token, t } = useAuth();
@@ -26,8 +29,10 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(0);
   const pageSize = 20;
 
-  // Selected user for role change modal
+  // Selected user for edit modal
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [userName, setUserName] = useState("");
+  const [userPhone, setUserPhone] = useState("");
   const [newRole, setNewRole] = useState<"farmer" | "expert" | "admin">("farmer");
   const [reason, setReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -46,12 +51,29 @@ export default function AdminUsersPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: async ({ userId, role, changeReason }: { userId: string; role: "farmer" | "expert" | "admin"; changeReason?: string }) => {
-      return updateUserRole(token!, userId, role, changeReason);
+    mutationFn: async ({
+      userId,
+      name,
+      phone,
+      role,
+      changeReason,
+    }: {
+      userId: string;
+      name?: string;
+      phone?: string;
+      role?: "farmer" | "expert" | "admin";
+      changeReason?: string;
+    }) => {
+      return updateAdminUser(token!, userId, {
+        name,
+        phone,
+        role,
+        reason: changeReason,
+      });
     },
-    onSuccess: (res) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_users"] });
-      setActionSuccess(`Successfully updated role to ${res.new_role}.`);
+      setActionSuccess(t("userUpdatedSuccess"));
       setActionError(null);
       setTimeout(() => {
         setSelectedUser(null);
@@ -60,28 +82,43 @@ export default function AdminUsersPage() {
       }, 1200);
     },
     onError: (err: any) => {
-      setActionError(err?.message || "Failed to update user role.");
+      setActionError(err?.message || "Failed to update user profile.");
     },
   });
 
-  const handleOpenRoleModal = (user: AdminUser) => {
+  const handleOpenUserModal = (user: AdminUser) => {
     setSelectedUser(user);
+    setUserName(user.name || "");
+    setUserPhone(user.phone || "");
     setNewRole(user.role);
     setReason("");
     setActionError(null);
     setActionSuccess(null);
   };
 
-  const handleSaveRole = (e: React.FormEvent) => {
+  const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
     if (selectedUser.id === currentUser?.id && newRole !== "admin") {
       setActionError("Security Guard: Administrators cannot demote their own account.");
       return;
     }
+
+    const trimmedPhone = userPhone.trim();
+    let normalizedPhone: string | undefined = undefined;
+    if (trimmedPhone) {
+      if (!isValidPhoneNumber(trimmedPhone)) {
+        setActionError(t("phoneInvalid"));
+        return;
+      }
+      normalizedPhone = normalizePhoneNumber(trimmedPhone);
+    }
+
     setActionError(null);
     mutation.mutate({
       userId: selectedUser.id,
+      name: userName.trim() || undefined,
+      phone: normalizedPhone !== undefined ? normalizedPhone : (trimmedPhone ? trimmedPhone : ""),
       role: newRole,
       changeReason: reason.trim() || undefined,
     });
@@ -278,10 +315,10 @@ export default function AdminUsersPage() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => handleOpenRoleModal(u)}
+                          onClick={() => handleOpenUserModal(u)}
                           className="text-xs font-semibold whitespace-nowrap min-w-max"
                         >
-                          {t("changeRole")}
+                          {t("editUser")}
                         </Button>
                       </td>
                     </tr>
@@ -320,25 +357,24 @@ export default function AdminUsersPage() {
         )}
       </Card>
 
-      {/* Role Change Modal */}
+      {/* Edit User & Role Modal */}
       <Modal
         open={!!selectedUser}
-        title={t("modifyUserRole")}
+        title={t("manageUser")}
         onClose={() => {
           if (!mutation.isPending) setSelectedUser(null);
         }}
       >
         {selectedUser && (
-          <form onSubmit={handleSaveRole} className="space-y-4">
+          <form onSubmit={handleSaveUser} className="space-y-4">
             <div className="rounded-md bg-canvas p-4 text-sm">
-              <div className="font-semibold text-ink">{selectedUser.name || t("unnamedUser")}</div>
-              <div className="text-xs text-muted">{selectedUser.email || selectedUser.phone}</div>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-muted">{t("currentRole")}:</span>
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-ink">{selectedUser.name || t("unnamedUser")}</div>
                 <span className="rounded bg-surface px-2 py-0.5 text-xs font-bold capitalize text-ink border border-line">
                   {selectedUser.role}
                 </span>
               </div>
+              <div className="mt-1 text-xs text-muted">{selectedUser.email || t("noEmailLinked")}</div>
             </div>
 
             {isSelf && (
@@ -349,6 +385,29 @@ export default function AdminUsersPage() {
                 </span>
               </div>
             )}
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-ink">{t("fullName")}</label>
+              <Input
+                placeholder={t("enterFullName")}
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                leadingIcon={<UserIcon size={15} />}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-ink">{t("mobilePhone")}</label>
+              <Input
+                placeholder="e.g. 9999999999 or +919999999999"
+                value={userPhone}
+                onChange={(e) => setUserPhone(e.target.value)}
+                leadingIcon={<Phone size={15} />}
+              />
+              <span className="mt-1 block text-xs text-muted">
+                {t("phoneHelp")}
+              </span>
+            </div>
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-ink">{t("selectNewRole")}</label>
@@ -405,7 +464,7 @@ export default function AdminUsersPage() {
                 className="flex items-center gap-2"
               >
                 <UserCheck size={16} />
-                <span>{mutation.isPending ? t("updating") : t("saveRole")}</span>
+                <span>{mutation.isPending ? t("updating") : t("save")}</span>
               </Button>
             </div>
           </form>

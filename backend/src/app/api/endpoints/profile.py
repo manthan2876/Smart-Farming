@@ -113,6 +113,35 @@ async def update_farmer_profile(
         if len(trimmed) < 2 or len(trimmed) > 100:
             raise HTTPException(status_code=422, detail="Name must be between 2 and 100 characters.")
 
+    clean_phone: str | None = None
+    if payload.phone is not None:
+        raw_phone = payload.phone.strip()
+        if raw_phone:
+            cleaned = re.sub(r"[\s\-\(\)\.]", "", raw_phone)
+            if not _PHONE_REGEX.match(cleaned):
+                raise HTTPException(
+                    status_code=422,
+                    detail="Please provide a valid 10 to 15 digit phone number (e.g. 9999999999 or +919999999999).",
+                )
+            clean_phone = cleaned
+
+            from sqlalchemy import select
+            from app.models import User
+            digits = "".join(ch for ch in cleaned if ch.isdigit())
+            last10 = digits[-10:] if len(digits) >= 10 else digits
+            phone_variants = [cleaned, digits, f"+91{last10}"]
+            existing = session.scalar(
+                select(User).where(
+                    User.id != user_id,
+                    User.phone.in_(phone_variants),
+                )
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail="This phone number is already registered to another account.",
+                )
+
     try:
         user = get_user(session, user_id)
         if user is None:
@@ -121,12 +150,23 @@ async def update_farmer_profile(
             session,
             user,
             name=payload.name,
+            phone=clean_phone if payload.phone is not None else None,
             language=payload.language,
             location=payload.location,
             latitude=payload.latitude,
             longitude=payload.longitude,
             crop_history=payload.crop_history,
+            farm_name=payload.farm_name,
+            farm_area_acres=payload.farm_area_acres,
         )
+
+        # Sync updated phone with Supabase Auth via Admin API
+        if clean_phone:
+            from app.api.endpoints.auth import sync_supabase_user_phone
+            try:
+                await sync_supabase_user_phone(user.id, clean_phone)
+            except Exception:
+                pass
 
         # Enqueue write-time transliteration for user name
         if payload.name:

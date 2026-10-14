@@ -759,5 +759,20 @@ export const hi: Record<keyof typeof en, string> = {
   statusFailed: "विफल",
   totalRecords: "कुल रिकॉर्ड",
   page: "पृष्ठ",
+
+  // Account & Phone Profile
+  accountInformation: "खाता जानकारी",
+  accountInformationDesc: "SMS OTP प्रमाणीकरण के लिए उपयोग किए जाने वाले अपने पंजीकृत मोबाइल नंबर और व्यक्तिगत प्रोफ़ाइल विवरण को प्रबंधित करें।",
+  updatePhone: "फ़ोन नंबर अपडेट करें",
+  mobilePhone: "मोबाइल फ़ोन नंबर",
+  phoneUpdatedSuccess: "फ़ोन नंबर और प्रोफ़ाइल सफलतापूर्वक अपडेट हो गया!",
+  phoneInvalid: "कृपया 10 से 15 अंकों का एक मान्य फ़ोन नंबर दर्ज करें (उदा. 9999999999 या +919999999999)।",
+  phoneHelp: "10-अंकों का नंबर या देश कोड (+91) के साथ दर्ज करें। सुरक्षित OTP लॉगिन के लिए उपयोग किया जाता है।",
+  editUser: "उपयोगकर्ता संपादित करें",
+  manageUser: "उपयोगकर्ता प्रबंधित करें",
+  userUpdatedSuccess: "उपयोगकर्ता प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई।",
+  enterFullName: "अपना पूरा नाम दर्ज करें",
+  saveProfileChanges: "प्रोफ़ाइल परिवर्तन सहेजें",
+  noEmailLinked: "कोई ईमेल लिंक नहीं (फ़ोन खाता)",
 };
 

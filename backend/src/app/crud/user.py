@@ -57,11 +57,14 @@ def update_profile(
     latitude: float | None,
     longitude: float | None,
     crop_history: list[str] | None,
+    phone: str | None = None,
     farm_name: str | None = None,
     farm_area_acres: float | None = None,
 ) -> User:
     if name is not None:
         user.name = name
+    if phone is not None:
+        user.phone = phone
     if language is not None:
         user.language = language
     if user.farm is None:
@@ -83,9 +86,16 @@ def update_profile(
     return user
 
 def find_user_by_identifier(session: Session, identifier: str) -> User | None:
-    return session.scalar(
-        select(User).where(or_(User.email == identifier, User.phone == identifier))
-    )
+    trimmed = identifier.strip()
+    conditions = [User.email == trimmed, User.phone == trimmed]
+    digits = "".join(ch for ch in trimmed if ch.isdigit())
+    if digits:
+        conditions.append(User.phone == digits)
+        if len(digits) >= 10:
+            last10 = digits[-10:]
+            conditions.append(User.phone == f"+91{last10}")
+            conditions.append(User.phone == last10)
+    return session.scalar(select(User).where(or_(*conditions)))
 
 def get_user(session: Session, user_id: str) -> User | None:
     return session.get(User, user_id)

@@ -60,6 +60,38 @@ async def _sync_supabase_user_password(user_id: str, new_password: str) -> bool:
         return False
 
 
+async def sync_supabase_user_phone(user_id: str, phone: str) -> bool:
+    """Updates the user's phone in Supabase Auth via Admin API without triggering verification SMS."""
+    supabase_url = getattr(settings, "SUPABASE_URL", "")
+    service_key = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+    if not supabase_url or not service_key or not user_id or not phone:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.put(
+                f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{user_id}",
+                headers={
+                    "apikey": service_key,
+                    "Authorization": f"Bearer {service_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "phone": phone,
+                    "phone_confirm": True,
+                    "user_metadata": {"phone": phone},
+                },
+            )
+            if resp.status_code in (200, 201):
+                logger.info("Successfully synced phone %s for user %s to Supabase Auth", phone, user_id)
+                return True
+            else:
+                logger.warning("Supabase Auth admin update phone returned %s: %s", resp.status_code, resp.text)
+                return False
+    except Exception as exc:
+        logger.warning("Failed to sync phone to Supabase Auth for user %s: %s", user_id, exc)
+        return False
+
+
 async def _fetch_supabase_tokens(email: str, password: str) -> dict[str, Any] | None:
     """Acquires valid Supabase Auth tokens for a user using password grant."""
     supabase_url = getattr(settings, "SUPABASE_URL", "")

@@ -20,6 +20,7 @@ interface AuthContextType {
   verifyPhoneOtp: (phone: string, token: string, registrationData?: { name?: string; language?: string; location?: string; crop_history?: string[] }) => Promise<Profile>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateUserProfile: (payload: Partial<Profile>) => Promise<Profile>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -211,6 +212,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (payload: Partial<Profile>): Promise<Profile> => {
+    if (!token) throw new Error("Not authenticated");
+    const updated = await updateProfile(payload, token);
+    setUser(updated);
+    return updated;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -229,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyPhoneOtp: verifyPhoneOtpHandler,
         signOut,
         refreshProfile,
+        updateUserProfile,
       }}
     >
       {children}
