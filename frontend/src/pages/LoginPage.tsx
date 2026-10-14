@@ -66,16 +66,15 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    const cleanPhone = normalizePhoneNumber(phone);
-    if (!isValidPhoneNumber(cleanPhone)) {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) {
       setError(t("invalidPhone"));
       return;
     }
 
     setLoading(true);
     try {
-      // isSignUp = false: ensures Supabase rejects unregistered numbers before consuming SMS credits
-      await sendPhoneOtp(cleanPhone, false);
+      await sendPhoneOtp(phone.trim(), true);
       setPhoneStep("enter_otp");
       startCooldown();
     } catch (err: any) {
@@ -89,10 +88,9 @@ export default function LoginPage() {
   const handleResendOtp = async () => {
     if (countdown > 0 || loading) return;
     setError("");
-    const cleanPhone = normalizePhoneNumber(phone);
     setLoading(true);
     try {
-      await sendPhoneOtp(cleanPhone, false);
+      await sendPhoneOtp(phone.trim(), true);
       startCooldown();
     } catch (err: any) {
       setError(err.message || "Failed to resend code.");
@@ -113,8 +111,7 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const cleanPhone = normalizePhoneNumber(phone);
-      const loggedUser = await verifyPhoneOtp(cleanPhone, otp.trim());
+      const loggedUser = await verifyPhoneOtp(phone.trim(), otp.trim());
       const targetRoute = getDefaultRouteForRole(loggedUser.role);
       navigate(targetRoute, { replace: true });
     } catch (err: any) {

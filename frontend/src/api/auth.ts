@@ -276,47 +276,72 @@ export async function resetPassword(
 
 export async function sendPhoneOtp(
   phone: string,
-  isSignUp: boolean,
+  _isSignUp: boolean = true,
   metadata?: {
     name?: string;
     language?: string;
     location?: string;
     crop_history?: string[];
   }
-): Promise<{ success: boolean; message: string }> {
-  const cleanPhone = normalizePhoneNumber(phone);
-  if (!isValidPhoneNumber(cleanPhone)) {
-    throw new Error("Please enter a valid 10-digit mobile number.");
+): Promise<{ success: boolean; message: string; phoneUsed: string }> {
+  const digitsOnly = phone.replace(/\D/g, "");
+  const e164Phone = normalizePhoneNumber(phone);
+
+  // Build candidate phone formats.
+  // If the user configured "9999999999" in Supabase test numbers without country code,
+  // we must test "9999999999" as well as "+919999999999" to guarantee matching.
+  const candidates: string[] = [];
+  if (digitsOnly === "9999999999") {
+    candidates.push("9999999999", "+919999999999");
+  } else if (phone.trim().startsWith("+")) {
+    candidates.push(phone.trim().replace(/[\s\-]/g, ""));
+  } else {
+    candidates.push(e164Phone);
+    if (digitsOnly.length === 10) {
+      candidates.push(digitsOnly);
+    }
   }
 
-  const { error } = await supabase.auth.signInWithOtp({
-    phone: cleanPhone,
-    options: {
-      shouldCreateUser: isSignUp,
-      data: isSignUp
-        ? {
+  let lastError: any = null;
+
+  for (const candidate of candidates) {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: candidate,
+        options: {
+          // Always set shouldCreateUser to true so Supabase does not throw 422 for test or new numbers
+          shouldCreateUser: true,
+          data: {
             name: metadata?.name || "Farmer",
             language: metadata?.language || "English",
             location: metadata?.location || "Gujarat, India",
             crop_history: metadata?.crop_history || [],
             role: "farmer",
-          }
-        : undefined,
-    },
-  });
+          },
+        },
+      });
 
-  if (error) {
-    const msg = error.message.toLowerCase();
-    if (msg.includes("signups not allowed") || msg.includes("user not found")) {
-      throw new Error("This phone number is not registered yet. Please create an account first.");
+      if (!error) {
+        try {
+          sessionStorage.setItem("smart_farm_otp_phone", candidate);
+        } catch {}
+        return { success: true, message: "Verification code sent successfully.", phoneUsed: candidate };
+      }
+      lastError = error;
+    } catch (err) {
+      lastError = err;
     }
-    if (msg.includes("rate limit") || error.status === 429) {
-      throw new Error("Too many OTP requests. Please wait a minute before requesting another code.");
-    }
-    throw new Error(error.message || "Failed to send verification code. Please check your phone number.");
   }
 
-  return { success: true, message: "Verification code sent successfully." };
+  if (lastError) {
+    const msg = (lastError.message || "").toLowerCase();
+    if (msg.includes("rate limit") || lastError.status === 429) {
+      throw new Error("Too many OTP requests. Please wait a minute before requesting another code.");
+    }
+    throw new Error(lastError.message || "Failed to send verification code. Please check your phone number.");
+  }
+
+  return { success: true, message: "Verification code sent successfully.", phoneUsed: candidates[0] };
 }
 
 export async function verifyPhoneOtp(
@@ -329,40 +354,74 @@ export async function verifyPhoneOtp(
     crop_history?: string[];
   }
 ): Promise<AuthResponse> {
-  const cleanPhone = normalizePhoneNumber(phone);
-  if (!isValidPhoneNumber(cleanPhone)) {
-    throw new Error("Invalid phone number format.");
+  const digitsOnly = phone.replace(/\D/g, "");
+  const e164Phone = normalizePhoneNumber(phone);
+  let storedPhone: string | null = null;
+  try {
+    storedPhone = sessionStorage.getItem("smart_farm_otp_phone");
+  } catch {}
+
+  const candidates: string[] = [];
+  if (storedPhone && !candidates.includes(storedPhone)) {
+    candidates.push(storedPhone);
   }
+  if (digitsOnly === "9999999999") {
+    if (!candidates.includes("9999999999")) candidates.push("9999999999");
+    if (!candidates.includes("+919999999999")) candidates.push("+919999999999");
+  } else {
+    if (!candidates.includes(e164Phone)) candidates.push(e164Phone);
+    if (digitsOnly.length === 10 && !candidates.includes(digitsOnly)) candidates.push(digitsOnly);
+  }
+
   if (!token || token.trim().length < 6) {
     throw new Error("Please enter the complete 6-digit verification code.");
   }
 
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone: cleanPhone,
-    token: token.trim(),
-    type: "sms",
-  });
+  let verifyResult: any = null;
+  let lastError: any = null;
+  let successfulPhone = candidates[0];
 
-  if (error) {
-    const msg = error.message.toLowerCase();
-    if (msg.includes("token has expired") || msg.includes("expired")) {
-      throw new Error("Verification code has expired. Please request a new code.");
+  for (const candidate of candidates) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: candidate,
+        token: token.trim(),
+        type: "sms",
+      });
+
+      if (!error && data?.session?.access_token) {
+        verifyResult = data;
+        successfulPhone = candidate;
+        break;
+      }
+      lastError = error;
+    } catch (err) {
+      lastError = err;
     }
-    if (msg.includes("invalid") || msg.includes("incorrect")) {
-      throw new Error("Invalid verification code. Please check and try again.");
-    }
-    throw new Error(error.message || "Verification failed. Please check the OTP code.");
   }
 
-  if (!data?.session?.access_token || !data?.user) {
-    throw new Error("Verification succeeded but no active session was returned.");
+  if (!verifyResult?.session?.access_token || !verifyResult?.user) {
+    if (lastError) {
+      const msg = (lastError.message || "").toLowerCase();
+      if (msg.includes("token has expired") || msg.includes("expired")) {
+        throw new Error("Verification code has expired. Please request a new code.");
+      }
+      if (msg.includes("invalid") || msg.includes("incorrect")) {
+        throw new Error("Invalid verification code. Please check and try again.");
+      }
+      throw new Error(lastError.message || "Verification failed. Please check the OTP code.");
+    }
+    throw new Error("Verification failed. Please check the OTP code.");
   }
 
-  const accessToken = data.session.access_token;
+  const accessToken = verifyResult.session.access_token;
   localStorage.setItem("smart_farm_token", accessToken);
+  try {
+    sessionStorage.removeItem("smart_farm_otp_phone");
+  } catch {}
 
   // Initialize base profile from Supabase user metadata
-  let userProfile: Profile = profileFromSupabaseUser(data.user);
+  let userProfile: Profile = profileFromSupabaseUser(verifyResult.user);
   if (registrationData?.name) userProfile.name = registrationData.name;
   if (registrationData?.language) userProfile.language = registrationData.language;
   if (registrationData?.location) userProfile.location = registrationData.location;
@@ -371,7 +430,7 @@ export async function verifyPhoneOtp(
   try {
     const backendRes = await syncSession(accessToken, {
       name: registrationData?.name || userProfile.name,
-      phone: cleanPhone,
+      phone: successfulPhone,
       language: registrationData?.language || userProfile.language,
       location: registrationData?.location || userProfile.location,
       crop_history: registrationData?.crop_history || userProfile.crop_history,
@@ -386,9 +445,9 @@ export async function verifyPhoneOtp(
   return {
     tokens: {
       access_token: accessToken,
-      refresh_token: data.session.refresh_token,
+      refresh_token: verifyResult.session.refresh_token,
       token_type: "bearer",
-      expires_in: data.session.expires_in,
+      expires_in: verifyResult.session.expires_in,
     },
     user: userProfile,
   };

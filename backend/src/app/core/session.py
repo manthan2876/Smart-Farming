@@ -82,16 +82,21 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
 
     connect_args: dict[str, Any] = {}
     if "postgresql" in url or "postgres" in url:
+        connect_args.setdefault("keepalives", 1)
+        connect_args.setdefault("keepalives_idle", 30)
+        connect_args.setdefault("keepalives_interval", 10)
+        connect_args.setdefault("keepalives_count", 5)
+
         from urllib.parse import urlparse
         try:
             parsed = urlparse(url)
             hostname = parsed.hostname
             if hostname and hostname not in ("localhost", "127.0.0.1", "0.0.0.0") and "hostaddr=" not in url:
                 import socket
-                resolved_ip: str | None = None
                 try:
-                    resolved_ip = socket.gethostbyname(hostname)
+                    socket.gethostbyname(hostname)
                 except Exception:
+                    # Only fallback to manual DNS resolver if local system DNS resolution fails
                     try:
                         import dns.resolver
                         resolver = dns.resolver.Resolver()
@@ -100,13 +105,10 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
                         resolver.lifetime = 3.0
                         answers = resolver.resolve(hostname, "A")
                         for r in answers:
-                            resolved_ip = r.to_text()
+                            connect_args["hostaddr"] = r.to_text()
                             break
                     except Exception:
                         pass
-
-                if resolved_ip:
-                    connect_args["hostaddr"] = resolved_ip
         except Exception:
             pass
 
@@ -145,7 +147,7 @@ def create_app_engine(url: str | None = None, **kwargs):
         engine_kwargs.update({
             "pool_size": 5,
             "max_overflow": 5,
-            "pool_recycle": 1200,
+            "pool_recycle": 60,  # Recycle connections after 60s to prevent stale cloud pooler drops
             "pool_pre_ping": True,
         })
     engine_kwargs.update(kwargs)
@@ -160,12 +162,11 @@ def _session_factory() -> sessionmaker[Session]:
 
 
 def get_session() -> Generator[Session, None, None]:
-    try:
-        session = _session_factory()()
-        session.connection()
-    except SQLAlchemyError as exc:
-        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
+    session = _session_factory()()
     try:
         yield session
+    except SQLAlchemyError as exc:
+        session.rollback()
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
     finally:
         session.close()

@@ -69,16 +69,15 @@ export default function RegisterPage() {
       return;
     }
 
-    const cleanPhone = normalizePhoneNumber(phone);
-    if (!isValidPhoneNumber(cleanPhone)) {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) {
       setError(t("invalidPhone"));
       return;
     }
 
     setLoading(true);
     try {
-      // isSignUp = true: Registers the user and stores profile metadata in Supabase
-      await sendPhoneOtp(cleanPhone, true, {
+      await sendPhoneOtp(phone.trim(), true, {
         name: name.trim(),
         language,
         location: location.trim(),
@@ -96,10 +95,9 @@ export default function RegisterPage() {
   const handleResendRegistrationOtp = async () => {
     if (countdown > 0 || loading) return;
     setError("");
-    const cleanPhone = normalizePhoneNumber(phone);
     setLoading(true);
     try {
-      await sendPhoneOtp(cleanPhone, true, {
+      await sendPhoneOtp(phone.trim(), true, {
         name: name.trim(),
         language,
         location: location.trim(),
@@ -124,8 +122,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const cleanPhone = normalizePhoneNumber(phone);
-      const newUser = await verifyPhoneOtp(cleanPhone, otp.trim(), {
+      const newUser = await verifyPhoneOtp(phone.trim(), otp.trim(), {
         name: name.trim(),
         language,
         location: location.trim(),

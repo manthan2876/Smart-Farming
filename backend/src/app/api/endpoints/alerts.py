@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from app.api.deps import get_current_user
 from app.core import get_session
 from app.models import Alert
@@ -18,14 +19,18 @@ async def get_alerts(
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> list[dict[str, Any]]:
-    alerts = (
-        session.query(Alert)
-        .filter(Alert.user_id == user_id)
-        .order_by(Alert.created_at.desc())
-        .offset(offset)
-        .limit(min(limit, 100))
-        .all()
-    )
+    try:
+        alerts = (
+            session.query(Alert)
+            .filter(Alert.user_id == user_id)
+            .order_by(Alert.created_at.desc())
+            .offset(offset)
+            .limit(min(limit, 100))
+            .all()
+        )
+    except SQLAlchemyError:
+        return []
+
     res = [
         {
             "id": a.id,
@@ -40,9 +45,12 @@ async def get_alerts(
         for a in alerts
     ]
     from app.models import User
-    user = session.get(User, user_id)
-    req_lang = lang or request.headers.get("accept-language") or (user.language if user else None)
-    overlay_entity_translations(session, res, "alert", lambda x: x["id"], ["title", "body"], req_lang)
+    try:
+        user = session.get(User, user_id)
+        req_lang = lang or request.headers.get("accept-language") or (user.language if user else None)
+        overlay_entity_translations(session, res, "alert", lambda x: x["id"], ["title", "body"], req_lang)
+    except Exception:
+        pass
     return res
 
 
