@@ -1,6 +1,7 @@
 import { request } from "./client";
 import type { Profile } from "./types";
 import { supabase } from "../lib/supabase";
+import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
 
 type Tokens = {
   access_token: string;
@@ -271,4 +272,146 @@ export async function resetPassword(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, new_password: newPassword }),
   });
+}
+
+export async function sendPhoneOtp(
+  phone: string,
+  isSignUp: boolean,
+  metadata?: {
+    name?: string;
+    language?: string;
+    location?: string;
+    crop_history?: string[];
+  }
+): Promise<{ success: boolean; message: string }> {
+  const cleanPhone = normalizePhoneNumber(phone);
+  if (!isValidPhoneNumber(cleanPhone)) {
+    throw new Error("Please enter a valid 10-digit mobile number.");
+  }
+
+  const { error } = await supabase.auth.signInWithOtp({
+    phone: cleanPhone,
+    options: {
+      shouldCreateUser: isSignUp,
+      data: isSignUp
+        ? {
+            name: metadata?.name || "Farmer",
+            language: metadata?.language || "English",
+            location: metadata?.location || "Gujarat, India",
+            crop_history: metadata?.crop_history || [],
+            role: "farmer",
+          }
+        : undefined,
+    },
+  });
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("signups not allowed") || msg.includes("user not found")) {
+      throw new Error("This phone number is not registered yet. Please create an account first.");
+    }
+    if (msg.includes("rate limit") || error.status === 429) {
+      throw new Error("Too many OTP requests. Please wait a minute before requesting another code.");
+    }
+    throw new Error(error.message || "Failed to send verification code. Please check your phone number.");
+  }
+
+  return { success: true, message: "Verification code sent successfully." };
+}
+
+export async function verifyPhoneOtp(
+  phone: string,
+  token: string,
+  registrationData?: {
+    name?: string;
+    language?: string;
+    location?: string;
+    crop_history?: string[];
+  }
+): Promise<AuthResponse> {
+  const cleanPhone = normalizePhoneNumber(phone);
+  if (!isValidPhoneNumber(cleanPhone)) {
+    throw new Error("Invalid phone number format.");
+  }
+  if (!token || token.trim().length < 6) {
+    throw new Error("Please enter the complete 6-digit verification code.");
+  }
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    phone: cleanPhone,
+    token: token.trim(),
+    type: "sms",
+  });
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("token has expired") || msg.includes("expired")) {
+      throw new Error("Verification code has expired. Please request a new code.");
+    }
+    if (msg.includes("invalid") || msg.includes("incorrect")) {
+      throw new Error("Invalid verification code. Please check and try again.");
+    }
+    throw new Error(error.message || "Verification failed. Please check the OTP code.");
+  }
+
+  if (!data?.session?.access_token || !data?.user) {
+    throw new Error("Verification succeeded but no active session was returned.");
+  }
+
+  const accessToken = data.session.access_token;
+  localStorage.setItem("smart_farm_token", accessToken);
+
+  // Initialize base profile from Supabase user metadata
+  let userProfile: Profile = profileFromSupabaseUser(data.user);
+  if (registrationData?.name) userProfile.name = registrationData.name;
+  if (registrationData?.language) userProfile.language = registrationData.language;
+  if (registrationData?.location) userProfile.location = registrationData.location;
+
+  // Synchronize session with backend database
+  try {
+    const backendRes = await syncSession(accessToken, {
+      name: registrationData?.name || userProfile.name,
+      phone: cleanPhone,
+      language: registrationData?.language || userProfile.language,
+      location: registrationData?.location || userProfile.location,
+      crop_history: registrationData?.crop_history || userProfile.crop_history,
+    });
+    if (backendRes?.user) {
+      userProfile = { ...userProfile, ...backendRes.user };
+    }
+  } catch (syncErr) {
+    console.warn("Backend /auth/sync-session skipped or offline, using Supabase session profile:", syncErr);
+  }
+
+  return {
+    tokens: {
+      access_token: accessToken,
+      refresh_token: data.session.refresh_token,
+      token_type: "bearer",
+      expires_in: data.session.expires_in,
+    },
+    user: userProfile,
+  };
+}
+
+export async function syncSession(
+  token: string,
+  payload?: {
+    name?: string;
+    phone?: string;
+    language?: string;
+    location?: string;
+    farm_name?: string;
+    crop_history?: string[];
+  }
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/auth/sync-session",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    },
+    token
+  );
 }

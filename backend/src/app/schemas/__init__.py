@@ -14,6 +14,7 @@ from app.schemas.user import (
     RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
+    SessionSyncRequest,
 )
 from app.schemas.farm import FarmRequest, FarmResponse, PlotRequest, PlotResponse
 
@@ -23,6 +24,6 @@ __all__ = [
     "FeedbackRequest", "FeedbackResponse", "FeedbackReviewRequest",
     "CropListResponse",
     "AuthResponse", "ProfileResponse", "ProfileUpdateRequest", "RefreshRequest", "RegisterRequest", "LoginRequest",
-    "ChangePasswordRequest", "ForgotPasswordRequest", "ResetPasswordRequest", "MessageResponse",
+    "ChangePasswordRequest", "ForgotPasswordRequest", "ResetPasswordRequest", "MessageResponse", "SessionSyncRequest",
     "FarmRequest", "FarmResponse", "PlotRequest", "PlotResponse"
     ]

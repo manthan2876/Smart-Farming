@@ -40,7 +40,43 @@ async def get_farmer_profile(
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
     if user is None:
-        raise HTTPException(status_code=404, detail="Farmer profile not found.")
+        auth_header = request.headers.get("authorization", "")
+        token_str = (
+            auth_header.replace("Bearer ", "").strip()
+            if auth_header.startswith("Bearer ")
+            else ""
+        )
+        from app.api.endpoints.auth import fetch_supabase_user_details
+        from app.crud.user import create_user
+        sup_details = await fetch_supabase_user_details(user_id, token_str)
+        if sup_details or token_str:
+            sup_meta = (sup_details or {}).get("user_metadata", {})
+            sup_phone = (sup_details or {}).get("phone")
+            sup_email = (sup_details or {}).get("email")
+            resolved_name = sup_meta.get("name") or (
+                f"Farmer {sup_phone[-4:]}" if sup_phone and len(sup_phone) >= 4 else "Farmer"
+            )
+            resolved_lang = sup_meta.get("language") or "English"
+            resolved_loc = sup_meta.get("location") or "Gujarat, India"
+            resolved_farm = sup_meta.get("farm_name") or f"{resolved_name}'s Farm"
+            try:
+                user = create_user(
+                    session,
+                    user_id=user_id,
+                    name=resolved_name,
+                    phone=sup_phone,
+                    email=sup_email,
+                    password_hash=None,
+                    language=resolved_lang,
+                    location=resolved_loc,
+                    crop_history=sup_meta.get("crop_history") or [],
+                    farm_name=resolved_farm,
+                )
+            except Exception as exc:
+                session.rollback()
+                raise HTTPException(status_code=404, detail="Farmer profile not found.") from exc
+        else:
+            raise HTTPException(status_code=404, detail="Farmer profile not found.")
     
     res = _profile(user)
     req_lang = lang or request.headers.get("accept-language") or user.language

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { login, profile, register, logout, updateProfile, profileFromSupabaseUser, AuthResponse } from "../api/auth";
+import { login, profile, register, logout, updateProfile, profileFromSupabaseUser, AuthResponse, sendPhoneOtp, verifyPhoneOtp } from "../api/auth";
 import { Profile } from "../api/types";
 import { Language, Units, t, TranslationKey } from "../i18n";
 import { supabase } from "../lib/supabase";
@@ -16,6 +16,8 @@ interface AuthContextType {
   setUnits: (units: Units) => void;
   signIn: (identifier: string, pass: string) => Promise<Profile>;
   signUp: (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => Promise<Profile>;
+  sendPhoneOtp: (phone: string, isSignUp: boolean, metadata?: { name?: string; language?: string; location?: string; crop_history?: string[] }) => Promise<{ success: boolean; message: string }>;
+  verifyPhoneOtp: (phone: string, token: string, registrationData?: { name?: string; language?: string; location?: string; crop_history?: string[] }) => Promise<Profile>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -167,6 +169,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.user;
   };
 
+  const sendPhoneOtpHandler = async (
+    phone: string,
+    isSignUp: boolean,
+    metadata?: { name?: string; language?: string; location?: string; crop_history?: string[] }
+  ): Promise<{ success: boolean; message: string }> => {
+    return sendPhoneOtp(phone, isSignUp, metadata);
+  };
+
+  const verifyPhoneOtpHandler = async (
+    phone: string,
+    otpCode: string,
+    registrationData?: { name?: string; language?: string; location?: string; crop_history?: string[] }
+  ): Promise<Profile> => {
+    const res: AuthResponse = await verifyPhoneOtp(phone, otpCode, registrationData);
+    const accessToken = res.tokens.access_token;
+    localStorage.setItem("smart_farm_token", accessToken);
+    setToken(accessToken);
+    setUser(res.user);
+    if (res.user.language && (res.user.language === "Gujarati" || res.user.language === "Hindi" || res.user.language === "English")) {
+      setLanguageState(res.user.language as Language);
+      localStorage.setItem(PREF_LANG_KEY, res.user.language);
+    }
+    return res.user;
+  };
+
   const signOut = async () => {
     try {
       await logout();
@@ -198,6 +225,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUnits,
         signIn,
         signUp,
+        sendPhoneOtp: sendPhoneOtpHandler,
+        verifyPhoneOtp: verifyPhoneOtpHandler,
         signOut,
         refreshProfile,
       }}

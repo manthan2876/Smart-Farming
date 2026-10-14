@@ -714,3 +714,20 @@ export function FolderArchive({ size = 18, className = "", ...props }: IconProps
 }
 
 export const DownloadCloud = Download;
+
+export function Phone({ size = 18, className = "", ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, className)} {...props}>
+      <path d="M2 3a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 .75l.7 2.8a1 1 0 0 1-.25 1l-1.8 1.8a12 12 0 0 0 5.4 5.4l1.8-1.8a1 1 0 0 1 1-.25l2.8.7a1 1 0 0 1 .75 1v3.5a1 1 0 0 1-1 1A16 16 0 0 1 2 3z" />
+    </svg>
+  );
+}
+
+export function Smartphone({ size = 18, className = "", ...props }: IconProps) {
+  return (
+    <svg {...baseProps(size, className)} {...props}>
+      <rect x="5" y="2" width="10" height="16" rx="2" />
+      <line x1="9" y1="15" x2="11" y2="15" />
+    </svg>
+  );
+}

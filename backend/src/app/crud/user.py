@@ -15,14 +15,14 @@ def create_user(
     *,
     user_id: str,
     name: str,
-    phone: str | None,
-    email: str | None,
-    password_hash: str,
-    language: str,
-    location: str | None,
-    latitude: float | None,
-    longitude: float | None,
-    crop_history: list[str],
+    phone: str | None = None,
+    email: str | None = None,
+    password_hash: str | None = None,
+    language: str = "English",
+    location: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    crop_history: list[str] | None = None,
     farm_name: str | None = None,
     farm_area_acres: float | None = None,
 ) -> User:
@@ -35,12 +35,12 @@ def create_user(
         language=language,
     )
     user.farm = Farm(
-        name=farm_name,
-        location=location,
+        name=farm_name or (f"{name}'s Farm" if name else "My Farm"),
+        location=location or "Gujarat, India",
         area_acres=farm_area_acres,
         latitude=latitude,
         longitude=longitude,
-        crop_history=crop_history,
+        crop_history=crop_history or [],
     )
     session.add(user)
     session.commit()

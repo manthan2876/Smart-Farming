@@ -23,6 +23,15 @@ class RefreshRequest(BaseModel):
     refresh_token: str = Field(min_length=1)
 
 
+class SessionSyncRequest(BaseModel):
+    name: str | None = Field(default=None, max_length=200)
+    phone: str | None = Field(default=None, max_length=40)
+    language: str | None = Field(default=None, min_length=1, max_length=32)
+    location: str | None = Field(default=None, max_length=300)
+    farm_name: str | None = Field(default=None, max_length=200)
+    crop_history: list[str] | None = Field(default=None, max_length=50)
+
+
 class ProfileUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     location: str | None = Field(default=None, max_length=300)

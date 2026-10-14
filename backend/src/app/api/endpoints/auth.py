@@ -21,6 +21,7 @@ from app.schemas import (
     RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
+    SessionSyncRequest,
 )
 from app.crud import (
     create_user,
@@ -89,6 +90,44 @@ async def _fetch_supabase_tokens(email: str, password: str) -> dict[str, Any] | 
     except Exception as exc:
         logger.warning("Failed to acquire Supabase tokens: %s", exc)
     return None
+
+
+async def fetch_supabase_user_details(user_id: str, bearer_token: str | None = None) -> dict[str, Any] | None:
+    """Fetches user details from Supabase Auth via Admin API or User endpoint."""
+    supabase_url = getattr(settings, "SUPABASE_URL", "")
+    service_key = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+    anon_key = (
+        getattr(settings, "SUPABASE_ANON_KEY", "")
+        or getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+    )
+    if not supabase_url:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            if service_key:
+                resp = await client.get(
+                    f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{user_id}",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                    },
+                )
+                if resp.status_code == 200:
+                    return resp.json()
+            if bearer_token and anon_key:
+                resp = await client.get(
+                    f"{supabase_url.rstrip('/')}/auth/v1/user",
+                    headers={
+                        "apikey": anon_key,
+                        "Authorization": f"Bearer {bearer_token}",
+                    },
+                )
+                if resp.status_code == 200:
+                    return resp.json()
+    except Exception as exc:
+        logger.warning("Failed to fetch Supabase user details for %s: %s", user_id, exc)
+    return None
+
 
 def _profile(user, session: Session | None = None, req_lang: str | None = None) -> ProfileResponse:
     farm = user.farm
@@ -363,4 +402,79 @@ async def logout(request: Request, response: Response) -> dict[str, str]:
         samesite=cookie_opts["samesite"],
     )
     return {"status": "success"}
+
+
+@router.post("/sync-session", response_model=AuthResponse)
+async def sync_session(
+    request: Request,
+    payload: SessionSyncRequest,
+    response: Response,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> AuthResponse:
+    """Synchronize user profile into backend database from Supabase Phone / OAuth session."""
+    auth_header = request.headers.get("authorization", "")
+    token_str = (
+        auth_header.replace("Bearer ", "").strip()
+        if auth_header.startswith("Bearer ")
+        else ""
+    )
+
+    # Fetch user details from Supabase Auth
+    sup_details = await fetch_supabase_user_details(user_id, token_str)
+    sup_meta = (sup_details or {}).get("user_metadata", {})
+    sup_phone = (sup_details or {}).get("phone") or payload.phone
+    sup_email = (sup_details or {}).get("email")
+
+    user = session.get(User, user_id)
+    if user is None:
+        resolved_name = (
+            payload.name
+            or sup_meta.get("name")
+            or (f"Farmer {sup_phone[-4:]}" if sup_phone and len(sup_phone) >= 4 else "Farmer")
+        )
+        resolved_lang = payload.language or sup_meta.get("language") or "English"
+        resolved_loc = payload.location or sup_meta.get("location") or "Gujarat, India"
+        resolved_farm_name = payload.farm_name or sup_meta.get("farm_name") or f"{resolved_name}'s Farm"
+        resolved_crop_history = payload.crop_history or sup_meta.get("crop_history") or []
+
+        user = create_user(
+            session,
+            user_id=user_id,
+            name=resolved_name,
+            phone=sup_phone,
+            email=sup_email,
+            password_hash=None,
+            language=resolved_lang,
+            location=resolved_loc,
+            crop_history=resolved_crop_history,
+            farm_name=resolved_farm_name,
+        )
+    else:
+        if payload.name:
+            user.name = payload.name
+        if sup_phone and not user.phone:
+            user.phone = sup_phone
+        if payload.language:
+            user.language = payload.language
+        if user.farm:
+            if payload.location:
+                user.farm.location = payload.location
+            if payload.farm_name:
+                user.farm.name = payload.farm_name
+            if payload.crop_history:
+                user.farm.crop_history = payload.crop_history
+        session.commit()
+        session.refresh(user)
+
+    tokens = {
+        "access_token": token_str or create_token_pair(user.id)["access_token"],
+        "refresh_token": "",
+        "token_type": "bearer",
+        "expires_in": 3600,
+    }
+    return AuthResponse(
+        tokens=tokens,
+        user=_profile(user, session=session, req_lang=request.headers.get("accept-language")),
+    )
 
