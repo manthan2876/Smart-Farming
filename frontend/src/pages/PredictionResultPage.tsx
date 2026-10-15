@@ -23,9 +23,21 @@ export default function PredictionResultPage() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [farmerNote, setFarmerNote] = useState("");
   const [localTranslations, setLocalTranslations] = useState<Record<string, any>>({});
+  const [localExpertGuidance, setLocalExpertGuidance] = useState<Record<string, string>>({});
   const inFlightLangRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentTrackKeyRef = useRef<string | null>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // Reset any active audio playback when the display language switches
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setIsPlaying(false);
+      currentTrackKeyRef.current = null;
+    }
+  }, [targetLang]);
 
   useEffect(() => {
     // Whenever a prediction is viewed, refresh alerts cache so unread notifications update
@@ -35,8 +47,8 @@ export default function PredictionResultPage() {
   }, [id, token, queryClient]);
 
   const { data: prediction, isLoading, isError, refetch } = useQuery({
-    queryKey: ["prediction", id],
-    queryFn: () => getPrediction(id as string, token!),
+    queryKey: ["prediction", id, targetLang],
+    queryFn: () => getPrediction(id as string, token!, targetLang),
     refetchInterval: (query) => {
       const current = query.state.data;
       if (!current) return false;
@@ -49,13 +61,26 @@ export default function PredictionResultPage() {
     if (targetLang !== "en" && prediction && id && token) {
       const primary = prediction.follow_up || prediction;
       const alreadyHasTranslation = primary.translations?.[targetLang] || localTranslations[targetLang];
-      if (!alreadyHasTranslation && inFlightLangRef.current !== targetLang) {
+      const isExpertVerified =
+        (primary.status as any)?.expert_review === "verified" ||
+        (primary.status as any)?.pipeline === "verified" ||
+        (primary.expert_review_data as any)?.status === "verified";
+      const hasExpertGuidance = isExpertVerified && Boolean(primary.expert_review_data?.farmer_guidance);
+      const alreadyHasGuidanceTrans = Boolean(
+        primary.translations?.[targetLang]?.farmer_guidance || localExpertGuidance[targetLang]
+      );
+      const needsTranslation = !alreadyHasTranslation || (hasExpertGuidance && !alreadyHasGuidanceTrans);
+
+      if (needsTranslation && inFlightLangRef.current !== targetLang) {
         inFlightLangRef.current = targetLang;
         setIsTranslating(true);
         request<any>(`/predictions/${id}/translate?target_language=${targetLang}`, { method: "POST" }, token)
           .then((res) => {
             if (res?.recommendation) {
               setLocalTranslations((prev) => ({ ...prev, [targetLang]: res.recommendation }));
+            }
+            if (res?.expert_guidance) {
+              setLocalExpertGuidance((prev) => ({ ...prev, [targetLang]: res.expert_guidance }));
             }
             return refetch();
           })
@@ -66,7 +91,7 @@ export default function PredictionResultPage() {
           });
       }
     }
-  }, [targetLang, prediction, id, token, localTranslations, refetch]);
+  }, [targetLang, prediction, id, token, localTranslations, localExpertGuidance, refetch]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0];
@@ -100,7 +125,10 @@ export default function PredictionResultPage() {
 
   const toggleAudio = async (text: string) => {
     if (!text || !text.trim().replace(/[.,!?;:\s-]/g, "").length) return;
-    if (audioRef.current) {
+    const trackKey = `${targetLang}:${text.trim()}`;
+
+    // If already playing the exact track for this language, toggle play/pause
+    if (audioRef.current && currentTrackKeyRef.current === trackKey) {
       if (isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
@@ -110,6 +138,15 @@ export default function PredictionResultPage() {
       }
       return;
     }
+
+    // Otherwise stop and clean up any previously playing track
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setIsPlaying(false);
+      currentTrackKeyRef.current = null;
+    }
+
     try {
       setIsLoadingAudio(true);
       const response: any = await request("/tts", { method: "POST", body: JSON.stringify({ text, language: targetLang }) }, token!);
@@ -118,6 +155,7 @@ export default function PredictionResultPage() {
         const mimeType = format === "wav" ? "audio/wav" : "audio/mpeg";
         const audio = new Audio(`data:${mimeType};base64,${response.audioContent}`);
         audioRef.current = audio;
+        currentTrackKeyRef.current = trackKey;
         audio.onended = () => setIsPlaying(false);
         audio.onpause = () => setIsPlaying(false);
         audio.onplay = () => setIsPlaying(true);
@@ -165,16 +203,17 @@ export default function PredictionResultPage() {
   const AudioButton = ({ text }: { text?: string | null }) => {
     const hasSpokenContent = Boolean(text && text.trim().replace(/[.,!?;:\s-]/g, "").length > 0);
     if (!hasSpokenContent) return null;
+    const isBusy = isLoadingAudio || isTranslating;
     return (
       <Button
         variant="secondary"
         size="sm"
         className="no-print"
         onClick={() => toggleAudio(text!)}
-        disabled={isLoadingAudio}
+        disabled={isBusy}
       >
-        {isLoadingAudio ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
-        {isLoadingAudio ? t("loading") : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
+        {isBusy ? <Loader2 size={16} className="animate-spin" /> : isPlaying ? <Pause size={16} /> : <Volume2 size={16} />}
+        {isLoadingAudio ? t("loading") : isTranslating ? t("translating") : isPlaying ? t("pauseAudio") : t("listenAdvisory")}
       </Button>
     );
   };
@@ -247,7 +286,15 @@ export default function PredictionResultPage() {
     const rawRec = predictionData.recommendation || {};
     const translatedRec = targetLang !== "en" ? (predictionData.translations?.[targetLang] || localTranslations[targetLang]) : null;
     const recommendation = translatedRec || rawRec;
-    const expertGuidance = predictionData.expert_review_data?.farmer_guidance;
+    const isExpertVerified =
+      (predictionData.status as any)?.expert_review === "verified" ||
+      (predictionData.status as any)?.pipeline === "verified" ||
+      (predictionData.expert_review_data as any)?.status === "verified";
+    const expertGuidance = isExpertVerified
+      ? (targetLang !== "en"
+          ? localExpertGuidance[targetLang] || predictionData.translations?.[targetLang]?.farmer_guidance
+          : null) || predictionData.expert_review_data?.farmer_guidance
+      : null;
     const isFallback = rawRec.is_fallback === true;
     const masked = (predictionData.status as any)?.mask_advisory === true || ((predictionData.status as any)?.expert_review === "pending" && !recommendation.immediate_action);
     if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">{t("advisoryMasked")}</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">{t("advisoryMaskedDesc")}</p></Card>;

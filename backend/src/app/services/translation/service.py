@@ -202,11 +202,67 @@ def translate_batch_indictrans_sync(texts: list[str], target_lang: str) -> list[
     return results
 
 
+async def _fallback_translate_batch(texts: list[str], target_code: str) -> list[str]:
+    """Free reliable fallback translator using Google Translate public endpoint when GPU server is offline."""
+    out = []
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
+        for t in texts:
+            if not t or not t.strip() or not any(c.isalpha() for c in t):
+                out.append(t)
+                continue
+            try:
+                resp = await client.get(
+                    "https://translate.googleapis.com/translate_a/single",
+                    params={"client": "gtx", "sl": "auto", "tl": target_code, "dt": "t", "q": t},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    segments = "".join(s[0] for s in data[0] if s and s[0])
+                    out.append(segments if segments else t)
+                else:
+                    out.append(t)
+            except Exception as exc:
+                logger.warning("Fallback translate request failed for '%s': %s", t[:30], exc)
+                out.append(t)
+    return out
+
+
+def _fallback_translate_batch_sync(texts: list[str], target_code: str) -> list[str]:
+    """Synchronous fallback translator using Google Translate public endpoint when GPU server is offline."""
+    out = []
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    with httpx.Client(timeout=10.0, headers=headers) as client:
+        for t in texts:
+            if not t or not t.strip() or not any(c.isalpha() for c in t):
+                out.append(t)
+                continue
+            try:
+                resp = client.get(
+                    "https://translate.googleapis.com/translate_a/single",
+                    params={"client": "gtx", "sl": "auto", "tl": target_code, "dt": "t", "q": t},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    segments = "".join(s[0] for s in data[0] if s and s[0])
+                    out.append(segments if segments else t)
+                else:
+                    out.append(t)
+            except Exception as exc:
+                logger.warning("Fallback sync translate request failed for '%s': %s", t[:30], exc)
+                out.append(t)
+    return out
+
+
 async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
     """Translate a list of texts into target_lang, using Upstash Redis REST caching with IndicTrans2 server."""
     target_code = normalize_language_code(target_lang)
-    if target_code == "en" or not texts:
+    if not texts:
         return texts
+    if target_code == "en":
+        # If texts are already in English/ASCII (no Indic chars), return as-is
+        if not any(any(ord(c) >= 0x0900 for c in t) for t in texts if t):
+            return texts
 
     import asyncio
     import hashlib
@@ -244,7 +300,19 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
             try:
                 translated_missing = await translate_batch_indictrans(missing_texts, target_code)
             except Exception as exc:
-                logger.warning("IndicTrans2 translation failed (%s); using original text.", exc)
+                logger.warning("IndicTrans2 translation failed (%s); trying fallback translator.", exc)
+
+        # Fallback: Google Translate public endpoint if IndicTrans2 is unavailable or did not produce expected text
+        if (
+            translated_missing is None
+            or (target_code in ("hi", "gu") and not any(any(ord(c) >= 0x0900 for c in t) for t in translated_missing if t))
+        ):
+            try:
+                fallback_res = await _fallback_translate_batch(missing_texts, target_code)
+                if fallback_res and (target_code not in ("hi", "gu") or any(any(ord(c) >= 0x0900 for c in t) for t in fallback_res if t)):
+                    translated_missing = fallback_res
+            except Exception as exc:
+                logger.warning("Fallback translation failed: %s", exc)
 
         if translated_missing is None:
             translated_missing = list(missing_texts)
@@ -317,15 +385,26 @@ def translate_batch_sync(texts: list[str], target_lang: str) -> list[str]:
         return []
     target_code = normalize_language_code(target_lang)
     if target_code == "en":
-        return texts
+        if not any(any(ord(c) >= 0x0900 for c in t) for t in texts if t):
+            return texts
 
     # Primary: IndicTrans2 (Colab / GPU server)
     server_url = (getattr(settings, "TRANSLATION_SERVER_URL", "") or "").strip()
     if server_url and target_code in ("hi", "gu"):
         try:
-            return translate_batch_indictrans_sync(texts, target_code)
+            res = translate_batch_indictrans_sync(texts, target_code)
+            if any(any(ord(c) >= 0x0900 for c in t) for t in res if t):
+                return res
         except Exception as exc:
-            logger.warning("IndicTrans2 sync translation failed (%s); returning original texts", exc)
+            logger.warning("IndicTrans2 sync translation failed (%s); trying fallback translator", exc)
+
+    # Fallback: Google Translate public endpoint
+    try:
+        fallback_res = _fallback_translate_batch_sync(texts, target_code)
+        if fallback_res and (target_code not in ("hi", "gu") or any(any(ord(c) >= 0x0900 for c in t) for t in fallback_res if t)):
+            return fallback_res
+    except Exception as exc:
+        logger.warning("Fallback sync translation failed: %s", exc)
 
     return texts
 

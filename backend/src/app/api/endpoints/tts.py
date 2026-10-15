@@ -80,6 +80,22 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
 
     lang = _resolve_tts_language(payload.language)
 
+    # If the user requests Gujarati or Hindi speech, but incoming text is in English (no Indic characters >= 0x0900),
+    # auto-translate it to the requested language so that authentic regional speech is generated.
+    if lang in ("hi", "gu") and not any(ord(c) >= 0x0900 for c in cleaned_text):
+        try:
+            from app.services.translation.service import translate_text
+            translated_text = await translate_text(cleaned_text, lang)
+            if translated_text and any(ord(c) >= 0x0900 for c in translated_text):
+                logger.info("Auto-translated English TTS text to %s: '%s' -> '%s'", lang, cleaned_text[:30], translated_text[:30])
+                cleaned_text = translated_text
+        except Exception as exc:
+            logger.warning("Failed to auto-translate TTS text to %s: %s", lang, exc)
+
+    # Expand numbers and decimals into spoken regional words for Indic-TTS
+    from app.services.tts_normalizer import expand_numbers_for_tts
+    cleaned_text = expand_numbers_for_tts(cleaned_text, lang)
+
     # 1. Determine key and cache paths (partitioned by language + text)
     text_hash = hashlib.sha256(f"{lang}:{cleaned_text}".encode("utf-8")).hexdigest()
     cache_file = AUDIO_CACHE_DIR / f"{text_hash}.wav"

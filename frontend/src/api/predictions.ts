@@ -5,8 +5,9 @@ export async function history(token: string, limit = 20, offset = 0) {
   return request<Prediction[]>(`/history?limit=${limit}&offset=${offset}`, {}, token);
 }
 
-export async function getPrediction(id: string, token: string) {
-  return request<Prediction>(`/predictions/${id}`, {}, token);
+export async function getPrediction(id: string, token: string, lang?: string) {
+  const query = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return request<Prediction>(`/predictions/${id}${query}`, {}, token);
 }
 export async function predict(
   file: File,

@@ -745,29 +745,53 @@ async def prediction_detail(
                 translations[ct.language] = dict(result.get("recommendation") or {})
                 translations[ct.language]["language"] = ct.language
             translations[ct.language][ct.field_name] = ct.translated_text
+
+        # Also overlay expert guidance translations into translations dict if available
+        target_er = prediction.expert_review
+        if not target_er and getattr(prediction, "follow_ups", None) and prediction.follow_ups:
+            target_er = prediction.follow_ups[-1].expert_review
+
+        if target_er and target_er.status == "verified" and target_er.farmer_guidance:
+            er_cached_trans = session.query(EntityTranslation).filter_by(
+                entity_type="expert_review",
+                entity_id=str(target_er.id),
+                field_name="farmer_guidance",
+                status="done"
+            ).all()
+            for ect in er_cached_trans:
+                if ect.language not in translations:
+                    translations[ect.language] = dict(result.get("recommendation") or {})
+                    translations[ect.language]["language"] = ect.language
+                translations[ect.language]["farmer_guidance"] = ect.translated_text
+
         result["translations"] = translations
     except Exception:
         pass
 
     req_lang = lang or request.headers.get("accept-language")
-    if req_lang and not req_lang.lower().startswith("en"):
-        norm_code = "gu" if req_lang.lower().startswith("gu") else ("hi" if req_lang.lower().startswith("hi") else None)
-        if norm_code:
-            if norm_code in translations and translations[norm_code]:
-                result["recommendation"] = dict(translations[norm_code])
-            if prediction.expert_review and result.get("expert_review_data"):
-                try:
-                    guidance_trans = session.query(EntityTranslation).filter_by(
-                        entity_type="expert_review",
-                        entity_id=str(prediction.expert_review.id),
-                        field_name="farmer_guidance",
-                        language=norm_code,
-                        status="done",
-                    ).first()
-                    if guidance_trans and guidance_trans.translated_text:
+    norm_code = "gu" if req_lang and req_lang.lower().startswith("gu") else ("hi" if req_lang and req_lang.lower().startswith("hi") else ("en" if req_lang and req_lang.lower().startswith("en") else None))
+    if norm_code:
+        if norm_code in translations and translations[norm_code]:
+            result["recommendation"] = dict(translations[norm_code])
+        target_er = prediction.expert_review
+        if not target_er and getattr(prediction, "follow_ups", None) and prediction.follow_ups:
+            target_er = prediction.follow_ups[-1].expert_review
+        if target_er and target_er.status == "verified" and target_er.farmer_guidance:
+            try:
+                guidance_trans = session.query(EntityTranslation).filter_by(
+                    entity_type="expert_review",
+                    entity_id=str(target_er.id),
+                    field_name="farmer_guidance",
+                    language=norm_code,
+                    status="done",
+                ).first()
+                if guidance_trans and guidance_trans.translated_text:
+                    if result.get("expert_review_data"):
                         result["expert_review_data"]["farmer_guidance"] = guidance_trans.translated_text
-                except Exception:
-                    pass
+                    if result.get("follow_up", {}).get("expert_review_data"):
+                        result["follow_up"]["expert_review_data"]["farmer_guidance"] = guidance_trans.translated_text
+            except Exception:
+                pass
 
     return _enrich_image_urls(result)
 
