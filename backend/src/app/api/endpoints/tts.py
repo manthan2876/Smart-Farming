@@ -138,8 +138,10 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
     data = {
         "text": cleaned_text,
         "language": lang,
-        "speaker": "female",
     }
+    # Only supply explicit speaker for Indian regional languages that have multi-speaker models (hi, gu)
+    if lang in ("hi", "gu"):
+        data["speaker"] = "female"
 
     try:
         timeout = httpx.Timeout(settings.TTS_SERVER_TIMEOUT)
@@ -147,6 +149,12 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
             # First try /tts/synthesize (returns JSON with base64 audioContent)
             synthesize_url = f"{tts_url}/tts/synthesize" if not tts_url.endswith("/tts") else f"{tts_url}/synthesize"
             resp = await client.post(synthesize_url, json=data, headers=headers)
+
+            # If upstream returned 500 and speaker was specified, retry without speaker
+            if resp.status_code == 500 and "speaker" in data:
+                logger.warning("Indic-TTS upstream returned 500 with speaker=%s, retrying without speaker...", data.get("speaker"))
+                data_no_spk = {k: v for k, v in data.items() if k != "speaker"}
+                resp = await client.post(synthesize_url, json=data_no_spk, headers=headers)
 
             if resp.status_code == 200:
                 result = resp.json()
@@ -167,6 +175,10 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
                 # Fallback to direct raw audio endpoint POST /tts
                 direct_url = f"{tts_url}/tts" if not tts_url.endswith("/tts") else tts_url
                 resp_direct = await client.post(direct_url, json=data, headers=headers)
+                if resp_direct.status_code == 500 and "speaker" in data:
+                    data_no_spk = {k: v for k, v in data.items() if k != "speaker"}
+                    resp_direct = await client.post(direct_url, json=data_no_spk, headers=headers)
+
                 if resp_direct.status_code == 200:
                     audio_bytes = resp_direct.content
                     b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
