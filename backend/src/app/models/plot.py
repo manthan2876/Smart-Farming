@@ -7,7 +7,7 @@ class Plot(Base):
     __tablename__ = "plots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    farm_id: Mapped[int] = mapped_column(ForeignKey("farms.id"), index=True)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farms.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(200))
     crop: Mapped[str | None] = mapped_column(String(100), nullable=True)
     area_acres: Mapped[float | None] = mapped_column(Float, nullable=True)

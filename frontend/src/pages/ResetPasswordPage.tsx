@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { resetPassword } from "../api/auth";
+import { supabase } from "../lib/supabase";
 import { Sprout, Lock, KeyRound, AlertTriangle, CheckCircle2 } from "../components/icons";
 import { motion } from "motion/react";
 import { Button, Input } from "../components/ui";
@@ -10,21 +11,62 @@ import LanguageToggle from "../components/LanguageToggle";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  const queryToken = searchParams.get("token");
+  const code = searchParams.get("code");
   const navigate = useNavigate();
   const { t } = useAuth();
 
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const activeToken = queryToken || (hasRecoverySession ? "supabase_recovery" : "");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    const checkRecoverySession = async () => {
+      const hash = window.location.hash;
+      if (hash.includes("type=recovery") || hash.includes("access_token")) {
+        setHasRecoverySession(true);
+      }
+
+      if (code) {
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error && data.session) {
+            setHasRecoverySession(true);
+          }
+        } catch {}
+      }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setHasRecoverySession(true);
+        }
+      } catch {}
+    };
+
+    checkRecoverySession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (session && (event === "SIGNED_IN" || event === "USER_UPDATED"))) {
+        setHasRecoverySession(true);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [code]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!token) {
+    const activeToken = queryToken || (hasRecoverySession ? "supabase_recovery" : "");
+    if (!activeToken && !hasRecoverySession) {
       setError(t("missingResetToken"));
       return;
     }
@@ -41,7 +83,7 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      await resetPassword(token, newPassword);
+      await resetPassword(activeToken, newPassword);
       setSuccess(true);
       setTimeout(() => {
         navigate("/auth/login?reset=success");
@@ -68,7 +110,7 @@ export default function ResetPasswordPage() {
         >
           <Sprout className="mb-7 text-farmer-700 dark:text-farmer-300" size={40} />
 
-          {!token ? (
+          {!activeToken ? (
             <div className="rounded-sm border border-line bg-surface p-6 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
                 <AlertTriangle size={32} />

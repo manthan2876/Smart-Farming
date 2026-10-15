@@ -18,6 +18,8 @@ def _profile(user) -> ProfileResponse:
         name=user.name,
         phone=user.phone,
         email=user.email,
+        is_email_verified=getattr(user, "is_email_verified", False),
+        pending_email=getattr(user, "pending_email", None),
         language=user.language,
         role=user.role,
         location=farm.location if farm else None,

@@ -49,6 +49,8 @@ class ProfileResponse(BaseModel):
     name: str | None
     phone: str | None
     email: str | None
+    is_email_verified: bool = False
+    pending_email: str | None = None
     language: str
     role: str
     location: str | None
@@ -78,6 +80,25 @@ class ResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class RequestEmailUpdateRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(min_length=1)
+
+
+class ResendVerificationEmailRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+
+
+class SetupFirstTimePasswordRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    phone: str = Field(min_length=10, max_length=40)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class MessageResponse(BaseModel):
     status: str = "success"
     message: str
+

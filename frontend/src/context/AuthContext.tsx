@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { login, profile, register, logout, updateProfile, profileFromSupabaseUser, AuthResponse, sendPhoneOtp, verifyPhoneOtp } from "../api/auth";
+import { login, profile, register, logout, updateProfile, profileFromSupabaseUser, AuthResponse, sendPhoneOtp, verifyPhoneOtp, requestEmailUpdate as apiRequestEmailUpdate, resendVerificationEmail as apiResendVerificationEmail, setupFirstTimePassword as apiSetupFirstTimePassword } from "../api/auth";
 import { Profile } from "../api/types";
 import { Language, Units, t, TranslationKey } from "../i18n";
 import { supabase } from "../lib/supabase";
@@ -18,6 +18,9 @@ interface AuthContextType {
   signUp: (payload: { name: string; email?: string; phone?: string; password: string; location: string; language: string; crop_history?: string[] }) => Promise<Profile>;
   sendPhoneOtp: (phone: string, isSignUp: boolean, metadata?: { name?: string; language?: string; location?: string; crop_history?: string[] }) => Promise<{ success: boolean; message: string }>;
   verifyPhoneOtp: (phone: string, token: string, registrationData?: { name?: string; language?: string; location?: string; crop_history?: string[] }) => Promise<Profile>;
+  requestEmailUpdate: (email: string) => Promise<{ status: string; message: string }>;
+  resendVerificationEmail: (email: string) => Promise<{ status: string; message: string }>;
+  setupFirstTimePassword: (payload: { email: string; phone: string; new_password: string }) => Promise<Profile>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateUserProfile: (payload: Partial<Profile>) => Promise<Profile>;
@@ -160,9 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       crop_history: payload.crop_history || [],
     });
     const accessToken = res.tokens.access_token;
-    localStorage.setItem("smart_farm_token", accessToken);
-    setToken(accessToken);
-    setUser(res.user);
+    if (accessToken) {
+      localStorage.setItem("smart_farm_token", accessToken);
+      setToken(accessToken);
+      setUser(res.user);
+    }
     if (payload.language && (payload.language === "Gujarati" || payload.language === "Hindi" || payload.language === "English")) {
       setLanguageState(payload.language as Language);
       localStorage.setItem(PREF_LANG_KEY, payload.language);
@@ -219,6 +224,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return updated;
   };
 
+  const requestEmailUpdateHandler = async (email: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await apiRequestEmailUpdate(email, token);
+    await refreshProfile();
+    return res;
+  };
+
+  const resendVerificationEmailHandler = async (email: string) => {
+    return apiResendVerificationEmail(email);
+  };
+
+  const setupFirstTimePasswordHandler = async (payload: { email: string; phone: string; new_password: string }): Promise<Profile> => {
+    const res = await apiSetupFirstTimePassword(payload);
+    const accessToken = res.tokens.access_token as string;
+    localStorage.setItem("smart_farm_token", accessToken);
+    setToken(accessToken);
+    setUser(res.user);
+    return res.user;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -235,6 +260,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         sendPhoneOtp: sendPhoneOtpHandler,
         verifyPhoneOtp: verifyPhoneOtpHandler,
+        requestEmailUpdate: requestEmailUpdateHandler,
+        resendVerificationEmail: resendVerificationEmailHandler,
+        setupFirstTimePassword: setupFirstTimePasswordHandler,
         signOut,
         refreshProfile,
         updateUserProfile,

@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from app.models import (
     Farm,
@@ -7,7 +10,7 @@ from app.models import (
 )
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    return db.query(User).filter(User.email == email).first()
+    return db.query(User).filter(User.email.ilike(email.strip())).first()
 
 
 def create_user(
@@ -25,12 +28,18 @@ def create_user(
     crop_history: list[str] | None = None,
     farm_name: str | None = None,
     farm_area_acres: float | None = None,
+    is_email_verified: bool = False,
+    pending_email: str | None = None,
+    email_verified_at: datetime | None = None,
 ) -> User:
     user = User(
         id=user_id,
         name=name,
         phone=phone,
         email=email,
+        is_email_verified=is_email_verified,
+        pending_email=pending_email,
+        email_verified_at=email_verified_at,
         password_hash=password_hash,
         language=language,
     )
@@ -87,7 +96,12 @@ def update_profile(
 
 def find_user_by_identifier(session: Session, identifier: str) -> User | None:
     trimmed = identifier.strip()
-    conditions = [User.email == trimmed, User.phone == trimmed]
+    trimmed_lower = trimmed.lower()
+    conditions = [
+        func.lower(User.email) == trimmed_lower,
+        func.lower(User.pending_email) == trimmed_lower,
+        User.phone == trimmed,
+    ]
     digits = "".join(ch for ch in trimmed if ch.isdigit())
     if digits:
         conditions.append(User.phone == digits)

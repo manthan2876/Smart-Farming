@@ -20,7 +20,8 @@ import {
   KeyRound,
   ShieldCheck,
   User,
-  Phone
+  Phone,
+  Mail
 } from "../components/icons";
 import { motion } from "motion/react";
 import { Button, Card, Input, Select } from "../components/ui";
@@ -28,7 +29,7 @@ import ThemeToggle from "../components/ThemeToggle";
 import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
 
 export default function SettingsPage() {
-  const { user, token, language, units, setLanguage, setUnits, updateUserProfile, t } = useAuth();
+  const { user, token, language, units, setLanguage, setUnits, updateUserProfile, requestEmailUpdate, resendVerificationEmail, t } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === "admin";
   
@@ -39,10 +40,17 @@ export default function SettingsPage() {
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState(false);
 
+  // Email Linking / Update
+  const [profileEmail, setProfileEmail] = useState(user?.email || user?.pending_email || "");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [emailSuccess, setEmailSuccess] = useState("");
+
   useEffect(() => {
     if (user) {
       setProfileName(user.name || "");
       setProfilePhone(user.phone || "");
+      setProfileEmail(user.pending_email || user.email || "");
     }
   }, [user]);
 
@@ -79,6 +87,51 @@ export default function SettingsPage() {
       setProfileError(err?.message || "Failed to update profile details.");
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const handleUpdateEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError("");
+    setEmailSuccess("");
+
+    const trimmed = profileEmail.trim();
+    if (!trimmed || !trimmed.includes("@") || !trimmed.includes(".")) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+
+    if (user?.email && user.email.toLowerCase() === trimmed.toLowerCase() && user.is_email_verified) {
+      setEmailError("This email is already verified and linked to your account.");
+      return;
+    }
+
+    setEmailLoading(true);
+    try {
+      const res = await requestEmailUpdate(trimmed);
+      setEmailSuccess(res.message || `Verification link sent to ${trimmed}. Please check your inbox.`);
+      setTimeout(() => setEmailSuccess(""), 10000);
+    } catch (err: any) {
+      setEmailError(err.message || "Failed to send verification link.");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const target = user?.pending_email || profileEmail.trim();
+    if (!target) return;
+    setEmailError("");
+    setEmailSuccess("");
+    setEmailLoading(true);
+    try {
+      const res = await resendVerificationEmail(target);
+      setEmailSuccess(res.message || `Verification link resent to ${target}.`);
+      setTimeout(() => setEmailSuccess(""), 8000);
+    } catch (err: any) {
+      setEmailError(err.message || "Failed to resend verification link.");
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -275,29 +328,112 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="text-xs text-muted">
-              {user?.email ? (
-                <span>Email linked: <strong className="text-ink">{user.email}</strong></span>
-              ) : (
-                <span>Phone auth authenticated</span>
-              )}
+          <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+            <Button type="submit" disabled={profileLoading} className="flex items-center gap-2">
+              <User size={15} />
+              <span>{profileLoading ? t("updating") : t("saveProfileChanges")}</span>
+            </Button>
+            {profileSuccess && (
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-farmer-700 dark:text-farmer-300 animate-fadeIn">
+                <CheckCircle2 size={16} />
+                <span>{t("phoneUpdatedSuccess")}</span>
+              </span>
+            )}
+          </div>
+        </form>
+
+        {/* Email Address Section */}
+        <div className="my-6 border-t border-line" />
+
+        <div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="flex items-center gap-2 font-display text-lg text-ink">
+                <Mail size={18} className="text-farmer-700 dark:text-farmer-300" />
+                <span>Email Address & Authentication</span>
+              </h4>
+              <p className="mt-1 text-sm text-muted">
+                Link or change your email address. You will receive a verification link. Once verified, your email and mobile phone belong to this same account.
+              </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button type="submit" disabled={profileLoading} className="flex items-center gap-2">
-                <Phone size={15} />
-                <span>{profileLoading ? t("updating") : t("saveProfileChanges")}</span>
-              </Button>
-              {profileSuccess && (
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-farmer-700 dark:text-farmer-300 animate-fadeIn">
-                  <CheckCircle2 size={16} />
-                  <span>{t("phoneUpdatedSuccess")}</span>
+            <div>
+              {user?.is_email_verified && user?.email ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300">
+                  <CheckCircle2 size={14} />
+                  <span>Verified</span>
+                </span>
+              ) : user?.pending_email ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                  <AlertTriangle size={14} />
+                  <span>Verification Pending</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs font-medium text-muted">
+                  <span>No Email Linked</span>
                 </span>
               )}
             </div>
           </div>
-        </form>
+
+          {emailError && (
+            <div className="mt-4 rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-danger dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {emailError}
+            </div>
+          )}
+
+          {emailSuccess && (
+            <div className="mt-4 rounded-sm border border-green-200 bg-green-50 p-3 text-sm text-farmer-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300 flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-farmer-700 shrink-0" />
+              <span>{emailSuccess}</span>
+            </div>
+          )}
+
+          {user?.pending_email && (
+            <div className="mt-4 rounded-lg border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <strong>Pending Verification:</strong> A verification link was sent to{" "}
+                <span className="underline font-semibold">{user.pending_email}</span>. Click the link to complete verification.
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleResendVerification}
+                disabled={emailLoading}
+                className="shrink-0"
+              >
+                {emailLoading ? "Sending..." : "Resend Link"}
+              </Button>
+            </div>
+          )}
+
+          <form onSubmit={handleUpdateEmail} className="mt-5 space-y-4">
+            <div className="max-w-md">
+              <Input
+                label="Email Address"
+                type="email"
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                placeholder="e.g. farmer@example.com"
+                leadingIcon={<Mail size={16} />}
+              />
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <Button type="submit" disabled={emailLoading} className="flex items-center gap-2">
+                <Mail size={15} />
+                <span>
+                  {emailLoading
+                    ? "Sending..."
+                    : user?.email
+                    ? "Update Email Address"
+                    : "Send Verification Link"}
+                </span>
+              </Button>
+            </div>
+          </form>
+        </div>
       </Card>
 
       <Card>

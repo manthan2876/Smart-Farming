@@ -35,8 +35,11 @@ export default function RegisterPage() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [resendSuccess, setResendSuccess] = useState("");
   const navigate = useNavigate();
-  const { signUp, sendPhoneOtp, verifyPhoneOtp, isAuthenticated, user, t } = useAuth();
+  const { signUp, sendPhoneOtp, verifyPhoneOtp, resendVerificationEmail, isAuthenticated, user, t } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -139,6 +142,7 @@ export default function RegisterPage() {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setResendSuccess("");
     setLoading(true);
     try {
       const cleanPhone = phone ? normalizePhoneNumber(phone) : undefined;
@@ -150,8 +154,21 @@ export default function RegisterPage() {
         language,
         location: location.trim(),
       });
+
+      // If user requires email verification (tokens empty / unverified)
+      if (newUser && newUser.is_email_verified === false) {
+        setRegisteredEmail(email.trim());
+        setEmailVerificationSent(true);
+        return;
+      }
+
       navigate(getDefaultRouteForRole(newUser.role), { replace: true });
     } catch (err: any) {
+      if (err.message && err.message.toLowerCase().includes("check your email")) {
+        setRegisteredEmail(email.trim());
+        setEmailVerificationSent(true);
+        return;
+      }
       setError(err.message || "Failed to create account.");
     } finally {
       setLoading(false);
@@ -181,43 +198,98 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* Registration Mode Selector */}
-          <div className="mt-6 flex rounded-lg border border-line bg-canvas p-1 shadow-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setMode("phone");
-                setStep("details");
-                setError("");
-              }}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md py-2 text-xs font-semibold transition-all ${
-                mode === "phone"
-                  ? "bg-farmer-700 text-white shadow-xs dark:bg-farmer-600"
-                  : "text-muted hover:text-ink"
-              }`}
+          {emailVerificationSent ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-6 rounded-xl border border-line bg-canvas p-8 text-center shadow-xs space-y-6"
             >
-              <Smartphone size={15} />
-              <span>{t("phoneLoginTab")}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("email");
-                setError("");
-              }}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md py-2 text-xs font-semibold transition-all ${
-                mode === "email"
-                  ? "bg-farmer-700 text-white shadow-xs dark:bg-farmer-600"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              <Mail size={15} />
-              <span>{t("emailLoginTab")}</span>
-            </button>
-          </div>
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-farmer-100 text-farmer-700 dark:bg-farmer-950 dark:text-farmer-300">
+                <Mail size={36} />
+              </div>
 
-          {/* Mode 1: Phone Registration Flow */}
-          {mode === "phone" && (
+              <div>
+                <h3 className="font-display text-2xl text-ink">Check Your Email</h3>
+                <p className="mt-2 text-sm text-muted max-w-md mx-auto leading-relaxed">
+                  We sent an account activation link to <strong className="text-ink">{registeredEmail}</strong>.
+                  Please open your inbox and click the verification link to activate your account.
+                </p>
+              </div>
+
+              {resendSuccess && (
+                <div className="flex items-center justify-center gap-2 text-xs font-semibold text-green-700 dark:text-green-300">
+                  <CheckCircle2 size={15} />
+                  <span>{resendSuccess}</span>
+                </div>
+              )}
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  onClick={() => navigate("/auth/login")}
+                  className="w-full sm:w-auto"
+                >
+                  Proceed to Login
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={loading}
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const res = await resendVerificationEmail(registeredEmail);
+                      setResendSuccess(res.message || "Verification email resent!");
+                      setTimeout(() => setResendSuccess(""), 6000);
+                    } catch (err: any) {
+                      setError(err.message || "Failed to resend.");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  {loading ? "Sending..." : "Resend Link"}
+                </Button>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {/* Registration Mode Selector */}
+              <div className="mt-6 flex rounded-lg border border-line bg-canvas p-1 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("phone");
+                    setStep("details");
+                    setError("");
+                  }}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md py-2 text-xs font-semibold transition-all ${
+                    mode === "phone"
+                      ? "bg-farmer-700 text-white shadow-xs dark:bg-farmer-600"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <Smartphone size={15} />
+                  <span>{t("phoneLoginTab")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("email");
+                    setError("");
+                  }}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md py-2 text-xs font-semibold transition-all ${
+                    mode === "email"
+                      ? "bg-farmer-700 text-white shadow-xs dark:bg-farmer-600"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <Mail size={15} />
+                  <span>{t("emailLoginTab")}</span>
+                </button>
+              </div>
+
+              {/* Mode 1: Phone Registration Flow */}
+              {mode === "phone" && (
             <div className="mt-6">
               <AnimatePresence mode="wait">
                 {step === "details" ? (
@@ -454,6 +526,8 @@ export default function RegisterPage() {
                 {loading ? t("creatingAccount") : t("registerAndContinue")}
               </Button>
             </form>
+          )}
+          </>
           )}
 
           <div className="mt-8 text-center text-sm text-muted">

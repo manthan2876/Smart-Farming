@@ -11,7 +11,7 @@ class ExpertReview(Base):
         ForeignKey("predictions.id"), unique=True
     )
     expert_id: Mapped[str | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True, index=True
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     status: Mapped[str] = mapped_column(String(40), default="pending")
     decision: Mapped[str | None] = mapped_column(String(40), nullable=True)

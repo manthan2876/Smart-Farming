@@ -104,11 +104,22 @@ export async function request<T>(
     }
   }
 
-  if (!response.ok)
-    throw new Error(
-      (await response.json().catch(() => null))?.detail ??
-        `Request failed (${response.status})`,
-    );
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    let errMsg = `Request failed (${response.status})`;
+    if (typeof errorBody?.detail === "string") {
+      errMsg = errorBody.detail;
+    } else if (errorBody?.detail?.message) {
+      errMsg = errorBody.detail.message;
+    } else if (errorBody?.message) {
+      errMsg = errorBody.message;
+    }
+    const err: any = new Error(errMsg);
+    err.status = response.status;
+    err.detail = errorBody?.detail;
+    err.body = errorBody;
+    throw err;
+  }
     
   return response.json() as Promise<T>;
 }

@@ -60,6 +60,8 @@ export type Profile = {
   id: string;
   name?: string;
   email?: string;
+  is_email_verified?: boolean;
+  pending_email?: string | null;
   phone?: string;
   language: string;
   role: string;

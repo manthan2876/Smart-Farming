@@ -6,7 +6,7 @@ class Farm(Base):
     __tablename__ = "farms"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
     name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     location: Mapped[str | None] = mapped_column(String(300), nullable=True)
     area_acres: Mapped[float | None] = mapped_column(Float, nullable=True)

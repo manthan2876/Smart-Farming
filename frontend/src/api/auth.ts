@@ -63,6 +63,15 @@ export async function login(
       return backendRes;
     }
   } catch (backendErr: any) {
+    // If backend returned 403 (e.g. FIRST_TIME_EMAIL_OTP_REQUIRED or email not verified), re-throw immediately
+    if (
+      backendErr?.status === 403 ||
+      backendErr?.detail?.code === "FIRST_TIME_EMAIL_OTP_REQUIRED" ||
+      backendErr?.message?.includes("FIRST_TIME_EMAIL_OTP_REQUIRED") ||
+      backendErr?.message?.toLowerCase().includes("not verified")
+    ) {
+      throw backendErr;
+    }
     // If backend explicitly returned 401 (invalid credentials), propagate it directly
     if (backendErr?.status === 401 || backendErr?.message?.toLowerCase().includes("invalid credentials")) {
       throw new Error("Invalid credentials. Please check your email and password.");
@@ -114,12 +123,34 @@ export async function register(payload: {
   language: string;
   crop_history: string[];
 }): Promise<AuthResponse> {
-  // 1. Attempt Supabase Auth registration
+  // 1. Primary: Register via backend to ensure verification email is issued
+  try {
+    const backendRes = await request<AuthResponse>("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (backendRes) {
+      if (backendRes.tokens?.access_token) {
+        localStorage.setItem("smart_farm_token", backendRes.tokens.access_token);
+      }
+      return backendRes;
+    }
+  } catch (backendErr: any) {
+    if (backendErr?.status === 409 || backendErr?.message?.toLowerCase().includes("already registered")) {
+      throw new Error("Phone or email is already registered.");
+    }
+    console.warn("Backend registration failed, attempting Supabase Auth fallback:", backendErr);
+  }
+
+  // 2. Fallback to Supabase Auth registration
   try {
     const { data, error } = await supabase.auth.signUp({
       email: payload.email,
       password: payload.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/verify-email`,
         data: {
           name: payload.name,
           location: payload.location,
@@ -163,15 +194,10 @@ export async function register(payload: {
     if (supaErr?.message && supaErr.message.includes("check your email")) {
       throw supaErr;
     }
-    console.warn("Supabase Auth signup failed, trying backend fallback:", supaErr);
+    throw new Error(supaErr?.message || "Registration failed. Please try again.");
   }
 
-  // 2. Fallback to backend registration route
-  return request<AuthResponse>("/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  throw new Error("Registration failed. Please try again.");
 }
 
 export async function profile(token: string, lang?: string) {
@@ -257,21 +283,182 @@ export async function resetPassword(
   token: string,
   newPassword: string
 ): Promise<{ status: string; message: string }> {
+  let supaSuccess = false;
   try {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (!error) {
-      return {
-        status: "success",
-        message: "Password has been reset successfully. You can now log in.",
-      };
+      supaSuccess = true;
     }
   } catch {}
 
-  return request<{ status: string; message: string }>("/auth/reset-password", {
+  if (token && token !== "supabase_recovery") {
+    try {
+      return await request<{ status: string; message: string }>("/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, new_password: newPassword }),
+      });
+    } catch (backendErr) {
+      if (supaSuccess) {
+        return {
+          status: "success",
+          message: "Password has been reset successfully. You can now log in.",
+        };
+      }
+      throw backendErr;
+    }
+  }
+
+  if (supaSuccess) {
+    return {
+      status: "success",
+      message: "Password has been reset successfully. You can now log in.",
+    };
+  }
+
+  throw new Error("Failed to reset password. The link may have expired or is invalid.");
+}
+
+export async function requestEmailUpdate(
+  email: string,
+  token?: string
+): Promise<{ status: string; message: string }> {
+  let activeToken = token;
+  if (!activeToken) {
+    activeToken = localStorage.getItem("smart_farm_token") || "";
+    if (!activeToken) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        activeToken = data.session?.access_token || "";
+      } catch {}
+    }
+  }
+
+  // Also trigger Supabase Auth email change so Supabase dispatches the "Change Email Address" email
+  try {
+    await supabase.auth.updateUser(
+      { email },
+      { emailRedirectTo: `${window.location.origin}/auth/verify-email` }
+    );
+  } catch (err) {
+    console.warn("Supabase updateUser email change note:", err);
+  }
+
+  return request<{ status: string; message: string }>(
+    "/auth/request-email-update",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    },
+    activeToken
+  );
+}
+
+export async function verifyEmail(
+  tokenStr: string
+): Promise<{ status: string; message: string }> {
+  return request<{ status: string; message: string }>("/auth/verify-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token, new_password: newPassword }),
+    body: JSON.stringify({ token: tokenStr }),
   });
+}
+
+export async function resendVerificationEmail(
+  email: string
+): Promise<{ status: string; message: string }> {
+  try {
+    return await request<{ status: string; message: string }>("/auth/resend-verification-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  } catch (err: any) {
+    // Fallback directly to Supabase Auth resend
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/verify-email`,
+      },
+    });
+    if (error) {
+      // Also try email_change type if signup doesn't apply
+      const secondTry = await supabase.auth.resend({
+        type: "email_change",
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/verify-email`,
+        },
+      });
+      if (secondTry.error) throw new Error(secondTry.error.message || error.message);
+    }
+    return {
+      status: "success",
+      message: "A new confirmation email has been dispatched. Please check your inbox.",
+    };
+  }
+}
+
+export async function verifyEmailOtp(
+  email: string,
+  token: string
+): Promise<{ status: string; message: string }> {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanToken = token.trim();
+
+  // 1. Try signup OTP
+  let res = await supabase.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanToken,
+    type: "signup",
+  });
+
+  if (res.error) {
+    // 2. Try email / email_change OTP
+    res = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: "email",
+    });
+  }
+
+  if (res.error) {
+    throw new Error(res.error.message || "Invalid or expired OTP code.");
+  }
+
+  return {
+    status: "success",
+    message: "Email verified successfully! You are now logged in.",
+  };
+}
+
+export async function setupFirstTimePassword(payload: {
+  email: string;
+  phone: string;
+  new_password: string;
+}): Promise<AuthResponse> {
+  const backendRes = await request<AuthResponse>("/auth/setup-first-time-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (backendRes?.tokens?.access_token) {
+    localStorage.setItem("smart_farm_token", backendRes.tokens.access_token);
+    if (backendRes.tokens.refresh_token) {
+      try {
+        await supabase.auth.setSession({
+          access_token: backendRes.tokens.access_token,
+          refresh_token: backendRes.tokens.refresh_token as string,
+        });
+      } catch (sessErr) {
+        console.warn("Could not set Supabase session from backend tokens:", sessErr);
+      }
+    }
+  }
+  return backendRes;
 }
 
 export async function sendPhoneOtp(

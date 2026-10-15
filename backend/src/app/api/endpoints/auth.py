@@ -22,6 +22,10 @@ from app.schemas import (
     RegisterRequest,
     ResetPasswordRequest,
     SessionSyncRequest,
+    RequestEmailUpdateRequest,
+    VerifyEmailRequest,
+    ResendVerificationEmailRequest,
+    SetupFirstTimePasswordRequest,
 )
 from app.crud import (
     create_user,
@@ -29,8 +33,11 @@ from app.crud import (
     create_password_reset_token,
     get_valid_password_reset_token,
     mark_token_used,
+    create_email_verification_token,
+    get_valid_email_verification_token,
+    mark_email_verification_token_used,
 )
-from app.services.email import send_reset_password_email
+from app.services.email import send_reset_password_email, send_verification_email
 
 logger = logging.getLogger("smart-farming.auth")
 
@@ -89,6 +96,38 @@ async def sync_supabase_user_phone(user_id: str, phone: str) -> bool:
                 return False
     except Exception as exc:
         logger.warning("Failed to sync phone to Supabase Auth for user %s: %s", user_id, exc)
+        return False
+
+
+async def sync_supabase_user_email(user_id: str, email: str) -> bool:
+    """Updates the user's email in Supabase Auth via Admin API as confirmed."""
+    supabase_url = getattr(settings, "SUPABASE_URL", "")
+    service_key = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+    if not supabase_url or not service_key or not user_id or not email:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.put(
+                f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{user_id}",
+                headers={
+                    "apikey": service_key,
+                    "Authorization": f"Bearer {service_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "email": email,
+                    "email_confirm": True,
+                    "user_metadata": {"email": email},
+                },
+            )
+            if resp.status_code in (200, 201):
+                logger.info("Successfully synced email %s for user %s to Supabase Auth", email, user_id)
+                return True
+            else:
+                logger.warning("Supabase Auth admin update email returned %s: %s", resp.status_code, resp.text)
+                return False
+    except Exception as exc:
+        logger.warning("Failed to sync email to Supabase Auth for user %s: %s", user_id, exc)
         return False
 
 
@@ -168,6 +207,8 @@ def _profile(user, session: Session | None = None, req_lang: str | None = None) 
         name=user.name,
         phone=user.phone,
         email=user.email,
+        is_email_verified=getattr(user, "is_email_verified", False),
+        pending_email=getattr(user, "pending_email", None),
         language=user.language,
         role=user.role,
         location=farm.location if farm else None,
@@ -302,19 +343,25 @@ def _cookie_settings(request: Request | None = None) -> dict[str, Any]:
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
 async def register(
-    request: Request, payload: RegisterRequest, response: Response, session: Session = Depends(get_session)
+    request: Request,
+    payload: RegisterRequest,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
 ) -> AuthResponse:
     if not payload.phone and not payload.email:
         raise HTTPException(
             status_code=422, detail="Provide a phone number or email address."
         )
+
+    is_email_reg = bool(payload.email and payload.email.strip())
     try:
         user = create_user(
             session,
             user_id=str(uuid.uuid4()),
             name=payload.name,
             phone=payload.phone,
-            email=payload.email,
+            email=payload.email.strip().lower() if payload.email else None,
             password_hash=hash_password(payload.password),
             language=payload.language,
             location=payload.location,
@@ -323,6 +370,8 @@ async def register(
             crop_history=payload.crop_history,
             farm_name=payload.farm_name,
             farm_area_acres=payload.farm_area_acres,
+            is_email_verified=False if is_email_reg else True,
+            email_verified_at=None if is_email_reg else datetime.now(timezone.utc),
         )
     except IntegrityError as exc:
         session.rollback()
@@ -332,17 +381,43 @@ async def register(
     except SQLAlchemyError as exc:
         session.rollback()
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
-        
-    tokens = create_token_pair(user.id)
-    cookie_opts = _cookie_settings(request)
-    response.set_cookie(
-        key="refresh_token",
-        value=tokens["refresh_token"],
-        httponly=True,
-        secure=cookie_opts["secure"],
-        samesite=cookie_opts["samesite"],
-        max_age=30 * 24 * 60 * 60,
-    )
+
+    if is_email_reg and user.email:
+        raw_token = secrets.token_urlsafe(32)
+        create_email_verification_token(
+            session,
+            user_id=user.id,
+            pending_email=user.email,
+            raw_token=raw_token,
+            token_type="registration",
+            expires_in_hours=24,
+        )
+        background_tasks.add_task(
+            send_verification_email,
+            email_to=user.email,
+            token=raw_token,
+            token_type="registration",
+            user_name=user.name,
+            user_id=user.id,
+        )
+        tokens = {
+            "access_token": "",
+            "refresh_token": "",
+            "token_type": "bearer",
+            "expires_in": 0,
+            "verification_required": True,
+        }
+    else:
+        tokens = create_token_pair(user.id)
+        cookie_opts = _cookie_settings(request)
+        response.set_cookie(
+            key="refresh_token",
+            value=tokens["refresh_token"],
+            httponly=True,
+            secure=cookie_opts["secure"],
+            samesite=cookie_opts["samesite"],
+            max_age=30 * 24 * 60 * 60,
+        )
 
     # Enqueue write-time transliteration for user and farm name
     from app.core.arq import enqueue_translation
@@ -362,7 +437,7 @@ async def register(
 
 
 @router.post("/login", response_model=AuthResponse)
-@limiter.limit("5/minute")
+@limiter.limit("10/minute")
 async def login(
     request: Request, payload: LoginRequest, response: Response, session: Session = Depends(get_session)
 ) -> AuthResponse:
@@ -370,20 +445,275 @@ async def login(
         user = find_user_by_identifier(session, payload.identifier)
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials."
+        )
+
+    clean_id = payload.identifier.strip().lower()
+    is_pending_email_attempt = bool(user.pending_email and clean_id == user.pending_email.lower())
+    is_email_attempt = bool((user.email and clean_id == user.email.lower()) or is_pending_email_attempt)
+
+    if is_email_attempt:
+        # 1. Require verified email
+        if not user.is_email_verified or is_pending_email_attempt:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email is not verified. Please check your inbox for the verification link or request a new one.",
+            )
+
+        # 2. Check if phone-registered user without password (first-time email login)
+        if not user.password_hash and user.phone:
+            masked = f"+91******{user.phone[-4:]}" if len(user.phone) >= 4 else user.phone
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "FIRST_TIME_EMAIL_OTP_REQUIRED",
+                    "message": "First-time email login requires mobile verification. An OTP has been sent to your registered mobile phone.",
+                    "phone": user.phone,
+                    "masked_phone": masked,
+                    "email": user.email,
+                },
+            )
+
+    # 3. Standard password verification
     if (
-        user is None
-        or not user.password_hash
+        not user.password_hash
         or not verify_password(payload.password, user.password_hash)
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials."
         )
-    
+
     # Synchronize password with Supabase Auth and fetch Supabase tokens
     supabase_tokens = None
     if user.email:
         await _sync_supabase_user_password(user.id, payload.password)
         supabase_tokens = await _fetch_supabase_tokens(user.email, payload.password)
+
+    tokens = supabase_tokens or create_token_pair(user.id)
+    cookie_opts = _cookie_settings(request)
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens["refresh_token"],
+        httponly=True,
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
+        max_age=30 * 24 * 60 * 60,
+    )
+    return AuthResponse(
+        tokens=tokens,
+        user=_profile(user, session=session, req_lang=request.headers.get("accept-language")),
+    )
+
+
+@router.post("/request-email-update", response_model=MessageResponse, status_code=200)
+@limiter.limit("5/minute")
+async def request_email_update(
+    request: Request,
+    payload: RequestEmailUpdateRequest,
+    background_tasks: BackgroundTasks,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> MessageResponse:
+    """
+    Request to add or update an email address for an authenticated user (e.g. phone signed-in user).
+    Sends a verification link to the target email address.
+    """
+    target_email = payload.email.strip().lower()
+    if "@" not in target_email or "." not in target_email.split("@")[-1]:
+        raise HTTPException(status_code=422, detail="Please enter a valid email address.")
+
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if user.email and user.email.lower() == target_email and user.is_email_verified:
+        raise HTTPException(status_code=400, detail="This email is already linked and verified on your account.")
+
+    # Check if email is already taken by another account
+    existing = session.query(User).filter(
+        User.email.ilike(target_email),
+        User.id != user.id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="This email address is already linked to another account.")
+
+    user.pending_email = target_email
+    session.add(user)
+
+    raw_token = secrets.token_urlsafe(32)
+    create_email_verification_token(
+        session,
+        user_id=user.id,
+        pending_email=target_email,
+        raw_token=raw_token,
+        token_type="email_update",
+        expires_in_hours=24,
+    )
+    session.commit()
+
+    background_tasks.add_task(
+        send_verification_email,
+        email_to=target_email,
+        token=raw_token,
+        token_type="email_update",
+        user_name=user.name,
+        user_id=user.id,
+    )
+
+    return MessageResponse(
+        status="success",
+        message="A verification link has been sent to your email address. Please click the link to confirm.",
+    )
+
+
+@router.post("/verify-email", response_model=MessageResponse, status_code=200)
+@limiter.limit("10/minute")
+async def verify_email(
+    request: Request,
+    payload: VerifyEmailRequest,
+    session: Session = Depends(get_session),
+) -> MessageResponse:
+    """
+    Verify email address using a valid verification token from the email link.
+    """
+    token_record = get_valid_email_verification_token(session, payload.token)
+    if not token_record:
+        # Check if caller was redirected from Supabase Auth verification link with session token
+        auth_header = request.headers.get("authorization") or ""
+        bearer_token = (
+            auth_header.replace("Bearer ", "").strip()
+            if auth_header.startswith("Bearer ")
+            else (payload.token if payload.token and len(payload.token) > 40 else "")
+        )
+        user = None
+        if bearer_token:
+            from app.api.deps import _verify_supabase_token
+            supa_uid = await _verify_supabase_token(bearer_token)
+            if supa_uid:
+                user = session.get(User, supa_uid)
+
+        if not user:
+            raise HTTPException(
+                status_code=400,
+                detail="Verification link is invalid or has expired. Please request a new link.",
+            )
+
+        if user.pending_email:
+            user.email = user.pending_email
+            user.pending_email = None
+        user.is_email_verified = True
+        user.email_verified_at = datetime.now(timezone.utc)
+        session.add(user)
+        session.commit()
+        return MessageResponse(
+            status="success",
+            message="Email verified successfully! Your email is now linked to your account.",
+        )
+
+    user = session.get(User, token_record.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    verified_email = token_record.pending_email
+    user.email = verified_email
+    user.pending_email = None
+    user.is_email_verified = True
+    user.email_verified_at = datetime.now(timezone.utc)
+
+    mark_email_verification_token_used(session, token_record)
+    session.add(user)
+    session.commit()
+
+    # Sync email to Supabase Auth admin
+    await sync_supabase_user_email(user.id, verified_email)
+
+    return MessageResponse(
+        status="success",
+        message="Email verified successfully! Your email is now linked to your account.",
+    )
+
+
+@router.post("/resend-verification-email", response_model=MessageResponse, status_code=200)
+@limiter.limit("3/minute")
+async def resend_verification_email(
+    request: Request,
+    payload: ResendVerificationEmailRequest,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+) -> MessageResponse:
+    """
+    Resend verification email link for unverified email or pending update.
+    Anti-enumeration protection: always returns success.
+    """
+    target_email = payload.email.strip().lower()
+    user = session.query(User).filter(
+        (User.email.ilike(target_email)) | (User.pending_email.ilike(target_email))
+    ).first()
+
+    if user:
+        token_type = "email_update" if (user.pending_email and user.pending_email.lower() == target_email) else "registration"
+        raw_token = secrets.token_urlsafe(32)
+        create_email_verification_token(
+            session,
+            user_id=user.id,
+            pending_email=target_email,
+            raw_token=raw_token,
+            token_type=token_type,
+            expires_in_hours=24,
+        )
+        background_tasks.add_task(
+            send_verification_email,
+            email_to=target_email,
+            token=raw_token,
+            token_type=token_type,
+            user_name=user.name,
+            user_id=user.id,
+        )
+
+    return MessageResponse(
+        status="success",
+        message="If this email is associated with an unverified account, a new verification link has been sent.",
+    )
+
+
+@router.post("/setup-first-time-password", response_model=AuthResponse)
+@limiter.limit("5/minute")
+async def setup_first_time_password(
+    request: Request,
+    payload: SetupFirstTimePasswordRequest,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> AuthResponse:
+    """
+    Sets the password for a phone-registered user logging in via email for the first time
+    after verifying their mobile OTP. Future logins will only require this password.
+    """
+    clean_email = payload.email.strip().lower()
+    user = session.query(User).filter(User.email.ilike(clean_email)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    if not user.is_email_verified:
+        raise HTTPException(status_code=403, detail="Email address has not been verified.")
+
+    # Validate phone match
+    digits_input = "".join(ch for ch in payload.phone if ch.isdigit())
+    digits_user = "".join(ch for ch in (user.phone or "") if ch.isdigit())
+    if not digits_user or (digits_input[-10:] != digits_user[-10:]):
+        raise HTTPException(status_code=400, detail="Phone number does not match account records.")
+
+    # Set password
+    user.password_hash = hash_password(payload.new_password)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    # Sync password to Supabase Auth
+    await _sync_supabase_user_password(user.id, payload.new_password)
+    supabase_tokens = await _fetch_supabase_tokens(user.email, payload.new_password)
 
     tokens = supabase_tokens or create_token_pair(user.id)
     cookie_opts = _cookie_settings(request)

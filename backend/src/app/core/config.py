@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=True)
     JWT_SECRET_KEY: str = Field(default="dev-secret-key-change-me")
 
-    # Email / SMTP Configuration
+    # Email / SMTP Configuration (Managed via Supabase Custom SMTP; local SMTP fields are optional fallbacks)
     SMTP_HOST: str | None = Field(default=None)
     SMTP_PORT: int = Field(default=587)
     SMTP_USER: str | None = Field(default=None)

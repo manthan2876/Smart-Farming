@@ -11,14 +11,16 @@ import LanguageToggle from "../components/LanguageToggle";
 
 type LoginTab = "phone" | "email";
 type PhoneStep = "enter_phone" | "enter_otp";
+type EmailStep = "credentials" | "phone_otp_challenge" | "create_password";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const resetSuccess = searchParams.get("reset") === "success";
+  const verifiedSuccess = searchParams.get("verified") === "true";
   const navigate = useNavigate();
-  const { user, isAuthenticated, signIn, sendPhoneOtp, verifyPhoneOtp, t } = useAuth();
+  const { user, isAuthenticated, signIn, sendPhoneOtp, verifyPhoneOtp, setupFirstTimePassword, resendVerificationEmail, t } = useAuth();
 
   // Mode: "phone" (default for farmers) or "email" (for admins/agronomists)
   const [tab, setTab] = useState<LoginTab>("phone");
@@ -33,6 +35,17 @@ export default function LoginPage() {
   // Email / Password State
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+
+  // Email First-Time OTP & Password Setup State
+  const [emailStep, setEmailStep] = useState<EmailStep>("credentials");
+  const [challengeEmail, setChallengeEmail] = useState("");
+  const [challengePhone, setChallengePhone] = useState("");
+  const [challengeMaskedPhone, setChallengeMaskedPhone] = useState("");
+  const [challengeOtp, setChallengeOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [resendSuccess, setResendSuccess] = useState("");
 
   // Shared Form State
   const [error, setError] = useState("");
@@ -125,13 +138,124 @@ export default function LoginPage() {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setResendSuccess("");
     setLoading(true);
     try {
       const loggedUser = await signIn(identifier, password);
       const targetRoute = getDefaultRouteForRole(loggedUser.role);
       navigate(targetRoute, { replace: true });
     } catch (err: any) {
+      // Check if backend challenged with phone OTP for first-time email login
+      if (
+        err?.status === 403 &&
+        (err?.detail?.code === "FIRST_TIME_EMAIL_OTP_REQUIRED" || err?.message?.includes("FIRST_TIME_EMAIL_OTP_REQUIRED"))
+      ) {
+        const rawPhone = err?.detail?.phone || "";
+        const masked = err?.detail?.masked_phone || rawPhone;
+        const targetEmail = err?.detail?.email || identifier.trim();
+        setChallengePhone(rawPhone);
+        setChallengeMaskedPhone(masked);
+        setChallengeEmail(targetEmail);
+        setEmailStep("phone_otp_challenge");
+        setError("");
+        if (rawPhone) {
+          try {
+            await sendPhoneOtp(rawPhone, false);
+            startCooldown();
+          } catch (otpErr: any) {
+            setError(otpErr.message || "Failed to dispatch verification code to registered phone.");
+          }
+        }
+        return;
+      }
+
+      // Check if email is unverified
+      if (err?.status === 403 && err?.message?.toLowerCase().includes("not verified")) {
+        setUnverifiedEmail(identifier.trim());
+        setError(err.message || "Your email address is not verified yet. Please check your inbox for the link.");
+        return;
+      }
+
       setError(err.message || "Failed to login. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 5. First-time Email Login: Verify Phone OTP
+  const handleChallengeOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (challengeOtp.trim().length < 6) {
+      setError(t("invalidOtpLength"));
+      return;
+    }
+    setLoading(true);
+    try {
+      await verifyPhoneOtp(challengePhone, challengeOtp.trim());
+      // OTP verified successfully! Advance to password creation
+      setEmailStep("create_password");
+    } catch (err: any) {
+      setError(err.message || "Invalid verification code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 6. First-time Email Login: Resend Phone OTP
+  const handleChallengeResendOtp = async () => {
+    if (countdown > 0 || loading || !challengePhone) return;
+    setError("");
+    setLoading(true);
+    try {
+      await sendPhoneOtp(challengePhone, false);
+      startCooldown();
+    } catch (err: any) {
+      setError(err.message || "Failed to resend code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 7. First-time Email Login: Save New Password & Finalize
+  const handleCreatePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match. Please re-enter.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const loggedUser = await setupFirstTimePassword({
+        email: challengeEmail,
+        phone: challengePhone,
+        new_password: newPassword,
+      });
+      const targetRoute = getDefaultRouteForRole(loggedUser.role);
+      navigate(targetRoute, { replace: true });
+    } catch (err: any) {
+      setError(err.message || "Failed to set password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 8. Resend Unverified Email Link
+  const handleResendUnverifiedEmail = async () => {
+    if (!unverifiedEmail) return;
+    setError("");
+    setResendSuccess("");
+    setLoading(true);
+    try {
+      const res = await resendVerificationEmail(unverifiedEmail);
+      setResendSuccess(res.message || `Verification link resent to ${unverifiedEmail}.`);
+    } catch (err: any) {
+      setError(err.message || "Failed to resend verification link.");
     } finally {
       setLoading(false);
     }
@@ -161,9 +285,35 @@ export default function LoginPage() {
             </div>
           )}
 
+          {verifiedSuccess && (
+            <div className="mt-6 flex items-center gap-2 rounded-sm border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
+              <CheckCircle2 size={18} className="shrink-0 text-green-600" />
+              <span>Email verified successfully! You can now sign in with your credentials.</span>
+            </div>
+          )}
+
+          {resendSuccess && (
+            <div className="mt-6 flex items-center gap-2 rounded-sm border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
+              <CheckCircle2 size={18} className="shrink-0 text-green-600" />
+              <span>{resendSuccess}</span>
+            </div>
+          )}
+
           {error && (
             <div className="mt-6 rounded-sm border border-red-100 bg-red-50 p-3 text-sm text-danger dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
-              {error}
+              <p>{error}</p>
+              {unverifiedEmail && (
+                <div className="mt-2.5 pt-2 border-t border-red-200 dark:border-red-900/50">
+                  <button
+                    type="button"
+                    onClick={handleResendUnverifiedEmail}
+                    disabled={loading}
+                    className="text-xs font-semibold text-farmer-700 underline hover:text-farmer-800 dark:text-farmer-300"
+                  >
+                    {loading ? "Sending..." : "Resend Verification Email"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -323,44 +473,176 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Tab 2: Traditional Email & Password Authentication */}
+          {/* Tab 2: Email Authentication (With first-time mobile OTP and password setup) */}
           {tab === "email" && (
-            <form onSubmit={handleEmailSubmit} className="mt-6 space-y-5">
-              <Input 
-                id="login-identifier" 
-                label={t("emailOrPhone")}
-                type="text" 
-                value={identifier} 
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="farmer@example.com"
-                required 
-              />
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-ink" htmlFor="login-password">
-                    {t("password")}
-                  </label>
-                  <Link
-                    to="/auth/forgot-password"
-                    className="text-xs font-semibold text-farmer-700 hover:underline dark:text-farmer-300"
-                  >
-                    {t("forgotPassword")}
-                  </Link>
-                </div>
-                <Input
-                  id="login-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              <Button type="submit" disabled={loading} className="mt-2 w-full">
-                <LogIn size={17} />
-                {loading ? t("signingIn") : t("signIn")}
-              </Button>
-            </form>
+            <AnimatePresence mode="wait">
+              {emailStep === "credentials" && (
+                <motion.form
+                  key="step-credentials"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  onSubmit={handleEmailSubmit}
+                  className="mt-6 space-y-5"
+                >
+                  <Input 
+                    id="login-identifier" 
+                    label="Email Address"
+                    type="email" 
+                    value={identifier} 
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="farmer@example.com"
+                    required 
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-ink" htmlFor="login-password">
+                        {t("password")}
+                      </label>
+                      <Link
+                        to="/auth/forgot-password"
+                        className="text-xs font-semibold text-farmer-700 hover:underline dark:text-farmer-300"
+                      >
+                        {t("forgotPassword")}
+                      </Link>
+                    </div>
+                    <Input
+                      id="login-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={loading} className="mt-2 w-full">
+                    <LogIn size={17} />
+                    {loading ? t("signingIn") : t("signIn")}
+                  </Button>
+                </motion.form>
+              )}
+
+              {emailStep === "phone_otp_challenge" && (
+                <motion.form
+                  key="step-challenge"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  onSubmit={handleChallengeOtpSubmit}
+                  className="mt-6 space-y-5"
+                >
+                  <div className="rounded-lg border border-farmer-200/80 bg-farmer-50/70 p-4 text-xs text-farmer-950 dark:border-farmer-900/40 dark:bg-farmer-950/30 dark:text-farmer-200">
+                    <div className="font-semibold text-sm mb-1 text-farmer-800 dark:text-farmer-300 flex items-center gap-1.5">
+                      <Smartphone size={16} />
+                      <span>First-Time Email Sign In</span>
+                    </div>
+                    <div className="leading-relaxed">
+                      This is your first time signing in with <strong className="text-ink">{challengeEmail}</strong>.
+                      For security, we sent a 6-digit verification code to your registered mobile number:{" "}
+                      <span className="font-semibold underline">{challengeMaskedPhone}</span>.
+                    </div>
+                  </div>
+
+                  <div>
+                    <Input
+                      id="challenge-otp"
+                      label={t("enterOtp")}
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={challengeOtp}
+                      onChange={(e) => setChallengeOtp(e.target.value.replace(/\D/g, ""))}
+                      placeholder="123456"
+                      required
+                      className="text-center font-mono text-xl tracking-widest"
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={loading || challengeOtp.length < 6} className="w-full">
+                    <LogIn size={17} />
+                    {loading ? t("verifying") : "Verify Code & Continue"}
+                  </Button>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailStep("credentials");
+                        setError("");
+                      }}
+                      className="flex items-center gap-1 font-semibold text-muted hover:text-ink transition-colors"
+                    >
+                      <ArrowLeft size={13} />
+                      Back to Email Login
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleChallengeResendOtp}
+                      disabled={countdown > 0 || loading}
+                      className={`font-semibold transition-colors ${
+                        countdown > 0 || loading
+                          ? "cursor-not-allowed text-muted/50"
+                          : "text-farmer-700 hover:underline dark:text-farmer-300"
+                      }`}
+                    >
+                      {countdown > 0 ? `${t("resendOtpIn")} ${countdown}s` : t("resendOtp")}
+                    </button>
+                  </div>
+                </motion.form>
+              )}
+
+              {emailStep === "create_password" && (
+                <motion.form
+                  key="step-create-password"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  onSubmit={handleCreatePasswordSubmit}
+                  className="mt-6 space-y-5"
+                >
+                  <div className="rounded-lg border border-farmer-200/80 bg-farmer-50/70 p-4 text-xs text-farmer-950 dark:border-farmer-900/40 dark:bg-farmer-950/30 dark:text-farmer-200">
+                    <div className="font-semibold text-sm mb-1 text-farmer-800 dark:text-farmer-300 flex items-center gap-1.5">
+                      <CheckCircle2 size={16} />
+                      <span>Mobile Number Verified!</span>
+                    </div>
+                    <div className="leading-relaxed">
+                      Now set a password for <strong className="text-ink">{challengeEmail}</strong>. You will use this password whenever you log in with your email in the future. <strong>No OTP will be required again.</strong>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Input
+                      id="challenge-new-password"
+                      label="Create Password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                      required
+                      minLength={8}
+                    />
+
+                    <Input
+                      id="challenge-confirm-password"
+                      label="Confirm Password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter password"
+                      required
+                      minLength={8}
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={loading || newPassword.length < 8 || !confirmPassword} className="w-full">
+                    <CheckCircle2 size={17} />
+                    {loading ? "Saving Password..." : "Save Password & Sign In"}
+                  </Button>
+                </motion.form>
+              )}
+            </AnimatePresence>
           )}
 
           <div className="mt-8 text-center text-sm text-muted">
