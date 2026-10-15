@@ -399,15 +399,95 @@ export async function verifyPhoneUpdate(
     }
   }
 
-  return request<Profile>(
-    "/auth/verify-phone-update",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, token: otpCode.trim() }),
-    },
-    activeToken
-  );
+  // 1. Verify OTP with Supabase Auth in the browser using the browser's PKCE verifier
+  const digitsOnly = phone.replace(/\D/g, "");
+  const e164Phone = normalizePhoneNumber(phone);
+  let storedPhone: string | null = null;
+  try {
+    storedPhone = sessionStorage.getItem("smart_farm_otp_phone");
+  } catch {}
+
+  const candidates: string[] = [];
+  if (storedPhone && !candidates.includes(storedPhone)) {
+    candidates.push(storedPhone);
+  }
+  if (!candidates.includes(e164Phone)) {
+    candidates.push(e164Phone);
+  }
+  if (digitsOnly.length === 10 && !candidates.includes(digitsOnly)) {
+    candidates.push(digitsOnly);
+  }
+
+  let verifyResult: any = null;
+  let lastError: any = null;
+  let successfulPhone = candidates[0];
+
+  for (const candidate of candidates) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: candidate,
+        token: otpCode.trim(),
+        type: "sms",
+      });
+
+      if (!error && (data?.session || data?.user)) {
+        verifyResult = data;
+        successfulPhone = candidate;
+        break;
+      }
+      lastError = error;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (!verifyResult) {
+    if (lastError) {
+      const msg = (lastError.message || "").toLowerCase();
+      if (msg.includes("expired")) {
+        throw new Error("Verification code has expired. Please request a new code.");
+      }
+      if (msg.includes("invalid") || msg.includes("incorrect")) {
+        throw new Error("Invalid verification code. Please check and try again.");
+      }
+      throw new Error(lastError.message || "Invalid or expired verification code.");
+    }
+    throw new Error("Invalid verification code. Please check and try again.");
+  }
+
+  const verifiedPhoneToken = verifyResult.session?.access_token || "";
+
+  // 2. Call backend to link phone to user account and sync to Supabase Auth
+  try {
+    const updatedProfile = await request<Profile>(
+      "/auth/verify-phone-update",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: successfulPhone,
+          token: otpCode.trim(),
+          verified_phone_token: verifiedPhoneToken,
+        }),
+      },
+      activeToken
+    );
+
+    // 3. Keep active user session intact on their primary account
+    if (activeToken) {
+      localStorage.setItem("smart_farm_token", activeToken);
+    }
+    try {
+      sessionStorage.removeItem("smart_farm_otp_phone");
+    } catch {}
+
+    return updatedProfile;
+  } catch (backendErr) {
+    if (activeToken) {
+      localStorage.setItem("smart_farm_token", activeToken);
+    }
+    throw backendErr;
+  }
 }
 
 export async function verifyEmail(

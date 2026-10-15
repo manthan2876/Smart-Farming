@@ -719,8 +719,17 @@ async def verify_phone_update(
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    # 1. Verify OTP with Supabase GoTrue
-    is_valid_otp = await verify_supabase_phone_otp(clean_phone, clean_token)
+    # 1. Verify OTP:
+    is_valid_otp = False
+    if payload.verified_phone_token:
+        from app.api.deps import _verify_supabase_token
+        supa_uid = _verify_supabase_token(payload.verified_phone_token)
+        if supa_uid:
+            is_valid_otp = True
+
+    if not is_valid_otp:
+        is_valid_otp = await verify_supabase_phone_otp(clean_phone, clean_token)
+
     if not is_valid_otp:
         raise HTTPException(
             status_code=400,

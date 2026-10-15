@@ -91,6 +91,7 @@ class RequestPhoneUpdateRequest(BaseModel):
 class VerifyPhoneUpdateRequest(BaseModel):
     phone: str = Field(min_length=8, max_length=40)
     token: str = Field(min_length=6, max_length=10)
+    verified_phone_token: str | None = None
 
 
 class VerifyEmailRequest(BaseModel):
