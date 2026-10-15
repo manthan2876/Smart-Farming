@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from app.core.limiter import limiter
+from sqlalchemy import func, or_, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.api.deps import hash_password, verify_password, create_token_pair, decode_token, get_current_user
@@ -23,6 +24,8 @@ from app.schemas import (
     ResetPasswordRequest,
     SessionSyncRequest,
     RequestEmailUpdateRequest,
+    RequestPhoneUpdateRequest,
+    VerifyPhoneUpdateRequest,
     VerifyEmailRequest,
     ResendVerificationEmailRequest,
     SetupFirstTimePasswordRequest,
@@ -97,6 +100,53 @@ async def sync_supabase_user_phone(user_id: str, phone: str) -> bool:
     except Exception as exc:
         logger.warning("Failed to sync phone to Supabase Auth for user %s: %s", user_id, exc)
         return False
+
+
+async def verify_supabase_phone_otp(phone: str, token: str) -> bool:
+    """Verifies an SMS OTP token against Supabase GoTrue API."""
+    supabase_url = getattr(settings, "SUPABASE_URL", "")
+    anon_key = (
+        getattr(settings, "SUPABASE_ANON_KEY", "")
+        or getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", "")
+    )
+    if not supabase_url or not anon_key or not phone or not token:
+        return False
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    last10 = digits[-10:] if len(digits) >= 10 else digits
+    candidates = [phone]
+    if digits and digits not in candidates:
+        candidates.append(digits)
+    if last10 and len(last10) == 10:
+        p91 = f"+91{last10}"
+        if p91 not in candidates:
+            candidates.append(p91)
+        if last10 not in candidates:
+            candidates.append(last10)
+
+    for cand in candidates:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.post(
+                    f"{supabase_url.rstrip('/')}/auth/v1/verify",
+                    headers={
+                        "apikey": anon_key,
+                        "Authorization": f"Bearer {anon_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "type": "sms",
+                        "phone": cand,
+                        "token": token.strip(),
+                    },
+                )
+                if resp.status_code in (200, 201):
+                    logger.info("Supabase phone OTP successfully verified for candidate %s", cand)
+                    return True
+                else:
+                    logger.debug("Candidate %s verify returned %s: %s", cand, resp.status_code, resp.text)
+        except Exception as exc:
+            logger.warning("Supabase phone OTP verify error for %s: %s", cand, exc)
+    return False
 
 
 async def sync_supabase_user_email(user_id: str, email: str) -> bool:
@@ -349,19 +399,41 @@ async def register(
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
 ) -> AuthResponse:
-    if not payload.phone and not payload.email:
+    from app.crud.user import normalize_phone_number
+    clean_email = payload.email.strip().lower() if payload.email and payload.email.strip() else None
+    clean_phone = normalize_phone_number(payload.phone)
+
+    if not clean_phone and not clean_email:
         raise HTTPException(
             status_code=422, detail="Provide a phone number or email address."
         )
 
-    is_email_reg = bool(payload.email and payload.email.strip())
+    if clean_email:
+        existing_email_user = session.query(User).filter(
+            func.lower(User.email) == clean_email
+        ).first()
+        if existing_email_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This email address is already registered to an account.",
+            )
+
+    if clean_phone:
+        existing_phone_user = find_user_by_identifier(session, clean_phone)
+        if existing_phone_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This phone number is already registered to an account.",
+            )
+
+    is_email_reg = bool(clean_email)
     try:
         user = create_user(
             session,
             user_id=str(uuid.uuid4()),
             name=payload.name,
-            phone=payload.phone,
-            email=payload.email.strip().lower() if payload.email else None,
+            phone=clean_phone,
+            email=clean_email,
             password_hash=hash_password(payload.password),
             language=payload.language,
             location=payload.location,
@@ -399,7 +471,12 @@ async def register(
             token_type="registration",
             user_name=user.name,
             user_id=user.id,
+            phone=user.phone,
+            language=user.language,
+            location=payload.location,
         )
+        if clean_phone:
+            background_tasks.add_task(sync_supabase_user_phone, user.id, clean_phone)
         tokens = {
             "access_token": "",
             "refresh_token": "",
@@ -567,6 +644,140 @@ async def request_email_update(
         status="success",
         message="A verification link has been sent to your email address. Please click the link to confirm.",
     )
+
+
+@router.post("/request-phone-update", response_model=MessageResponse, status_code=200)
+@limiter.limit("5/minute")
+async def request_phone_update(
+    request: Request,
+    payload: RequestPhoneUpdateRequest,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> MessageResponse:
+    """
+    Validate that the requested mobile phone number is valid and not already
+    registered to another account before sending an SMS verification OTP.
+    """
+    from app.crud.user import normalize_phone_number
+    clean_phone = normalize_phone_number(payload.phone)
+    if not clean_phone or len(clean_phone) < 10:
+        raise HTTPException(
+            status_code=422,
+            detail="Please provide a valid 10 to 15 digit mobile phone number.",
+        )
+
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if user.phone == clean_phone:
+        raise HTTPException(
+            status_code=400,
+            detail="This mobile number is already linked to your account.",
+        )
+
+    existing = find_user_by_identifier(session, clean_phone)
+    if existing and existing.id != user.id:
+        raise HTTPException(
+            status_code=409,
+            detail="This phone number is already registered to another account.",
+        )
+
+    return MessageResponse(
+        status="success",
+        message="Phone number is available for linking.",
+    )
+
+
+@router.post("/verify-phone-update", response_model=ProfileResponse, status_code=200)
+@limiter.limit("5/minute")
+async def verify_phone_update(
+    request: Request,
+    payload: VerifyPhoneUpdateRequest,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> ProfileResponse:
+    """
+    Verify the phone number and link it to the user's account, then sync with Supabase Auth.
+    """
+    from app.crud.user import normalize_phone_number
+    clean_phone = normalize_phone_number(payload.phone)
+    if not clean_phone or len(clean_phone) < 10:
+        raise HTTPException(
+            status_code=422,
+            detail="Please provide a valid mobile phone number.",
+        )
+
+    clean_token = payload.token.strip() if payload.token else ""
+    if not clean_token or len(clean_token) < 6:
+        raise HTTPException(
+            status_code=422,
+            detail="Please enter the complete 6-digit verification code.",
+        )
+
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    # 1. Verify OTP with Supabase GoTrue
+    is_valid_otp = await verify_supabase_phone_otp(clean_phone, clean_token)
+    if not is_valid_otp:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired verification code. Please check the code and try again.",
+        )
+
+    # 2. Clean up any temporary orphan users created without email during OTP dispatch
+    clean_phone_digits = "".join(ch for ch in clean_phone if ch.isdigit())
+    last10 = clean_phone_digits[-10:] if len(clean_phone_digits) >= 10 else clean_phone_digits
+    candidates = [clean_phone, f"+91{last10}", last10, clean_phone_digits]
+
+    orphans = session.query(User).filter(
+        User.id != user.id,
+        User.phone.in_(candidates),
+        or_(User.email.is_(None), User.email == ""),
+    ).all()
+    for orphan in orphans:
+        orphan_id = orphan.id
+        session.delete(orphan)
+        try:
+            session.execute(
+                text("DELETE FROM auth.users WHERE id = :oid AND (email IS NULL OR email = '')"),
+                {"oid": orphan_id},
+            )
+        except Exception as e:
+            logger.warning("Could not delete orphan auth.users %s: %s", orphan_id, e)
+    session.flush()
+
+    try:
+        session.execute(
+            text(
+                "DELETE FROM auth.users WHERE (phone = :p OR phone = :digits OR phone = :last10) "
+                "AND id != :uid AND (email IS NULL OR email = '')"
+            ),
+            {"p": clean_phone, "digits": clean_phone_digits, "last10": last10, "uid": user.id},
+        )
+    except Exception as e:
+        logger.warning("Could not clear auth.users phone conflict: %s", e)
+
+    # 3. Ensure phone does not belong to another real account
+    existing = find_user_by_identifier(session, clean_phone)
+    if existing and existing.id != user.id:
+        raise HTTPException(
+            status_code=409,
+            detail="This phone number is already registered to another account.",
+        )
+
+    # 4. Link verified phone to user
+    user.phone = clean_phone
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    # 5. Sync confirmed phone to Supabase Auth so user can log in with either provider
+    await sync_supabase_user_phone(user.id, clean_phone)
+
+    return _profile(user, session=session, req_lang=request.headers.get("accept-language"))
 
 
 @router.post("/verify-email", response_model=MessageResponse, status_code=200)
@@ -785,33 +996,54 @@ async def sync_session(
     # Fetch user details from Supabase Auth
     sup_details = await fetch_supabase_user_details(user_id, token_str)
     sup_meta = (sup_details or {}).get("user_metadata", {})
-    sup_phone = (sup_details or {}).get("phone") or payload.phone
-    sup_email = (sup_details or {}).get("email")
+    from app.crud.user import normalize_phone_number
+    sup_phone = normalize_phone_number((sup_details or {}).get("phone") or payload.phone)
+    sup_email = ((sup_details or {}).get("email") or "").strip().lower() or None
 
     user = session.get(User, user_id)
     if user is None:
-        resolved_name = (
-            payload.name
-            or sup_meta.get("name")
-            or (f"Farmer {sup_phone[-4:]}" if sup_phone and len(sup_phone) >= 4 else "Farmer")
-        )
-        resolved_lang = payload.language or sup_meta.get("language") or "English"
-        resolved_loc = payload.location or sup_meta.get("location") or "Gujarat, India"
-        resolved_farm_name = payload.farm_name or sup_meta.get("farm_name") or f"{resolved_name}'s Farm"
-        resolved_crop_history = payload.crop_history or sup_meta.get("crop_history") or []
+        # Check if an existing account exists with this phone or email
+        existing = None
+        if sup_phone:
+            existing = find_user_by_identifier(session, sup_phone)
+        if not existing and sup_email:
+            existing = find_user_by_identifier(session, sup_email)
 
-        user = create_user(
-            session,
-            user_id=user_id,
-            name=resolved_name,
-            phone=sup_phone,
-            email=sup_email,
-            password_hash=None,
-            language=resolved_lang,
-            location=resolved_loc,
-            crop_history=resolved_crop_history,
-            farm_name=resolved_farm_name,
-        )
+        if existing is not None:
+            if existing.id != user_id:
+                old_id = existing.id
+                existing.id = user_id
+                logger.info("Relinked existing user %s -> %s for session sync (%s)", old_id, user_id, sup_phone)
+            if sup_phone and not existing.phone:
+                existing.phone = sup_phone
+            if sup_email and not existing.email:
+                existing.email = sup_email
+            session.commit()
+            session.refresh(existing)
+            user = existing
+        else:
+            resolved_name = (
+                payload.name
+                or sup_meta.get("name")
+                or (f"Farmer {sup_phone[-4:]}" if sup_phone and len(sup_phone) >= 4 else "Farmer")
+            )
+            resolved_lang = payload.language or sup_meta.get("language") or "English"
+            resolved_loc = payload.location or sup_meta.get("location") or "Gujarat, India"
+            resolved_farm_name = payload.farm_name or sup_meta.get("farm_name") or f"{resolved_name}'s Farm"
+            resolved_crop_history = payload.crop_history or sup_meta.get("crop_history") or []
+
+            user = create_user(
+                session,
+                user_id=user_id,
+                name=resolved_name,
+                phone=sup_phone,
+                email=sup_email,
+                password_hash=None,
+                language=resolved_lang,
+                location=resolved_loc,
+                crop_history=resolved_crop_history,
+                farm_name=resolved_farm_name,
+            )
     else:
         if payload.name:
             user.name = payload.name

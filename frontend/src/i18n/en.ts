@@ -772,5 +772,18 @@ export const en = {
   enterFullName: "Enter your full name",
   saveProfileChanges: "Save Profile Changes",
   noEmailLinked: "No email linked (Phone account)",
+  mobilePhoneAuth: "Mobile Phone & Authentication",
+  mobilePhoneAuthDesc: "Link or update your mobile phone number. An SMS verification code (OTP) will be sent to verify ownership. Once verified, you can log in using either your mobile phone or email address.",
+  verifyAndLinkPhone: "Verify & Link Mobile Phone",
+  changeMobilePhone: "Change Mobile Phone",
+  confirmAndLinkPhone: "Confirm & Link Phone",
+  phoneLinkedSuccess: "Mobile phone verified and linked successfully! You can now log in using either your email or this mobile number.",
+  phoneLinked: "Linked",
+  noPhoneLinked: "No Phone Linked",
+  resendCodeIn: "Resend code in",
+  resendCode: "Resend Code",
+  profileUpdatedSuccess: "Profile name updated successfully!",
+  verificationCodeSent: "Verification code sent to",
+  otpCodeInputLabel: "Verification Code (OTP)",
 };
 

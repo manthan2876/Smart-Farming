@@ -29,16 +29,38 @@ import ThemeToggle from "../components/ThemeToggle";
 import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
 
 export default function SettingsPage() {
-  const { user, token, language, units, setLanguage, setUnits, updateUserProfile, requestEmailUpdate, resendVerificationEmail, t } = useAuth();
+  const {
+    user,
+    token,
+    language,
+    units,
+    setLanguage,
+    setUnits,
+    updateUserProfile,
+    requestEmailUpdate,
+    resendVerificationEmail,
+    requestPhoneUpdate,
+    verifyPhoneUpdate,
+    sendPhoneOtp,
+    t,
+  } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === "admin";
   
-  // Account Profile / Phone
+  // Account Profile (Full Name)
   const [profileName, setProfileName] = useState(user?.name || "");
-  const [profilePhone, setProfilePhone] = useState(user?.phone || "");
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState(false);
+
+  // Mobile Phone Linking / Verification
+  const [profilePhone, setProfilePhone] = useState(user?.phone || "");
+  const [phoneStep, setPhoneStep] = useState<"idle" | "otp">("idle");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneCountdown, setPhoneCountdown] = useState(0);
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneSuccess, setPhoneSuccess] = useState("");
 
   // Email Linking / Update
   const [profileEmail, setProfileEmail] = useState(user?.email || user?.pending_email || "");
@@ -54,39 +76,125 @@ export default function SettingsPage() {
     }
   }, [user]);
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+  // Phone Resend Countdown Timer
+  useEffect(() => {
+    if (phoneCountdown > 0) {
+      const timer = setTimeout(() => setPhoneCountdown((c) => c - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [phoneCountdown]);
+
+  const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileError("");
     setProfileSuccess(false);
 
     const trimmedName = profileName.trim();
-    if (trimmedName && (trimmedName.length < 2 || trimmedName.length > 100)) {
+    if (!trimmedName || trimmedName.length < 2 || trimmedName.length > 100) {
       setProfileError("Name must be between 2 and 100 characters.");
       return;
-    }
-
-    const trimmedPhone = profilePhone.trim();
-    let normalizedPhone: string | undefined = undefined;
-    if (trimmedPhone) {
-      if (!isValidPhoneNumber(trimmedPhone)) {
-        setProfileError(t("phoneInvalid"));
-        return;
-      }
-      normalizedPhone = normalizePhoneNumber(trimmedPhone);
     }
 
     setProfileLoading(true);
     try {
       await updateUserProfile({
-        name: trimmedName || undefined,
-        phone: normalizedPhone !== undefined ? normalizedPhone : (trimmedPhone ? trimmedPhone : ""),
+        name: trimmedName,
       });
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 4000);
     } catch (err: any) {
-      setProfileError(err?.message || "Failed to update profile details.");
+      setProfileError(err?.message || "Failed to update profile name.");
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const handleSendPhoneOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPhoneError("");
+    setPhoneSuccess("");
+
+    const trimmed = profilePhone.trim();
+    if (!trimmed) {
+      setPhoneError("Please enter your mobile phone number.");
+      return;
+    }
+    if (!isValidPhoneNumber(trimmed)) {
+      setPhoneError(t("phoneInvalid"));
+      return;
+    }
+
+    const normalized = normalizePhoneNumber(trimmed);
+    if (user?.phone && normalizePhoneNumber(user.phone) === normalized) {
+      setPhoneError("This mobile number is already linked to your account.");
+      return;
+    }
+
+    setPhoneLoading(true);
+    try {
+      // 1. Verify phone is available and not already used by another account
+      await requestPhoneUpdate(normalized);
+
+      // 2. Dispatch SMS verification OTP
+      await sendPhoneOtp(normalized, false);
+
+      setPhoneStep("otp");
+      setPhoneCountdown(60);
+      setPhoneSuccess(`Verification code sent to ${normalized}. Enter the 6-digit code below.`);
+    } catch (err: any) {
+      setPhoneError(err?.message || "Failed to send verification code. Please check your number.");
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPhoneError("");
+    setPhoneSuccess("");
+
+    const cleanCode = phoneOtp.trim();
+    if (cleanCode.length !== 6 || !/^\d{6}$/.test(cleanCode)) {
+      setPhoneError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+
+    const normalized = normalizePhoneNumber(profilePhone.trim());
+    setPhoneLoading(true);
+    try {
+      await verifyPhoneUpdate(normalized, cleanCode);
+      setPhoneStep("idle");
+      setPhoneOtp("");
+      setPhoneSuccess("Mobile phone verified and linked successfully! You can now log in using either your email or this mobile number.");
+      setTimeout(() => setPhoneSuccess(""), 10000);
+    } catch (err: any) {
+      setPhoneError(err?.message || "Invalid verification code. Please try again.");
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleCancelPhoneOtp = () => {
+    setPhoneStep("idle");
+    setPhoneOtp("");
+    setPhoneError("");
+    setProfilePhone(user?.phone || "");
+  };
+
+  const handleResendPhoneOtp = async () => {
+    if (phoneCountdown > 0 || phoneLoading) return;
+    setPhoneError("");
+    setPhoneSuccess("");
+    const normalized = normalizePhoneNumber(profilePhone.trim());
+    setPhoneLoading(true);
+    try {
+      await sendPhoneOtp(normalized, false);
+      setPhoneCountdown(60);
+      setPhoneSuccess(`A fresh verification code was sent to ${normalized}.`);
+    } catch (err: any) {
+      setPhoneError(err?.message || "Failed to resend verification code.");
+    } finally {
+      setPhoneLoading(false);
     }
   };
 
@@ -302,33 +410,18 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <form onSubmit={handleUpdateProfile} className="mt-6 space-y-5">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <Input
-                label={t("fullName")}
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder={t("enterFullName")}
-                leadingIcon={<User size={16} />}
-              />
-            </div>
-
-            <div>
-              <Input
-                label={t("mobilePhone")}
-                value={profilePhone}
-                onChange={(e) => setProfilePhone(e.target.value)}
-                placeholder="e.g. 9999999999 or +919999999999"
-                leadingIcon={<Phone size={16} />}
-              />
-              <span className="mt-1 block text-xs text-muted">
-                {t("phoneHelp")}
-              </span>
-            </div>
+        <form onSubmit={handleUpdateName} className="mt-6 space-y-4">
+          <div className="max-w-md">
+            <Input
+              label={t("fullName")}
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder={t("enterFullName")}
+              leadingIcon={<User size={16} />}
+            />
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button type="submit" disabled={profileLoading} className="flex items-center gap-2">
               <User size={15} />
               <span>{profileLoading ? t("updating") : t("saveProfileChanges")}</span>
@@ -336,11 +429,132 @@ export default function SettingsPage() {
             {profileSuccess && (
               <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-farmer-700 dark:text-farmer-300 animate-fadeIn">
                 <CheckCircle2 size={16} />
-                <span>{t("phoneUpdatedSuccess")}</span>
+                <span>{t("profileUpdatedSuccess")}</span>
               </span>
             )}
           </div>
         </form>
+
+        {/* Mobile Phone & Authentication Section */}
+        <div className="my-6 border-t border-line" />
+
+        <div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="flex items-center gap-2 font-display text-lg text-ink">
+                <Phone size={18} className="text-farmer-700 dark:text-farmer-300" />
+                <span>{t("mobilePhoneAuth")}</span>
+              </h4>
+              <p className="mt-1 text-sm text-muted">
+                {t("mobilePhoneAuthDesc")}
+              </p>
+            </div>
+
+            <div>
+              {user?.phone ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300">
+                  <CheckCircle2 size={14} />
+                  <span>{t("phoneLinked")}: {user.phone}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs font-medium text-muted">
+                  <span>{t("noPhoneLinked")}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {phoneError && (
+            <div className="mt-4 rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-danger dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+              {phoneError}
+            </div>
+          )}
+
+          {phoneSuccess && (
+            <div className="mt-4 rounded-sm border border-green-200 bg-green-50 p-3 text-sm text-farmer-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300 flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-farmer-700 shrink-0" />
+              <span>{phoneSuccess}</span>
+            </div>
+          )}
+
+          {phoneStep === "idle" ? (
+            <form onSubmit={handleSendPhoneOtp} className="mt-5 space-y-4">
+              <div className="max-w-md">
+                <Input
+                  label={t("mobilePhone")}
+                  type="tel"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  placeholder="e.g. 98765 43210 or +919876543210"
+                  leadingIcon={<Phone size={16} />}
+                />
+                <span className="mt-1 block text-xs text-muted">
+                  {t("phoneHelp")}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 pt-1">
+                <Button type="submit" disabled={phoneLoading} className="flex items-center gap-2">
+                  <Phone size={15} />
+                  <span>
+                    {phoneLoading
+                      ? "Sending Code..."
+                      : user?.phone
+                      ? t("changeMobilePhone")
+                      : t("verifyAndLinkPhone")}
+                  </span>
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyPhoneOtp} className="mt-5 space-y-4">
+              <div className="rounded-lg border border-farmer-200/80 bg-farmer-50/50 p-4 text-xs text-farmer-900 dark:border-farmer-900/40 dark:bg-farmer-950/30 dark:text-farmer-200">
+                A 6-digit verification code was sent to <strong>{profilePhone}</strong>. Please enter it below to confirm ownership.
+              </div>
+
+              <div className="max-w-xs">
+                <Input
+                  label={t("otpCodeInputLabel")}
+                  type="text"
+                  maxLength={6}
+                  value={phoneOtp}
+                  onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Button
+                  type="submit"
+                  disabled={phoneLoading || phoneOtp.trim().length !== 6}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle2 size={15} />
+                  <span>{phoneLoading ? "Verifying..." : t("confirmAndLinkPhone")}</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={phoneLoading || phoneCountdown > 0}
+                  onClick={handleResendPhoneOtp}
+                >
+                  {phoneCountdown > 0 ? `${t("resendCodeIn")} ${phoneCountdown}s` : t("resendCode")}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={phoneLoading}
+                  onClick={handleCancelPhoneOtp}
+                >
+                  {t("cancel")}
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
 
         {/* Email Address Section */}
         <div className="my-6 border-t border-line" />

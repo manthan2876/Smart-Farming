@@ -84,6 +84,15 @@ class RequestEmailUpdateRequest(BaseModel):
     email: str = Field(min_length=3, max_length=320)
 
 
+class RequestPhoneUpdateRequest(BaseModel):
+    phone: str = Field(min_length=8, max_length=40)
+
+
+class VerifyPhoneUpdateRequest(BaseModel):
+    phone: str = Field(min_length=8, max_length=40)
+    token: str = Field(min_length=6, max_length=10)
+
+
 class VerifyEmailRequest(BaseModel):
     token: str = Field(min_length=1)
 

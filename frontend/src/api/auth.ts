@@ -118,6 +118,7 @@ export async function login(
 export async function register(payload: {
   name: string;
   email: string;
+  phone?: string;
   password: string;
   location: string;
   language: string;
@@ -139,7 +140,7 @@ export async function register(payload: {
     }
   } catch (backendErr: any) {
     if (backendErr?.status === 409 || backendErr?.message?.toLowerCase().includes("already registered")) {
-      throw new Error("Phone or email is already registered.");
+      throw new Error(backendErr.message || "Phone or email is already registered.");
     }
     console.warn("Backend registration failed, attempting Supabase Auth fallback:", backendErr);
   }
@@ -153,6 +154,7 @@ export async function register(payload: {
         emailRedirectTo: `${window.location.origin}/auth/verify-email`,
         data: {
           name: payload.name,
+          phone: payload.phone || "",
           location: payload.location,
           language: payload.language,
           crop_history: payload.crop_history || [],
@@ -350,6 +352,59 @@ export async function requestEmailUpdate(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
+    },
+    activeToken
+  );
+}
+
+export async function requestPhoneUpdate(
+  phone: string,
+  token?: string
+): Promise<{ status: string; message: string }> {
+  let activeToken = token;
+  if (!activeToken) {
+    activeToken = localStorage.getItem("smart_farm_token") || "";
+    if (!activeToken) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        activeToken = data.session?.access_token || "";
+      } catch {}
+    }
+  }
+
+  return request<{ status: string; message: string }>(
+    "/auth/request-phone-update",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    },
+    activeToken
+  );
+}
+
+export async function verifyPhoneUpdate(
+  phone: string,
+  otpCode: string,
+  token?: string
+): Promise<Profile> {
+  let activeToken = token;
+  if (!activeToken) {
+    activeToken = localStorage.getItem("smart_farm_token") || "";
+    if (!activeToken) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        activeToken = data.session?.access_token || "";
+      } catch {}
+    }
+  }
+
+  return request<Profile>(
+    "/auth/verify-phone-update",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, token: otpCode.trim() }),
     },
     activeToken
   );

@@ -774,5 +774,18 @@ export const gu: Record<keyof typeof en, string> = {
   enterFullName: "તમારું પૂરું નામ દાખલ કરો",
   saveProfileChanges: "પ્રોફાઇલ ફેરફારો સાચવો",
   noEmailLinked: "કોઈ ઇમેઇલ લિંક નથી (ફોન એકાઉન્ટ)",
+  mobilePhoneAuth: "મોબાઇલ નંબર અને પ્રમાણીકરણ",
+  mobilePhoneAuthDesc: "તમારો મોબાઇલ ફોન નંબર લિંક અથવા અપડેટ કરો. માલિકીની ચકાસણી કરવા માટે SMS OTP કોડ મોકલવામાં આવશે. ચકાસણી પૂર્ણ થયા પછી, તમે તમારા મોબાઇલ ફોન અથવા ઇમેઇલ બંને વડે લૉગિન કરી શકો છો.",
+  verifyAndLinkPhone: "મોબાઇલ નંબર ચકાસો અને લિંક કરો",
+  changeMobilePhone: "મોબાઇલ નંબર બદલો",
+  confirmAndLinkPhone: "પુષ્ટિ કરો અને ફોન લિંક કરો",
+  phoneLinkedSuccess: "મોબાઇલ ફોન સફળતાપૂર્વક ચકાસાયો અને લિંક થયો! હવે તમે તમારા ઇમેઇલ અથવા આ મોબાઇલ નંબર બંને વડે લૉગિન કરી શકો છો.",
+  phoneLinked: "લિંક કરેલ",
+  noPhoneLinked: "કોઈ ફોન લિંક નથી",
+  resendCodeIn: "કોડ ફરીથી મોકલો",
+  resendCode: "કોડ ફરી મોકલો",
+  profileUpdatedSuccess: "પ્રોફાઇલ નામ સફળતાપૂર્વક અપડેટ થયું!",
+  verificationCodeSent: "ચકાસણી કોડ મોકલ્યો",
+  otpCodeInputLabel: "ચકાસણી કોડ (OTP)",
 };
 

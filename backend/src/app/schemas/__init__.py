@@ -16,6 +16,8 @@ from app.schemas.user import (
     ResetPasswordRequest,
     SessionSyncRequest,
     RequestEmailUpdateRequest,
+    RequestPhoneUpdateRequest,
+    VerifyPhoneUpdateRequest,
     VerifyEmailRequest,
     ResendVerificationEmailRequest,
     SetupFirstTimePasswordRequest,
@@ -29,6 +31,6 @@ __all__ = [
     "CropListResponse",
     "AuthResponse", "ProfileResponse", "ProfileUpdateRequest", "RefreshRequest", "RegisterRequest", "LoginRequest",
     "ChangePasswordRequest", "ForgotPasswordRequest", "ResetPasswordRequest", "MessageResponse", "SessionSyncRequest",
-    "RequestEmailUpdateRequest", "VerifyEmailRequest", "ResendVerificationEmailRequest", "SetupFirstTimePasswordRequest",
+    "RequestEmailUpdateRequest", "RequestPhoneUpdateRequest", "VerifyPhoneUpdateRequest", "VerifyEmailRequest", "ResendVerificationEmailRequest", "SetupFirstTimePasswordRequest",
     "FarmRequest", "FarmResponse", "PlotRequest", "PlotResponse"
 ]

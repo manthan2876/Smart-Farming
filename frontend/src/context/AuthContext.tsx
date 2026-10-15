@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { login, profile, register, logout, updateProfile, profileFromSupabaseUser, AuthResponse, sendPhoneOtp, verifyPhoneOtp, requestEmailUpdate as apiRequestEmailUpdate, resendVerificationEmail as apiResendVerificationEmail, setupFirstTimePassword as apiSetupFirstTimePassword } from "../api/auth";
+import { login, profile, register, logout, updateProfile, profileFromSupabaseUser, AuthResponse, sendPhoneOtp, verifyPhoneOtp, requestEmailUpdate as apiRequestEmailUpdate, resendVerificationEmail as apiResendVerificationEmail, setupFirstTimePassword as apiSetupFirstTimePassword, requestPhoneUpdate as apiRequestPhoneUpdate, verifyPhoneUpdate as apiVerifyPhoneUpdate } from "../api/auth";
 import { Profile } from "../api/types";
 import { Language, Units, t, TranslationKey } from "../i18n";
 import { supabase } from "../lib/supabase";
+import { normalizePhoneNumber } from "../lib/phone";
 
 interface AuthContextType {
   user: Profile | null;
@@ -20,6 +21,8 @@ interface AuthContextType {
   verifyPhoneOtp: (phone: string, token: string, registrationData?: { name?: string; language?: string; location?: string; crop_history?: string[] }) => Promise<Profile>;
   requestEmailUpdate: (email: string) => Promise<{ status: string; message: string }>;
   resendVerificationEmail: (email: string) => Promise<{ status: string; message: string }>;
+  requestPhoneUpdate: (phone: string) => Promise<{ status: string; message: string }>;
+  verifyPhoneUpdate: (phone: string, otpCode: string) => Promise<Profile>;
   setupFirstTimePassword: (payload: { email: string; phone: string; new_password: string }) => Promise<Profile>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -157,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res: AuthResponse = await register({
       name: payload.name,
       email: payload.email || "",
+      phone: payload.phone ? normalizePhoneNumber(payload.phone) : undefined,
       password: payload.password,
       location: payload.location,
       language: payload.language,
@@ -235,6 +239,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return apiResendVerificationEmail(email);
   };
 
+  const requestPhoneUpdateHandler = async (phone: string) => {
+    if (!token) throw new Error("Not authenticated");
+    return apiRequestPhoneUpdate(phone, token);
+  };
+
+  const verifyPhoneUpdateHandler = async (phone: string, otpCode: string): Promise<Profile> => {
+    if (!token) throw new Error("Not authenticated");
+    const updated = await apiVerifyPhoneUpdate(phone, otpCode, token);
+    setUser(updated);
+    await refreshProfile();
+    return updated;
+  };
+
   const setupFirstTimePasswordHandler = async (payload: { email: string; phone: string; new_password: string }): Promise<Profile> => {
     const res = await apiSetupFirstTimePassword(payload);
     const accessToken = res.tokens.access_token as string;
@@ -262,6 +279,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyPhoneOtp: verifyPhoneOtpHandler,
         requestEmailUpdate: requestEmailUpdateHandler,
         resendVerificationEmail: resendVerificationEmailHandler,
+        requestPhoneUpdate: requestPhoneUpdateHandler,
+        verifyPhoneUpdate: verifyPhoneUpdateHandler,
         setupFirstTimePassword: setupFirstTimePasswordHandler,
         signOut,
         refreshProfile,

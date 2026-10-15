@@ -9,7 +9,7 @@ class User(Base):
 
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     name: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), unique=True, nullable=True)
     email: Mapped[str | None] = mapped_column(String(320), unique=True, nullable=True)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     pending_email: Mapped[str | None] = mapped_column(String(320), nullable=True)

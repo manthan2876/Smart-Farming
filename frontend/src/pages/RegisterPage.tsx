@@ -145,11 +145,9 @@ export default function RegisterPage() {
     setResendSuccess("");
     setLoading(true);
     try {
-      const cleanPhone = phone ? normalizePhoneNumber(phone) : undefined;
       const newUser = await signUp({
         name: name.trim(),
         email: email.trim(),
-        phone: cleanPhone,
         password,
         language,
         location: location.trim(),
@@ -465,25 +463,15 @@ export default function RegisterPage() {
                 placeholder="Ramesh Patel"
                 required
               />
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Input
-                  id="register-email"
-                  label={t("emailAddress")}
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="farmer@example.com"
-                  required
-                />
-                <Input
-                  id="register-phone-opt"
-                  label={t("phoneNumber")}
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="99999 99999"
-                />
-              </div>
+              <Input
+                id="register-email"
+                label={t("emailAddress")}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="farmer@example.com"
+                required
+              />
               <Input
                 id="register-password"
                 label={t("password")}

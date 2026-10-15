@@ -487,11 +487,11 @@ export default function LoginPage() {
                 >
                   <Input 
                     id="login-identifier" 
-                    label="Email Address"
-                    type="email" 
+                    label="Email Address or Mobile Phone"
+                    type="text" 
                     value={identifier} 
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="farmer@example.com"
+                    placeholder="farmer@example.com or 99999 99999"
                     required 
                   />
                   <div className="space-y-1">

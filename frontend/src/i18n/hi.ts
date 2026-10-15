@@ -774,5 +774,18 @@ export const hi: Record<keyof typeof en, string> = {
   enterFullName: "अपना पूरा नाम दर्ज करें",
   saveProfileChanges: "प्रोफ़ाइल परिवर्तन सहेजें",
   noEmailLinked: "कोई ईमेल लिंक नहीं (फ़ोन खाता)",
+  mobilePhoneAuth: "मोबाइल फ़ोन और प्रमाणीकरण",
+  mobilePhoneAuthDesc: "अपना मोबाइल फ़ोन नंबर लिंक या अपडेट करें। स्वामित्व सत्यापित करने के लिए एक SMS OTP कोड भेजा जाएगा। सत्यापित होने के बाद, आप अपने मोबाइल फ़ोन या ईमेल दोनों से लॉगिन कर सकते हैं।",
+  verifyAndLinkPhone: "मोबाइल नंबर सत्यापित और लिंक करें",
+  changeMobilePhone: "मोबाइल फ़ोन बदलें",
+  confirmAndLinkPhone: "पुष्टि करें और फ़ोन लिंक करें",
+  phoneLinkedSuccess: "मोबाइल फ़ोन सफलतापूर्वक सत्यापित और लिंक हो गया! अब आप अपने ईमेल या इस मोबाइल नंबर दोनों से लॉगिन कर सकते हैं।",
+  phoneLinked: "लिंक किया गया",
+  noPhoneLinked: "कोई फ़ोन लिंक नहीं",
+  resendCodeIn: "कोड पुनः भेजें",
+  resendCode: "कोड पुनः भेजें",
+  profileUpdatedSuccess: "प्रोफ़ाइल नाम सफलतापूर्वक अपडेट किया गया!",
+  verificationCodeSent: "सत्यापन कोड भेजा गया",
+  otpCodeInputLabel: "सत्यापन कोड (OTP)",
 };
 

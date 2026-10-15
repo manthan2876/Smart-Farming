@@ -124,6 +124,9 @@ async def send_verification_email(
     token_type: str = "registration",
     user_name: str | None = None,
     user_id: str | None = None,
+    phone: str | None = None,
+    language: str | None = None,
+    location: str | None = None,
 ) -> bool:
     """
     Dispatches an email verification link via Supabase Auth Custom SMTP.
@@ -146,6 +149,15 @@ async def send_verification_email(
                 # A. Initial Registration: Trigger Supabase Auth signup to dispatch the "Confirm signup" template
                 if token_type == "registration":
                     import secrets
+                    meta_data = {
+                        "name": user_name or "",
+                        "language": language or "English",
+                        "location": location or "Gujarat, India",
+                        "role": "farmer",
+                    }
+                    if phone:
+                        meta_data["phone"] = phone
+
                     signup_resp = await client.post(
                         f"{supabase_url.rstrip('/')}/auth/v1/signup?redirect_to={clean_redirect}",
                         headers={
@@ -155,14 +167,20 @@ async def send_verification_email(
                         json={
                             "email": email_to,
                             "password": secrets.token_urlsafe(16),
+                            "data": meta_data,
                             "options": {
-                                "data": {"name": user_name or ""},
+                                "data": meta_data,
                                 "email_redirect_to": clean_redirect,
                             },
                         },
                     )
                     if signup_resp.status_code in (200, 201):
                         logger.info("Confirm signup email dispatched to %s via Supabase Auth signup", email_to)
+                        sup_user = signup_resp.json()
+                        sup_uid = sup_user.get("id") or user_id
+                        if sup_uid and phone and service_key:
+                            from app.api.endpoints.auth import sync_supabase_user_phone
+                            await sync_supabase_user_phone(sup_uid, phone)
                         return True
                     else:
                         logger.info("Supabase signup returned status %s (%s), attempting resend fallback", signup_resp.status_code, signup_resp.text)
