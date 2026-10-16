@@ -106,9 +106,8 @@ def test_clients_without_auth_key_do_not_send_auth_header():
 
 
 @pytest.mark.asyncio
-async def test_tts_client_sends_ai_service_auth():
-    from app.api.endpoints.tts import generate_tts
-    from fastapi import Request
+async def test_tts_client_sends_ai_service_auth(tmp_path):
+    from app.api.endpoints.tts import generate_tts, TTSRequest
 
     mock_resp = MagicMock()
     mock_resp.status_code = 200
@@ -117,22 +116,22 @@ async def test_tts_client_sends_ai_service_auth():
         "format": "mp3",
     }
 
-    mock_request = MagicMock()
-
     with patch.object(settings, "TTS_SERVER_URL", "https://maharsh8805-smart-farming-ai.hf.space/tts"):
         with patch.object(settings, "GATEWAY_API_KEY", "test-secret-key-123"):
-            with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
-                result = await generate_tts(
-                    request=mock_request,
-                    text="Hello farmer",
-                    language="en",
-                    current_user=MagicMock(),
-                )
+            with patch("app.api.endpoints.tts.AUDIO_CACHE_DIR", tmp_path):
+                with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
+                    payload = TTSRequest(text="Unique phrase for auth check 12345", language="en")
+                    result = await generate_tts(
+                        payload=payload,
+                        user_id="test-user-id",
+                    )
 
-                assert result["format"] == "mp3"
-                call_args, call_kwargs = mock_post.call_args
-                assert "https://maharsh8805-smart-farming-ai.hf.space/tts" in call_args[0]
-                assert call_kwargs["headers"].get("Authorization") == "Bearer test-secret-key-123"
+                    assert result["format"] == "wav"
+                    assert "audioContent" in result
+                    assert mock_post.called
+                    call_args, call_kwargs = mock_post.call_args
+                    assert "https://maharsh8805-smart-farming-ai.hf.space/tts" in call_args[0]
+                    assert call_kwargs["headers"].get("Authorization") == "Bearer test-secret-key-123"
 
 
 def test_ai_service_url_auto_resolution():
