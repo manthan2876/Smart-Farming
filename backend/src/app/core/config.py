@@ -42,23 +42,26 @@ class Settings(BaseSettings):
     DEFAULT_LON: float = Field(default=72.1519)
     DEFAULT_LOCATION: str = Field(default="Gujarat, India")
 
-    # Model Inference Server (Server 2)
+    # Unified AI Microservice (Hugging Face Space)
+    AI_SERVICE_URL: str = Field(default="")
+
+    # Model Inference Server (Vision)
     MODEL_SERVER_URL: str = Field(default="http://127.0.0.1:8001")
     MODEL_SERVER_TIMEOUT: int = Field(default=120)
 
-    # Translation Server (IndicTrans2 on Colab via Cloudflare Gateway)
+    # Translation Server (IndicTrans2)
     TRANSLATION_SERVER_URL: str = Field(default="")
     TRANSLATION_SERVER_TIMEOUT: float = Field(default=45.0)
 
-    # Advisory Server (Qwen3-4B on Colab)
+    # Advisory Server (Qwen2.5 / Knowledge Base)
     ADVISORY_SERVER_URL: str = Field(default="")
     ADVISORY_SERVER_TIMEOUT: float = Field(default=60.0)
 
-    # Text-to-Speech Server (AI4Bharat Indic-TTS on Colab)
+    # Text-to-Speech Server (Neural Indian Voices / Indic-TTS)
     TTS_SERVER_URL: str = Field(default="")
     TTS_SERVER_TIMEOUT: float = Field(default=90.0)
 
-    # Cloudflare Worker API Gateway Authentication
+    # AI Service API Authentication (Optional Bearer token)
     GATEWAY_API_KEY: str | None = Field(default=None)
 
     # Storage & Auth (Supabase Object Storage & Supabase Auth)
@@ -189,6 +192,21 @@ class Settings(BaseSettings):
             else:
                 self.REDIS_URL = self.LOCAL_REDIS_URL or "redis://localhost:6379"
 
+        return self
+
+    @model_validator(mode="after")
+    def resolve_ai_service_urls(self) -> "Settings":
+        """Auto-populates individual AI endpoints if AI_SERVICE_URL is set."""
+        if self.AI_SERVICE_URL:
+            base = self.AI_SERVICE_URL.rstrip("/")
+            if not self.MODEL_SERVER_URL or any(h in self.MODEL_SERVER_URL for h in ("127.0.0.1", "localhost", "workers.dev")):
+                self.MODEL_SERVER_URL = f"{base}/vision"
+            if not self.TRANSLATION_SERVER_URL or "workers.dev" in self.TRANSLATION_SERVER_URL:
+                self.TRANSLATION_SERVER_URL = f"{base}/translation"
+            if not self.ADVISORY_SERVER_URL or "workers.dev" in self.ADVISORY_SERVER_URL:
+                self.ADVISORY_SERVER_URL = f"{base}/advisory"
+            if not self.TTS_SERVER_URL or "workers.dev" in self.TTS_SERVER_URL:
+                self.TTS_SERVER_URL = f"{base}/tts"
         return self
 
     model_config = SettingsConfigDict(

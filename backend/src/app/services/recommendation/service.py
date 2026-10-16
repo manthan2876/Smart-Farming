@@ -148,7 +148,7 @@ def _generate_rule_based_advisory(
 
 
 def call_remote_advisory_server(payload: dict) -> dict[str, Any] | None:
-    """Invokes the Colab Qwen3-4B Advisory Server on port 8003 over HTTP."""
+    """Invokes the AI Advisory Service over HTTP."""
     server_url = (getattr(settings, "ADVISORY_SERVER_URL", "") or "").strip()
     if not server_url:
         return None
@@ -159,7 +159,6 @@ def call_remote_advisory_server(payload: dict) -> dict[str, Any] | None:
     try:
         headers = {
             "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
             "User-Agent": "SmartFarmingBackend/2.0",
         }
         gateway_key = getattr(settings, "GATEWAY_API_KEY", None)

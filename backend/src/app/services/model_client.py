@@ -21,7 +21,7 @@ async def call_model_service(
     url = f"{settings.MODEL_SERVER_URL.rstrip('/')}/predict"
     headers = {}
 
-    # Support Cloudflare Gateway API Key authentication
+    # Support Bearer token authentication (GATEWAY_SECRET on HF Space)
     gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
     if gateway_key:
         headers["Authorization"] = f"Bearer {gateway_key}"

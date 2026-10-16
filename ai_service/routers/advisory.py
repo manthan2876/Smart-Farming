@@ -10,7 +10,10 @@ import json
 import logging
 import os
 import re
+import threading
 from typing import Any, Optional
+
+import torch
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -75,8 +78,79 @@ def _fallback_fields(kb_entry: dict[str, Any]) -> dict[str, str]:
     }
 
 
+_qwen_model = None
+_qwen_tokenizer = None
+_qwen_lock = threading.Lock()
+
+
+def _get_local_qwen():
+    """Lazy-load the local Qwen2.5-1.5B-Instruct model in memory (100% self-hosted in Space)."""
+    global _qwen_model, _qwen_tokenizer
+    if _qwen_model is not None and _qwen_tokenizer is not None:
+        return _qwen_model, _qwen_tokenizer
+
+    with _qwen_lock:
+        if _qwen_model is not None:
+            return _qwen_model, _qwen_tokenizer
+
+        model_id = settings.LOCAL_LLM_MODEL
+        logger.info("Loading in-memory local LLM (%s) into 16 GB Space RAM on %s...", model_id, settings.DEVICE)
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        _qwen_tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+        torch_dtype = torch.bfloat16 if hasattr(torch, "bfloat16") else torch.float32
+        _qwen_model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            trust_remote_code=True,
+            torch_dtype=torch_dtype,
+            low_cpu_mem_usage=True,
+        ).to(settings.DEVICE).eval()
+        logger.info("Local advisory LLM (%s) loaded successfully.", model_id)
+        return _qwen_model, _qwen_tokenizer
+
+
+def _call_local_llm(system_prompt: str, user_prompt: str) -> Optional[dict]:
+    """Runs inference on the local in-memory Qwen2.5 model (no external API keys)."""
+    try:
+        model, tokenizer = _get_local_qwen()
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        model_inputs = tokenizer([text], return_tensors="pt").to(settings.DEVICE)
+
+        with torch.inference_mode():
+            generated_ids = model.generate(
+                **model_inputs,
+                max_new_tokens=220,
+                temperature=0.2,
+                top_p=0.9,
+                do_sample=True,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+            generated_ids = [
+                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+            ]
+            response_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+
+        # Parse JSON from response
+        clean = re.sub(r"```(?:json)?", "", response_text).strip()
+        match = re.search(r"\{[\s\S]*\}", clean)
+        if match:
+            return json.loads(match.group(0))
+        return json.loads(clean)
+    except Exception as exc:
+        logger.warning("Local Qwen LLM inference encountered an issue: %s. Relying on verified KB facts.", exc)
+        return None
+
+
 def _call_groq_llm(system_prompt: str, user_prompt: str) -> Optional[dict]:
-    """Invokes the free high-speed Groq API if GROQ_API_KEY is configured."""
+    """Invokes optional Groq API if configured and local LLM is toggled off."""
     api_key = settings.GROQ_API_KEY
     if not api_key:
         return None
@@ -121,7 +195,8 @@ def advisory_health():
         "status": "healthy",
         "service": "advisory_engine",
         "kb_entries": len(ADVISORY_KB),
-        "groq_enabled": bool(settings.GROQ_API_KEY),
+        "engine": "local_qwen2.5_in_memory" if settings.USE_LOCAL_LLM else "groq_api",
+        "local_model": settings.LOCAL_LLM_MODEL if settings.USE_LOCAL_LLM else None,
         "supported_languages": ["en", "hi", "gu"],
     }
 
@@ -189,7 +264,14 @@ Field situation:
 - Plot area: {req.plot_acres or 'standard field'} acres
 """
 
-    llm_result = _call_groq_llm(system_prompt, user_prompt)
+    llm_result = None
+    if settings.USE_LOCAL_LLM:
+        llm_result = _call_local_llm(system_prompt, user_prompt)
+
+    # Optional fallback if local LLM generation encounters an issue and Groq key exists
+    if not llm_result and settings.GROQ_API_KEY:
+        llm_result = _call_groq_llm(system_prompt, user_prompt)
+
     if llm_result and isinstance(llm_result, dict):
         for k in FIELDS:
             if llm_result.get(k) and isinstance(llm_result[k], str):

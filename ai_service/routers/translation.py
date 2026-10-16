@@ -22,7 +22,9 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-MODEL_NAME = "ai4bharat/indictrans2-en-indic-dist-200M"
+MODEL_NAME = os.getenv("INDICTRANS_MODEL", "ai4bharat/indictrans2-en-indic-dist-200M")
+FALLBACK_MODEL_NAME = "ai4bharat/indictrans2-en-indic-dist-200M"
+
 LANG_CODES = {
     "hi": "hin_Deva",
     "gu": "guj_Gujr",
@@ -61,31 +63,47 @@ _init_cache()
 
 
 def _get_indictrans_components():
-    """Lazy-load the IndicTrans2 model and tokenizer upon first call."""
+    """Lazy-load the flagship 1B (or distilled 200M) IndicTrans2 model."""
     global _model, _tokenizer, _processor
-    if _model is not None and _tokenizer is not None and _processor is not None:
+    if _model is not None and _tokenizer is not None:
         return _model, _tokenizer, _processor
 
     with _lock:
         if _model is not None:
             return _model, _tokenizer, _processor
 
-        logger.info("Loading IndicTrans2 (%s) on %s...", MODEL_NAME, settings.DEVICE)
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
         try:
-            from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-            from IndicTransToolkit.processor import IndicProcessor
+            from IndicTransToolkit import IndicProcessor
+        except ImportError:
+            try:
+                from IndicTransToolkit.processor import IndicProcessor
+            except ImportError:
+                IndicProcessor = None
 
-            _tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
+        chosen_model = MODEL_NAME
+        logger.info("Loading flagship IndicTrans2 (%s) on %s...", chosen_model, settings.DEVICE)
+        try:
+            _tokenizer = AutoTokenizer.from_pretrained(chosen_model, trust_remote_code=True)
             _model = AutoModelForSeq2SeqLM.from_pretrained(
-                MODEL_NAME,
+                chosen_model,
                 trust_remote_code=True,
                 torch_dtype=torch.float32 if settings.DEVICE == "cpu" else torch.float16,
+                low_cpu_mem_usage=True,
             ).to(settings.DEVICE).eval()
-            _processor = IndicProcessor(inference=True)
-            logger.info("IndicTrans2 loaded successfully.")
+            _processor = IndicProcessor(inference=True) if IndicProcessor else None
+            logger.info("IndicTrans2 (%s) loaded successfully into 16 GB memory.", chosen_model)
         except Exception as exc:
-            logger.error("Failed to load IndicTrans2: %s", exc)
-            raise RuntimeError(f"IndicTrans2 initialization error: {exc}")
+            logger.warning("Failed loading primary model (%s): %s. Falling back to %s...", chosen_model, exc, FALLBACK_MODEL_NAME)
+            _tokenizer = AutoTokenizer.from_pretrained(FALLBACK_MODEL_NAME, trust_remote_code=True)
+            _model = AutoModelForSeq2SeqLM.from_pretrained(
+                FALLBACK_MODEL_NAME,
+                trust_remote_code=True,
+                torch_dtype=torch.float32 if settings.DEVICE == "cpu" else torch.float16,
+                low_cpu_mem_usage=True,
+            ).to(settings.DEVICE).eval()
+            _processor = IndicProcessor(inference=True) if IndicProcessor else None
+            logger.info("IndicTrans2 fallback (%s) loaded successfully.", FALLBACK_MODEL_NAME)
 
         return _model, _tokenizer, _processor
 
@@ -95,7 +113,11 @@ def _run_batch(texts: list[str], target_lang_code: str) -> list[str]:
     model, tokenizer, processor = _get_indictrans_components()
     num_beams = 4 if settings.DEVICE == "cuda" else 2
 
-    batch = processor.preprocess_batch(texts, src_lang="eng_Latn", tgt_lang=target_lang_code)
+    if processor is not None:
+        batch = processor.preprocess_batch(texts, src_lang="eng_Latn", tgt_lang=target_lang_code)
+    else:
+        batch = texts
+
     inputs = tokenizer(
         batch,
         padding=True,
@@ -113,7 +135,9 @@ def _run_batch(texts: list[str], target_lang_code: str) -> list[str]:
         )
 
     decoded = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
-    return processor.postprocess_batch(decoded, lang=target_lang_code)
+    if processor is not None:
+        return processor.postprocess_batch(decoded, lang=target_lang_code)
+    return decoded
 
 
 def translate_texts(texts: list[str], target_lang: str) -> list[str]:

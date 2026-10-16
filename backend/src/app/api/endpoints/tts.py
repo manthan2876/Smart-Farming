@@ -144,7 +144,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
     if not tts_url:
         raise HTTPException(
             status_code=503,
-            detail="TTS service is not configured. Set TTS_SERVER_URL to the Indic-TTS service or Cloudflare Gateway."
+            detail="TTS service is not configured. Set TTS_SERVER_URL or AI_SERVICE_URL to the AI service."
         )
 
     headers = {"Content-Type": "application/json"}
@@ -183,10 +183,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
                 if "Unknown service route" in resp_text:
                     raise HTTPException(
                         status_code=502,
-                        detail=(
-                            "Cloudflare Worker Gateway has not been deployed with the /tts route yet. "
-                            "Please deploy the updated worker by running 'npx wrangler deploy' in the cloudflare_gateway folder."
-                        ),
+                        detail="TTS service returned 404. Verify the AI service URL and endpoints.",
                     )
                 # Fallback to direct raw audio endpoint POST /tts
                 direct_url = f"{tts_url}/tts" if not tts_url.endswith("/tts") else tts_url
@@ -206,10 +203,7 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
             elif resp.status_code == 503 and "TTS_URL" in resp.text:
                 raise HTTPException(
                     status_code=503,
-                    detail=(
-                        "Indic-TTS service is currently offline. Please run Notebook 3 "
-                        "(03_indic_tts_cloudflare.ipynb) on Colab to start the model and populate TTS_URL."
-                    ),
+                    detail="Speech synthesis service is currently offline. Please ensure the AI service is active.",
                 )
             else:
                 raise HTTPException(

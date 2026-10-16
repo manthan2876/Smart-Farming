@@ -97,7 +97,6 @@ async def translate_batch_indictrans(texts: list[str], target_lang: str) -> list
     endpoint = f"{server_url.rstrip('/')}/translate"
     headers = {
         "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "69420",
         "User-Agent": "SmartFarmingBackend/2.0",
     }
     gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
@@ -166,7 +165,6 @@ def translate_batch_indictrans_sync(texts: list[str], target_lang: str) -> list[
     endpoint = f"{server_url.rstrip('/')}/translate"
     headers = {
         "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "69420",
         "User-Agent": "SmartFarmingBackend/2.0",
     }
     gateway_key = getattr(settings, "GATEWAY_API_KEY", None)

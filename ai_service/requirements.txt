@@ -1,6 +1,6 @@
 # Web & API Framework
 fastapi>=0.115.0
-gradio>=4.44.0
+gradio>=5.16.0
 uvicorn[standard]>=0.30.0
 python-multipart>=0.0.9
 pydantic>=2.8.0
@@ -18,15 +18,19 @@ albumentations>=1.4.0
 numpy>=1.26.0,<2.0.0
 pillow>=10.4.0
 
-# NLP & Translation (IndicTrans2)
-transformers>=4.40.0
+# NLP, Translation & Local LLMs
+transformers>=4.44.0
+accelerate>=0.30.0
 sentencepiece>=0.2.0
+sacremoses>=0.1.1
+indictranstoolkit>=1.0.0
+huggingface_hub>=0.28.0
 
 # Audio & Speech (Neural Indian Voices)
 edge-tts>=6.1.12
 soundfile>=0.12.1
 scipy>=1.13.0
 
-# LLM Advisory Synthesis
+# LLM Advisory Synthesis (Llama-3.3-70B Flagship)
 groq>=0.9.0
 

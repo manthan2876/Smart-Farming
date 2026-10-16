@@ -41,10 +41,15 @@ class Settings(BaseSettings):
     GATEWAY_SECRET: str = os.getenv("GATEWAY_SECRET", "")
     ALLOW_ALL_ORIGINS: bool = True
 
-    # Cloud LLM APIs for fast advisory generation (Groq or Gemini)
+    # Advisory LLM Engine (100% Local In-Memory Qwen2.5 or Optional Groq API)
+    USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "true").lower() in ("true", "1")
+    LOCAL_LLM_MODEL: str = os.getenv("LOCAL_LLM_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+
+    # Flagship Translation Model (Plan default: dist-200M for sub-second CPU response)
+    INDICTRANS_MODEL: str = os.getenv("INDICTRANS_MODEL", "ai4bharat/indictrans2-en-indic-dist-200M")
 
     # Paths
     KB_PATH: Path = AI_SERVICE_DIR / "advisory_kb.json"
