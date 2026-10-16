@@ -190,3 +190,32 @@ async def trigger_failure_callback(
         "message": "Failure callback processed and logged.",
         "timestamp": time.time(),
     }
+
+
+@router.post("/keepalive-ai")
+async def trigger_keepalive_ai(
+    verified: bool = Depends(verify_qstash_signature),
+) -> dict[str, Any]:
+    """Sends a health check heartbeat to the Hugging Face AI Space to prevent idle sleep mode."""
+    import httpx
+    logger.info("Executing keepalive ping for Hugging Face AI microservice...")
+    target_url = f"{settings.AI_SERVICE_URL.rstrip('/')}/health"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(target_url)
+            data = resp.json() if resp.status_code == 200 else {"raw": resp.text[:200]}
+            logger.info("Keepalive ping to %s succeeded with status %d", target_url, resp.status_code)
+            return {
+                "status": "success" if resp.status_code == 200 else "degraded",
+                "http_code": resp.status_code,
+                "ai_service": data,
+                "timestamp": time.time(),
+            }
+    except Exception as exc:
+        logger.warning("Keepalive ping to %s failed: %s", target_url, exc)
+        return {
+            "status": "error",
+            "error": str(exc),
+            "timestamp": time.time(),
+        }
+

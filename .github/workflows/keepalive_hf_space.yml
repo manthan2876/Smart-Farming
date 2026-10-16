@@ -1,0 +1,28 @@
+name: Keepalive Hugging Face AI Space
+
+on:
+  schedule:
+    # Runs every 6 hours (at minute 15 past hours 0, 6, 12, 18 UTC)
+    - cron: '15 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  heartbeat:
+    name: Ping AI Microservice
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Heartbeat to Hugging Face Space
+        run: |
+          SPACE_URL="https://maharsh8805-smart-farming-ai.hf.space/health"
+          echo "Sending keepalive heartbeat to $SPACE_URL..."
+          HTTP_STATUS=$(curl -s -o /tmp/health_resp.json -w "%{http_code}" "$SPACE_URL" || true)
+          echo "Response code: $HTTP_STATUS"
+          cat /tmp/health_resp.json || true
+          echo ""
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "::warning::Space returned HTTP $HTTP_STATUS on initial ping. Retrying in 10s..."
+            sleep 10
+            curl -f -s "$SPACE_URL"
+          fi
+          echo "Hugging Face Space is active and awake!"
