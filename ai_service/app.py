@@ -69,6 +69,40 @@ async def run_tts_gradio(text: str, language: str):
     return str(out_path)
 
 
+def trigger_zerogpu_startup():
+    """
+    Explicitly notifies the ZeroGPU host supervisor of container startup.
+    When mounting Gradio onto FastAPI with gr.mount_gradio_app, demo.launch() is not called,
+    so spaces' monkey-patched launch hook is bypassed. This explicitly sends the startup report.
+    """
+    try:
+        import spaces
+        zero_cfg = getattr(spaces, "config", None)
+        if zero_cfg and getattr(zero_cfg.Config, "zero_gpu", False):
+            # 1. Execute spaces.zero.startup if available
+            if hasattr(spaces, "zero") and hasattr(spaces.zero, "startup"):
+                try:
+                    spaces.zero.startup()
+                    print("[ZeroGPU] spaces.zero.startup() executed.")
+                except Exception as exc:
+                    print(f"[ZeroGPU] spaces.zero.startup() notice: {exc}")
+            # 2. Directly send startup_report to host daemon
+            if hasattr(spaces, "zero") and hasattr(spaces.zero, "client"):
+                if hasattr(spaces.zero.client, "startup_report"):
+                    try:
+                        spaces.zero.client.startup_report()
+                        print("[ZeroGPU] spaces.zero.client.startup_report() sent successfully.")
+                    except Exception as exc:
+                        print(f"[ZeroGPU] startup_report notice: {exc}")
+    except Exception as exc:
+        print(f"[ZeroGPU] startup check notice: {exc}")
+
+
+@fastapi_app.on_event("startup")
+def on_app_startup():
+    trigger_zerogpu_startup()
+
+
 def build_gradio_ui():
     with gr.Blocks(title="Smart Farming AI Hub", theme=gr.themes.Soft()) as demo:
         gr.Markdown("# 🌾 Smart Farming AI Microservice")
@@ -126,6 +160,9 @@ demo = build_gradio_ui()
 
 # Mount Gradio onto the FastAPI app so both UI and REST endpoints (/health, /vision, /tts, etc.) work!
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+
+# Signal ZeroGPU host supervisor that startup initialization is ready
+trigger_zerogpu_startup()
 
 if __name__ == "__main__":
     import uvicorn
