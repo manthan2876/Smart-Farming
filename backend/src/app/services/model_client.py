@@ -68,7 +68,7 @@ async def call_model_service(
     except httpx.ConnectError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Model Inference Server is unreachable at {settings.MODEL_SERVER_URL}. Please ensure Server 2 is running on port 8001.",
+            detail=f"Model Inference Server is unreachable at {settings.MODEL_SERVER_URL}. Please verify the AI Service status.",
         )
 
 def merge_and_save_cv_result(context: dict, cv_result: dict, filename: str) -> dict:
@@ -188,7 +188,7 @@ def call_model_service_sync(
 
     except httpx.ConnectError:
         raise RuntimeError(
-            f"Model Inference Server is unreachable at {settings.MODEL_SERVER_URL}. Please ensure Server 2 is running on port 8001."
+            f"Model Inference Server is unreachable at {settings.MODEL_SERVER_URL}. Please verify the AI Service status."
         )
 
 

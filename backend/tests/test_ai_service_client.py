@@ -149,3 +149,33 @@ def test_ai_service_url_auto_resolution():
     assert s.TTS_SERVER_URL == "https://my-space.hf.space/tts"
 
 
+def test_ai_service_legacy_tunnel_sanitization():
+    from app.core.config import Settings
+    s = Settings(
+        MODEL_SERVER_URL="https://new-awards-florence-icq.trycloudflare.com",
+        TRANSLATION_SERVER_URL="https://smart-farming-gateway.user.workers.dev/translation",
+        ADVISORY_SERVER_URL="https://stale-tunnel.ngrok-free.app/advisory",
+        TTS_SERVER_URL="https://tunnel.ngrok.io/tts",
+        AI_SERVICE_URL="https://maharsh8805-smart-farming-ai.hf.space",
+    )
+    assert s.MODEL_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/vision"
+    assert s.TRANSLATION_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/translation"
+    assert s.ADVISORY_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/advisory"
+    assert s.TTS_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/tts"
+
+
+def test_ai_service_url_suffix_normalization():
+    from app.core.config import Settings
+    s = Settings(
+        MODEL_SERVER_URL="https://maharsh8805-smart-farming-ai.hf.space/vision/predict",
+        TRANSLATION_SERVER_URL="https://maharsh8805-smart-farming-ai.hf.space/translation/translate",
+        ADVISORY_SERVER_URL="https://maharsh8805-smart-farming-ai.hf.space/advisory/advise",
+        TTS_SERVER_URL="https://maharsh8805-smart-farming-ai.hf.space/tts/synthesize",
+    )
+    assert s.MODEL_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/vision"
+    assert s.TRANSLATION_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/translation"
+    assert s.ADVISORY_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/advisory"
+    assert s.TTS_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/tts"
+
+
+
