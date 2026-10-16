@@ -1,0 +1,23 @@
+# ==============================================================================
+# render.yaml — Render Monorepo Blueprint Configuration
+# ==============================================================================
+
+services:
+  - type: web
+    name: smart-farming-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - backend/**
+      ignoredPaths:
+        - frontend/**
+        - ai_service/**
+        - mobile/**
+        - Docs/**
+        - notebooks/**
+        - "*.md"

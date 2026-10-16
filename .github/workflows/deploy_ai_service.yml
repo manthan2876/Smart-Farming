@@ -1,0 +1,69 @@
+name: Deploy AI Service to Hugging Face Space
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ai_service/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-to-huggingface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Deploy ai_service to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::Secret HF_TOKEN is not configured in GitHub repository secrets. Please add HF_TOKEN under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          # Prevent downloading large Git LFS weights during clone
+          export GIT_LFS_SKIP_SMUDGE=1
+
+          echo "Cloning Space deployment mirror..."
+          git clone --depth 1 https://Maharsh8805:${HF_TOKEN}@huggingface.co/spaces/Maharsh8805/smart-farming-ai hf_mirror
+
+          echo "Synchronizing ai_service source files..."
+          for f in app.py main.py requirements.txt README.md config.yaml advisory_kb.json packages.txt Dockerfile; do
+            if [ -f "ai_service/$f" ]; then
+              cp "ai_service/$f" "hf_mirror/$f"
+            fi
+          done
+
+          for dir in core routers vision_engine training; do
+            if [ -d "ai_service/$dir" ]; then
+              rsync -rlt --delete --exclude="__pycache__" --exclude="*.pyc" "ai_service/$dir/" "hf_mirror/$dir/"
+            fi
+          done
+
+          # Synchronize labels and configs without overwriting LFS model weights
+          mkdir -p hf_mirror/models
+          find ai_service/models -type f \( -name "*.json" -o -name "*.csv" -o -name "*.png" -o -name "*.yaml" \) | while read -r file; do
+            rel_path="${file#ai_service/models/}"
+            mkdir -p "$(dirname "hf_mirror/models/$rel_path")"
+            cp "$file" "hf_mirror/models/$rel_path"
+          done
+
+          cd hf_mirror
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Hugging Face Space is already up to date. No deployment needed."
+            exit 0
+          fi
+
+          echo "Pushing updates to Hugging Face Space..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "deploy(ai_service): sync from commit ${{ github.sha }}"
+          git push origin main
+          echo "Successfully deployed ai_service to Hugging Face Space!"
