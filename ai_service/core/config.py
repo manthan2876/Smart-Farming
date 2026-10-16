@@ -19,6 +19,10 @@ REPO_ROOT = AI_SERVICE_DIR.parent
 def _detect_device() -> str:
     if os.getenv("FORCE_CPU", "").lower() in ("true", "1"):
         return "cpu"
+    # On Hugging Face ZeroGPU, dynamic CUDA allocation only activates for Gradio UI callbacks.
+    # REST API endpoints (/vision, /translation, /advisory) must run on CPU to avoid CUDA resource locks.
+    if os.getenv("SPACES_ZERO_GPU"):
+        return "cpu"
     if torch.cuda.is_available():
         try:
             torch.zeros(1, device="cuda")
