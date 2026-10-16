@@ -3,8 +3,9 @@ title: Smart Farming AI Microservices
 emoji: 🌾
 colorFrom: green
 colorTo: emerald
-sdk: docker
-app_port: 7860
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
 pinned: false
 ---
 
