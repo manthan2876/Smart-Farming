@@ -134,6 +134,7 @@ celerybeat.pid
 !ai_service/models/**
 ai_service/cache/
 ai_service/.venv/
+.hf_space/
 .cache/
 **/.cache/
 wandb/
