@@ -104,3 +104,49 @@ def test_clients_without_auth_key_do_not_send_auth_header():
                 call_args, call_kwargs = mock_post.call_args
                 assert "Authorization" not in call_kwargs["headers"]
 
+
+@pytest.mark.asyncio
+async def test_tts_client_sends_ai_service_auth():
+    from app.api.endpoints.tts import generate_tts
+    from fastapi import Request
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "audioContent": "dGVzdC1hdWRpby1ieXRlcw==",
+        "format": "mp3",
+    }
+
+    mock_request = MagicMock()
+
+    with patch.object(settings, "TTS_SERVER_URL", "https://maharsh8805-smart-farming-ai.hf.space/tts"):
+        with patch.object(settings, "GATEWAY_API_KEY", "test-secret-key-123"):
+            with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
+                result = await generate_tts(
+                    request=mock_request,
+                    text="Hello farmer",
+                    language="en",
+                    current_user=MagicMock(),
+                )
+
+                assert result["format"] == "mp3"
+                call_args, call_kwargs = mock_post.call_args
+                assert "https://maharsh8805-smart-farming-ai.hf.space/tts" in call_args[0]
+                assert call_kwargs["headers"].get("Authorization") == "Bearer test-secret-key-123"
+
+
+def test_ai_service_url_auto_resolution():
+    from app.core.config import Settings
+    s = Settings(
+        AI_SERVICE_URL="https://my-space.hf.space",
+        MODEL_SERVER_URL="",
+        TRANSLATION_SERVER_URL="",
+        ADVISORY_SERVER_URL="",
+        TTS_SERVER_URL="",
+    )
+    assert s.MODEL_SERVER_URL == "https://my-space.hf.space/vision"
+    assert s.TRANSLATION_SERVER_URL == "https://my-space.hf.space/translation"
+    assert s.ADVISORY_SERVER_URL == "https://my-space.hf.space/advisory"
+    assert s.TTS_SERVER_URL == "https://my-space.hf.space/tts"
+
+

@@ -150,22 +150,22 @@ iles)
             ├── backend/ (1 files)
                 ├── __init__.py
         ├── tests/ (16 files)
-            ├── test_admin_users.py
+            ├── test_admin_management.py
+            ├── test_agronomic_advisory.py
             ├── test_ai_service_client.py
-            ├── test_api.py
             ├── test_auth.py
-            ├── test_batch2_features.py
-            ├── test_batch3_features.py
-            ├── test_batch4_features.py
-            ├── test_features_extended.py
-            ├── test_hf_recommendation.py
-            ├── test_media_auth.py
+            ├── test_diagnosis_guardrails.py
+            ├── test_farm_boundaries.py
+            ├── test_image_validation.py
+            ├── test_media_authorization.py
+            ├── test_model_calibration.py
             ├── test_observability.py
-            ├── test_password_management.py
-            ├── test_pipeline.py
-            ├── test_rejection_cases.py
+            ├── test_password_reset.py
+            ├── test_pipeline_integration.py
             ├── test_storage.py
-            ├── test_translation.py
+            ├── test_system_health.py
+            ├── test_translation_service.py
+            ├── test_treatment_progress.py
         ├── .dockerignore
         ├── .env.example
         ├── .env.production.example
