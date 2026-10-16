@@ -67,3 +67,4 @@ jobs:
           git commit -m "deploy(ai_service): sync from commit ${{ github.sha }}"
           git push origin main
           echo "Successfully deployed ai_service to Hugging Face Space!"
+
