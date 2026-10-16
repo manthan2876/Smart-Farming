@@ -42,23 +42,20 @@ class Settings(BaseSettings):
     DEFAULT_LON: float = Field(default=72.1519)
     DEFAULT_LOCATION: str = Field(default="Gujarat, India")
 
-    # Unified AI Microservice (Hugging Face Space)
+    # Unified AI Microservice (Single Hugging Face Space URL)
     AI_SERVICE_URL: str = Field(default="https://maharsh8805-smart-farming-ai.hf.space")
 
-    # Model Inference Server (Vision)
-    MODEL_SERVER_URL: str = Field(default="https://maharsh8805-smart-farming-ai.hf.space/vision")
+    # Derived AI Service Subroute Endpoints (automatically derived from AI_SERVICE_URL)
+    MODEL_SERVER_URL: str = Field(default="")
     MODEL_SERVER_TIMEOUT: int = Field(default=120)
 
-    # Translation Server (IndicTrans2)
-    TRANSLATION_SERVER_URL: str = Field(default="https://maharsh8805-smart-farming-ai.hf.space/translation")
+    TRANSLATION_SERVER_URL: str = Field(default="")
     TRANSLATION_SERVER_TIMEOUT: float = Field(default=45.0)
 
-    # Advisory Server (Qwen2.5 / Knowledge Base)
-    ADVISORY_SERVER_URL: str = Field(default="https://maharsh8805-smart-farming-ai.hf.space/advisory")
+    ADVISORY_SERVER_URL: str = Field(default="")
     ADVISORY_SERVER_TIMEOUT: float = Field(default=60.0)
 
-    # Text-to-Speech Server (Neural Indian Voices / Indic-TTS)
-    TTS_SERVER_URL: str = Field(default="https://maharsh8805-smart-farming-ai.hf.space/tts")
+    TTS_SERVER_URL: str = Field(default="")
     TTS_SERVER_TIMEOUT: float = Field(default=90.0)
 
     # AI Service API Authentication (Optional Bearer token)
@@ -196,11 +193,12 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def resolve_ai_service_urls(self) -> "Settings":
-        """Auto-populates and sanitizes individual AI endpoints.
+        """Single source of truth: all AI endpoints derive from AI_SERVICE_URL.
         
-        Guarantees that obsolete tunnels (e.g. trycloudflare.com, ngrok)
-        or deprecated Cloudflare Worker gateways (workers.dev) are automatically
-        overridden with the unified Hugging Face Space endpoints.
+        Guarantees that individual endpoints (/vision, /translation, /advisory, /tts)
+        are automatically derived from the single Hugging Face Space URL.
+        Any stale separate URLs or legacy tunnels (e.g. trycloudflare.com, workers.dev,
+        ngrok) are automatically overridden.
         """
         legacy_patterns = (
             "trycloudflare.com",
@@ -231,11 +229,13 @@ class Settings(BaseSettings):
 
         for field, subpath, strip_suffixes in mapping:
             val = (getattr(self, field, "") or "").strip()
-            # If empty, legacy tunnel/gateway, or (in production) pointing to localhost
+            # If not explicitly set, legacy tunnel/gateway, in production, or matching default base:
+            # Always derive directly from AI_SERVICE_URL
             if (
                 not val
                 or is_legacy(val)
-                or (self.ENVIRONMENT == "production" and any(h in val.lower() for h in ("127.0.0.1", "localhost")))
+                or self.ENVIRONMENT == "production"
+                or not any(h in val for h in ("127.0.0.1", "localhost"))
             ):
                 setattr(self, field, f"{base}{subpath}")
             else:

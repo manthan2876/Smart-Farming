@@ -178,4 +178,13 @@ def test_ai_service_url_suffix_normalization():
     assert s.TTS_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/tts"
 
 
-
+def test_only_single_ai_service_url_configured():
+    from app.core.config import Settings
+    s = Settings(
+        AI_SERVICE_URL="https://maharsh8805-smart-farming-ai.hf.space",
+        ENVIRONMENT="production",
+    )
+    assert s.MODEL_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/vision"
+    assert s.TRANSLATION_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/translation"
+    assert s.ADVISORY_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/advisory"
+    assert s.TTS_SERVER_URL == "https://maharsh8805-smart-farming-ai.hf.space/tts"
