@@ -10,12 +10,12 @@ from typing import Any
 import yaml
 import numpy as np
 
-from src.stages.preprocessing import OpenCVPreprocessorService
-from src.stages.crop_identifier import predict_crop
-from src.stages.decision_router import route_to_disease_model
-from src.stages.disease_classifier import predict_disease
-from src.stages.severity import estimate_severity
-from src.stages.pest_detector import predict_pest
+from .stages.preprocessing import OpenCVPreprocessorService
+from .stages.crop_identifier import predict_crop
+from .stages.decision_router import route_to_disease_model
+from .stages.disease_classifier import predict_disease
+from .stages.severity import estimate_severity
+from .stages.pest_detector import predict_pest
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.yaml"
 

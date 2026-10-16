@@ -11,7 +11,7 @@ from typing import Any, cast
 import cv2
 import numpy as np
 
-from src.stages.leaf_isolator import isolate_subject_leaf
+from .leaf_isolator import isolate_subject_leaf
 
 
 class OpenCVPreprocessorService:

@@ -110,7 +110,7 @@ def test_compute_ece_empty_input():
 # ── 2. Config Calibration Integration ─────────────────────────────────────────
 
 def test_yaml_config_contains_temperature_calibration():
-    """Verifies backend and model_service config.yaml specify calibrated temperatures."""
+    """Verifies backend and ai_service config.yaml specify calibrated temperatures."""
     backend_config = Path("backend/config.yaml")
     assert backend_config.exists()
     
@@ -179,8 +179,8 @@ def test_predict_crop_with_temperature_scaling():
     from unittest.mock import MagicMock, patch
     import torch
 
-    sys.path.insert(0, str(Path("model_service").resolve()))
-    from src.stages.crop_identifier import predict_crop
+    sys.path.insert(0, str(Path("ai_service").resolve()))
+    from vision_engine.stages.crop_identifier import predict_crop
 
     mock_model = MagicMock()
     mock_model.return_value = torch.tensor([[5.0, 1.0, 0.5, 0.2, 0.1]])
@@ -202,7 +202,7 @@ def test_predict_crop_with_temperature_scaling():
         "thresholds": {"crop_confidence": 0.7},
     }
 
-    with patch("src.stages.crop_identifier.load_efficientnet", return_value=(mock_model, classes)):
+    with patch("vision_engine.stages.crop_identifier.load_efficientnet", return_value=(mock_model, classes)):
         res = predict_crop(context, config)
 
     assert res["status"]["crop_identification"] == "completed"
@@ -218,8 +218,8 @@ def test_predict_disease_with_temperature_scaling():
     from unittest.mock import MagicMock, patch
     import torch
 
-    sys.path.insert(0, str(Path("model_service").resolve()))
-    from src.stages.disease_classifier import predict_disease
+    sys.path.insert(0, str(Path("ai_service").resolve()))
+    from vision_engine.stages.disease_classifier import predict_disease
 
     mock_model = MagicMock()
     mock_model.return_value = torch.tensor([[4.0, 1.0, 0.2, 0.1]])
@@ -240,7 +240,7 @@ def test_predict_disease_with_temperature_scaling():
         "thresholds": {"disease_confidence": 0.7, "near_tie_margin": 0.15},
     }
 
-    with patch("src.stages.disease_classifier.load_efficientnet", return_value=(mock_model, classes)):
+    with patch("vision_engine.stages.disease_classifier.load_efficientnet", return_value=(mock_model, classes)):
         res = predict_disease(context, config)
 
     assert res["status"]["disease_classification"] == "completed"

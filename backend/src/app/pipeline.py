@@ -136,7 +136,7 @@ async def run_pipeline(
 
     pipeline_start = time.perf_counter()
 
-    # 1. Computer Vision stages executed remotely on Server 2 (model_service)
+    # 1. Computer Vision stages executed remotely on Server 2 (ai_service)
     context = await execute_remote_vision_pipeline(context, image_bytes, filename, content_type)
 
     # 2. Weather

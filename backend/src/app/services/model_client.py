@@ -73,7 +73,7 @@ async def call_model_service(
 
 def merge_and_save_cv_result(context: dict, cv_result: dict, filename: str) -> dict:
     """
-    Merges CV results from model_service into pipeline context and persists
+    Merges CV results from ai_service into pipeline context and persists
     the processed Grad-CAM/heatmap image to storage (Supabase/local).
     """
     context.setdefault("crop", {}).update(cv_result.get("crop", {}))

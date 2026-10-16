@@ -159,7 +159,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **Relevant code:**
 
-- [stages/crop_identifier.py](../model_service/src/stages/crop_identifier.py)
+- [stages/crop_identifier.py](../ai_service/vision_engine/stages/crop_identifier.py)
 - [calibration.py](../backend/src/app/core/calibration.py)
 - [config.yaml](../backend/config.yaml)
 - [models/crop_identifier_v1.pth](../models/crop_identifier_v1.pth)
@@ -189,7 +189,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 **Relevant code:**
 
 - [decision_engine/router.py](../backend/src/app/services/decision_engine/router.py)
-- [stages/decision_router.py](../model_service/src/stages/decision_router.py)
+- [stages/decision_router.py](../ai_service/vision_engine/stages/decision_router.py)
 - [config.yaml](../backend/config.yaml)
 
 **What to improve:**

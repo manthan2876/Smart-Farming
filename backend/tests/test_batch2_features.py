@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-if str(ROOT_DIR / "model_service") not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR / "model_service"))
+if str(ROOT_DIR / "ai_service") not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR / "ai_service"))
 
 from app.main import app
 from app.api.deps import get_current_user
@@ -20,9 +20,9 @@ from app.core import get_session
 from app.models import User, Prediction, ExpertReview
 import app.pipeline as pipeline_mod
 from app.services.recommendation.service import generate_recommendation
-from model_service.src.stages.decision_router import route_to_disease_model
-from model_service.src.stages.severity import estimate_severity, _severity_bucket
-from model_service.src.stages.pest_detector import predict_pest
+from ai_service.vision_engine.stages.decision_router import route_to_disease_model
+from ai_service.vision_engine.stages.severity import estimate_severity, _severity_bucket
+from ai_service.vision_engine.stages.pest_detector import predict_pest
 
 
 # ── Fixtures & Helpers ─────────────────────────────────────────────────────────
@@ -324,7 +324,7 @@ def test_pest_detector_no_pests_detected_clean_leaf(monkeypatch):
         def predict(self, **kwargs):
             return [MockResult()]
 
-    import model_service.src.stages.pest_detector as pest_detector_mod
+    import ai_service.vision_engine.stages.pest_detector as pest_detector_mod
     monkeypatch.setattr(pest_detector_mod, "load_yolo", lambda path: MockYOLO())
 
     config = {"models": {"pest_classifier": {"path": "mock_pests.pt"}}}
@@ -356,7 +356,7 @@ def test_pest_detector_pest_detected_when_above_threshold(monkeypatch):
         def predict(self, **kwargs):
             return [MockResult()]
 
-    import model_service.src.stages.pest_detector as pest_detector_mod
+    import ai_service.vision_engine.stages.pest_detector as pest_detector_mod
     monkeypatch.setattr(pest_detector_mod, "load_yolo", lambda path: MockYOLO())
 
     config = {"models": {"pest_classifier": {"path": "mock_pests.pt"}}}

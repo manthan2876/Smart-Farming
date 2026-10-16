@@ -374,8 +374,36 @@ Smart-Farming/ (336 files)
         ├── devtools_options.yaml
         ├── pubspec.lock
         ├── pubspec.yaml
-    ├── model_service/ (16 files)
-        ├── src/ (10 files)
+    ├── ai_service/ (26 files)
+        ├── core/ (2 files)
+            ├── __init__.py
+            ├── config.py
+        ├── models/ (14 files)
+            ├── pest_classifier/ (2 files)
+                ├── last.pt
+                ├── pest_classifier.pt
+            ├── crop_identifier_labels.json
+            ├── crop_identifier_v1.pth
+            ├── disease_Cotton_labels.json
+            ├── disease_Cotton.pth
+            ├── disease_Groundnut_labels.json
+            ├── disease_Groundnut.pth
+            ├── disease_Pepper_Bell_labels.json
+            ├── disease_Pepper_Bell.pth
+            ├── disease_Potato_labels.json
+            ├── disease_Potato.pth
+            ├── disease_Tomato_labels.json
+            ├── disease_Tomato.pth
+        ├── routers/ (5 files)
+            ├── __init__.py
+            ├── advisory.py
+            ├── tts.py
+            ├── translation.py
+            ├── vision.py
+        ├── training/ (2 files)
+            ├── evaluate_calibration.py
+            ├── train_eval.py
+        ├── vision_engine/ (10 files)
             ├── stages/ (7 files)
                 ├── crop_identifier.py
                 ├── decision_router.py
@@ -387,12 +415,12 @@ Smart-Farming/ (336 files)
             ├── calibration.py
             ├── loader.py
             ├── pipeline.py
+        ├── Dockerfile
+        ├── README.md
         ├── advisory_kb.json
         ├── config.yaml
-        ├── evaluate_calibration.py
         ├── main.py
         ├── requirements.txt
-        ├── train_eval.py
     ├── notebooks/ (31 files)
         ├── processed/ (10 files)
             ├── aphids_tomato.jpeg

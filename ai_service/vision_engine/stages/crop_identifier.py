@@ -11,7 +11,7 @@ import torch
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-from src.loader import load_efficientnet, DEVICE
+from ..loader import load_efficientnet, DEVICE
 
 _EVAL_TF = A.Compose(
     [

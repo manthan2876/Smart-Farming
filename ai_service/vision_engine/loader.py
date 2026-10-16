@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 _model_cache: dict[str, Any] = {}
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+try:
+    from core.config import settings
+    DEVICE = settings.DEVICE
+except Exception:
+    DEVICE = "cpu"
 SERVICE_ROOT = Path(__file__).resolve().parent.parent
 
 # Fallback class labels in case disk read or Git LFS issues occur
@@ -32,7 +36,15 @@ FALLBACK_LABELS: dict[str, list[str]] = {
 
 def resolve_model_path(rel_or_abs_path: str | Path) -> Path:
     p = Path(rel_or_abs_path)
-    return p if p.is_absolute() else (SERVICE_ROOT / p).resolve()
+    if p.is_absolute() and p.exists():
+        return p
+    target = (SERVICE_ROOT / p).resolve()
+    if target.exists():
+        return target
+    sub_target = (SERVICE_ROOT / "models" / p.name).resolve()
+    if sub_target.exists():
+        return sub_target
+    return target
 
 
 def is_git_lfs_pointer(path: Path) -> bool:

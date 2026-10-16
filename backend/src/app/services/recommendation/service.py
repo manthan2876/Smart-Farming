@@ -34,6 +34,8 @@ def _get_advisory_kb() -> dict[str, Any]:
         KB_FILE_PATH,
         Path("data/advisory_kb.json"),
         Path("../data/advisory_kb.json"),
+        Path("ai_service/advisory_kb.json"),
+        Path("../ai_service/advisory_kb.json"),
         Path("model_service/advisory_kb.json"),
     ]
     for p in paths_to_check:

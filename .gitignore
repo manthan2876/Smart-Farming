@@ -131,6 +131,9 @@ celerybeat.pid
 *.pth
 *.onnx
 *.h5
+!ai_service/models/**
+ai_service/cache/
+ai_service/.venv/
 .cache/
 **/.cache/
 wandb/

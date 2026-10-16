@@ -1,5 +1,5 @@
 # Smart Farming Backend — Production Dependencies
-# Lightweight runtime (CV/DL models run on separate model_service)
+# Lightweight runtime (CV/DL/NLP models run on separate ai_service)
 
 # Core & Config
 numpy>=1.24.0

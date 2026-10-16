@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-if str(ROOT_DIR / "model_service") not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR / "model_service"))
+if str(ROOT_DIR / "ai_service") not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR / "ai_service"))
 
 from app.main import app
 from app.api.deps import get_current_user
@@ -201,7 +201,7 @@ def test_preprocessing_quality_rejection_blur():
     Verify that an overly blurred image fails preprocessing with failed_blur
     and includes an explicit, helpful farmer-facing note.
     """
-    from model_service.src.stages.preprocessing import OpenCVPreprocessorService
+    from ai_service.vision_engine.stages.preprocessing import OpenCVPreprocessorService
 
     # Uniform solid color has 0 Laplacian variance
     blurred_im = np.full((100, 100, 3), 128, dtype=np.uint8)
@@ -226,7 +226,7 @@ def test_preprocessing_quality_rejection_bad_lighting():
     """
     Verify that extreme darkness or overexposure fails preprocessing with failed_lighting.
     """
-    from model_service.src.stages.preprocessing import OpenCVPreprocessorService
+    from ai_service.vision_engine.stages.preprocessing import OpenCVPreprocessorService
 
     dark_im = np.full((100, 100, 3), 10, dtype=np.uint8)
 
@@ -250,7 +250,7 @@ def test_preprocessing_quality_rejection_non_crop():
     """
     Verify that an image with no recognizable vegetation fails leaf isolation.
     """
-    from model_service.src.stages.preprocessing import OpenCVPreprocessorService
+    from ai_service.vision_engine.stages.preprocessing import OpenCVPreprocessorService
 
     blue_im = np.zeros((100, 100, 3), dtype=np.uint8)
     blue_im[:, :, 0] = 220  # Blue channel only
@@ -276,7 +276,7 @@ def test_near_tie_disease_detection():
     Verify that a near-tie condition (runner-up confidence within margin of top 1)
     sets is_near_tie, could_also_be, and confidence_rating='near_tie'.
     """
-    from model_service.src.stages.disease_classifier import evaluate_disease_prediction
+    from ai_service.vision_engine.stages.disease_classifier import evaluate_disease_prediction
 
     classes = ["Early Blight", "Late Blight", "Healthy"]
     probs = np.array([0.48, 0.42, 0.10], dtype=np.float32)

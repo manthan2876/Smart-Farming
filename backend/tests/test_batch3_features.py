@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-if str(ROOT_DIR / "model_service") not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR / "model_service"))
+if str(ROOT_DIR / "ai_service") not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR / "ai_service"))
 
 from app.main import app
 from app.api.deps import get_current_user

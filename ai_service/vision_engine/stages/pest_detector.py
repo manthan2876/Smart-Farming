@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, cast
 import cv2
 import numpy as np
-from src.loader import load_yolo
+from ..loader import load_yolo
 
 
 def predict_pest(context: dict, config: dict[str, Any]) -> dict:
