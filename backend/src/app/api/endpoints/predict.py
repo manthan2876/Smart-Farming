@@ -771,7 +771,34 @@ async def prediction_detail(
     req_lang = lang or request.headers.get("accept-language")
     norm_code = "gu" if req_lang and req_lang.lower().startswith("gu") else ("hi" if req_lang and req_lang.lower().startswith("hi") else ("en" if req_lang and req_lang.lower().startswith("en") else None))
     if norm_code:
-        if norm_code in translations and translations[norm_code]:
+        from app.api.endpoints.translation import _rec_is_valid_indic
+        from sqlalchemy.orm.attributes import flag_modified
+        canonical_rec = dict(result.get("recommendation") or {})
+
+        if norm_code in ("gu", "hi"):
+            cached_trans = translations.get(norm_code)
+            if cached_trans and _rec_is_valid_indic(cached_trans, canonical_rec, norm_code):
+                result["recommendation"] = dict(cached_trans)
+            elif canonical_rec:
+                try:
+                    from app.services.translation.service import translate_recommendation
+                    healed = await translate_recommendation(canonical_rec, norm_code)
+                    if healed and _rec_is_valid_indic(healed, canonical_rec, norm_code):
+                        translations[norm_code] = healed
+                        result["translations"] = translations
+                        result["recommendation"] = healed
+
+                        # Update database cache in-place
+                        pred_res = dict(prediction.result or {})
+                        pred_translations = dict(pred_res.get("translations") or {})
+                        pred_translations[norm_code] = healed
+                        pred_res["translations"] = pred_translations
+                        prediction.result = pred_res
+                        flag_modified(prediction, "result")
+                        session.commit()
+                except Exception as heal_err:
+                    _LOGGER.warning("Auto-heal translation failed for prediction %s in %s: %s", prediction_id, norm_code, heal_err)
+        elif norm_code in translations and translations[norm_code]:
             result["recommendation"] = dict(translations[norm_code])
         target_er = prediction.expert_review
         if not target_er and getattr(prediction, "follow_ups", None) and prediction.follow_ups:

@@ -56,7 +56,108 @@ def normalize_language_code(language: str | None) -> str:
     clean = language.strip().lower()
     return _LANG_CODE_MAP.get(clean, "en")
 
+_AGRONOMIC_TRANSLATIONS: dict[str, dict[str, str]] = {
+    "gu": {
+        "DISCLAIMER: Confirm the diagnosis and any chemical use with your local KVK or agriculture officer, and follow the product label.": "અસ્વીકરણ: કોઈ પણ રસાયણ કે દવાનો ઉપયોગ કરતા પહેલાં તમારા સ્થાનિક કૃષિ વિજ્ઞાન કેન્દ્ર (KVK) અથવા ખેતીવાડી અધિકારી પાસેથી નિદાનની પુષ્ટિ કરો અને ઉત્પાદનના લેબલનું પાલન કરો.",
+        "Confirm the diagnosis and any chemical use with your local KVK or agriculture officer, and follow the product label.": "કોઈ પણ રસાયણ કે દવાનો ઉપયોગ કરતા પહેલાં તમારા સ્થાનિક કૃષિ વિજ્ઞાન કેન્દ્ર (KVK) અથવા ખેતીવાડી અધિકારી પાસેથી નિદાનની પુષ્ટિ કરો અને ઉત્પાદનના લેબલનું પાલન કરો.",
+        "DISCLAIMER: Always follow local agricultural guidelines, product labels, and consult your local KVK.": "અસ્વીકરણ: હંમેશા સ્થાનિક કૃષિ માર્ગદર્શિકા, ઉત્પાદન લેબલનું પાલન કરો અને તમારા સ્થાનિક KVK ની સલાહ લો.",
+        "Always follow local agricultural guidelines, product labels, and consult your local KVK.": "હંમેશા સ્થાનિક કૃષિ માર્ગદર્શિકા, ઉત્પાદન લેબલનું પાલન કરો અને તમારા સ્થાનિક KVK ની સલાહ લો.",
+        "Always follow local agricultural guidelines and chemical label instructions.": "હંમેશા સ્થાનિક કૃષિ માર્ગદર્શિકા અને રાસાયણિક લેબલ સૂચનાઓનું પાલન કરો.",
+        "DISCLAIMER: Always follow local agricultural guidelines and chemical label instructions.": "અસ્વીકરણ: હંમેશા સ્થાનિક કૃષિ માર્ગદર્શિકા અને રાસાયણિક લેબલ સૂચનાઓનું પાલન કરો.",
+        "DISCLAIMER: Always confirm diagnosis with your local agricultural extension officer.": "અસ્વીકરણ: હંમેશા તમારા સ્થાનિક કૃષિ વિસ્તરણ અધિકારી સાથે નિદાનની પુષ્ટિ કરો.",
+        "Always confirm diagnosis with your local agricultural extension officer.": "હંમેશા તમારા સ્થાનિક કૃષિ વિસ્તરણ અધિકારી સાથે નિદાનની પુષ્ટિ કરો.",
+        "DISCLAIMER: Always confirm diagnosis with your local agricultural officer.": "અસ્વીકરણ: હંમેશા તમારા સ્થાનિક કૃષિ અધિકારી સાથે રોગના નિદાનની પુષ્ટિ કરો.",
+        "Always confirm diagnosis with your local agricultural officer.": "હંમેશા તમારા સ્થાનિક કૃષિ અધિકારી સાથે રોગના નિદાનની પુષ્ટિ કરો.",
+        "DISCLAIMER: Automated diagnosis currently supports Cotton, Groundnut, Pepper Bell, Potato, and Tomato. Do not apply synthetic pesticides without professional verification.": "અસ્વીકરણ: સ્વચાલિત નિદાન હાલમાં કપાસ, મગફળી, શિમલા મરચાં, બટાકા અને ટામેટાંને સપોર્ટ કરે છે. વ્યાવસાયિક ચકાસણી વિના કૃત્રિમ જંતુનાશકોનો ઉપયોગ કરશો નહીં.",
+        "Automated diagnosis currently supports Cotton, Groundnut, Pepper Bell, Potato, and Tomato. Do not apply synthetic pesticides without professional verification.": "સ્વચાલિત નિદાન હાલમાં કપાસ, મગફળી, શિમલા મરચાં, બટાકા અને ટામેટાંને સપોર્ટ કરે છે. વ્યાવસાયિક ચકાસણી વિના કૃત્રિમ જંતુનાશકોનો ઉપયોગ કરશો નહીં.",
+        "No chemical treatment is recommended without expert confirmation.": "નિષ્ણાતની પુષ્ટિ વિના કોઈ રાસાયણિક સારવારની ભલામણ કરવામાં આવતી નથી.",
+        "No automated chemical treatment is recommended for unverified crops to avoid pesticide misuse.": "જંતુનાશકોના દુરુપયોગને રોકવા માટે અણચકાસાયેલ પાકો માટે કોઈ સ્વચાલિત રાસાયણિક સારવારની ભલામણ કરવામાં આવતી નથી.",
+        "Maintain field sanitation and clean tools.": "ખેતરની સ્વચ્છતા જાળવો અને ઓજારો સાફ રાખો.",
+        "Check the plants regularly for spreading symptoms.": "લક્ષણો ફેલાવવા માટે છોડની નિયમિત તપાસ કરો.",
+        "Maintain field sanitation and proper drainage.": "ખેતરની સ્વચ્છતા અને યોગ્ય ડ્રેનેજ જાળવો.",
+        "Follow registered crop protection guidelines. Avoid applying synthetic chemicals without verification.": "નોંધાયેલ પાક સંરક્ષણ માર્ગદર્શિકા અનુસરો. ચકાસણી વગર કૃત્રિમ રસાયણો વાપરવાનું ટાળો.",
+        "Monitor crop daily for symptoms spreading.": "લક્ષણો ફેલાવવા માટે દરરોજ પાકનું નિરીક્ષણ કરો.",
+        "Ensure proper field sanitation and healthy soil drainage.": "ખેતરની યોગ્ય સ્વચ્છતા અને સ્વસ્થ જમીન નિકાલ સુનિશ્ચિત કરો.",
+        "Ensure proper field drainage, isolate suspicious plants, and seek agronomist guidance.": "યોગ્ય જમીન નિકાલ સુનિશ્ચિત કરો, શંકાસ્પદ છોડ અલગ કરો અને કૃષિ નિષ્ણાતની સલાહ લો.",
+        "Inspect the field for spreading symptoms and isolate affected plants.": "લક્ષણો ફેલાવવા માટે ખેતરનું નિરીક્ષણ કરો અને અસરગ્રસ્ત છોડને અલગ કરો.",
+        "Check foliage every 24-48 hours for progression.": "રોગના ફેલાવા માટે દર 24-48 કલાકે પાંદડાં તપાસો.",
+        "Scout foliage twice weekly for new lesion spread.": "નવા ડાઘ ફેલાવા માટે અઠવાડિયામાં બે વાર પાંદડાઓની તપાસ કરો.",
+        "Maintain proper crop spacing and weed-free field borders.": "પાક વચ્ચે યોગ્ય અંતર રાખો અને ખેતરની સરહદોને નીંદણ મુક્ત રાખો.",
+        "Take high-resolution, centered photos in balanced daylight.": "સંતુલિત દિવસના પ્રકાશમાં ઉચ્ચ રીઝોલ્યુશનવાળા, કેન્દ્રિત ફોટા લો.",
+        "None (Consult specialist)": "કંઈ નહીં (નિષ્ણાતની સલાહ લો)",
+        "Maintain balanced plant nutrition and moisture.": "છોડનું સંતુલિત પોષણ અને ભેજ જાળવી રાખો.",
+        "Isolate affected plants and ensure canopy ventilation.": "અસરગ્રસ્ત છોડને અલગ કરો અને યોગ્ય હવા ઉજાસ સુનિશ્ચિત કરો.",
+    },
+    "hi": {
+        "DISCLAIMER: Confirm the diagnosis and any chemical use with your local KVK or agriculture officer, and follow the product label.": "अस्वीकरण: कोई भी रसायन या दवा इस्तेमाल करने से पहले अपने स्थानीय कृषि विज्ञान केंद्र (KVK) या कृषि अधिकारी से निदान की पुष्टि करें और उत्पाद के लेबल का पालन करें।",
+        "Confirm the diagnosis and any chemical use with your local KVK or agriculture officer, and follow the product label.": "कोई भी रसायन या दवा इस्तेमाल करने से पहले अपने स्थानीय कृषि विज्ञान केंद्र (KVK) या कृषि अधिकारी से निदान की पुष्टि करें और उत्पाद के लेबल का पालन करें।",
+        "DISCLAIMER: Always follow local agricultural guidelines, product labels, and consult your local KVK.": "अस्वीकरण: हमेशा स्थानीय कृषि दिशानिर्देशों, उत्पाद लेबल का पालन करें और अपने स्थानीय KVK से परामर्श करें।",
+        "Always follow local agricultural guidelines, product labels, and consult your local KVK.": "हमेशा स्थानीय कृषि दिशानिर्देशों, उत्पाद लेबल का पालन करें और अपने स्थानीय KVK से परामर्श करें।",
+        "Always follow local agricultural guidelines and chemical label instructions.": "हमेशा स्थानीय कृषि दिशानिर्देशों और रासायनिक लेबल निर्देशों का पालन करें।",
+        "DISCLAIMER: Always follow local agricultural guidelines and chemical label instructions.": "अस्वीकरण: हमेशा स्थानीय कृषि दिशानिर्देशों और रासायनिक लेबल निर्देशों का पालन करें।",
+        "DISCLAIMER: Always confirm diagnosis with your local agricultural extension officer.": "अस्वीकरण: हमेशा अपने स्थानीय कृषि विस्तार अधिकारी से निदान की पुष्टि करें।",
+        "Always confirm diagnosis with your local agricultural extension officer.": "हमेशा अपने स्थानीय कृषि विस्तार अधिकारी से निदान की पुष्टि करें।",
+        "DISCLAIMER: Always confirm diagnosis with your local agricultural officer.": "अस्वीकरण: हमेशा अपने स्थानीय कृषि अधिकारी से निदान की पुष्टि करें।",
+        "Always confirm diagnosis with your local agricultural officer.": "हमेशा अपने स्थानीय कृषि अधिकारी से निदान की पुष्टि करें।",
+        "DISCLAIMER: Automated diagnosis currently supports Cotton, Groundnut, Pepper Bell, Potato, and Tomato. Do not apply synthetic pesticides without professional verification.": "अस्वीकरण: स्वचालित निदान वर्तमान में कपास, मूंगफली, शिमला मिर्च, आलू और टमाटर का समर्थन करता है। पेशेवर सत्यापन के बिना सिंथेटिक कीटनाशकों का उपयोग न करें।",
+        "Automated diagnosis currently supports Cotton, Groundnut, Pepper Bell, Potato, and Tomato. Do not apply synthetic pesticides without professional verification.": "स्वचालित निदान वर्तमान में कपास, मूंगफली, शिमला मिर्च, आलू और टमाटर का समर्थन करता है। पेशेवर सत्यापन के बिना सिंथेटिक कीटनाशकों का उपयोग न करें।",
+        "No chemical treatment is recommended without expert confirmation.": "विशेषज्ञ की पुष्टि के बिना किसी रासायनिक उपचार की सिफारिश नहीं की जाती है।",
+        "No automated chemical treatment is recommended for unverified crops to avoid pesticide misuse.": "कीटनाशकों के दुरुपयोग से बचने के लिए असत्यापित फसलों के लिए किसी स्वचालित रासायनिक उपचार की सिफारिश नहीं की जाती है।",
+        "Maintain field sanitation and clean tools.": "खेत की स्वच्छता बनाए रखें और औजारों को साफ रखें।",
+        "Check the plants regularly for spreading symptoms.": "लक्षणों के प्रसार के लिए नियमित रूप से पौधों की जांच करें।",
+        "Maintain field sanitation and proper drainage.": "खेत की स्वच्छता और उचित जल निकासी बनाए रखें।",
+        "Follow registered crop protection guidelines. Avoid applying synthetic chemicals without verification.": "पंजीकृत फसल सुरक्षा दिशानिर्देशों का पालन करें। सत्यापन के बिना सिंथेटिक रसायनों को लागू करने से बचें।",
+        "Monitor crop daily for symptoms spreading.": "लक्षण फैलने के लिए प्रतिदिन फसल की निगरानी करें।",
+        "Ensure proper field sanitation and healthy soil drainage.": "उचित खेत स्वच्छता और स्वस्थ मिट्टी जल निकासी सुनिश्चित करें।",
+        "Ensure proper field drainage, isolate suspicious plants, and seek agronomist guidance.": "उचित जल निकासी सुनिश्चित करें, संदिग्ध पौधों को अलग करें और कृषि विशेषज्ञ का मार्गदर्शन लें।",
+        "Inspect the field for spreading symptoms and isolate affected plants.": "लक्षणों के प्रसार के लिए खेत का निरीक्षण करें और प्रभावित पौधों को अलग करें।",
+        "Check foliage every 24-48 hours for progression.": "प्रगति के लिए हर 24-48 घंटे में पत्तियों की जांच करें।",
+        "Scout foliage twice weekly for new lesion spread.": "नए घावों के प्रसार के लिए सप्ताह में दो बार पत्तियों की जांच करें।",
+        "Maintain proper crop spacing and weed-free field borders.": "उचित फसल दूरी बनाए रखें और खेत की मेड़ों को खरपतवार मुक्त रखें.",
+        "Take high-resolution, centered photos in balanced daylight.": "संतुलित दिन के उजाले में उच्च-रिज़ॉल्यूशन, केंद्रित तस्वीरें लें।",
+        "None (Consult specialist)": "कोई नहीं (विशेषज्ञ से परामर्श लें)",
+        "Maintain balanced plant nutrition and moisture.": "पौधों का संतुलित पोषण और नमी बनाए रखें।",
+        "Isolate affected plants and ensure canopy ventilation.": "प्रभावित पौधों को अलग करें और हवा का उचित संचार सुनिश्चित करें।",
+    },
+}
 
+_AGRONOMIC_PATTERNS = [
+    (
+        re.compile(r"^No verified guidance is stored for (.+?) - (.+?)\. Please consult your local KVK or agriculture officer\.?$", re.IGNORECASE),
+        {
+            "gu": lambda m: f"{m.group(1)} - {m.group(2)} માટે કોઈ ચકાસાયેલ માર્ગદર્શન સંગ્રહિત નથી. કૃપા કરીને તમારા સ્થાનિક KVK અથવા કૃષિ અધિકારીનો સંપર્ક કરો.",
+            "hi": lambda m: f"{m.group(1)} - {m.group(2)} के लिए कोई सत्यापित मार्गदर्शन संग्रहीत नहीं है। कृपया अपने स्थानीय KVK या कृषि अधिकारी से परामर्श करें।",
+        }
+    ),
+    (
+        re.compile(r"^Consult your local Krishi Vigyan Kendra \(KVK\) or agriculture extension officer for ([^\.]+?)(?:\.\s*Calibrate spray application for (.+?)\.?)?\.?$", re.IGNORECASE),
+        {
+            "gu": lambda m: f"{m.group(1)} માટે તમારા સ્થાનિક કૃષિ વિજ્ઞાન કેન્દ્ર (KVK) અથવા ખેતીવાડી વિસ્તરણ અધિકારીની સલાહ લો." + (f" {m.group(2)} માટે સ્પ્રેની માત્રા ગોઠવો." if m.group(2) else ""),
+            "hi": lambda m: f"{m.group(1)} के लिए अपने स्थानीय कृषि विज्ञान केंद्र (KVK) या कृषि विस्तार अधिकारी से परामर्श करें।" + (f" {m.group(2)} के लिए स्प्रे का छिड़काव समायोजित करें।" if m.group(2) else ""),
+        }
+    ),
+]
+
+
+def resolve_agronomic_translation(text: str, target_code: str) -> str | None:
+    """Returns direct high-quality verified translation for known agronomic phrases."""
+    if not text or target_code not in ("hi", "gu"):
+        return None
+    clean = text.strip()
+    dict_for_lang = _AGRONOMIC_TRANSLATIONS.get(target_code, {})
+    if clean in dict_for_lang:
+        return dict_for_lang[clean]
+
+    clean_lower = clean.lower().rstrip(".")
+    for k, v in dict_for_lang.items():
+        if k.lower().rstrip(".") == clean_lower:
+            return v
+
+    for pattern, lang_map in _AGRONOMIC_PATTERNS:
+        m = pattern.match(clean)
+        if m and target_code in lang_map:
+            return lang_map[target_code](m)
+    return None
 
 
 async def translate_batch_indictrans(texts: list[str], target_lang: str) -> list[str]:
@@ -270,12 +371,19 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
     missing_indices: list[int] = []
     missing_texts: list[str] = []
 
-    # Prepare keys for single batch lookup
-    items_to_lookup: list[tuple[int, str, str]] = []
+    # 1. Resolve known agronomic translations directly (instant, verified high accuracy)
     for idx, text in enumerate(texts):
         if not text or not text.strip():
             results[idx] = text
-        else:
+            continue
+        direct = resolve_agronomic_translation(text, target_code)
+        if direct:
+            results[idx] = direct
+
+    # Prepare keys for single batch lookup in Redis for remaining texts
+    items_to_lookup: list[tuple[int, str, str]] = []
+    for idx, text in enumerate(texts):
+        if results[idx] is None:
             h = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
             items_to_lookup.append((idx, f"sf:trans:{target_code}:{h}", text))
 
@@ -292,7 +400,7 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
     if missing_texts:
         translated_missing: list[str] | None = None
 
-        # Primary: IndicTrans2 (Colab / GPU server via Cloudflare Gateway)
+        # Primary: IndicTrans2 on Hugging Face Space AI microservice
         server_url = (getattr(settings, "TRANSLATION_SERVER_URL", "") or "").strip()
         if server_url and target_code in ("hi", "gu"):
             try:
@@ -300,25 +408,32 @@ async def translate_batch(texts: list[str], target_lang: str) -> list[str]:
             except Exception as exc:
                 logger.warning("IndicTrans2 translation failed (%s); trying fallback translator.", exc)
 
-        # Fallback: Google Translate public endpoint if IndicTrans2 is unavailable or did not produce expected text
-        if (
-            translated_missing is None
-            or (target_code in ("hi", "gu") and not any(any(ord(c) >= 0x0900 for c in t) for t in translated_missing if t))
-        ):
-            try:
-                fallback_res = await _fallback_translate_batch(missing_texts, target_code)
-                if fallback_res and (target_code not in ("hi", "gu") or any(any(ord(c) >= 0x0900 for c in t) for t in fallback_res if t)):
-                    translated_missing = fallback_res
-            except Exception as exc:
-                logger.warning("Fallback translation failed: %s", exc)
-
-        if translated_missing is None:
+        if translated_missing is None or len(translated_missing) != len(missing_texts):
             translated_missing = list(missing_texts)
+
+        # Item-by-item verification: If any text from missing_texts is still untranslated English, run fallback
+        if target_code in ("hi", "gu"):
+            untranslated_sub_indices = []
+            untranslated_sub_texts = []
+            for i, (orig, trans) in enumerate(zip(missing_texts, translated_missing)):
+                if any(c.isalpha() for c in orig) and (not trans or not any(ord(c) >= 0x0900 for c in trans)):
+                    untranslated_sub_indices.append(i)
+                    untranslated_sub_texts.append(orig)
+
+            if untranslated_sub_texts:
+                try:
+                    fallback_res = await _fallback_translate_batch(untranslated_sub_texts, target_code)
+                    if fallback_res:
+                        for u_idx, fb_t in zip(untranslated_sub_indices, fallback_res):
+                            if fb_t and any(ord(c) >= 0x0900 for c in fb_t):
+                                translated_missing[u_idx] = fb_t
+                except Exception as exc:
+                    logger.warning("Fallback translation failed: %s", exc)
 
         cache_tasks = []
         for idx, trans_text, orig_text in zip(missing_indices, translated_missing, missing_texts):
             results[idx] = trans_text
-            if trans_text and trans_text != orig_text:
+            if trans_text and trans_text != orig_text and any(ord(c) >= 0x0900 for c in trans_text):
                 h = hashlib.sha256(orig_text.strip().encode("utf-8")).hexdigest()
                 cache_tasks.append(redis_rest.set(f"sf:trans:{target_code}:{h}", trans_text, ex=86400 * 60))
 
@@ -349,7 +464,11 @@ async def translate_recommendation(recommendation: dict[str, Any], target_lang: 
     if target_code == "en":
         return recommendation
 
-    keys = ["immediate_action", "treatment", "prevention", "monitoring", "recommendation"]
+    keys = [
+        "immediate_action", "treatment", "prevention", "monitoring",
+        "safety_disclaimer", "recommendation", "action", "fertilizer",
+        "pesticide", "irrigation", "prevention_tips"
+    ]
     indices: list[str] = []
     texts_to_translate: list[str] = []
 
@@ -374,11 +493,7 @@ async def translate_recommendation(recommendation: dict[str, Any], target_lang: 
 
 
 def translate_batch_sync(texts: list[str], target_lang: str) -> list[str]:
-    """Synchronous batch translation via IndicTrans2 server.
-
-    1. Tries IndicTrans2 server if configured and target is Hindi/Gujarati.
-    2. Falls back to original source texts if server is unavailable.
-    """
+    """Synchronous batch translation via IndicTrans2 server with direct agronomic resolution and robust fallback."""
     if not texts:
         return []
     target_code = normalize_language_code(target_lang)
@@ -386,25 +501,59 @@ def translate_batch_sync(texts: list[str], target_lang: str) -> list[str]:
         if not any(any(ord(c) >= 0x0900 for c in t) for t in texts if t):
             return texts
 
-    # Primary: IndicTrans2 (Colab / GPU server)
-    server_url = (getattr(settings, "TRANSLATION_SERVER_URL", "") or "").strip()
-    if server_url and target_code in ("hi", "gu"):
-        try:
-            res = translate_batch_indictrans_sync(texts, target_code)
-            if any(any(ord(c) >= 0x0900 for c in t) for t in res if t):
-                return res
-        except Exception as exc:
-            logger.warning("IndicTrans2 sync translation failed (%s); trying fallback translator", exc)
+    results: list[str | None] = [None] * len(texts)
+    missing_indices: list[int] = []
+    missing_texts: list[str] = []
 
-    # Fallback: Google Translate public endpoint
-    try:
-        fallback_res = _fallback_translate_batch_sync(texts, target_code)
-        if fallback_res and (target_code not in ("hi", "gu") or any(any(ord(c) >= 0x0900 for c in t) for t in fallback_res if t)):
-            return fallback_res
-    except Exception as exc:
-        logger.warning("Fallback sync translation failed: %s", exc)
+    # 1. Resolve known agronomic translations directly (instant, verified high accuracy)
+    for idx, text in enumerate(texts):
+        if not text or not text.strip():
+            results[idx] = text
+            continue
+        direct = resolve_agronomic_translation(text, target_code)
+        if direct:
+            results[idx] = direct
+        else:
+            missing_indices.append(idx)
+            missing_texts.append(text)
 
-    return texts
+    if missing_texts:
+        translated_missing: list[str] | None = None
+
+        # Primary: IndicTrans2 on Hugging Face Space AI microservice
+        server_url = (getattr(settings, "TRANSLATION_SERVER_URL", "") or "").strip()
+        if server_url and target_code in ("hi", "gu"):
+            try:
+                translated_missing = translate_batch_indictrans_sync(missing_texts, target_code)
+            except Exception as exc:
+                logger.warning("IndicTrans2 sync translation failed (%s); trying fallback translator", exc)
+
+        if translated_missing is None or len(translated_missing) != len(missing_texts):
+            translated_missing = list(missing_texts)
+
+        # Item-by-item verification: If any text from missing_texts is still untranslated English, run fallback
+        if target_code in ("hi", "gu"):
+            untranslated_sub_indices = []
+            untranslated_sub_texts = []
+            for i, (orig, trans) in enumerate(zip(missing_texts, translated_missing)):
+                if any(c.isalpha() for c in orig) and (not trans or not any(ord(c) >= 0x0900 for c in trans)):
+                    untranslated_sub_indices.append(i)
+                    untranslated_sub_texts.append(orig)
+
+            if untranslated_sub_texts:
+                try:
+                    fallback_res = _fallback_translate_batch_sync(untranslated_sub_texts, target_code)
+                    if fallback_res:
+                        for u_idx, fb_t in zip(untranslated_sub_indices, fallback_res):
+                            if fb_t and any(ord(c) >= 0x0900 for c in fb_t):
+                                translated_missing[u_idx] = fb_t
+                except Exception as exc:
+                    logger.warning("Fallback sync translation failed: %s", exc)
+
+        for idx, trans_text in zip(missing_indices, translated_missing):
+            results[idx] = trans_text
+
+    return [r if r is not None else "" for r in results]
 
 
 def translate_recommendation_sync(recommendation: dict[str, Any], target_lang: str) -> dict[str, Any]:
@@ -413,7 +562,11 @@ def translate_recommendation_sync(recommendation: dict[str, Any], target_lang: s
     if target_code == "en":
         return recommendation
 
-    keys = ["immediate_action", "treatment", "prevention", "monitoring", "recommendation"]
+    keys = [
+        "immediate_action", "treatment", "prevention", "monitoring",
+        "safety_disclaimer", "recommendation", "action", "fertilizer",
+        "pesticide", "irrigation", "prevention_tips"
+    ]
     indices: list[str] = []
     texts_to_translate: list[str] = []
 

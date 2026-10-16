@@ -10,6 +10,16 @@ import { getPrediction, requestExpertReview } from "../api/predictions";
 import { Badge, Button, Card, Input } from "../components/ui";
 import { translateCrop, translateDisease, translatePest, translateSeverityBucket, translateWeather } from "../i18n/domain";
 
+const isProperlyTranslated = (rec: any, lang: string) => {
+  if (!rec || typeof rec !== "object") return false;
+  if (lang === "en") return true;
+  const textSample = [rec.immediate_action, rec.treatment, rec.prevention].filter(Boolean).join(" ");
+  if (!textSample) return false;
+  if (lang === "gu") return /[\u0A80-\u0AFF]/.test(textSample);
+  if (lang === "hi") return /[\u0900-\u097F]/.test(textSample);
+  return true;
+};
+
 export default function PredictionResultPage() {
   const { id } = useParams<{ id: string }>();
   const { token, language, t } = useAuth();
@@ -60,7 +70,8 @@ export default function PredictionResultPage() {
   useEffect(() => {
     if (targetLang !== "en" && prediction && id && token) {
       const primary = prediction.follow_up || prediction;
-      const alreadyHasTranslation = primary.translations?.[targetLang] || localTranslations[targetLang];
+      const transCandidate = primary.translations?.[targetLang] || localTranslations[targetLang];
+      const alreadyHasTranslation = isProperlyTranslated(transCandidate, targetLang);
       const isExpertVerified =
         (primary.status as any)?.expert_review === "verified" ||
         (primary.status as any)?.pipeline === "verified" ||
@@ -284,8 +295,10 @@ export default function PredictionResultPage() {
 
   const Advisory = ({ predictionData }: { predictionData: any }) => {
     const rawRec = predictionData.recommendation || {};
-    const translatedRec = targetLang !== "en" ? (predictionData.translations?.[targetLang] || localTranslations[targetLang]) : null;
-    const recommendation = translatedRec || rawRec;
+    const translatedCandidate = targetLang !== "en" ? (localTranslations[targetLang] || predictionData.translations?.[targetLang]) : null;
+    const recommendation = (targetLang !== "en" && translatedCandidate && isProperlyTranslated(translatedCandidate, targetLang))
+      ? translatedCandidate
+      : (targetLang !== "en" && isProperlyTranslated(rawRec, targetLang) ? rawRec : (translatedCandidate || rawRec));
     const isExpertVerified =
       (predictionData.status as any)?.expert_review === "verified" ||
       (predictionData.status as any)?.pipeline === "verified" ||
@@ -297,8 +310,18 @@ export default function PredictionResultPage() {
       : null;
     const isFallback = rawRec.is_fallback === true;
     const masked = (predictionData.status as any)?.mask_advisory === true || ((predictionData.status as any)?.expert_review === "pending" && !recommendation.immediate_action);
+
+    const defaultDisclaimer = targetLang === "gu"
+      ? "હંમેશા સ્થાનિક કૃષિ માર્ગદર્શિકા અને રાસાયણિક લેબલ સૂચનાઓનું પાલન કરો."
+      : targetLang === "hi"
+      ? "हमेशा स्थानीय कृषि दिशानिर्देशों और रासायनिक लेबल निर्देशों का पालन करें।"
+      : "Always follow local agricultural guidelines and chemical label instructions.";
+
+    const rawDisclaimer = (recommendation.safety_disclaimer || defaultDisclaimer).trim();
+    const cleanDisclaimer = rawDisclaimer.replace(/^(DISCLAIMER:\s*|અસ્વીકરણ:\s*|अस्वीकरण:\s*)/i, "");
+
     if (masked) return <Card className="mt-6 border-dashed text-center text-muted"><ShieldAlert className="mx-auto mb-3 opacity-50" size={32} /><h4 className="font-semibold text-ink">{t("advisoryMasked")}</h4><p className="mx-auto mt-2 max-w-xl text-sm leading-6">{t("advisoryMaskedDesc")}</p></Card>;
-    if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl text-ink dark:text-cyan-200"><CheckCircle2 size={22} className="text-cyan-400" /> {t("specialistVerifiedPlan")}</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/40"><h4 className="font-semibold text-farmer-800 dark:text-emerald-300">{t("agronomistGuidance")}</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800 dark:text-emerald-100">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"><strong>Important:</strong> Always follow local agricultural guidelines and chemical label instructions.</p></Card>;
+    if (expertGuidance) return <Card className="mt-6 border-expert-100 bg-expert-50 text-expert-700 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="flex items-center gap-2 font-display text-xl text-ink dark:text-cyan-200"><CheckCircle2 size={22} className="text-cyan-400" /> {t("specialistVerifiedPlan")}</h3><AudioButton text={expertGuidance} /></div><div className="mt-5 rounded-sm border border-farmer-200 bg-farmer-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/40"><h4 className="font-semibold text-farmer-800 dark:text-emerald-300">{t("agronomistGuidance")}</h4><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-farmer-800 dark:text-emerald-100">{expertGuidance}</p></div><p className="mt-4 border-l-4 border-danger bg-red-50 p-3 text-xs leading-5 text-danger dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"><strong>{t("important")}:</strong> {cleanDisclaimer}</p></Card>;
     if (!Object.keys(recommendation).length) return null;
     const advisoryText = [recommendation.immediate_action, recommendation.action, recommendation.fertilizer, recommendation.treatment, recommendation.pesticide, recommendation.prevention, recommendation.prevention_tips, recommendation.monitoring, recommendation.irrigation].filter(Boolean).join(". ");
     const sections = [
@@ -328,7 +351,7 @@ export default function PredictionResultPage() {
       )}
       {isFallback && <div className="mt-4 rounded-sm border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-200 leading-5">{t("standardRulesNote")}</div>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">{sections.map(([title, value, classes]) => value ? <div className={`rounded-sm border p-4 ${classes}`} key={title}><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm leading-6">{value}</p></div> : null)}</div>
-      <p className="mt-5 border-l-4 border-danger bg-red-50 dark:bg-red-950/40 p-3 text-xs leading-5 text-danger dark:text-red-300"><strong>{t("important")}:</strong> {recommendation.safety_disclaimer || "Always follow local agricultural guidelines and chemical label instructions."}</p>
+      <p className="mt-5 border-l-4 border-danger bg-red-50 dark:bg-red-950/40 p-3 text-xs leading-5 text-danger dark:text-red-300"><strong>{t("important")}:</strong> {cleanDisclaimer}</p>
     </Card>;
   };
 

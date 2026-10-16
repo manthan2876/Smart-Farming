@@ -19,6 +19,42 @@ logger = logging.getLogger("smart-farming.api.translation")
 router = APIRouter(prefix="/predictions", tags=["translation"])
 
 
+def is_indic_char(c: str, lang: str) -> bool:
+    if lang == "gu":
+        return 0x0A80 <= ord(c) <= 0x0AFF
+    if lang == "hi":
+        return 0x0900 <= ord(c) <= 0x097F
+    return ord(c) >= 0x0900
+
+
+def _rec_is_valid_indic(
+    rec: dict[str, Any] | None,
+    canonical_rec: dict[str, Any] | None,
+    lang: str,
+) -> bool:
+    """
+    Checks that every text field in canonical_rec with alphabetic content is genuinely
+    translated to the target Indic script, rather than remaining in English or being empty.
+    """
+    if not rec or not canonical_rec or lang not in ("gu", "hi"):
+        return bool(rec)
+
+    core_keys = [
+        "immediate_action", "treatment", "prevention", "monitoring",
+        "safety_disclaimer", "action", "fertilizer", "pesticide"
+    ]
+    verified_any = False
+    for k in core_keys:
+        orig = canonical_rec.get(k)
+        if orig and isinstance(orig, str) and any(c.isalpha() for c in orig):
+            trans = rec.get(k)
+            if not trans or not isinstance(trans, str) or not any(is_indic_char(ch, lang) for ch in trans):
+                return False
+            verified_any = True
+
+    return verified_any
+
+
 @router.post("/{prediction_id}/translate")
 async def translate_prediction_recommendation(
     prediction_id: int,
@@ -105,15 +141,9 @@ async def translate_prediction_recommendation(
             "expert_guidance": expert_guidance_val,
         }
 
-    def _rec_has_indic(rec: dict[str, Any]) -> bool:
-        for k, v in rec.items():
-            if k != "language" and isinstance(v, str) and any(ord(c) >= 0x0900 for c in v):
-                return True
-        return False
-
     translations = res.setdefault("translations", {})
     if target_code in translations and translations[target_code]:
-        if target_code not in ("hi", "gu") or _rec_has_indic(translations[target_code]):
+        if target_code not in ("hi", "gu") or _rec_is_valid_indic(translations[target_code], canonical_rec, target_code):
             if expert_guidance_val:
                 translations[target_code]["farmer_guidance"] = expert_guidance_val
             return {
@@ -124,7 +154,7 @@ async def translate_prediction_recommendation(
                 "expert_guidance": expert_guidance_val,
                 "translations": translations,
             }
-        logger.info("Discarding stale non-Indic cached translation for %s (prediction %s)", target_code, prediction_id)
+        logger.info("Discarding stale/incomplete non-Indic cached translation for %s (prediction %s)", target_code, prediction_id)
 
     # Check EntityTranslation table first (0 ms external API latency)
     db_translations = session.query(EntityTranslation).filter_by(
@@ -138,7 +168,7 @@ async def translate_prediction_recommendation(
         db_rec["language"] = target_code
         for tr in db_translations:
             db_rec[tr.field_name] = tr.translated_text
-        if target_code not in ("hi", "gu") or _rec_has_indic(db_rec):
+        if target_code not in ("hi", "gu") or _rec_is_valid_indic(db_rec, canonical_rec, target_code):
             if expert_guidance_val:
                 db_rec["farmer_guidance"] = expert_guidance_val
             translations[target_code] = db_rec
@@ -154,6 +184,7 @@ async def translate_prediction_recommendation(
                 "expert_guidance": expert_guidance_val,
                 "translations": translations,
             }
+        logger.info("Discarding incomplete EntityTranslation records for %s (prediction %s)", target_code, prediction_id)
 
     # Translate on-demand
     if not canonical_rec and not expert_guidance_val:
@@ -164,17 +195,21 @@ async def translate_prediction_recommendation(
         if expert_guidance_val:
             translated_rec["farmer_guidance"] = expert_guidance_val
 
-        if not canonical_rec or (target_code not in ("hi", "gu") or _rec_has_indic(translated_rec)):
-            translations = dict(res.get("translations") or {})
-            translations[target_code] = translated_rec
-            res["translations"] = translations
-            pred.result = res
-            flag_modified(pred, "result")
+        translations = dict(res.get("translations") or {})
+        translations[target_code] = translated_rec
+        res["translations"] = translations
+        pred.result = res
+        flag_modified(pred, "result")
 
         # Persist to EntityTranslation table
         from app.services.translation.manager import compute_hash
+        tracked_keys = [
+            "immediate_action", "treatment", "prevention", "monitoring",
+            "safety_disclaimer", "action", "fertilizer", "pesticide",
+            "irrigation", "prevention_tips"
+        ]
         for f_name, f_val in translated_rec.items():
-            if f_name in ["immediate_action", "treatment", "prevention", "monitoring", "safety_disclaimer"] and isinstance(f_val, str):
+            if f_name in tracked_keys and isinstance(f_val, str) and f_val.strip():
                 orig_val = canonical_rec.get(f_name, "")
                 existing = session.query(EntityTranslation).filter_by(
                     entity_type="prediction",
