@@ -263,12 +263,16 @@ def format_vision_markdown(res: dict[str, Any]) -> str:
 
     return f"""### {status_icon} Diagnostic Assessment: **{crop_name}** — **{dis_name}**
 {warning_banner}
+<div class="table-responsive-wrapper">
+
 | Analysis Stage | Diagnostic Output | Confidence / Rating |
 | :--- | :--- | :--- |
 | **Identified Crop** | **{crop_name}** | `{crop_conf * 100:.1f}%` ({crop_rating}) |
 | **Disease Diagnosis** | **{dis_name}** | `{dis_conf * 100:.1f}%` ({dis_rating}) |
 | **Severity Assessment** | **{sev_bucket}** | `{sev_pct:.1f}%` affected leaf area |
 | **Pest Infestation** | **{pest_desc}** | Ultralytics YOLOv8 scan |
+
+</div>
 
 #### 🔍 Quality & Preprocessing Metrics
 - **Laplacian Sharpness:** `{blur:.1f}` *(Threshold: > 50.0 — Pass)*
@@ -681,31 +685,45 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
     margin-top: 12px;
 }
 
-/* Data Tables — Emerald Forest Theme */
+/* Responsive Table Wrappers & Container Scroll Handling */
+.gradio-container .prose,
+.gradio-container .markdown,
+.gradio-container .gr-markdown,
+.table-responsive-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+}
+
+/* Data Tables — Emerald Forest Theme (Responsive for all screen types) */
 .gradio-container table, .prose table, table {
     width: 100% !important;
+    min-width: 580px !important; /* CRITICAL: Prevents columns from crushing below readable width on mobile */
     border-collapse: separate !important;
     border-spacing: 0 !important;
-    margin: 18px 0 24px 0 !important;
+    margin: 14px 0 20px 0 !important;
     border-radius: 12px !important;
-    overflow: hidden !important;
     border: 1px solid #d1fae5 !important;
     background: #ffffff !important;
     box-shadow: 0 4px 16px -2px rgba(6, 78, 59, 0.08), 0 2px 6px -1px rgba(6, 78, 59, 0.04) !important;
-    display: table !important;
+    table-layout: auto !important;
+    word-break: normal !important;
 }
 
 .gradio-container th, .prose th, th {
     background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%) !important;
     color: #ffffff !important;
     font-weight: 700 !important;
-    font-size: 0.85rem !important;
+    font-size: 0.82rem !important;
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
-    padding: 13px 16px !important;
+    padding: 12px 14px !important;
     text-align: left !important;
     border: none !important;
     border-bottom: 2px solid #10b981 !important;
+    white-space: nowrap !important; /* Header labels never break into vertical letters */
 }
 
 .gradio-container tr, .prose tr, tr {
@@ -722,15 +740,29 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
 }
 
 .gradio-container td, .prose td, td {
-    padding: 11px 16px !important;
-    font-size: 0.89rem !important;
+    padding: 11px 14px !important;
+    font-size: 0.88rem !important;
     color: #1e293b !important;
     vertical-align: middle !important;
-    line-height: 1.55 !important;
+    line-height: 1.5 !important;
     border-top: none !important;
     border-bottom: 1px solid #e2e8f0 !important;
     border-left: none !important;
     border-right: none !important;
+    word-break: normal !important;
+}
+
+/* Service / Component First Column — Never wrap vertically into single characters */
+.gradio-container td:first-child, .prose td:first-child, td:first-child {
+    white-space: nowrap !important;
+    font-weight: 600 !important;
+    color: #064e3b !important;
+    min-width: 95px !important;
+}
+
+/* Method column (GET, POST) */
+.gradio-container td:nth-child(3), .prose td:nth-child(3), td:nth-child(3) {
+    white-space: nowrap !important;
 }
 
 .gradio-container td strong, .prose td strong, td strong {
@@ -741,11 +773,13 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
 .gradio-container td code, .prose td code, td code {
     background: rgba(16, 185, 129, 0.12) !important;
     color: #047857 !important;
-    padding: 2px 7px !important;
-    border-radius: 5px !important;
-    font-size: 0.84rem !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+    font-size: 0.82rem !important;
     font-weight: 600 !important;
     border: 1px solid rgba(52, 211, 153, 0.35) !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
 }
 
 /* Dark Mode Data Tables */
@@ -759,6 +793,7 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
     background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%) !important;
     color: #ffffff !important;
     border-bottom: 2px solid #34d399 !important;
+    white-space: nowrap !important;
 }
 
 .dark .gradio-container tr, .dark .prose tr, .dark tr {
@@ -778,6 +813,10 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
     border-bottom: 1px solid #1e293b !important;
 }
 
+.dark .gradio-container td:first-child, .dark .prose td:first-child, .dark td:first-child {
+    color: #6ee7b7 !important;
+}
+
 .dark .gradio-container td strong, .dark .prose td strong, .dark td strong {
     color: #6ee7b7 !important;
 }
@@ -786,6 +825,50 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
     background: rgba(16, 185, 129, 0.22) !important;
     color: #a7f3d0 !important;
     border-color: rgba(52, 211, 153, 0.4) !important;
+}
+
+/* Mobile & Small Screen Table Optimizations (max-width: 768px) */
+@media (max-width: 768px) {
+    .gradio-container table, .prose table, table {
+        min-width: 520px !important;
+        font-size: 0.81rem !important;
+        margin: 10px 0 16px 0 !important;
+    }
+    .gradio-container th, .prose th, th {
+        padding: 9px 11px !important;
+        font-size: 0.74rem !important;
+    }
+    .gradio-container td, .prose td, td {
+        padding: 8px 11px !important;
+        font-size: 0.80rem !important;
+    }
+    .gradio-container td code, .prose td code, td code {
+        font-size: 0.75rem !important;
+        padding: 2px 6px !important;
+    }
+}
+
+/* Custom Scrollbar for Smooth Touch & Desktop Scrolling */
+.gradio-container .prose::-webkit-scrollbar,
+.gradio-container .markdown::-webkit-scrollbar,
+.gradio-container .gr-markdown::-webkit-scrollbar,
+.table-responsive-wrapper::-webkit-scrollbar {
+    height: 6px !important;
+}
+
+.gradio-container .prose::-webkit-scrollbar-thumb,
+.gradio-container .markdown::-webkit-scrollbar-thumb,
+.gradio-container .gr-markdown::-webkit-scrollbar-thumb,
+.table-responsive-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.4) !important;
+    border-radius: 4px !important;
+}
+
+.gradio-container .prose::-webkit-scrollbar-track,
+.gradio-container .markdown::-webkit-scrollbar-track,
+.gradio-container .gr-markdown::-webkit-scrollbar-track,
+.table-responsive-wrapper::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Pipeline Preformatted Diagram */
@@ -860,6 +943,8 @@ In India, smallholder farmers lose up to **₹1.4 lakh crore (~$17 Billion)** an
 
 ### 📋 Model Cards & Technical Specifications
 
+<div class="table-responsive-wrapper">
+
 | Component | Architecture / Model | Parameters / Size | Input Resolution | Output / Core Function | Performance / Benchmark |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Leaf Quality Gate** | OpenCV (Laplacian + HSV) | Rule-based (<1ms) | Any RGB Image | Blurry (<50) & Poor lighting (40–240) rejection | 100% rejection of unreadable inputs |
@@ -871,9 +956,13 @@ In India, smallholder farmers lose up to **₹1.4 lakh crore (~$17 Billion)** an
 | **Indic Machine Translation** | AI4Bharat IndicTrans2-dist-200M | 200M params | English text | High-fidelity translation to Hindi (`hin_Deva`) and Gujarati (`guj_Gujr`) | SOTA Indic agricultural BLEU score |
 | **Regional Speech Synthesis** | Microsoft Edge-TTS (Regional) | Neural Voice Engine | Gujarati / Hindi / English text | Studio MP3 audio (`gu-IN-DhwaniNeural`, `hi-IN-SwaraNeural`) | Voice-first accessible audio for farmers |
 
+</div>
+
 ---
 
 ### 🌿 Supported Crops & Disease Taxonomy Matrix (32 Conditions)
+
+<div class="table-responsive-wrapper">
 
 | Crop | Supported Disease & Health Categories | Model Architecture |
 | :--- | :--- | :--- |
@@ -882,6 +971,8 @@ In India, smallholder farmers lose up to **₹1.4 lakh crore (~$17 Billion)** an
 | **🌱 Cotton** | Alternaria Leaf Spot, Bacterial Blight, Curl Virus, Fusarium Wilt, Powdery Mildew, Target Spot, Verticillium Wilt, Healthy | Dedicated EfficientNet-B2 |
 | **🥜 Groundnut** | Alternaria Leaf Spot, Early Leaf Spot, Late Leaf Spot (Tikka), Nutrition Deficiency, Rosette, Rust, Healthy | Dedicated EfficientNet-B2 |
 | **🫑 Pepper Bell** | Bacterial Spot, Cercospora Leaf Spot, Edema, Leaf Curl, Nutrition Deficiency, Powdery Mildew, Healthy | Dedicated EfficientNet-B2 |
+
+</div>
 
 ---
 
@@ -1151,18 +1242,12 @@ from English into native Indian languages (**Hindi** and **Gujarati**).
 ### Live Microservice Health & REST API Documentation
 This Space mounts a production FastAPI application alongside Gradio. 
 External applications (such as our Flutter Android App and React Web Dashboard) interact with these endpoints directly.
-"""
-                )
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        check_btn = gr.Button("🏥 Inspect System Health & Loaded Models", variant="primary", size="lg")
-                        health_output = gr.JSON(label="Live Diagnostics Response")
-                        check_btn.click(fn=run_health_gradio, outputs=health_output)
-    
-                    with gr.Column(scale=1):
-                        gr.Markdown(
-                            """
+
+---
+
 #### 🌐 Production REST Endpoints
+
+<div class="table-responsive-wrapper">
 
 | Service | Endpoint Path | Method | Payload / Description |
 | :--- | :--- | :--- | :--- |
@@ -1172,9 +1257,22 @@ External applications (such as our Flutter Android App and React Web Dashboard) 
 | **Translation** | `/translation/translate` | `POST` | JSON: `{texts: [...], target_lang: "hi"|"gu"}` |
 | **Speech** | `/tts/synthesize` | `POST` | JSON: `{text, language: "gu"|"hi"|"en"}` |
 
+</div>
+
 🔒 **Secure API Architecture**: Direct public Swagger browsing is disabled. Endpoints are consumed securely via authenticated backend calls and tested directly via the interactive studios above.
+
+---
+
+#### 🏥 Live Container Health Diagnostics
+Inspect real-time microservice status, active compute device, loaded vision models, and memory cache diagnostics:
 """
-                        )
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        check_btn = gr.Button("🏥 Inspect System Health & Loaded Models", variant="primary", size="lg")
+                    with gr.Column(scale=2):
+                        health_output = gr.JSON(label="Live Diagnostics Response")
+                check_btn.click(fn=run_health_gradio, outputs=health_output)
     
                 gr.Markdown(
                     """
