@@ -443,6 +443,196 @@ def load_readme_content() -> str:
 # Gradio Blocks UI Architecture
 # ==============================================================================
 
+
+CUSTOM_CSS = """
+/* Typography & Container */
+body, .gradio-container {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    color: #1e293b !important;
+}
+
+/* Hide giant Gradio footer/watermark */
+footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Hero Header Card */
+.hero-card {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
+    color: #ffffff !important;
+    padding: 28px 32px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hero-card h1 {
+    color: #ffffff !important;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    margin: 0 0 8px 0 !important;
+}
+
+.hero-card h3 {
+    color: #a7f3d0 !important;
+    font-size: 1.05rem !important;
+    font-weight: 500 !important;
+    margin: 0 0 16px 0 !important;
+}
+
+.hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.hero-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.hero-pill-green {
+    background: rgba(16, 185, 129, 0.25);
+    color: #6ee7b7 !important;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.hero-pill-blue {
+    background: rgba(59, 130, 246, 0.25);
+    color: #93c5fd !important;
+    border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+.hero-pill-amber {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fde68a !important;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.hero-desc {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 14px 18px;
+    border-radius: 10px;
+    border-left: 4px solid #34d399;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #ecfdf5 !important;
+    margin-top: 14px;
+}
+
+/* Tabs Styling */
+div[role="tablist"] {
+    border-bottom: 2px solid #e2e8f0 !important;
+    gap: 6px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    padding-bottom: 0 !important;
+}
+
+div[role="tablist"] button {
+    border: 1px solid #e2e8f0 !important;
+    border-bottom: none !important;
+    border-radius: 8px 8px 0 0 !important;
+    background: #f8fafc !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.92rem !important;
+    padding: 10px 18px !important;
+    transition: all 0.2s ease !important;
+}
+
+div[role="tablist"] button:hover {
+    background: #ecfdf5 !important;
+    color: #065f46 !important;
+}
+
+div[role="tablist"] button[aria-selected="true"], div[role="tablist"] button.selected {
+    background: #ffffff !important;
+    color: #047857 !important;
+    border-top: 3px solid #059669 !important;
+    border-bottom: 2px solid #ffffff !important;
+    margin-bottom: -2px !important;
+    font-weight: 700 !important;
+}
+
+/* Clean Professional Data Tables */
+.prose table, table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 18px 0 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    display: table !important;
+}
+
+.prose th, th {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 0.84rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 12px 14px !important;
+    text-align: left !important;
+    border: 1px solid #334155 !important;
+}
+
+.prose tr, tr {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.prose tr:nth-child(even), tr:nth-child(even) {
+    background-color: #f8fafc !important;
+}
+
+.prose tr:hover, tr:hover {
+    background-color: #f1f5f9 !important;
+}
+
+.prose td, td {
+    padding: 11px 14px !important;
+    font-size: 0.90rem !important;
+    color: #334155 !important;
+    vertical-align: middle !important;
+    line-height: 1.5 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* Pipeline Preformatted Diagram */
+pre {
+    background: #0f172a !important;
+    color: #38bdf8 !important;
+    padding: 16px 20px !important;
+    border-radius: 12px !important;
+    border: 1px solid #1e293b !important;
+    font-size: 0.85rem !important;
+    line-height: 1.55 !important;
+    overflow-x: auto !important;
+}
+
+/* Accordions */
+.accordion {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    margin-top: 14px !important;
+}
+"""
+
 def build_gradio_ui():
     custom_theme = gr.themes.Soft(
         primary_hue="emerald",
@@ -450,31 +640,33 @@ def build_gradio_ui():
         neutral_hue="slate",
     )
 
-    with gr.Blocks(title="Smart Farming AI Platform", theme=custom_theme) as demo:
+    with gr.Blocks(title="Smart Farming AI Platform", theme=custom_theme, css=CUSTOM_CSS) as demo:
         # Hero Banner
-        gr.Markdown(
+        gr.HTML(
             """
-# 🌾 Smart Farming AI Platform
-### Enterprise Crop Disease Diagnostics, Severity Assessment & Multilingual Agronomic Advisory Hub
-
-[![Microservice Status](https://img.shields.io/badge/Status-Active%20%26%20Online-00C853?style=flat-square)](/health)
-[![Production Architecture](https://img.shields.io/badge/Microservice-FastAPI%20%2B%20Gradio-009688?style=flat-square)](#)
-[![Supported Crops](https://img.shields.io/badge/Crops%20Supported-5%20Major%20Cash%20Crops-2E7D32?style=flat-square)](#)
-[![Diseases Covered](https://img.shields.io/badge/Conditions%20Covered-32%20Pathologies-1565C0?style=flat-square)](#)
-[![Languages](https://img.shields.io/badge/Languages-English%20%7C%20Hindi%20%7C%20Gujarati-FF8F00?style=flat-square)](#)
-
-> **Welcome to Smart Farming AI!** This Space hosts the autonomous AI microservice for the Smart Farming platform.
-> It transforms smartphone leaf photos into instant, laboratory-grade diagnoses with lesion severity quantification, 
-> evidence-grounded treatment plans, and voice advisories in **Gujarati**, **Hindi**, and **English**.
+<div class="hero-card">
+    <h1>🌾 Smart Farming AI Platform</h1>
+    <h3>Enterprise Crop Disease Diagnostics, Severity Assessment &amp; Multilingual Agronomic Advisory Hub</h3>
+    <div class="hero-pills">
+        <span class="hero-pill hero-pill-green">🟢 Service: Active &amp; Online</span>
+        <span class="hero-pill hero-pill-blue">⚡ Architecture: FastAPI + Gradio Microservice</span>
+        <span class="hero-pill hero-pill-green">🌿 Crops: 5 Major Cash Crops</span>
+        <span class="hero-pill hero-pill-amber">🔬 Conditions: 32 Pathologies Covered</span>
+        <span class="hero-pill hero-pill-blue">🗣️ Languages: Gujarati | Hindi | English</span>
+    </div>
+    <div class="hero-desc">
+        <strong>Welcome to Smart Farming AI!</strong> This Space hosts the autonomous AI microservice for the Smart Farming platform.
+        It transforms smartphone leaf photos into instant, laboratory-grade diagnoses with lesion severity quantification, 
+        evidence-grounded treatment plans, and voice advisories in <strong>Gujarati</strong>, <strong>Hindi</strong>, and <strong>English</strong>.
+    </div>
+</div>
 """
         )
 
-        # ----------------------------------------------------------------------
-        # TAB 1: 📋 Model Card & Space Overview
-        # ----------------------------------------------------------------------
-        with gr.Tab("📋 Model Card & Space Overview"):
-            gr.Markdown(
-                """
+        with gr.Tabs():
+            with gr.Tab("📋 Model Card & Space Overview"):
+                gr.Markdown(
+                    """
 ## What is this Space About?
 
 **Smart Farming AI** is a production-grade artificial intelligence microservice engineered to protect crop yields 
@@ -549,240 +741,240 @@ This platform provides dedicated diagnostic classifiers for **5 major cash crops
 - **Tab 5 (🇮🇳 Indic Translation)**: Test agricultural English-to-Indic translation via IndicTrans2.
 - **Tab 6 (⚡ API Reference)**: Review REST API specifications, curl commands, and check container health.
 """
-            )
-
-            # Embedded Space README viewer
-            with gr.Accordion("📄 View Complete Space README & Technical Documentation", open=False):
-                gr.Markdown(load_readme_content())
-
-        # ----------------------------------------------------------------------
-        # TAB 2: 📸 Vision Diagnostic Studio
-        # ----------------------------------------------------------------------
-        with gr.Tab("📸 Vision Diagnostic Studio"):
-            gr.Markdown(
-                """
+                )
+    
+                # Embedded Space README viewer
+                with gr.Accordion("📄 View Complete Space README & Technical Documentation", open=False):
+                    gr.Markdown(load_readme_content())
+    
+            # ----------------------------------------------------------------------
+            # TAB 2: 📸 Vision Diagnostic Studio
+            # ----------------------------------------------------------------------
+            with gr.Tab("📸 Vision Diagnostic Studio"):
+                gr.Markdown(
+                    """
 ### Multi-Stage Computer Vision Leaf Diagnosis
 Upload a clear leaf image or click one of the sample images below. 
 The pipeline automatically runs **OpenCV quality validation**, **crop species identification**, 
 **disease classification**, **lesion severity estimation**, and **YOLOv8 pest detection**.
 """
-            )
-            with gr.Row():
-                with gr.Column(scale=1):
-                    vision_in = gr.Image(
-                        type="numpy",
-                        label="Upload Crop Leaf Image",
-                        sources=["upload", "clipboard"],
-                    )
-                    if VALID_SAMPLE_EXAMPLES:
-                        gr.Examples(
-                            examples=VALID_SAMPLE_EXAMPLES,
-                            inputs=vision_in,
-                            label="🌿 Preloaded Test Samples (Click to load):",
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        vision_in = gr.Image(
+                            type="numpy",
+                            label="Upload Crop Leaf Image",
+                            sources=["upload", "clipboard"],
                         )
-                    vision_btn = gr.Button("🔍 Run Multi-Stage Vision Analysis", variant="primary", size="lg")
-
-                with gr.Column(scale=1):
-                    vision_md_out = gr.Markdown("👉 Upload a photo or click a sample on the left, then click **Run Multi-Stage Vision Analysis**.")
-                    with gr.Accordion("🛠️ Inspect Raw JSON Pipeline Output", open=False):
-                        vision_json_out = gr.JSON(label="Detailed Inference Payload")
-
-            vision_btn.click(
-                fn=run_vision_gradio,
-                inputs=vision_in,
-                outputs=[vision_md_out, vision_json_out],
-            )
-
-        # ----------------------------------------------------------------------
-        # TAB 3: 💡 Agronomic Advisory Assistant
-        # ----------------------------------------------------------------------
-        with gr.Tab("💡 Agronomic Advisory Assistant"):
-            gr.Markdown(
-                """
+                        if VALID_SAMPLE_EXAMPLES:
+                            gr.Examples(
+                                examples=VALID_SAMPLE_EXAMPLES,
+                                inputs=vision_in,
+                                label="🌿 Preloaded Test Samples (Click to load):",
+                            )
+                        vision_btn = gr.Button("🔍 Run Multi-Stage Vision Analysis", variant="primary", size="lg")
+    
+                    with gr.Column(scale=1):
+                        vision_md_out = gr.Markdown("👉 Upload a photo or click a sample on the left, then click **Run Multi-Stage Vision Analysis**.")
+                        with gr.Accordion("🛠️ Inspect Raw JSON Pipeline Output", open=False):
+                            vision_json_out = gr.JSON(label="Detailed Inference Payload")
+    
+                vision_btn.click(
+                    fn=run_vision_gradio,
+                    inputs=vision_in,
+                    outputs=[vision_md_out, vision_json_out],
+                )
+    
+            # ----------------------------------------------------------------------
+            # TAB 3: 💡 Agronomic Advisory Assistant
+            # ----------------------------------------------------------------------
+            with gr.Tab("💡 Agronomic Advisory Assistant"):
+                gr.Markdown(
+                    """
 ### Evidence-Grounded Agronomic Decision Engine
 Generates ICAR/KVK-aligned crop protection guidance with exact chemical sprays, 
 biological treatments, prevention practices, and field monitoring instructions in your preferred language.
 """
-            )
-            with gr.Row():
-                with gr.Column(scale=1):
-                    crop_in = gr.Dropdown(
-                        choices=["Tomato", "Cotton", "Groundnut", "Potato", "Pepper Bell"],
-                        value="Tomato",
-                        label="1. Select Crop Species",
-                    )
-                    disease_in = gr.Dropdown(
-                        choices=DISEASE_CHOICES_BY_CROP["Tomato"],
-                        value="Early Blight",
-                        label="2. Diagnosed Condition",
-                    )
-                    crop_in.change(
-                        fn=lambda c: gr.Dropdown(
-                            choices=DISEASE_CHOICES_BY_CROP.get(c, ["Healthy"]),
-                            value=DISEASE_CHOICES_BY_CROP.get(c, ["Healthy"])[0],
-                        ),
-                        inputs=crop_in,
-                        outputs=disease_in,
-                    )
-                    conf_in = gr.Slider(
-                        minimum=0.10,
-                        maximum=1.00,
-                        value=0.92,
-                        step=0.01,
-                        label="3. Model Confidence Score",
-                    )
-                    lang_in = gr.Radio(
-                        choices=[
-                            ("English (en)", "en"),
-                            ("Hindi (हिन्दी)", "hi"),
-                            ("Gujarati (ગુજરાતી)", "gu"),
-                        ],
-                        value="gu",
-                        label="4. Target Advisory Language",
-                    )
-                    adv_btn = gr.Button("📋 Generate Agronomic Advisory", variant="primary", size="lg")
-
-                with gr.Column(scale=1):
-                    adv_md_out = gr.Markdown("👉 Select crop, disease, and language on the left and click **Generate Agronomic Advisory**.")
-                    with gr.Row():
-                        adv_audio_btn = gr.Button("🔊 Listen to Audio Narration", variant="secondary")
-                        adv_audio_out = gr.Audio(label="Voice Narration Playback", autoplay=True)
-                    with gr.Accordion("🛠️ Inspect Structured Advisory JSON", open=False):
-                        adv_json_out = gr.JSON(label="Structured Advisory Payload")
-
-            adv_btn.click(
-                fn=run_advisory_gradio,
-                inputs=[crop_in, disease_in, conf_in, lang_in],
-                outputs=[adv_md_out, adv_json_out],
-            )
-            adv_audio_btn.click(
-                fn=run_advisory_audio_gradio,
-                inputs=[adv_json_out, lang_in],
-                outputs=adv_audio_out,
-            )
-
-        # ----------------------------------------------------------------------
-        # TAB 4: 🔊 Neural Regional Voice (TTS)
-        # ----------------------------------------------------------------------
-        with gr.Tab("🔊 Neural Regional Voice (TTS)"):
-            gr.Markdown(
-                """
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        crop_in = gr.Dropdown(
+                            choices=["Tomato", "Cotton", "Groundnut", "Potato", "Pepper Bell"],
+                            value="Tomato",
+                            label="1. Select Crop Species",
+                        )
+                        disease_in = gr.Dropdown(
+                            choices=DISEASE_CHOICES_BY_CROP["Tomato"],
+                            value="Early Blight",
+                            label="2. Diagnosed Condition",
+                        )
+                        crop_in.change(
+                            fn=lambda c: gr.Dropdown(
+                                choices=DISEASE_CHOICES_BY_CROP.get(c, ["Healthy"]),
+                                value=DISEASE_CHOICES_BY_CROP.get(c, ["Healthy"])[0],
+                            ),
+                            inputs=crop_in,
+                            outputs=disease_in,
+                        )
+                        conf_in = gr.Slider(
+                            minimum=0.10,
+                            maximum=1.00,
+                            value=0.92,
+                            step=0.01,
+                            label="3. Model Confidence Score",
+                        )
+                        lang_in = gr.Radio(
+                            choices=[
+                                ("English (en)", "en"),
+                                ("Hindi (हिन्दी)", "hi"),
+                                ("Gujarati (ગુજરાતી)", "gu"),
+                            ],
+                            value="gu",
+                            label="4. Target Advisory Language",
+                        )
+                        adv_btn = gr.Button("📋 Generate Agronomic Advisory", variant="primary", size="lg")
+    
+                    with gr.Column(scale=1):
+                        adv_md_out = gr.Markdown("👉 Select crop, disease, and language on the left and click **Generate Agronomic Advisory**.")
+                        with gr.Row():
+                            adv_audio_btn = gr.Button("🔊 Listen to Audio Narration", variant="secondary")
+                            adv_audio_out = gr.Audio(label="Voice Narration Playback", autoplay=True)
+                        with gr.Accordion("🛠️ Inspect Structured Advisory JSON", open=False):
+                            adv_json_out = gr.JSON(label="Structured Advisory Payload")
+    
+                adv_btn.click(
+                    fn=run_advisory_gradio,
+                    inputs=[crop_in, disease_in, conf_in, lang_in],
+                    outputs=[adv_md_out, adv_json_out],
+                )
+                adv_audio_btn.click(
+                    fn=run_advisory_audio_gradio,
+                    inputs=[adv_json_out, lang_in],
+                    outputs=adv_audio_out,
+                )
+    
+            # ----------------------------------------------------------------------
+            # TAB 4: 🔊 Neural Regional Voice (TTS)
+            # ----------------------------------------------------------------------
+            with gr.Tab("🔊 Neural Regional Voice (TTS)"):
+                gr.Markdown(
+                    """
 ### Indian Regional Neural Speech Synthesis
 Voice-first advisories allow illiterate or semi-literate farmers to receive crucial agricultural 
 guidance in their native dialect. Powered by Microsoft Neural Regional Voices (`gu-IN-DhwaniNeural`, `hi-IN-SwaraNeural`, `en-IN-NeerjaNeural`).
 """
-            )
-            with gr.Row():
-                with gr.Column(scale=1):
-                    tts_text = gr.Textbox(
-                        value="નમસ્તે ખેડૂત મિત્ર! સ્માર્ટ ફાર્મિંગમાં તમારું સ્વાગત છે. તમારા પાકની સુરક્ષા માટે અમે તૈયાર છીએ.",
-                        label="Text to Synthesize",
-                        lines=4,
-                    )
-                    tts_lang = gr.Radio(
-                        choices=[
-                            ("Gujarati (ગુજરાતી)", "gu"),
-                            ("Hindi (हिन्दी)", "hi"),
-                            ("English", "en"),
-                        ],
-                        value="gu",
-                        label="Language & Accent",
-                    )
-                    gr.Markdown("#### ⚡ 1-Click Sample Agricultural Phrases:")
-                    with gr.Row():
-                        btn_preset_gu = gr.Button("🌱 Gujarati Sample", size="sm")
-                        btn_preset_hi = gr.Button("🌾 Hindi Sample", size="sm")
-                        btn_preset_en = gr.Button("🚜 English Sample", size="sm")
-                    tts_btn = gr.Button("🔊 Synthesize Speech", variant="primary", size="lg")
-
-                with gr.Column(scale=1):
-                    tts_audio = gr.Audio(label="Synthesized Neural Audio Output", autoplay=True)
-
-            btn_preset_gu.click(
-                fn=lambda: (
-                    "નમસ્તે ખેડૂત મિત્ર! તમારા ટમેટાના પાકમાં અર્લી બ્લાઇટ રોગ જણાયો છે. તાત્કાલિક મેન્કોઝેબ દવાનો છંટકાવ કરો અને વધારે પાણી આપવાનું ટાળો.",
-                    "gu",
-                ),
-                outputs=[tts_text, tts_lang],
-            )
-            btn_preset_hi.click(
-                fn=lambda: (
-                    "नमस्ते किसान भाई! आपकी कपास की फसल में जीवाणु अंगमारी (Bacterial Blight) के लक्षण मिले हैं। तुरंत कॉपर ऑक्सीक्लोराइड का छिड़काव करें।",
-                    "hi",
-                ),
-                outputs=[tts_text, tts_lang],
-            )
-            btn_preset_en.click(
-                fn=lambda: (
-                    "Greetings farmer friend! Early Blight has been detected on your tomato crop. Spray Mancozeb fungicide at 2 grams per liter and remove infected lower leaves.",
-                    "en",
-                ),
-                outputs=[tts_text, tts_lang],
-            )
-            tts_btn.click(fn=run_tts_gradio, inputs=[tts_text, tts_lang], outputs=tts_audio)
-
-        # ----------------------------------------------------------------------
-        # TAB 5: 🇮🇳 IndicTrans2 Translation
-        # ----------------------------------------------------------------------
-        with gr.Tab("🇮🇳 IndicTrans2 Translation"):
-            gr.Markdown(
-                """
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        tts_text = gr.Textbox(
+                            value="નમસ્તે ખેડૂત મિત્ર! સ્માર્ટ ફાર્મિંગમાં તમારું સ્વાગત છે. તમારા પાકની સુરક્ષા માટે અમે તૈયાર છીએ.",
+                            label="Text to Synthesize",
+                            lines=4,
+                        )
+                        tts_lang = gr.Radio(
+                            choices=[
+                                ("Gujarati (ગુજરાતી)", "gu"),
+                                ("Hindi (हिन्दी)", "hi"),
+                                ("English", "en"),
+                            ],
+                            value="gu",
+                            label="Language & Accent",
+                        )
+                        gr.Markdown("#### ⚡ 1-Click Sample Agricultural Phrases:")
+                        with gr.Row():
+                            btn_preset_gu = gr.Button("🌱 Gujarati Sample", size="sm")
+                            btn_preset_hi = gr.Button("🌾 Hindi Sample", size="sm")
+                            btn_preset_en = gr.Button("🚜 English Sample", size="sm")
+                        tts_btn = gr.Button("🔊 Synthesize Speech", variant="primary", size="lg")
+    
+                    with gr.Column(scale=1):
+                        tts_audio = gr.Audio(label="Synthesized Neural Audio Output", autoplay=True)
+    
+                btn_preset_gu.click(
+                    fn=lambda: (
+                        "નમસ્તે ખેડૂત મિત્ર! તમારા ટમેટાના પાકમાં અર્લી બ્લાઇટ રોગ જણાયો છે. તાત્કાલિક મેન્કોઝેબ દવાનો છંટકાવ કરો અને વધારે પાણી આપવાનું ટાળો.",
+                        "gu",
+                    ),
+                    outputs=[tts_text, tts_lang],
+                )
+                btn_preset_hi.click(
+                    fn=lambda: (
+                        "नमस्ते किसान भाई! आपकी कपास की फसल में जीवाणु अंगमारी (Bacterial Blight) के लक्षण मिले हैं। तुरंत कॉपर ऑक्सीक्लोराइड का छिड़काव करें।",
+                        "hi",
+                    ),
+                    outputs=[tts_text, tts_lang],
+                )
+                btn_preset_en.click(
+                    fn=lambda: (
+                        "Greetings farmer friend! Early Blight has been detected on your tomato crop. Spray Mancozeb fungicide at 2 grams per liter and remove infected lower leaves.",
+                        "en",
+                    ),
+                    outputs=[tts_text, tts_lang],
+                )
+                tts_btn.click(fn=run_tts_gradio, inputs=[tts_text, tts_lang], outputs=tts_audio)
+    
+            # ----------------------------------------------------------------------
+            # TAB 5: 🇮🇳 IndicTrans2 Translation
+            # ----------------------------------------------------------------------
+            with gr.Tab("🇮🇳 IndicTrans2 Translation"):
+                gr.Markdown(
+                    """
 ### AI4Bharat IndicTrans2 Translation Engine
 Demonstrates in-process translation of complex agricultural treatment instructions 
 from English into native Indian languages (**Hindi** and **Gujarati**).
 """
-            )
-            with gr.Row():
-                with gr.Column(scale=1):
-                    trans_text = gr.Textbox(
-                        value="Spray Mancozeb at 2.5 grams per liter of water immediately and ensure proper field drainage.",
-                        label="English Source Agronomic Text",
-                        lines=4,
-                    )
-                    trans_lang = gr.Radio(
-                        choices=["Hindi (हिन्दी)", "Gujarati (ગુજરાતી)"],
-                        value="Gujarati (ગુજરાતી)",
-                        label="Target Indic Language",
-                    )
-                    gr.Markdown("#### ⚡ 1-Click Common Advisory Inputs:")
-                    with gr.Row():
-                        btn_trans_sample1 = gr.Button("Sample 1: Chemical Spray", size="sm")
-                        btn_trans_sample2 = gr.Button("Sample 2: Field Drainage", size="sm")
-                    trans_btn = gr.Button("🔄 Translate to Indic Language", variant="primary", size="lg")
-
-                with gr.Column(scale=1):
-                    trans_out = gr.Textbox(label="Translated Text Output", lines=5)
-
-            btn_trans_sample1.click(
-                fn=lambda: "Apply Copper Oxychloride 50 WP at 3 grams per liter of water during clear sunny weather.",
-                outputs=trans_text,
-            )
-            btn_trans_sample2.click(
-                fn=lambda: "Avoid overhead irrigation and remove infected leaves from the field to stop spore germination.",
-                outputs=trans_text,
-            )
-            trans_btn.click(fn=run_translation_gradio, inputs=[trans_text, trans_lang], outputs=trans_out)
-
-        # ----------------------------------------------------------------------
-        # TAB 6: ⚡ API Reference & System Health
-        # ----------------------------------------------------------------------
-        with gr.Tab("⚡ API Reference & System Health"):
-            gr.Markdown(
-                """
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        trans_text = gr.Textbox(
+                            value="Spray Mancozeb at 2.5 grams per liter of water immediately and ensure proper field drainage.",
+                            label="English Source Agronomic Text",
+                            lines=4,
+                        )
+                        trans_lang = gr.Radio(
+                            choices=["Hindi (हिन्दी)", "Gujarati (ગુજરાતી)"],
+                            value="Gujarati (ગુજરાતી)",
+                            label="Target Indic Language",
+                        )
+                        gr.Markdown("#### ⚡ 1-Click Common Advisory Inputs:")
+                        with gr.Row():
+                            btn_trans_sample1 = gr.Button("Sample 1: Chemical Spray", size="sm")
+                            btn_trans_sample2 = gr.Button("Sample 2: Field Drainage", size="sm")
+                        trans_btn = gr.Button("🔄 Translate to Indic Language", variant="primary", size="lg")
+    
+                    with gr.Column(scale=1):
+                        trans_out = gr.Textbox(label="Translated Text Output", lines=5)
+    
+                btn_trans_sample1.click(
+                    fn=lambda: "Apply Copper Oxychloride 50 WP at 3 grams per liter of water during clear sunny weather.",
+                    outputs=trans_text,
+                )
+                btn_trans_sample2.click(
+                    fn=lambda: "Avoid overhead irrigation and remove infected leaves from the field to stop spore germination.",
+                    outputs=trans_text,
+                )
+                trans_btn.click(fn=run_translation_gradio, inputs=[trans_text, trans_lang], outputs=trans_out)
+    
+            # ----------------------------------------------------------------------
+            # TAB 6: ⚡ API Reference & System Health
+            # ----------------------------------------------------------------------
+            with gr.Tab("⚡ API Reference & System Health"):
+                gr.Markdown(
+                    """
 ### Live Microservice Health & REST API Documentation
 This Space mounts a production FastAPI application alongside Gradio. 
 External applications (such as our Flutter Android App and React Web Dashboard) interact with these endpoints directly.
 """
-            )
-            with gr.Row():
-                with gr.Column(scale=1):
-                    check_btn = gr.Button("🏥 Inspect System Health & Loaded Models", variant="primary", size="lg")
-                    health_output = gr.JSON(label="Live Diagnostics Response")
-                    check_btn.click(fn=run_health_gradio, outputs=health_output)
-
-                with gr.Column(scale=1):
-                    gr.Markdown(
-                        """
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        check_btn = gr.Button("🏥 Inspect System Health & Loaded Models", variant="primary", size="lg")
+                        health_output = gr.JSON(label="Live Diagnostics Response")
+                        check_btn.click(fn=run_health_gradio, outputs=health_output)
+    
+                    with gr.Column(scale=1):
+                        gr.Markdown(
+                            """
 #### 🌐 Production REST Endpoints
 
 | Service | Endpoint Path | Method | Payload / Description |
@@ -795,10 +987,10 @@ External applications (such as our Flutter Android App and React Web Dashboard) 
 
 🔒 **Secure API Architecture**: Direct public Swagger browsing is disabled. Endpoints are consumed securely via authenticated backend calls and tested directly via the interactive studios above.
 """
-                    )
-
-            gr.Markdown(
-                """
+                        )
+    
+                gr.Markdown(
+                    """
 ---
 #### 💻 Developer Integration Examples
 
@@ -834,21 +1026,22 @@ curl -X POST https://maharsh8805-smart-farming-ai.hf.space/advisory/advise \\
      -d '{"crop": "Tomato", "disease": "Early Blight", "confidence": 0.94, "language": "gu"}'
 ```
 """
-            )
+                )
+    
 
         # Footer
-        gr.Markdown(
+        gr.HTML(
             """
----
-<div style="text-align: center; color: #64748b; font-size: 0.9rem;">
-🌾 <b>Smart Farming AI</b> &bull; Developed by <a href="https://huggingface.co/Maharsh8805" target="_blank">Maharsh Patel</a> &bull; 
-Powered by PyTorch, EfficientNet, YOLOv8, IndicTrans2 & Edge-TTS &bull; 
-Licensed under MIT
+<div style="text-align: center; color: #64748b; font-size: 0.9rem; padding: 24px 0 12px 0; border-top: 1px solid #e2e8f0; margin-top: 24px;">
+    🌾 <b>Smart Farming AI</b> &bull; Developed by <a href="https://huggingface.co/Maharsh8805" target="_blank" style="color: #059669; text-decoration: none; font-weight: 600;">Maharsh Patel</a> &bull; 
+    Powered by PyTorch, EfficientNet, YOLOv8, IndicTrans2 &amp; Edge-TTS &bull; 
+    Licensed under MIT
 </div>
 """
         )
 
     return demo
+
 
 
 demo = build_gradio_ui()
