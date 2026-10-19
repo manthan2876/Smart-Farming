@@ -423,32 +423,16 @@ def trigger_zerogpu_startup():
         logger.debug("ZeroGPU startup check notice: %s", exc)
 
 
-def load_readme_content() -> str:
-    """Loads and cleans the repository README.md for inline display."""
-    try:
-        readme_path = CURRENT_DIR / "README.md"
-        if readme_path.exists():
-            content = readme_path.read_text(encoding="utf-8")
-            if content.startswith("---"):
-                parts = content.split("---", 2)
-                if len(parts) >= 3:
-                    return parts[2].strip()
-            return content
-    except Exception as exc:
-        logger.warning("Could not load README.md for inline display: %s", exc)
-    return "### 📄 README documentation file could not be loaded."
-
-
 # ==============================================================================
 # Gradio Blocks UI Architecture
 # ==============================================================================
 
 
+
 CUSTOM_CSS = """
-/* Typography & Container */
+/* Clean Typography & Container */
 body, .gradio-container {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-    color: #1e293b !important;
 }
 
 /* Hide giant Gradio footer/watermark */
@@ -465,32 +449,31 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
 .hero-card {
     background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
     color: #ffffff !important;
-    padding: 28px 32px;
-    border-radius: 16px;
-    margin-bottom: 24px;
-    box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 26px 30px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px -4px rgba(6, 78, 59, 0.25);
 }
 
 .hero-card h1 {
     color: #ffffff !important;
-    font-size: 2.2rem !important;
+    font-size: 2.1rem !important;
     font-weight: 800 !important;
-    margin: 0 0 8px 0 !important;
+    margin: 0 0 6px 0 !important;
 }
 
 .hero-card h3 {
     color: #a7f3d0 !important;
     font-size: 1.05rem !important;
     font-weight: 500 !important;
-    margin: 0 0 16px 0 !important;
+    margin: 0 0 14px 0 !important;
 }
 
 .hero-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 16px 0;
+    margin: 14px 0;
 }
 
 .hero-pill {
@@ -521,61 +504,26 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
 }
 
 .hero-desc {
-    background: rgba(0, 0, 0, 0.25);
-    padding: 14px 18px;
-    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.22);
+    padding: 12px 16px;
+    border-radius: 8px;
     border-left: 4px solid #34d399;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    font-size: 0.93rem;
+    line-height: 1.55;
     color: #ecfdf5 !important;
-    margin-top: 14px;
+    margin-top: 12px;
 }
 
-/* Tabs Styling */
-div[role="tablist"] {
-    border-bottom: 2px solid #e2e8f0 !important;
-    gap: 6px !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    padding-bottom: 0 !important;
-}
-
-div[role="tablist"] button {
-    border: 1px solid #e2e8f0 !important;
-    border-bottom: none !important;
-    border-radius: 8px 8px 0 0 !important;
-    background: #f8fafc !important;
-    color: #475569 !important;
-    font-weight: 600 !important;
-    font-size: 0.92rem !important;
-    padding: 10px 18px !important;
-    transition: all 0.2s ease !important;
-}
-
-div[role="tablist"] button:hover {
-    background: #ecfdf5 !important;
-    color: #065f46 !important;
-}
-
-div[role="tablist"] button[aria-selected="true"], div[role="tablist"] button.selected {
-    background: #ffffff !important;
-    color: #047857 !important;
-    border-top: 3px solid #059669 !important;
-    border-bottom: 2px solid #ffffff !important;
-    margin-bottom: -2px !important;
-    font-weight: 700 !important;
-}
-
-/* Clean Professional Data Tables */
+/* Data Tables */
 .prose table, table {
     width: 100% !important;
     border-collapse: collapse !important;
-    margin: 18px 0 !important;
-    border-radius: 10px !important;
+    margin: 16px 0 !important;
+    border-radius: 8px !important;
     overflow: hidden !important;
     border: 1px solid #cbd5e1 !important;
     background: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
     display: table !important;
 }
 
@@ -586,7 +534,7 @@ div[role="tablist"] button[aria-selected="true"], div[role="tablist"] button.sel
     font-size: 0.84rem !important;
     text-transform: uppercase !important;
     letter-spacing: 0.04em !important;
-    padding: 12px 14px !important;
+    padding: 11px 14px !important;
     text-align: left !important;
     border: 1px solid #334155 !important;
 }
@@ -604,7 +552,7 @@ div[role="tablist"] button[aria-selected="true"], div[role="tablist"] button.sel
 }
 
 .prose td, td {
-    padding: 11px 14px !important;
+    padding: 10px 14px !important;
     font-size: 0.90rem !important;
     color: #334155 !important;
     vertical-align: middle !important;
@@ -663,26 +611,26 @@ def build_gradio_ui():
 """
         )
 
-        with gr.Tabs():
-            with gr.Tab("📋 Model Card & Space Overview"):
+        with gr.Tabs() as main_tabs:
+            # ----------------------------------------------------------------------
+            # TAB 1: 📋 Model Card & Space Overview
+            # ----------------------------------------------------------------------
+            with gr.Tab("📋 Model Card & Space Overview", id="tab_overview"):
                 gr.Markdown(
                     """
-## What is this Space About?
+## 🌾 Precision Agricultural AI Architecture
 
-**Smart Farming AI** is a production-grade artificial intelligence microservice engineered to protect crop yields 
-and eliminate linguistic barriers for smallholder farmers across India.
+Smart Farming AI is an enterprise-grade artificial intelligence microservice designed to protect crop yields and eliminate linguistic barriers for smallholder farmers across India.
 
-Every year, Indian agriculture loses up to **₹1.4 lakh crore (~$17 Billion)** to preventable crop diseases and insect pests. 
-Smallholder farmers face three main bottlenecks:
-1. **Delayed Diagnosis**: Crop infections are noticed only after significant visual damage occurs.
-2. **Language Barrier**: Scientific agronomic advisories and chemical pesticide labels are written in English or complex technical jargon.
-3. **Pesticide Overuse**: Guesswork leads to spraying incorrect, toxic chemicals that destroy soil microbiomes, accelerate pest resistance, and create severe financial debt.
-
-This Space solves these challenges by combining **Edge Computer Vision**, **ICAR/KVK Verified Agronomic Knowledge**, **AI4Bharat IndicTrans2 Machine Translation**, and **Neural Speech Synthesis**.
+### ⚠️ The Agricultural Challenge
+In India, smallholder farmers lose up to **₹1.4 lakh crore (~$17 Billion)** annually to preventable plant diseases and insect infestations:
+- **Delayed Diagnosis**: Crop infections are noticed only after significant visual damage occurs.
+- **Language Barrier**: Over 85% of scientific agronomic research and chemical product labels are published in English.
+- **Indiscriminate Chemical Use**: Guesswork leads to spraying incorrect chemical cocktails, accelerating pest resistance and causing severe debt.
 
 ---
 
-### 📋 Model Cards & Technical Architecture
+### 📋 Model Cards & Technical Specifications
 
 | Component | Architecture / Model | Parameters / Size | Input Resolution | Output / Core Function | Performance / Benchmark |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -698,8 +646,6 @@ This Space solves these challenges by combining **Edge Computer Vision**, **ICAR
 ---
 
 ### 🌿 Supported Crops & Disease Taxonomy Matrix (32 Conditions)
-
-This platform provides dedicated diagnostic classifiers for **5 major cash crops** and **32 unique disease & health conditions**:
 
 | Crop | Supported Disease & Health Categories | Model Architecture |
 | :--- | :--- | :--- |
@@ -733,24 +679,18 @@ This platform provides dedicated diagnostic classifiers for **5 major cash crops
 
 ---
 
-### 🚀 How to Explore This Space
+### 🚀 Interactive Studio Directory
 
-- **Tab 2 (📸 Vision Studio)**: Upload your own crop leaf photo or click a sample leaf to run the full diagnostic pipeline.
-- **Tab 3 (💡 Advisory Assistant)**: Generate ICAR/KVK-compliant chemical, organic, and preventive treatment plans with voice narration.
-- **Tab 4 (🔊 Neural Voice)**: Listen to regional Indian voice synthesis in Gujarati, Hindi, and English.
-- **Tab 5 (🇮🇳 Indic Translation)**: Test agricultural English-to-Indic translation via IndicTrans2.
-- **Tab 6 (⚡ API Reference)**: Review REST API specifications, curl commands, and check container health.
+Use the tabs above to explore each capability live:
+- **Tab 2 — 📸 Vision Diagnostic Studio**: Upload a leaf photo or select sample images to run the diagnostic pipeline.
+- **Tab 3 — 💡 Agronomic Advisory Assistant**: Generate ICAR/KVK-compliant chemical, organic, and preventive treatment plans with audio playback.
+- **Tab 4 — 🔊 Neural Regional Voice (TTS)**: Listen to regional Indian voice synthesis in Gujarati, Hindi, and English.
+- **Tab 5 — 🇮🇳 IndicTrans2 Translation**: Test agricultural English-to-Indic translation via IndicTrans2.
+- **Tab 6 — ⚡ API Reference & System Health**: Check container health, review REST API endpoints, and test copy-paste curl commands.
 """
                 )
-    
-                # Embedded Space README viewer
-                with gr.Accordion("📄 View Complete Space README & Technical Documentation", open=False):
-                    gr.Markdown(load_readme_content())
-    
-            # ----------------------------------------------------------------------
-            # TAB 2: 📸 Vision Diagnostic Studio
-            # ----------------------------------------------------------------------
-            with gr.Tab("📸 Vision Diagnostic Studio"):
+
+            with gr.Tab("📸 Vision Diagnostic Studio", id="tab_vision"):
                 gr.Markdown(
                     """
 ### Multi-Stage Computer Vision Leaf Diagnosis
@@ -788,7 +728,7 @@ The pipeline automatically runs **OpenCV quality validation**, **crop species id
             # ----------------------------------------------------------------------
             # TAB 3: 💡 Agronomic Advisory Assistant
             # ----------------------------------------------------------------------
-            with gr.Tab("💡 Agronomic Advisory Assistant"):
+            with gr.Tab("💡 Agronomic Advisory Assistant", id="tab_advisory"):
                 gr.Markdown(
                     """
 ### Evidence-Grounded Agronomic Decision Engine
@@ -856,7 +796,7 @@ biological treatments, prevention practices, and field monitoring instructions i
             # ----------------------------------------------------------------------
             # TAB 4: 🔊 Neural Regional Voice (TTS)
             # ----------------------------------------------------------------------
-            with gr.Tab("🔊 Neural Regional Voice (TTS)"):
+            with gr.Tab("🔊 Neural Regional Voice (TTS)", id="tab_tts"):
                 gr.Markdown(
                     """
 ### Indian Regional Neural Speech Synthesis
@@ -916,7 +856,7 @@ guidance in their native dialect. Powered by Microsoft Neural Regional Voices (`
             # ----------------------------------------------------------------------
             # TAB 5: 🇮🇳 IndicTrans2 Translation
             # ----------------------------------------------------------------------
-            with gr.Tab("🇮🇳 IndicTrans2 Translation"):
+            with gr.Tab("🇮🇳 IndicTrans2 Translation", id="tab_translation"):
                 gr.Markdown(
                     """
 ### AI4Bharat IndicTrans2 Translation Engine
@@ -958,7 +898,7 @@ from English into native Indian languages (**Hindi** and **Gujarati**).
             # ----------------------------------------------------------------------
             # TAB 6: ⚡ API Reference & System Health
             # ----------------------------------------------------------------------
-            with gr.Tab("⚡ API Reference & System Health"):
+            with gr.Tab("⚡ API Reference & System Health", id="tab_api"):
                 gr.Markdown(
                     """
 ### Live Microservice Health & REST API Documentation
@@ -1029,6 +969,7 @@ curl -X POST https://maharsh8805-smart-farming-ai.hf.space/advisory/advise \\
                 )
     
 
+
         # Footer
         gr.HTML(
             """
@@ -1041,6 +982,7 @@ curl -X POST https://maharsh8805-smart-farming-ai.hf.space/advisory/advise \\
         )
 
     return demo
+
 
 
 
