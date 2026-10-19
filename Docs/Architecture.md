@@ -41,10 +41,10 @@ The system is architected around five core tenets:
 
 | Tenet | Implementation |
 |---|---|
-| **Diagnostic Accuracy** | Multi-stage vision ensemble (DeepLabV3+ leaf segmentation, DenseNet-121 disease classification, YOLOv8-nano pest detection) with automatic uncertainty escalation to human experts |
+| **Diagnostic Accuracy** | 7-stage vision ensemble (OpenCV quality gate, EfficientNet-B0 crop classifier, dedicated per-crop EfficientNet-B2 disease classifiers across 32 conditions, adaptive HSV lesion severity calculation, and Ultralytics YOLOv8-nano pest detection) with automatic uncertainty escalation to human experts |
 | **Decoupled Serverless Scalability** | Lean API gateway hosted on Render web service paired with a consolidated AI microservice deployed on Hugging Face Spaces (running Gradio 5.16+ and FastAPI on port `7860`) |
 | **Complete Traceability** | Every diagnostic inference carries an immutable `provenance` block recording exact model versions, weights hash, latency breakdown, and fallback flags |
-| **Multilingual Native Experience** | Trilingual end-to-end interface: UI dictionaries (670+ keys), AI4Bharat IndicTrans2 dist-200M translation, and Microsoft Edge-TTS neural speech synthesis (Dhwani, Swara, Neerja) |
+| **Multilingual Native Experience** | Trilingual end-to-end interface: UI dictionaries (670+ keys), zero-hang IndicTrans2 translation (pre-warmed 400+ phrase cache), and Microsoft Edge-TTS neural speech synthesis (Dhwani, Swara, Neerja) with full 4-point advisory narration |
 | **Storage & Data Abstraction** | Production-default Supabase Object Storage with time-bounded signed URLs (15-min expiry) alongside pluggable S3 and local disk backends |
 
 ---
@@ -66,10 +66,10 @@ flowchart TD
         direction TB
         HF_SPACE["Space: Maharsh8805/smart-farming-ai\nPort 7860 · ZeroGPU / CPU Runtime\nGradio 5.16+ Demo UI & Docs\nFastAPI Subroute Dispatcher"]
         
-        VISION["/vision/predict\n7-Stage Vision Pipeline\nResNet/MobileNet · DeepLabV3+\nDenseNet-121 · YOLOv8-nano"]
-        TRANS["/translation/translate\nAI4Bharat IndicTrans2 dist-200M\nEN ↔ HI, GU Regional Translation"]
-        ADV["/advisory/advise\nQwen2.5-1.5B Local / Groq Llama-3.3-70B\nGemini 2.5 Flash Fallback + ICAR/KVK KB"]
-        TTS["/tts/synthesize\nMicrosoft Edge-TTS Neural\nhi-IN-Swara · gu-IN-Dhwani · en-IN-Neerja"]
+        VISION["/vision/predict (alias: /predict)\n7-Stage Vision Pipeline\nOpenCV Quality Gate · EfficientNet-B0\nDedicated EfficientNet-B2 · YOLOv8-nano"]
+        TRANS["/translation/translate (alias: /translate)\nMulti-Tier Zero-Hang Translation\nDomain Cache · Groq · IndicTrans2-dist-200M"]
+        ADV["/advisory/advise (alias: /advise)\nDeterministic ICAR/KVK Knowledge Base\n32 Conditions · Optional Groq Llama-3.3-70B"]
+        TTS["/tts/synthesize (alias: /synthesize)\nMicrosoft Edge-TTS Neural\nhi-IN-Swara · gu-IN-Dhwani · en-IN-Neerja\nFull 4-Point Advisory Narration"]
 
         HF_SPACE --> VISION
         HF_SPACE --> TRANS
@@ -227,15 +227,15 @@ AI_SERVICE_URL: str = "https://maharsh8805-smart-farming-ai.hf.space"
 
 All subroute URLs are automatically derived via Pydantic model validators:
 
-| Service Subroute | Derived Endpoint | Responsibility |
-|---|---|---|
-| `MODEL_SERVER_URL` | `{AI_SERVICE_URL}/vision` | Crop identification, leaf segmentation, disease classification, pest detection |
-| `TRANSLATION_SERVER_URL` | `{AI_SERVICE_URL}/translation` | IndicTrans2 translation (English $\to$ Hindi, Gujarati) |
-| `ADVISORY_SERVER_URL` | `{AI_SERVICE_URL}/advisory` | Agronomic advice generation via local Qwen2.5 or Groq Llama-3.3-70B |
-| `TTS_SERVER_URL` | `{AI_SERVICE_URL}/tts` | Microsoft Edge-TTS neural speech synthesis |
+| Service Subroute | Derived Endpoint | Direct Alias | Responsibility |
+|---|---|---|---|
+| `MODEL_SERVER_URL` | `{AI_SERVICE_URL}/vision` | `/predict` | Quality gate, crop identification, per-crop disease diagnosis, severity, pest detection |
+| `TRANSLATION_SERVER_URL` | `{AI_SERVICE_URL}/translation` | `/translate` | IndicTrans2 translation (English $\to$ Hindi, Gujarati) with multi-tier zero-hang cache |
+| `ADVISORY_SERVER_URL` | `{AI_SERVICE_URL}/advisory` | `/advise` | Grounded agronomic advisory via `advisory_kb.json` (32 conditions) & Groq Llama-3.3-70B |
+| `TTS_SERVER_URL` | `{AI_SERVICE_URL}/tts` | `/synthesize` | Microsoft Edge-TTS neural speech synthesis (Dhwani, Swara, Neerja) |
 
 > [!NOTE]
-> The configuration validator automatically detects and purges any legacy tunnel patterns (such as `trycloudflare.com`, `workers.dev`, or `ngrok`), ensuring traffic always routes to the consolidated Hugging Face Space.
+> The configuration validator automatically detects and purges any legacy tunnel patterns (such as `trycloudflare.com`, `workers.dev`, or `ngrok`), ensuring traffic always routes to the consolidated Hugging Face Space. Direct root aliases (`/predict`, `/translate`, `/advise`, `/synthesize`) are exposed at the FastAPI root for zero-overhead routing.
 
 ---
 
@@ -245,23 +245,23 @@ Located in `ai_service/vision_engine/`:
 
 ```mermaid
 flowchart LR
-    RAW["📷 Raw Leaf Image"] --> STG1["1. Preprocessing\nValidation & Normalization"]
-    STG1 --> STG2["2. Crop Identifier\nResNet-50 / MobileNetV3"]
-    STG2 --> STG3["3. Leaf Isolator\nDeepLabV3+ Segmentation"]
-    STG3 --> STG4["4. Disease Classifier\nDenseNet-121 (Per-Crop)"]
-    STG3 --> STG5["5. Severity Masking\nHSV Contour & Area Ratio"]
-    STG3 --> STG6["6. Pest Detector\nYOLOv8-nano"]
-    STG4 & STG5 & STG6 --> STG7["7. Decision Router\nConfidence Gating & Escalation"]
+    RAW["📷 Raw Leaf Image"] --> STG1["1. Quality Gate\nOpenCV Blur & Lighting"]
+    STG1 --> STG2["2. Crop Identifier\nEfficientNet-B0 (5 Crops)"]
+    STG2 --> STG3["3. Decision Router\nConfidence Gating (0.70)"]
+    STG3 --> STG4["4. Disease Classifier\nDedicated EfficientNet-B2 (x5)"]
+    STG3 --> STG5["5. Severity Masking\nAdaptive HSV (<15%, 15-40%, >40%)"]
+    STG3 --> STG6["6. Pest Detector\nUltralytics YOLOv8-nano"]
+    STG4 & STG5 & STG6 --> STG7["7. Advisory & Synthesis\nICAR/KVK KB + IndicTrans2 + Edge-TTS"]
     STG7 --> OUT["📋 Vision Diagnostic Result"]
 ```
 
-1. **Preprocessing (`preprocessing.py`):** Binary verification, aspect ratio preservation, RGB normalization.
-2. **Crop Identifier (`crop_identifier.py`):** Classifies crop type (Cotton, Groundnut, Pepper Bell, Potato, Tomato).
-3. **Leaf Isolator (`leaf_isolator.py`):** DeepLabV3+ segmentation removes background clutter (soil, hands, sky).
-4. **Disease Classifier (`disease_classifier.py`):** DenseNet-121 multi-class classification for the isolated leaf.
-5. **Severity Masking (`severity.py`):** Calculates diseased leaf tissue percentage and assigns severity bucket (Healthy, Mild, Moderate, Severe).
-6. **Pest Detector (`pest_detector.py`):** YOLOv8-nano identifies common agricultural pests (Aphid, Army Worm, Leaf Miner, Spider Mite).
-7. **Decision Router (`decision_router.py`):** Checks confidence against thresholds (`0.70`). If confidence is below threshold, marks `escalation_required: true`.
+1. **Quality Gate & Preprocessing (`preprocessing.py`):** Binary integrity verification, Laplacian variance sharpness check (`blur_var > 50`), mean luminance check (`40–240`), and greenness/leaf ROI verification. Rejects unreadable inputs before neural computation.
+2. **Crop Identifier (`crop_identifier.py`):** EfficientNet-B0 multi-class classifier identifying the crop species across 5 major Indian cash crops (Tomato, Potato, Cotton, Groundnut, Pepper Bell) with 99.2% Top-1 accuracy.
+3. **Decision Router (`decision_router.py`):** Evaluates crop identification confidence against the configured threshold (`0.70`). Routes the leaf to the dedicated crop model or marks for agronomist review if ambiguous.
+4. **Disease Classifier (`disease_classifier.py`):** Dedicated per-crop EfficientNet-B2 classifiers (5 models) evaluating 32 specific disease and healthy conditions with temperature-calibrated probabilities. Predictions below `0.70` are flagged for expert escalation.
+5. **Severity Masking (`severity.py`):** Adaptive HSV color segmentation measuring the exact percentage of affected leaf surface area and categorizing infection into standardized tiers (`Healthy 0%`, `Low <15%`, `Medium 15–40%`, `High >40%`).
+6. **Pest Detector (`pest_detector.py`):** Ultralytics YOLOv8-nano multi-class pest detector identifying agricultural insect damage (Aphid, Army Worm, Leaf Miner, Spider Mite) with graceful degradation when weights are omitted.
+7. **Agronomic Advisory & Regional Synthesis:** Deterministic ICAR/KVK agronomic advisory knowledge base (`advisory_kb.json`, 32 conditions) with optional Groq Llama-3.3-70B synthesis, multi-tier zero-hang translation (IndicTrans2 dist-200M), and Microsoft Edge-TTS full 4-point neural narration.
 
 ---
 
@@ -488,7 +488,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph GIT["GitHub Repository (Smart-Farming)"]
+    subgraph GIT["GitHub Repository (manthan2876/Smart-Farming)"]
         MAIN["Branch: main"]
     end
 
@@ -519,7 +519,7 @@ flowchart TD
 
 ### Reliability & Resilient Fallbacks
 - **Graceful Vision Degradation:** If optional pest detection weights (`pest_classifier.pt`) are unmounted, the pipeline gracefully skips the stage and continues.
-- **Advisory Fallback Chain:** Local Qwen2.5 $\to$ Groq Llama-3.3-70B $\to$ Google Gemini 2.5 Flash $\to$ Deterministic ICAR/KVK rulebook.
+- **Advisory Fallback Chain:** Deterministic `advisory_kb.json` (32 verified conditions) $\to$ Groq Llama-3.3-70B $\to$ Google Gemini 2.5 Flash $\to$ Local in-memory LLM.
 - **Audio Caching & Resiliency:** Audio files are cached by SHA-256 hash in local storage and mirrored to Supabase Storage, preventing repetitive re-generation.
 
 ### Geographic Reference
@@ -533,5 +533,7 @@ flowchart TD
 ---
 
 *AI-Powered Smart Farming — Architecture & System Design Reference*  
-*Last Updated: 19 October 2026*  
-*Maintained by the Smart Farming Engineering Team*
+*Lead Developer & Model Architect: Manthan Kuvadiya*  
+*Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
+*Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
+*Last Updated: 19 October 2026*

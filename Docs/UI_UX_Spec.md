@@ -548,5 +548,8 @@ Activated when tapping "Draw Boundary" for a farm or plot in `FarmScreen`.
 
 ---
 
-*AI-Powered Smart Farming — Documentation*  
+*AI-Powered Smart Farming — UI/UX Specification Reference*  
+*Lead Developer & Model Architect: Manthan Kuvadiya*  
+*Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
+*Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
 *Last Updated: 19 October 2026*

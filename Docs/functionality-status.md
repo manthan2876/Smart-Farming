@@ -35,10 +35,10 @@ The core AI diagnosis pipeline supports two execution modes controlled by `REQUI
 1. The user uploads a JPEG, PNG, or WebP leaf image via `POST /predict`.
 2. The backend validates the content-type and extension, verifies the file bytes with PIL `Image.verify()` (binary magic-byte check), hashes the image, and checks the Upstash Redis REST dedup cache (`sf:dedup:{hash}`, 24 h TTL). A cached completed result is returned immediately (<20ms).
 3. The image is saved to the active storage backend (**Supabase Object Storage** `smart-farming-data-dev` with 15-minute signed URLs in production, or AWS S3 / local disk).
-4. `run_pipeline()` is called **synchronously** in the request: calls the consolidated AI microservice on Hugging Face Spaces (`https://maharsh8805-smart-farming-ai.hf.space`, port 7860), runs the 7-stage vision pipeline (preprocessing → crop identification → leaf isolation → disease classification → severity estimation → pest detection → decision routing), then persists findings to Supabase Managed PostgreSQL.
+4. `run_pipeline()` is called **synchronously** in the request: calls the consolidated AI microservice on Hugging Face Spaces (`https://maharsh8805-smart-farming-ai.hf.space`, port 7860), runs the 7-stage vision pipeline (OpenCV quality gate & preprocessing → EfficientNet-B0 crop classifier → decision router → dedicated per-crop EfficientNet-B2 disease diagnosis across 32 conditions → adaptive HSV severity estimation & YOLOv8-nano pest detection → ICAR/KVK grounded agronomic advisory → zero-hang translation & Edge-TTS neural speech synthesis), then persists findings to Supabase Managed PostgreSQL.
 5. Live ambient weather is enriched via OpenWeatherMap (cached for 30 minutes in Upstash under `sf:weather:{lat}:{lon}`).
-6. An agronomic advisory recommendation is generated via Qwen2.5-1.5B local in-memory or Groq Llama-3.3-70B, validated against ICAR/KVK regional practice rules (`advisory_kb.json`).
-7. The completed result is saved to Upstash Redis REST dedup cache and returned immediately in the HTTP response. `FastAPI BackgroundTasks` pre-translates the recommendation into Hindi and Gujarati using IndicTrans2 dist-200M, storing them in the `entity_translations` table for instant future lookups.
+6. An agronomic advisory recommendation is generated via the grounded deterministic ICAR/KVK knowledge base (`advisory_kb.json`, 32 conditions across 5 crops with zero-latency CPU execution) or Groq Llama-3.3-70B cloud acceleration.
+7. The completed result is saved to Upstash Redis REST dedup cache and returned immediately in the HTTP response. `FastAPI BackgroundTasks` pre-translates the recommendation into Hindi and Gujarati using the multi-tiered zero-hang IndicTrans2 translation engine (Tier 1 400+ domain cache, Tier 2 sentence-level splitting, Tier 3 Groq LLM, Tier 4 Google Translate 3.5s timeout, Tier 5 greedy Seq2Seq decoding), storing them in the `entity_translations` table for instant future lookups.
 8. If disease or crop confidence is below the configured threshold (`0.70`), `ensure_expert_review()` automatically creates a pending expert-review record.
 
 **ARQ worker mode (`REQUIRE_REDIS=True`):**
@@ -232,8 +232,8 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 
 **What works:**
 
-- Estimates the fraction of the leaf affected using HSV-based color segmentation contours (OpenCV heuristic).
-- Returns `percent` (0–100) and a standardized severity `bucket`: Healthy (0%), Mild (< 20%), Moderate (20%–50%), and Severe (> 50%).
+- Estimates the fraction of the leaf affected using adaptive HSV color segmentation (OpenCV heuristic).
+- Returns `percent` (0–100) and a standardized severity `bucket`: Healthy (0%), Low (< 15%), Medium (15%–40%), and High (> 40%).
 - Suppresses false lesion contours when the disease classifier confidently detects healthy leaves, returning 0% severity and "Healthy" bucket.
 - Produces a JET colormap Grad-CAM / overlay visualization artifact.
 - Severity percent is stored in `prediction.severity_pct` and bucket in `prediction.severity_bucket`.
@@ -1251,14 +1251,15 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 **What works:**
 
 - `TtsService` is a singleton `ChangeNotifier`.
-- Primary: Google Cloud TTS via backend `POST /tts`. Returns MP3 audio as base64; decoded and played with `audioplayers`. Voice selection is handled server-side.
+- Primary: Microsoft Edge-TTS Neural voice engine (`gu-IN-DhwaniNeural`, `hi-IN-SwaraNeural`, `en-IN-NeerjaNeural`) via AI microservice `POST /tts` (with Google Cloud fallback). Returns studio audio decoded and played with `audioplayers`. Voice selection is handled server-side.
+- Full 4-point advisory narration: narrates immediate action, recommended treatment with dilution dosage, long-term prevention, field monitoring, and safety disclaimer.
 - Fallback: `flutter_tts` on-device engine. If `gu` locale is unavailable, tries `hi-IN`, then `en-US`.
 - `cleanText()` strips markdown (bold, italic, headers, bullet syntax) before TTS.
 - `DomainTranslations.normalizeLang()` maps language names/codes to normalized codes (`en`, `hi`, `gu`).
 - Per-item play/loading state tracked by string ID (`isItemPlaying(id)`, `isItemLoading(id)`).
-- `toggle(id, text, langCode, {api})` — play if not playing, stop if playing the same item, switch if playing different item. The optional `api` parameter is required to use the Google Cloud path; omitting it forces on-device fallback.
+- `toggle(id, text, langCode, {api})` — play if not playing, stop if playing the same item, switch if playing different item. The optional `api` parameter is required to use the cloud path; omitting it forces on-device fallback.
 - TTS is used in `ResultDetailSheet` (full recommendation) and `WeatherScreen` (advisory). Web `WeatherPage` also uses TTS via `POST /tts`.
-- Backend `tts.py` caches audio by `sha256(lang_code + text)` in `data/audio/*.mp3`. Cache hit returns the file without calling Google API.
+- Backend `tts.py` caches audio by `sha256(lang_code + text)` in `data/audio/*.mp3` and mirrors to Supabase Object Storage. Cache hit returns the file immediately without re-synthesis.
 
 **Relevant code:**
 
@@ -1596,5 +1597,8 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 
 ---
 
-*AI-Powered Smart Farming — Documentation*  
+*AI-Powered Smart Farming — Functionality Status Reference*  
+*Lead Developer & Model Architect: Manthan Kuvadiya*  
+*Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
+*Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
 *Last Updated: 19 October 2026*

@@ -53,10 +53,10 @@ The Smart Farming backend is an AI-powered crop disease detection and agronomic 
 | **Entity Translations** | Supabase PostgreSQL table | Pre-computed multilingual advisory translations (`entity_translations`) |
 | **Object Storage** | Supabase Object Storage | Bucket `smart-farming-data-dev` with 15-min signed URLs (fallback: AWS S3 / Local) |
 | **Real-time Streaming** | WebSocket | `/ws/predictions/{id}` |
-| **Vision Diagnostics** | DeepLabV3+, DenseNet-121, YOLOv8-nano | 7-stage vision pipeline in `ai_service/vision_engine` |
-| **Text-to-Speech** | Microsoft Edge-TTS Neural | High-fidelity voice synthesis (`hi-IN-Swara`, `gu-IN-Dhwani`, `en-IN-Neerja`) |
-| **Translation** | AI4Bharat IndicTrans2 dist-200M | High-speed regional translation (`TRANSLATION_SERVER_URL`) |
-| **Agronomic Advisory** | Qwen2.5-1.5B / Groq Llama-3.3-70B | Local in-memory LLM + Groq API + Gemini 2.5 Flash fallback + ICAR/KVK KB |
+| **Vision Diagnostics** | EfficientNet-B0, Dedicated EfficientNet-B2 (5 crops, 32 conditions), Adaptive HSV, YOLOv8-nano | 7-stage vision pipeline in `ai_service/vision_engine` |
+| **Text-to-Speech** | Microsoft Edge-TTS Neural | High-fidelity voice synthesis (`hi-IN-Swara`, `gu-IN-Dhwani`, `en-IN-Neerja`) with full 4-point advisory narration |
+| **Translation** | AI4Bharat IndicTrans2 dist-200M | Multi-tier zero-hang regional translation (`/translation/translate` and `/translate`) |
+| **Agronomic Advisory** | Grounded ICAR/KVK Knowledge Base (`advisory_kb.json`) + Groq Llama-3.3-70B | Deterministic zero-latency advisory (32 conditions) with Groq cloud acceleration |
 
 ---
 
@@ -505,17 +505,17 @@ Validation and processing steps occur in the following order:
 | 1. File size | Maximum 10 MB |
 | 2. Magic-byte check | JPEG, PNG, or WebP only — validated via `PIL.Image.verify()` before saving |
 | 3. Deduplication | Upstash Redis REST lookup at `sf:dedup:{hash_val}` — rejects duplicate submissions |
-| 4. GCS upload | Original image saved to Cloud Storage |
-| 5. Blur / lighting / leaf | Image must not be blurry, must have adequate exposure, and contain a detectable leaf region |
+| 4. Storage upload | Original image saved to Supabase Object Storage (`smart-farming-data-dev`) |
+| 5. Blur / lighting / leaf | Image must not be blurry (Laplacian var > 50), must have adequate exposure (luminance 40–240), and contain a detectable leaf region |
 
 #### Form Fields
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `file` | file | ✅ | Leaf image (JPEG / PNG / WebP, max 10 MB) |
-| `location` | string | ❌ | Human-readable location string |
-| `lat` | float | ❌ | Latitude for weather correlation. Defaults to `52.2297` (Warsaw) when omitted — a known dev artifact |
-| `lon` | float | ❌ | Longitude for weather correlation. Defaults to `21.0122` (Warsaw) when omitted |
+| `location` | string | ❌ | Human-readable location string (default: `"Gujarat, India"`) |
+| `lat` | float | ❌ | Latitude for weather correlation. Defaults to `21.7645` (Gujarat, India) when omitted |
+| `lon` | float | ❌ | Longitude for weather correlation. Defaults to `72.1519` (Gujarat, India) when omitted |
 | `language` | string | ❌ | Override user's default language for this result |
 | `plot_id` | integer | ❌ | Associate scan with a specific farm plot |
 
@@ -1887,9 +1887,9 @@ Marks a specific alert as read.
 
 ---
 
-## 15. TTS Endpoint
+## 15. TTS Endpoints
 
-### 15.1 Generate Speech Audio
+### 15.1 Backend Gateway Speech Synthesis
 
 ```
 POST /tts
@@ -1898,6 +1898,7 @@ POST /tts
 Synthesizes high-fidelity spoken audio from text using the Microsoft Edge-TTS Neural engine (`hi-IN-SwaraNeural`, `gu-IN-DhwaniNeural`, `en-IN-NeerjaNeural`) via the unified AI microservice.
 
 **Features:**
+- **Full 4-Point Narration:** Narrates the complete agronomic advisory sequence (Immediate Action, Recommended Treatment, Long-term Prevention, Field Monitoring, and Statutory Safety Disclaimer).
 - **Auto-Translation Guard:** If the user requests Gujarati or Hindi speech, but incoming text is in English, the endpoint automatically pre-translates the text into the target Indic script before synthesis.
 - **Number & Decimal Expansion:** Numbers, percentages, and decimals are automatically converted into regional words (via `tts_normalizer.py`) for natural cadence.
 - **Dual Caching:** Synthesized audio is cached locally by SHA-256 hash (`audio/{hash}.wav`) and mirrored to **Supabase Object Storage**, ensuring sub-20ms latency on repeat calls.
@@ -1930,17 +1931,37 @@ Synthesizes high-fidelity spoken audio from text using the Microsoft Edge-TTS Ne
 }
 ```
 
+### 15.2 AI Microservice Direct Speech Synthesis
+
+```
+POST /tts/synthesize
+POST /synthesize  (Direct Alias)
+```
+
+Direct microservice endpoint on the Hugging Face Space (`port 7860`).
+
+#### Request Body (`application/json`)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `text` | string | ✅ | Text string to synthesize |
+| `language` | string | ❌ | `"gu"` (default voice: `gu-IN-DhwaniNeural`), `"hi"` (`hi-IN-SwaraNeural`), or `"en"` (`en-IN-NeerjaNeural`). Default: `"gu"`. |
+| `speaker` | string | ❌ | `"female"` (default) or `"male"` |
+
+#### Response `200 OK`
+Returns audio payload (`audio/mpeg` binary streaming or JSON base64 audio response depending on `Accept` header).
+
 ---
 
-## 16. Translation Endpoint
+## 16. Translation Endpoints
 
-### 16.1 Translate Prediction Recommendation & Expert Guidance
+### 16.1 Translate Prediction Recommendation & Expert Guidance (Backend Gateway)
 
 ```
 POST /predictions/{prediction_id}/translate?target_language={lang}
 ```
 
-Translates the diagnostic advisory and expert guidance for a prediction on-demand using AI4Bharat IndicTrans2 (`ai4bharat/indictrans2-en-indic-dist-200M`) on the AI microservice.
+Translates the diagnostic advisory and expert guidance for a prediction on-demand using the AI microservice's zero-hang multi-tiered translation engine.
 
 **Features:**
 - **Zero-Latency In-Memory Cache:** If already translated, returns immediately from `prediction.result["translations"][target_code]`.
@@ -1981,9 +2002,60 @@ Translates the diagnostic advisory and expert guidance for a prediction on-deman
 }
 ```
 
+### 16.2 AI Microservice Zero-Hang Translation Service
+
+```
+POST /translation/translate
+POST /translate  (Direct Alias)
+```
+
+Direct microservice endpoint running on Hugging Face Spaces. Engineered with a **5-tier zero-hang architecture** to eliminate translation timeouts:
+- **Tier 1 (Instant Domain Cache):** 400+ pre-warmed verified agricultural phrase pairs in Hindi & Gujarati (0 ms latency).
+- **Tier 2 (Sentence-Level Splitting & Cache Reassembly):** Paragraphs are split into individual sentences, cached clauses are translated instantly, and only novel segments are routed to higher tiers.
+- **Tier 3 (Groq LLM Acceleration):** High-speed cloud synthesis when `GROQ_API_KEY` is present (~200ms).
+- **Tier 4 (Public Google Translate Fallback):** Robust 3.5s timeout via `urllib`/`httpx` ensuring non-blocking execution under CPU constraints.
+- **Tier 5 (Optimized IndicTrans2):** Open Hugging Face checkpoint (`Raghavan/indictrans2-en-indic-dist-200M` / `ai4bharat/indictrans2-en-indic-dist-200M`) executed with greedy decoding (`num_beams=1`, `use_cache=True`, `max_new_tokens=128`).
+
+#### Request Body (`application/json`)
+
+Flexible schema supporting `texts`, `target`, `target_lang`, and `language`:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `texts` | list[string] | ✅ | Array of English strings to translate |
+| `target` | string | ❌ | Target language code: `"hi"` or `"gu"` (default: `"hi"`) |
+| `target_lang` | string | ❌ | Alias for `target` |
+| `language` | string | ❌ | Alias for `target` |
+
+#### Example Request
+
+```json
+{
+  "texts": [
+    "Prune infected branches 2 inches below the visible canker.",
+    "Spray Mancozeb at 2.5 grams per liter of water."
+  ],
+  "target": "gu"
+}
+```
+
+#### Example Response `200 OK`
+
+```json
+{
+  "translated_texts": [
+    "દેખીતા કેન્કરની નીચે 2 ઇંચ ચેપગ્રસ્ત ડાળીઓ કાપો.",
+    "પ્રતિ લિટર પાણીમાં 2.5 ગ્રામ મેન્કોઝેબનો છંટકાવ કરો."
+  ],
+  "source_language": "en",
+  "target_language": "gu",
+  "cached": true
+}
+```
+
 ---
 
-### 16.2 Static & Cloud Media Streaming
+### 16.3 Static & Cloud Media Streaming
 
 ```
 GET /data/{file_path:path}
@@ -2144,7 +2216,7 @@ Lists all registered model types and their current production versions.
       "current_version": "v2.1",
       "promoted_at": "2026-09-22T16:00:00Z",
       "run_id": "run-2026-09-20-001",
-      "architecture": "DiseaseNet-v2"
+      "architecture": "EfficientNet-B2"
     }
   ]
 }
@@ -2152,15 +2224,15 @@ Lists all registered model types and their current production versions.
 
 ---
 
-## 18. Health Endpoint
+## 18. Health & Telemetry Endpoints
 
-### 18.1 System Health Check
+### 18.1 Backend Gateway Health Check
 
 ```
 GET /health
 ```
 
-Returns the health status of all system components. Can be used for uptime monitoring and readiness probes.
+Returns the health status of all backend components. Used for Render web service uptime monitoring and readiness probes.
 
 **Authentication:** None required.
 
@@ -2169,15 +2241,57 @@ Returns the health status of all system components. Can be used for uptime monit
 ```json
 {
   "status": "healthy",
-  "timestamp": "2026-09-22T16:07:55Z",
+  "timestamp": "2026-10-19T16:07:55Z",
   "components": {
     "database": "healthy",
     "redis": "healthy",
-    "worker": "healthy",
-    "storage": "healthy"
+    "storage": "healthy",
+    "ai_service": "healthy"
   }
 }
 ```
+
+### 18.2 AI Microservice Health & Model Telemetry
+
+```
+GET https://maharsh8805-smart-farming-ai.hf.space/health
+```
+
+Direct health check on the Hugging Face AI microservice container.
+
+**Authentication:** None required.
+
+#### Example Response `200 OK`
+
+```json
+{
+  "status": "healthy",
+  "service": "smart-farming-ai-microservice",
+  "runtime": "CPU / ZeroGPU",
+  "models_loaded": {
+    "crop_identifier": true,
+    "disease_classifiers": 5,
+    "pest_detector": true,
+    "translation_indictrans2": true,
+    "edge_tts": true
+  },
+  "uptime_seconds": 8420
+}
+```
+
+---
+
+## 18.5 Unified AI Microservice Endpoints Reference
+
+The AI microservice (`https://maharsh8805-smart-farming-ai.hf.space`, port `7860`) exposes both subroute paths and direct root aliases:
+
+| Microservice Path | Direct Root Alias | Method | Request Payload | Output / Responsibility |
+|---|---|---|---|---|
+| `/vision/predict` | `/predict` | `POST` | `multipart/form-data` (`file`) | 7-stage vision pipeline diagnostic report |
+| `/advisory/advise` | `/advise` | `POST` | `application/json` (`crop`, `disease`, `confidence`, `language`) | Grounded ICAR/KVK treatment recommendations |
+| `/translation/translate` | `/translate` | `POST` | `application/json` (`texts`, `target`) | Multi-tier zero-hang Hindi/Gujarati translation |
+| `/tts/synthesize` | `/synthesize` | `POST` | `application/json` (`text`, `language`, `speaker`) | Microsoft Edge-TTS neural speech audio |
+| `/health` | `/health` | `GET` | None | Container health, loaded models, uptime |
 
 #### Degraded Response `503 Service Unavailable`
 
@@ -2415,5 +2529,8 @@ Boundary fields accept a standard GeoJSON Polygon geometry object:
 
 ---
 
-*AI-Powered Smart Farming — Documentation*  
+*AI-Powered Smart Farming — Backend & AI Microservice API Specification*  
+*Lead Developer & Model Architect: Manthan Kuvadiya*  
+*Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
+*Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
 *Last Updated: 19 October 2026*

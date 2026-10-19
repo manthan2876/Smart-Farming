@@ -285,5 +285,8 @@ if target_user.role == "admin" AND admin_count == 1 AND new_role != "admin":
 
 ---
 
-*AI-Powered Smart Farming — Documentation*  
+*AI-Powered Smart Farming — Authentication & Roles Reference*  
+*Lead Developer & Model Architect: Manthan Kuvadiya*  
+*Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
+*Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
 *Last Updated: 19 October 2026*

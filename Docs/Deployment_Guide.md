@@ -65,7 +65,7 @@ A modern, highly decoupled, and cost-effective multi-cloud architecture:
                 ┌──────────────┘           │           │ 5432    │
      ┌──────────▼───────────────┐   ┌──────▼───────┐ ┌─▼───────┐ ┌▼──────────────┐
      │ Hugging Face Spaces      │   │ Supabase     │ │ Supabase│ │ Upstash       │
-     │ Maharsh8805/smart-farming│   │ Object Store │ │ Postgres│ │ Redis REST    │
+     │ Maharsh8805/smart-farm-ai│   │ Object Store │ │ Postgres│ │ Redis REST    │
      │ Port 7860 · Gradio + API │   │ Bucket: data │ │ Pooler  │ │ Serverless    │
      └──────────────────────────┘   └──────────────┘ └─────────┘ └───────────────┘
 ```
@@ -477,5 +477,7 @@ For private on-premise deployments or air-gapped field servers:
 ---
 
 *AI-Powered Smart Farming — Deployment Guide*  
-*Last Updated: 19 October 2026*  
-*Maintained by the Smart Farming Engineering Team*
+*Lead Developer & Model Architect: Manthan Kuvadiya*  
+*Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
+*Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
+*Last Updated: 19 October 2026*

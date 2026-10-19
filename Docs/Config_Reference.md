@@ -341,5 +341,7 @@ All Distributed Backend & AI Service Instances
 ---
 
 *AI-Powered Smart Farming — Configuration Reference*  
-*Last Updated: 19 October 2026*  
-*Maintained by the Smart Farming Engineering Team*
+*Lead Developer & Model Architect: Manthan Kuvadiya*  
+*Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
+*Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
+*Last Updated: 19 October 2026*
