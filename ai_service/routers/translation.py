@@ -105,6 +105,27 @@ _AGRONOMIC_SEED_TRANSLATIONS: dict[str, dict[str, str]] = {
         "Spray Chlorpyrifos at 2 ml per liter of water.": "प्रति लीटर पानी में 2 मिलीलीटर क्लोरपायरीफॉस का छिड़काव करें।",
         "Spray Imidacloprid at 0.5 ml per liter of water.": "प्रति लीटर पानी में 0.5 मिलीलीटर इमिडाक्लोप्रिड का छिड़काव करें।",
         "Apply Neem oil (10,000 ppm) at 3 ml per liter of water.": "प्रति लीटर पानी में 3 मिलीलीटर नीम का तेल (10,000 पीपीएम) छिड़कें।",
+        # v2 KB Seed Translations
+        "No chemical or biological treatment needed. Do not spray a healthy crop.": "किसी रासायनिक या जैविक उपचार की आवश्यकता नहीं है। स्वस्थ फसल पर छिड़काव न करें।",
+        "Maintain good agricultural hygiene, clean farm equipment, and balanced irrigation.": "खेत में अच्छी स्वच्छता बनाए रखें, औजारों को साफ रखें और संतुलित सिंचाई करें।",
+        "Keep weekly scouting: 5 to 10 plants per sampling point, checking leaf undersides and new growth.": "साप्ताहिक निगरानी जारी रखें: प्रति सैंपलिंग पॉइंट 5 से 10 पौधों के पत्तों की निचली सतह और नई वृद्धि की जांच करें।",
+        "The crop foliage appears healthy. Continue regular field scouting once a week.": "फसल के पत्ते स्वस्थ दिखाई देते हैं। सप्ताह में एक बार नियमित रूप से खेत की निगरानी जारी रखें।",
+        "Your cotton leaf looks healthy. Keep scouting once a week.": "आपकी कपास की पत्तियां स्वस्थ दिखती हैं। सप्ताह में एक बार निगरानी जारी रखें।",
+        "Your groundnut leaf looks healthy. Keep scouting once a week.": "आपकी मूंगफली की पत्तियां स्वस्थ दिखती हैं। सप्ताह में एक बार निगरानी जारी रखें।",
+        "Your pepper leaf looks healthy. Keep scouting once a week.": "आपकी मिर्च की पत्तियां स्वस्थ दिखती हैं। सप्ताह में एक बार निगरानी जारी रखें।",
+        "Your potato leaf looks healthy. Check the underside of lower leaves once a week.": "आपकी आलू की पत्तियां स्वस्थ दिखती हैं। सप्ताह में एक बार निचली पत्तियों की जांच करें।",
+        "Your tomato leaf looks healthy. Keep scouting once a week.": "आपकी टमाटर की पत्तियां स्वस्थ दिखती हैं। सप्ताह में एक बार निगरानी जारी रखें।",
+        "Stop working in the crop while leaves are wet, and mark affected plants.": "पत्तियां गीली होने पर फसल में काम करना बंद करें और प्रभावित पौधों पर निशान लगाएं।",
+        "A copper-based protectant (and a label-registered antibiotic partner where permitted) can slow spread but will not cure existing spots.": "कॉपर-आधारित सुरक्षात्मक दवा (और जहां अनुमति हो लेबल-पंजीकृत एंटीबायोटिक साथी) फैलाव को धीमा कर सकती है लेकिन मौजूदा धब्बों को ठीक नहीं करेगी।",
+        "Scout in a W pattern and estimate the share of plants affected.": "खेत में W पैटर्न में घूमकर निगरानी करें और प्रभावित पौधों के अनुपात का आकलन करें।",
+        "Treat the whole field now with a registered protectant or translaminar product and plan a rotation product.": "पूरे खेत में तुरंत पंजीकृत सुरक्षात्मक कवकनाशी का छिड़काव करें और रोटेशन के लिए दूसरी दवा की योजना बनाएं।",
+        "Treat the whole field now with a registered fungicide, alternating protectant and systemic groups per label.": "पूरे खेत में लेबल के अनुसार सुरक्षात्मक और प्रणालीगत समूहों को बदलकर पंजीकृत कवकनाशी का छिड़काव करें।",
+        "Start integrated vector control: neem-based sprays, sticky traps, then a label-registered insecticide rotated by IRAC group if vector numbers are high.": "एकीकृत वाहक कीट नियंत्रण शुरू करें: नीम-आधारित स्प्रे, चिपचिपे ट्रैप और कीट संख्या अधिक होने पर IRAC समूह बदलकर कीटनाशक छिड़कें।",
+        "Spray neem oil or a label-registered biological (Beauveria, Lecanicillium) first.": "पहले नीम का तेल या लेबल-पंजीकृत जैविक कीटनाशक (ब्युवेरिया, लेकानिसिलियम) का छिड़काव करें।",
+        "Check new leaves, stems (black streaks) and bolls twice a week; watch for spread after rain.": "सप्ताह में दो बार नई पत्तियों, तनों (काली धारियां) और गूलरों की जांच करें; बारिश के बाद फैलाव पर नजर रखें।",
+        "Scout every 4 days; compare with late blight if weather is cool and foggy.": "हर 4 दिन में निगरानी करें; ठंडा और धुंधला मौसम होने पर पछेती झुलसा से तुलना करें।",
+        "Scout foliage twice weekly for progression.": "रोग के फैलाव के लिए सप्ताह में दो बार पत्तियों की जांच करें।",
+        "Maintain field sanitation, balanced crop nutrition, and proper drainage.": "खेत की स्वच्छता, संतुलित फसल पोषण और उचित जल निकासी बनाए रखें।",
     },
     "gu": {
         # Tab 5 Default & Sample Inputs
@@ -140,6 +161,27 @@ _AGRONOMIC_SEED_TRANSLATIONS: dict[str, dict[str, str]] = {
         "Spray Chlorpyrifos at 2 ml per liter of water.": "પ્રતિ લિટર પાણીમાં 2 મિલી ક્લોરપાયરીફોસનો છંટકાવ કરો.",
         "Spray Imidacloprid at 0.5 ml per liter of water.": "પ્રતિ લિટર પાણીમાં 0.5 મિલી ઈમિડાક્લોપ્રિડનો છંટકાવ કરો.",
         "Apply Neem oil (10,000 ppm) at 3 ml per liter of water.": "પ્રતિ લિટર પાણીમાં 3 મિલી લીમડાનું તેલ (10,000 ppm) છાંટો.",
+        # v2 KB Seed Translations
+        "No chemical or biological treatment needed. Do not spray a healthy crop.": "કોઈ રાસાયણિક કે જૈવિક સારવારની જરૂર નથી. તંદુરસ્ત પાક પર છંટકાવ ન કરો.",
+        "Maintain good agricultural hygiene, clean farm equipment, and balanced irrigation.": "ખેતીમાં સારી સ્વચ્છતા જાળવો, ઓજારો સાફ રાખો અને સંતુલિત પિયત આપો.",
+        "Keep weekly scouting: 5 to 10 plants per sampling point, checking leaf undersides and new growth.": "દર અઠવાડિયે નિરીક્ષણ ચાલુ રાખો: સેમ્પલ દીઠ 5 થી 10 છોડ પસંદ કરી પાનની નીચેની સપાટી અને નવી ફૂટ તપાસો.",
+        "The crop foliage appears healthy. Continue regular field scouting once a week.": "પાકના પાંદડા તંદુરસ્ત જણાય છે. અઠવાડિયામાં એકવાર નિયમિત ખેતર નિરીક્ષણ ચાલુ રાખો.",
+        "Your cotton leaf looks healthy. Keep scouting once a week.": "તમારા કપાસના પાંદડા તંદુરસ્ત જણાય છે. અઠવાડિયામાં એકવાર નિરીક્ષણ ચાલુ રાખો.",
+        "Your groundnut leaf looks healthy. Keep scouting once a week.": "તમારા મગફળીના પાંદડા તંદુરસ્ત જણાય છે. અઠવાડિયામાં એકવાર નિરીક્ષણ ચાલુ રાખો.",
+        "Your pepper leaf looks healthy. Keep scouting once a week.": "તમારા મરચાંના પાંદડા તંદુરસ્ત જણાય છે. અઠવાડિયામાં એકવાર નિરીક્ષણ ચાલુ રાખો.",
+        "Your potato leaf looks healthy. Check the underside of lower leaves once a week.": "તમારા બટાકાના પાંદડા તંદુરસ્ત જણાય છે. અઠવાડિયામાં એકવાર નીચેના પાંદડાઓની તપાસ કરો.",
+        "Your tomato leaf looks healthy. Keep scouting once a week.": "તમારા ટામેટાના પાંદડા તંદુરસ્ત જણાય છે. અઠવાડિયામાં એકવાર નિરીક્ષણ ચાલુ રાખો.",
+        "Stop working in the crop while leaves are wet, and mark affected plants.": "પાંદડા ભીના હોય ત્યારે પાકમાં કામ કરવાનું બંધ કરો અને અસરગ્રસ્ત છોડ પર નિશાની કરો.",
+        "A copper-based protectant (and a label-registered antibiotic partner where permitted) can slow spread but will not cure existing spots.": "તાંબા-આધારિત રક્ષણાત્મક દવા (અને મંજૂર હોય ત્યાં એન્ટિબાયોટિક ઘટક) રોગનો ફેલાવો ધીમો કરી શકે છે પરંતુ હાલના ડાઘ મટાડી શકતી નથી.",
+        "Scout in a W pattern and estimate the share of plants affected.": "ખેતરમાં W પેટર્નમાં ફરીને નિરીક્ષણ કરો અને અસરગ્રસ્ત છોડની ટકાવારી નક્કી કરો.",
+        "Treat the whole field now with a registered protectant or translaminar product and plan a rotation product.": "સમગ્ર ખેતરમાં ભલામણ કરેલ રક્ષણાત્મક ફૂગનાશકનો તાત્કાલિક છંટકાવ કરો અને આગળના છંટકાવ માટે દવા બદલવાનું આયોજન કરો.",
+        "Treat the whole field now with a registered fungicide, alternating protectant and systemic groups per label.": "સમગ્ર ખેતરમાં લેબલ મુજબ રક્ષણાત્મક અને પ્રણાલીગત જૂથો બદલીને ભલામણ કરેલ ફૂગનાશકનો છંટકાવ કરો.",
+        "Start integrated vector control: neem-based sprays, sticky traps, then a label-registered insecticide rotated by IRAC group if vector numbers are high.": "સંકલિત વાહક જીવાત નિયંત્રણ શરૂ કરો: લીમડા-આધારિત છંટકાવ, પીળા ચીકણા ટ્રેપ અને જીવાત વધારે હોય તો IRAC ગ્રૂપ બદલીને ભલામણ કરેલ કીટનાશક.",
+        "Spray neem oil or a label-registered biological (Beauveria, Lecanicillium) first.": "સૌપ્રથમ લીમડાનું તેલ અથવા લેબલ-રજિસ્ટર્ડ જૈવિક કીટનાશક (બ્યુવેરિયા, લેકાનિસિલિયમ) નો છંટકાવ કરો.",
+        "Check new leaves, stems (black streaks) and bolls twice a week; watch for spread after rain.": "નવા પાંદડા, દાંડી (કાળા પટ્ટા) અને ઝીંડવા અઠવાડિયામાં બે વાર તપાસો; વરસાદ પછી ફેલાવા પર નજર રાખો.",
+        "Scout every 4 days; compare with late blight if weather is cool and foggy.": "દર 4 દિવસે નિરીક્ષણ કરો; ઠંડા અને ધુમ્મસવાળા હવામાનમાં મોડા સુકારા સાથે સરખામણી કરો.",
+        "Scout foliage twice weekly for progression.": "રોગના ફેલાવા માટે અઠવાડિયામાં બે વાર પાંદડાઓની તપાસ કરો.",
+        "Maintain field sanitation, balanced crop nutrition, and proper drainage.": "ખેતરની યોગ્ય સ્વચ્છતા, સંતુલિત પાક પોષણ અને સારો નિતાર જાળવો.",
     },
 }
 
@@ -204,14 +246,26 @@ CHEMICAL_RECOMMENDATIONS: dict[str, dict[str, str]] = {
 
 _AGRONOMIC_CLAUSE_MAP: dict[str, dict[str, str]] = {
     "gu": {
+        "upon label confirmation under local KVK guidance": "સ્થાનિક KVK માર્ગદર્શન હેઠળ અને લેબલ ચકાસણી મુજબ",
         "upon label confirmation": "લેબલ ચકાસણી મુજબ",
         "under KVK verification": "KVK ચકાસણી હેઠળ",
         "under KVK recommendation": "KVK ભલામણ મુજબ",
+        "under local KVK guidance": "સ્થાનિક KVK માર્ગદર્શન હેઠળ",
         "under KVK guidance": "KVK માર્ગદર્શન હેઠળ",
         "under local KVK supervision": "સ્થાનિક KVK દેખરેખ હેઠળ",
         "under label guidelines": "લેબલ માર્ગદર્શિકા મુજબ",
         "only under official permit": "ફક્ત સત્તાવાર પરવાનગી હેઠળ",
         "under official permit": "સત્તાવાર પરવાનગી હેઠળ",
+        "premix if registered": "નોંધાયેલ હોય તો પ્રીમિક્સ",
+        "premix": "પ્રીમિક્સ",
+        " Combination": "",
+        " combination": "",
+        "in-furrow or seed treatment, per label": "પાન અથવા બીજ માવજત તરીકે, લેબલ મુજબ",
+        "seed treatment or foliar, per label": "બીજ માવજત અથવા પાન પર છંટકાવ, લેબલ મુજબ",
+        "not above about 32 C": "આશરે 32°C થી વધુ તાપમાનમાં નહીં",
+        "per label": "લેબલ મુજબ",
+        "for mites": "ઈતરડી નિયંત્રણ માટે",
+        "aphids": "મોલો-મશી (એફિડ)",
         "to manage aphid vector": "મોલો-મશી (એફિડ) નિયંત્રણ માટે",
         "for aphid vector management": "મોલો-મશી (એફિડ) નિયંત્રણ માટે",
         "for vector management": "વાહક જીવાત નિયંત્રણ માટે",
@@ -247,14 +301,26 @@ _AGRONOMIC_CLAUSE_MAP: dict[str, dict[str, str]] = {
         " 2 g/L": " 2 ગ્રામ/લિ",
     },
     "hi": {
+        "upon label confirmation under local KVK guidance": "स्थानीय KVK मार्गदर्शन और लेबल पुष्टि के अनुसार",
         "upon label confirmation": "लेबल पुष्टि के अनुसार",
         "under KVK verification": "KVK सत्यापन के तहत",
         "under KVK recommendation": "KVK सिफारिश के तहत",
+        "under local KVK guidance": "स्थानीय KVK मार्गदर्शन के तहत",
         "under KVK guidance": "KVK मार्गदर्शन के तहत",
         "under local KVK supervision": "स्थानीय KVK देखरेख में",
         "under label guidelines": "लेबल दिशानिर्देशों के अनुसार",
         "only under official permit": "केवल आधिकारिक अनुमति के तहत",
         "under official permit": "आधिकारिक अनुमति के तहत",
+        "premix if registered": "पंजीकृत होने पर प्रीमिक्स",
+        "premix": "प्रीमिक्स",
+        " Combination": "",
+        " combination": "",
+        "in-furrow or seed treatment, per label": "बीज उपचार या कतार में, लेबल के अनुसार",
+        "seed treatment or foliar, per label": "बीज उपचार या पर्णीय छिड़काव, लेबल के अनुसार",
+        "not above about 32 C": "लगभग 32°C से अधिक तापमान में नहीं",
+        "per label": "लेबल के अनुसार",
+        "for mites": "माइट कीट नियंत्रण के लिए",
+        "aphids": "माहू (एफिड)",
         "to manage aphid vector": "माहू (एफिड) कीट नियंत्रण के लिए",
         "for aphid vector management": "माहू कीट नियंत्रण के लिए",
         "for vector management": "वाहक कीट नियंत्रण के लिए",
@@ -299,15 +365,41 @@ _CHEMICAL_NAME_MAP: dict[str, dict[str, str]] = {
         "Carbendazim": "કાર્બેન્ડાઝીમ",
         "Mancozeb": "મેન્કોઝેબ",
         "Trichoderma viride": "ટ્રાઇકોડર્મા વિરીડી",
+        "Trichoderma": "ટ્રાઇકોડર્મા",
+        "Pseudomonas fluorescens": "સ્યુડોમોનાસ ફ્લોરોસન્સ",
+        "Pseudomonas": "સ્યુડોમોનાસ",
+        "Beauveria bassiana": "બ્યુવેરિયા બાસિયાના",
+        "Beauveria": "બ્યુવેરિયા",
+        "Lecanicillium lecanii": "લેકાનિસિલિયમ લેકાની",
+        "Lecanicillium": "લેકાનિસિલિયમ",
         "Tebuconazole": "ટેબ્યુકોનાઝોલ",
+        "Trifloxystrobin": "ટ્રાઇફ્લોક્સીસ્ટ્રોબિન",
         "Ferrous Sulfate": "ફેરસ સલ્ફેટ",
         "Citric Acid": "સાઇટ્રિક એસિડ",
         "Zinc Sulfate": "ઝિંક સલ્ફેટ",
         "Imidacloprid": "ઈમિડાક્લોપ્રિડ",
         "Thiamethoxam": "થાયામેથોક્સામ",
         "Copper Oxychloride": "કોપર ઓક્સીક્લોરાઇડ",
+        "Copper Hydroxide": "કોપર હાઇડ્રોક્સાઇડ",
         "Streptocycline": "સ્ટ્રેપ્ટોસાયક્લીન",
+        "Streptomycin Sulphate": "સ્ટ્રેપ્ટોમાસીન સલ્ફેટ",
+        "Streptomycin": "સ્ટ્રેપ્ટોમાસીન",
+        "Tetracycline": "ટેટ્રાસાયક્લિન",
         "Chlorantraniliprole": "ક્લોરાન્ટ્રાનિલીપ્રોલ",
+        "Cyantraniliprole": "સાયન્ટ્રાનિલીપ્રોલ",
+        "Cymoxanil": "સાયમોક્સાનીલ",
+        "Dimethomorph": "ડાઈમેથોમોર્ફ",
+        "Fenamidone": "ફેનામિડોન",
+        "Fenpyroximate": "ફેનપાયરોક્સીમેટ",
+        "Metalaxyl-M": "મેટાલેક્સિલ-એમ",
+        "Metalaxyl": "મેટાલેક્સિલ",
+        "Propargite": "પ્રોપરગાઇટ",
+        "Propiconazole": "પ્રોપિકોનાઝોલ",
+        "Pyriproxyfen": "પાયરીપ્રોક્સીફેન",
+        "Spinosad": "સ્પિનોસેડ",
+        "Spiromesifen": "સ્પાયરોમેસિફેન",
+        "Abamectin": "એબામેક્ટીન",
+        "Emamectin Benzoate": "ઇમામેક્ટીન બેન્ઝોએટ",
         "Acetamiprid": "એસિટામિપ્રિડ",
         "Flonicamid": "ફ્લોનિકામિડ",
         "Diafenthiuron": "ડાયફેન્થિયુરોન",
@@ -316,7 +408,9 @@ _CHEMICAL_NAME_MAP: dict[str, dict[str, str]] = {
         "Boron": "બોરોન",
         "Hexaconazole": "હેક્ઝાકોનાઝોલ",
         "Sulfur": "સલ્ફર",
+        "Sulphur": "સલ્ફર",
         "Wettable Sulfur": "વેટેબલ સલ્ફર",
+        "Wettable Sulphur": "વેટેબલ સલ્ફર",
         "Neem oil": "લીમડાનું તેલ",
         "Neem cake": "લીંબોળીનો ખોળ",
         "Pyraclostrobin": "પાયરાક્લોસ્ટ્રોબિન",
@@ -329,15 +423,41 @@ _CHEMICAL_NAME_MAP: dict[str, dict[str, str]] = {
         "Carbendazim": "कार्बेन्डाजिम",
         "Mancozeb": "मैंकोजेब",
         "Trichoderma viride": "ट्राइकोडर्मा विरिडी",
+        "Trichoderma": "ट्राइकोडर्मा",
+        "Pseudomonas fluorescens": "स्यूडोमोनास फ्लोरोसेंस",
+        "Pseudomonas": "स्यूडोमोनास",
+        "Beauveria bassiana": "ब्युवेरिया बासियाना",
+        "Beauveria": "ब्युवेरिया",
+        "Lecanicillium lecanii": "लेकानिसिलियम लेकानी",
+        "Lecanicillium": "लेकानिसिलियम",
         "Tebuconazole": "टेबुकोनाज़ोल",
+        "Trifloxystrobin": "ट्राइफ्लॉक्सीस्ट्रोबिन",
         "Ferrous Sulfate": "फेरस सल्फेट",
         "Citric Acid": "साइट्रिक एसिड",
         "Zinc Sulfate": "जिंक सल्फेट",
         "Imidacloprid": "इमिडाक्लोप्रिड",
         "Thiamethoxam": "थायमेथॉक्सम",
         "Copper Oxychloride": "कॉपर ऑक्सीक्लोराइड",
+        "Copper Hydroxide": "कॉपर हाइड्रोक्साइड",
         "Streptocycline": "स्ट्रेप्टोसाइक्लिन",
+        "Streptomycin Sulphate": "स्ट्रेप्टोमाइसिन सल्फेट",
+        "Streptomycin": "स्ट्रेप्टोमाइसिन",
+        "Tetracycline": "टेट्रासाइक्लिन",
         "Chlorantraniliprole": "क्लोरेंट्रानिलीप्रोल",
+        "Cyantraniliprole": "सायंट्रानिलीप्रोल",
+        "Cymoxanil": "साइमोक्सानिल",
+        "Dimethomorph": "डाइमेथोमॉर्फ",
+        "Fenamidone": "फेनामिडोन",
+        "Fenpyroximate": "फेनपायरोक्सिमेट",
+        "Metalaxyl-M": "मेटालेक्सिल-एम",
+        "Metalaxyl": "मेटालेक्सिल",
+        "Propargite": "प्रोपरगाइट",
+        "Propiconazole": "प्रोपिकोनाज़ोल",
+        "Pyriproxyfen": "पायरीप्रोक्सीफेन",
+        "Spinosad": "स्पिनोसाद",
+        "Spiromesifen": "स्पायरोमेसिफेन",
+        "Abamectin": "एबामेक्टिन",
+        "Emamectin Benzoate": "इमामेक्टिन बेंजोएट",
         "Acetamiprid": "एसिटामिप्रिड",
         "Flonicamid": "फ्लोनिकामिड",
         "Diafenthiuron": "डायफेन्थियूरॉन",
@@ -346,7 +466,9 @@ _CHEMICAL_NAME_MAP: dict[str, dict[str, str]] = {
         "Boron": "बोरॉन",
         "Hexaconazole": "हेक्साकोनाज़ोल",
         "Sulfur": "सल्फर",
+        "Sulphur": "सल्फर",
         "Wettable Sulfur": "घुलनशील सल्फर",
+        "Wettable Sulphur": "घुलनशील सल्फर",
         "Neem oil": "नीम का तेल",
         "Neem cake": "नीम की खली",
         "Pyraclostrobin": "पायराक्लोस्ट्रोबिन",
@@ -442,14 +564,21 @@ def _init_cache():
         for en, trans in phrases.items():
             _cache[f"{lang}:{en.strip()}"] = trans.strip()
 
-    # 3. Pre-load complete 51 conditions from advisory_kb.json
+    # 3. Pre-load conditions from advisory_kb.json (v2 & v1 schemas)
     kb_path = settings.KB_PATH
     if kb_path.exists():
         try:
             with open(kb_path, "r", encoding="utf-8") as f:
                 kb_data = json.load(f)
             loaded_kb_pairs = 0
-            for cond_key, cond_val in kb_data.items():
+
+            conditions_list = []
+            if isinstance(kb_data, dict) and "conditions" in kb_data:
+                conditions_list = [c for c in kb_data.get("conditions", []) if isinstance(c, dict)]
+            elif isinstance(kb_data, dict):
+                conditions_list = [c for c in kb_data.values() if isinstance(c, dict)]
+
+            for cond_val in conditions_list:
                 translations = cond_val.get("translations", {})
                 for lang in ("hi", "gu"):
                     if lang in translations:
@@ -466,7 +595,17 @@ def _init_cache():
                                     for es, ts in zip(en_sents, tr_sents):
                                         _cache[f"{lang}:{es}"] = ts
 
+                # Pre-index chemical recommendation translations from chemical_candidates or chemical_recommendation
                 chem_rec = cond_val.get("chemical_recommendation")
+                if not chem_rec and cond_val.get("chemical_candidates"):
+                    chem_candidates = cond_val.get("chemical_candidates", [])
+                    cand_names = [cand.get("active_or_option", str(cand)).title() if isinstance(cand, dict) else str(cand).title() for cand in chem_candidates[:2]]
+                    chem_rec = f"{' or '.join(cand_names)} upon label confirmation under local KVK guidance"
+                elif not chem_rec and cond_val.get("biological_options"):
+                    bio_options = cond_val.get("biological_options", [])
+                    first_bio = bio_options[0] if isinstance(bio_options[0], str) else str(bio_options[0])
+                    chem_rec = f"{first_bio} under local KVK guidance"
+
                 if chem_rec and isinstance(chem_rec, str) and "none" not in chem_rec.lower() and "requires local diagnosis" not in chem_rec.lower():
                     for lang in ("hi", "gu"):
                         tr_chem = translate_chemical_recommendation(chem_rec, lang)
@@ -475,7 +614,7 @@ def _init_cache():
                         _cache[f"{lang}:Recommended: {chem_rec.strip()}"] = f"{lbl}: {tr_chem.strip()}"
                         _cache[f"{lang}:{chem_rec.strip()}"] = tr_chem.strip()
 
-            logger.info("Indexed %d verified sentence pairs from advisory_kb.json.", loaded_kb_pairs)
+            logger.info("Indexed %d verified sentence pairs and candidates from advisory_kb.json.", loaded_kb_pairs)
         except Exception as exc:
             logger.warning("Failed to extract translation pairs from KB: %s", exc)
 
@@ -514,8 +653,24 @@ def resolve_agronomic_phrase(text: str, target_code: str) -> Optional[str]:
     # Direct match for chemical recommendations with or without brackets
     if clean.startswith("[Recommended:") and clean.endswith("]"):
         return translate_treatment_recommendation(clean, target_code)
-    if "[Recommended:" in clean:
-        return translate_treatment_recommendation(clean, target_code)
+
+    # Treatment guidance containing [Recommended: ...]
+    m_rec = re.search(r"(\[Recommended:\s*.+?\])", clean, flags=re.IGNORECASE)
+    if m_rec:
+        prefix_text = clean[:m_rec.start()].strip()
+        rec_block = clean[m_rec.start():m_rec.end()]
+        translated_rec = translate_treatment_recommendation(rec_block, target_code)
+        if prefix_text:
+            translated_prefix = resolve_agronomic_phrase(prefix_text, target_code)
+            if not translated_prefix:
+                sents = split_into_sentences(prefix_text)
+                trans_parts = []
+                for s in sents:
+                    ts = resolve_agronomic_phrase(s, target_code)
+                    trans_parts.append(ts if ts else s)
+                translated_prefix = " ".join(trans_parts)
+            return f"{translated_prefix} {translated_rec}".strip()
+        return translated_rec
 
     cache_key = f"{target_code}:{clean}"
     if cache_key in _cache:

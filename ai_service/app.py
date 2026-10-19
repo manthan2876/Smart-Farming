@@ -140,7 +140,7 @@ SAMPLE_MAP = [
 ]
 VALID_SAMPLE_EXAMPLES = [[path] for label, path in SAMPLE_MAP if Path(path).exists()]
 
-# Disease choices per crop for the Advisory Assistant (All 32 conditions mapped to verified ICAR KB)
+# Disease choices per crop for the Advisory Assistant (All 56 conditions across 5 crops & pests in v2 KB)
 DISEASE_CHOICES_BY_CROP = {
     "Tomato": [
         "Early Blight",
@@ -152,6 +152,9 @@ DISEASE_CHOICES_BY_CROP = {
         "Target Spot",
         "Tomato Mosaic Virus",
         "Tomato Yellow Leaf Curl Virus",
+        "Burn Leaf",
+        "Deficiency of Phosphorus/Magnesium",
+        "Wealth Leaf",
         "Healthy",
     ],
     "Cotton": [
@@ -173,6 +176,7 @@ DISEASE_CHOICES_BY_CROP = {
         "Alternaria Leaf Spot",
         "Nutrition Deficiency",
         "Rosette",
+        "Leaf Spot",
         "Healthy",
     ],
     "Potato": [
@@ -187,12 +191,22 @@ DISEASE_CHOICES_BY_CROP = {
     ],
     "Pepper Bell": [
         "Bacterial Spot",
+        "Blossom End Rot",
+        "Burn",
         "Cercospora Leaf Spot",
         "Edema",
         "Leaf Curl",
+        "Mosaic Virus",
         "Nutrition Deficiency",
         "Powdery Mildew",
         "Healthy",
+    ],
+    "Pest": [
+        "Aphid",
+        "Army Worm",
+        "Leaf Miner",
+        "Spider Mite",
+        "Thrips",
     ],
 }
 
@@ -1063,7 +1077,7 @@ biological treatments, prevention practices, and field monitoring instructions i
                 with gr.Row():
                     with gr.Column(scale=1):
                         crop_in = gr.Dropdown(
-                            choices=["Tomato", "Cotton", "Groundnut", "Potato", "Pepper Bell"],
+                            choices=["Tomato", "Cotton", "Groundnut", "Potato", "Pepper Bell", "Pest"],
                             value="Tomato",
                             label="1. Select Crop Species",
                         )

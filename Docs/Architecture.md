@@ -68,7 +68,7 @@ flowchart TD
         
         VISION["/vision/predict (alias: /predict)\n7-Stage Vision Pipeline\nOpenCV Quality Gate · EfficientNet-B0\nDedicated EfficientNet-B2 · YOLOv8-nano"]
         TRANS["/translation/translate (alias: /translate)\nMulti-Tier Zero-Hang Translation\nDomain Cache · Groq · IndicTrans2-dist-200M"]
-        ADV["/advisory/advise (alias: /advise)\nDeterministic ICAR/KVK Knowledge Base\n32 Conditions · Optional Groq Llama-3.3-70B"]
+        ADV["/advisory/advise (alias: /advise)\nDeterministic ICAR/KVK Knowledge Base\n56 Conditions · Optional Groq Llama-3.3-70B"]
         TTS["/tts/synthesize (alias: /synthesize)\nMicrosoft Edge-TTS Neural\nhi-IN-Swara · gu-IN-Dhwani · en-IN-Neerja\nFull 4-Point Advisory Narration"]
 
         HF_SPACE --> VISION
@@ -231,7 +231,7 @@ All subroute URLs are automatically derived via Pydantic model validators:
 |---|---|---|---|
 | `MODEL_SERVER_URL` | `{AI_SERVICE_URL}/vision` | `/predict` | Quality gate, crop identification, per-crop disease diagnosis, severity, pest detection |
 | `TRANSLATION_SERVER_URL` | `{AI_SERVICE_URL}/translation` | `/translate` | IndicTrans2 translation (English $\to$ Hindi, Gujarati) with multi-tier zero-hang cache |
-| `ADVISORY_SERVER_URL` | `{AI_SERVICE_URL}/advisory` | `/advise` | Grounded agronomic advisory via `advisory_kb.json` (32 conditions) & Groq Llama-3.3-70B |
+| `ADVISORY_SERVER_URL` | `{AI_SERVICE_URL}/advisory` | `/advise` | Grounded agronomic advisory via `advisory_kb.json` (56 conditions) & Groq Llama-3.3-70B |
 | `TTS_SERVER_URL` | `{AI_SERVICE_URL}/tts` | `/synthesize` | Microsoft Edge-TTS neural speech synthesis (Dhwani, Swara, Neerja) |
 
 > [!NOTE]
@@ -261,7 +261,7 @@ flowchart LR
 4. **Disease Classifier (`disease_classifier.py`):** Dedicated per-crop EfficientNet-B2 classifiers (5 models) evaluating 32 specific disease and healthy conditions with temperature-calibrated probabilities. Predictions below `0.70` are flagged for expert escalation.
 5. **Severity Masking (`severity.py`):** Adaptive HSV color segmentation measuring the exact percentage of affected leaf surface area and categorizing infection into standardized tiers (`Healthy 0%`, `Low <15%`, `Medium 15–40%`, `High >40%`).
 6. **Pest Detector (`pest_detector.py`):** Ultralytics YOLOv8-nano multi-class pest detector identifying agricultural insect damage (Aphid, Army Worm, Leaf Miner, Spider Mite) with graceful degradation when weights are omitted.
-7. **Agronomic Advisory & Regional Synthesis:** Deterministic ICAR/KVK agronomic advisory knowledge base (`advisory_kb.json`, 32 conditions) with optional Groq Llama-3.3-70B synthesis, multi-tier zero-hang translation (IndicTrans2 dist-200M), and Microsoft Edge-TTS full 4-point neural narration.
+7. **Agronomic Advisory & Regional Synthesis:** Deterministic ICAR/KVK agronomic advisory knowledge base (`advisory_kb.json`, 56 conditions) with optional Groq Llama-3.3-70B synthesis, multi-tier zero-hang translation (IndicTrans2 dist-200M), and Microsoft Edge-TTS full 4-point neural narration.
 
 ---
 
@@ -519,7 +519,7 @@ flowchart TD
 
 ### Reliability & Resilient Fallbacks
 - **Graceful Vision Degradation:** If optional pest detection weights (`pest_classifier.pt`) are unmounted, the pipeline gracefully skips the stage and continues.
-- **Advisory Fallback Chain:** Deterministic `advisory_kb.json` (32 verified conditions) $\to$ Groq Llama-3.3-70B $\to$ Google Gemini 2.5 Flash $\to$ Local in-memory LLM.
+- **Advisory Fallback Chain:** Deterministic `advisory_kb.json` (56 verified conditions) $\to$ Groq Llama-3.3-70B $\to$ Google Gemini 2.5 Flash $\to$ Local in-memory LLM.
 - **Audio Caching & Resiliency:** Audio files are cached by SHA-256 hash in local storage and mirrored to Supabase Storage, preventing repetitive re-generation.
 
 ### Geographic Reference

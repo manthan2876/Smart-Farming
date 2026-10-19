@@ -13,7 +13,11 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import httpx
+try:
+    import httpx
+except ImportError:
+    httpx = None
+
 from pydantic import BaseModel, Field, ValidationError
 
 from app.core.config import settings
@@ -38,16 +42,85 @@ def _get_advisory_kb() -> dict[str, Any]:
         Path("../ai_service/advisory_kb.json"),
         Path("model_service/advisory_kb.json"),
     ]
+    raw_data = None
     for p in paths_to_check:
         if p.exists():
             try:
                 with open(p, "r", encoding="utf-8") as f:
-                    _KB_CACHE = json.load(f)
-                    return _KB_CACHE
+                    raw_data = json.load(f)
+                    break
             except Exception as e:
                 logger.warning("Could not read knowledge base at %s: %s", p, e)
 
-    _KB_CACHE = {}
+    if not raw_data:
+        _KB_CACHE = {}
+        return _KB_CACHE
+
+    # Support v2 schema with "conditions"
+    if isinstance(raw_data, dict) and "conditions" in raw_data:
+        normalized_kb: dict[str, Any] = {}
+        alias_index = raw_data.get("condition_alias_index", {})
+        conditions_by_id = {}
+
+        for cond in raw_data.get("conditions", []):
+            cid = cond.get("id")
+            if cid:
+                conditions_by_id[cid] = cond
+            crop = cond.get("crop", "")
+            name = cond.get("name", "")
+
+            entry = dict(cond)
+            # Chemical options for legacy v1 contract compatibility
+            chem_candidates = cond.get("chemical_candidates", [])
+            chems = []
+            for cand in chem_candidates:
+                if isinstance(cand, dict):
+                    c_name = cand.get("active_or_option", "")
+                else:
+                    c_name = str(cand)
+                chems.append({
+                    "name": c_name.title(),
+                    "product": c_name.title(),
+                    "dose": "per product label",
+                    "source": "ICAR / CIBRC Guidelines",
+                })
+            entry["chemical_options"] = chems
+
+            bios = []
+            for b in cond.get("biological_options", []):
+                bios.append({
+                    "name": b if isinstance(b, str) else str(b),
+                    "action": b if isinstance(b, str) else str(b),
+                    "dose": "per label instructions",
+                    "source": "NIPHM / ICAR Guidelines",
+                })
+            entry["organic_options"] = bios
+            entry["cultural_practices"] = cond.get("cultural_controls", [])
+            entry["precautions"] = "; ".join(cond.get("cultural_controls", [])[:2]) if cond.get("cultural_controls") else "Maintain proper crop spacing and weed-free field borders."
+            entry["immediate_action"] = cond.get("first_action") or cond.get("summary") or ""
+            entry["monitoring"] = cond.get("monitoring_guidance") or "Scout foliage twice weekly for progression."
+
+            sources = [str(r) for r in cond.get("references", [])]
+            entry["sources"] = sources or ["ICAR Guidelines"]
+
+            key = f"{crop}|{name}"
+            normalized_kb[key] = entry
+            normalized_kb[key.lower()] = entry
+            if cid:
+                normalized_kb[cid] = entry
+
+            for alias in cond.get("aliases", []):
+                normalized_kb[alias] = entry
+                normalized_kb[alias.lower()] = entry
+
+        for alias_key, cids in alias_index.items():
+            if cids and cids[0] in conditions_by_id:
+                normalized_kb[alias_key] = normalized_kb.get(cids[0])
+
+        _KB_CACHE = normalized_kb
+        return _KB_CACHE
+
+    _KB_CACHE = raw_data
     return _KB_CACHE
 
 
@@ -91,12 +164,17 @@ def _generate_rule_based_advisory(
     """Deterministic, verified fallback advice directly from the agronomic knowledge base."""
     kb = _get_advisory_kb()
     kb_key = f"{crop}|{disease}"
-    entry = kb.get(kb_key)
+    entry = kb.get(kb_key) or kb.get(kb_key.lower())
     if not entry and crop and disease:
         clean_dis = disease
         if clean_dis.lower().startswith(crop.lower() + " "):
             clean_dis = clean_dis[len(crop):].strip()
-        entry = kb.get(f"{crop}|{clean_dis}")
+        entry = kb.get(f"{crop}|{clean_dis}") or kb.get(f"{crop}|{clean_dis}".lower())
+
+    if not entry:
+        # Check pest conditions
+        if crop.lower() in ("pest", "insect") or disease.lower() in ("aphid", "army worm", "leaf miner", "spider mite", "thrips"):
+            entry = kb.get(f"pest__{disease.lower().replace(' ', '_')}") or kb.get(f"Pest|{disease}")
 
     farm_note = f" Calibrate spray application for {plot_acres} acre(s)." if plot_acres else ""
 

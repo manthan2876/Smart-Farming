@@ -668,10 +668,10 @@ The severity estimator is a deterministic, calibrated foliar image processing pi
 
 | Field | Details |
 |---|---|
-| **Primary Local Engine** | Grounded `advisory_kb.json` (32 verified crop conditions across 5 crops with ICAR & Krishi Vigyan Kendra validated packages of practices in English, Hindi, and Gujarati; 0 ms CPU execution) |
+| **Primary Local Engine** | Grounded `advisory_kb.json` v2 (56 conditions across 5 crops & pests, 155 aliases with ICAR & Krishi Vigyan Kendra validated packages of practices in English, Hindi, and Gujarati; 0 ms CPU execution) |
 | **High-Speed Cloud Engine**| `Groq Llama-3.3-70B-Versatile` (via Groq Cloud API, ~300 tokens/sec) |
 | **Multimodal Advisory Fallback** | Google Gemini 2.5 Flash (`google-genai` / `GEMINI_API_KEY`) & Local `Qwen/Qwen2.5-1.5B-Instruct` |
-| **Agronomic Taxonomy** | 32 conditions across Tomato (8), Potato (8), Cotton (8), Groundnut (7), and Pepper Bell (7) |
+| **Agronomic Taxonomy** | 56 conditions across Tomato (12), Cotton (10), Pepper Bell (10), Groundnut (8), Potato (8), Pest (5), and Fallbacks (3) |
 | **Task** | Deliver structured, actionable agricultural recommendations with safety guidelines |
 | **Prompt Version** | v2.2 |
 
@@ -818,7 +818,7 @@ The TTS pipeline includes `tts_normalizer.py`:
                ▼
 ┌───────────────────────────────┐
 │ Stage 6: Agronomic Advisory   │  Deterministic ICAR/KVK Knowledge Base
-│                               │  (32 conditions) + Optional Groq Llama-3.3-70B
+│                               │  (56 conditions) + Optional Groq Llama-3.3-70B
 └──────────────┬────────────────┘
                ▼
 ┌───────────────────────────────┐

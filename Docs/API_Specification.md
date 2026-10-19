@@ -56,7 +56,7 @@ The Smart Farming backend is an AI-powered crop disease detection and agronomic 
 | **Vision Diagnostics** | EfficientNet-B0, Dedicated EfficientNet-B2 (5 crops, 32 conditions), Adaptive HSV, YOLOv8-nano | 7-stage vision pipeline in `ai_service/vision_engine` |
 | **Text-to-Speech** | Microsoft Edge-TTS Neural | High-fidelity voice synthesis (`hi-IN-Swara`, `gu-IN-Dhwani`, `en-IN-Neerja`) with full 4-point advisory narration |
 | **Translation** | AI4Bharat IndicTrans2 dist-200M | Multi-tier zero-hang regional translation (`/translation/translate` and `/translate`) |
-| **Agronomic Advisory** | Grounded ICAR/KVK Knowledge Base (`advisory_kb.json`) + Groq Llama-3.3-70B | Deterministic zero-latency advisory (32 conditions) with Groq cloud acceleration |
+| **Agronomic Advisory** | Grounded ICAR/KVK Knowledge Base (`advisory_kb.json` v2) + Groq Llama-3.3-70B | Deterministic zero-latency advisory (56 conditions, 155 aliases) with Groq cloud acceleration |
 
 ---
 
