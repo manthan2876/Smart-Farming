@@ -612,50 +612,111 @@ footer, .gradio-container > footer, a[href*="gradio.app"], .built-with {
     margin-top: 12px;
 }
 
-/* Data Tables */
-.prose table, table {
+/* Data Tables — Emerald Forest Theme */
+.gradio-container table, .prose table, table {
     width: 100% !important;
-    border-collapse: collapse !important;
-    margin: 16px 0 !important;
-    border-radius: 8px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    margin: 18px 0 24px 0 !important;
+    border-radius: 12px !important;
     overflow: hidden !important;
-    border: 1px solid #cbd5e1 !important;
+    border: 1px solid #d1fae5 !important;
     background: #ffffff !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0 4px 16px -2px rgba(6, 78, 59, 0.08), 0 2px 6px -1px rgba(6, 78, 59, 0.04) !important;
     display: table !important;
 }
 
-.prose th, th {
-    background: #0f172a !important;
+.gradio-container th, .prose th, th {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%) !important;
     color: #ffffff !important;
     font-weight: 700 !important;
-    font-size: 0.84rem !important;
+    font-size: 0.85rem !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-    padding: 11px 14px !important;
+    letter-spacing: 0.05em !important;
+    padding: 13px 16px !important;
     text-align: left !important;
-    border: 1px solid #334155 !important;
+    border: none !important;
+    border-bottom: 2px solid #10b981 !important;
 }
 
-.prose tr, tr {
+.gradio-container tr, .prose tr, tr {
     border-bottom: 1px solid #e2e8f0 !important;
+    transition: background-color 0.15s ease-in-out !important;
 }
 
-.prose tr:nth-child(even), tr:nth-child(even) {
-    background-color: #f8fafc !important;
+.gradio-container tr:nth-child(even), .prose tr:nth-child(even), tr:nth-child(even) {
+    background-color: #f0fdf4 !important;
 }
 
-.prose tr:hover, tr:hover {
-    background-color: #f1f5f9 !important;
+.gradio-container tr:hover, .prose tr:hover, tr:hover {
+    background-color: #dcfce7 !important;
 }
 
-.prose td, td {
-    padding: 10px 14px !important;
-    font-size: 0.90rem !important;
-    color: #334155 !important;
+.gradio-container td, .prose td, td {
+    padding: 11px 16px !important;
+    font-size: 0.89rem !important;
+    color: #1e293b !important;
     vertical-align: middle !important;
-    line-height: 1.5 !important;
-    border: 1px solid #e2e8f0 !important;
+    line-height: 1.55 !important;
+    border-top: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.gradio-container td strong, .prose td strong, td strong {
+    color: #064e3b !important;
+    font-weight: 600 !important;
+}
+
+.gradio-container td code, .prose td code, td code {
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #047857 !important;
+    padding: 2px 7px !important;
+    border-radius: 5px !important;
+    font-size: 0.84rem !important;
+    font-weight: 600 !important;
+    border: 1px solid rgba(52, 211, 153, 0.35) !important;
+}
+
+/* Dark Mode Data Tables */
+.dark .gradio-container table, .dark .prose table, .dark table {
+    background: #0f172a !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .gradio-container th, .dark .prose th, .dark th {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%) !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid #34d399 !important;
+}
+
+.dark .gradio-container tr, .dark .prose tr, .dark tr {
+    border-bottom: 1px solid #1e293b !important;
+}
+
+.dark .gradio-container tr:nth-child(even), .dark .prose tr:nth-child(even), .dark tr:nth-child(even) {
+    background-color: rgba(6, 78, 59, 0.22) !important;
+}
+
+.dark .gradio-container tr:hover, .dark .prose tr:hover, .dark tr:hover {
+    background-color: rgba(16, 185, 129, 0.18) !important;
+}
+
+.dark .gradio-container td, .dark .prose td, .dark td {
+    color: #f1f5f9 !important;
+    border-bottom: 1px solid #1e293b !important;
+}
+
+.dark .gradio-container td strong, .dark .prose td strong, .dark td strong {
+    color: #6ee7b7 !important;
+}
+
+.dark .gradio-container td code, .dark .prose td code, .dark td code {
+    background: rgba(16, 185, 129, 0.22) !important;
+    color: #a7f3d0 !important;
+    border-color: rgba(52, 211, 153, 0.4) !important;
 }
 
 /* Pipeline Preformatted Diagram */
