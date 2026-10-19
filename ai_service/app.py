@@ -473,18 +473,58 @@ async def run_tts_gradio(text: str, language: str):
 
 
 async def run_advisory_audio_gradio(adv_res: dict[str, Any], language: str):
-    """Converts generated advisory into speech audio narration."""
+    """Converts complete agronomic advisory (Points 1 to 4 + Safety Notice) into neural speech audio narration."""
     if not adv_res or not isinstance(adv_res, dict) or "error" in adv_res:
         return None
+
+    lang_code = (language or "gu").lower().strip()
+    if "guj" in lang_code or lang_code == "gu":
+        lang_code = "gu"
+        section_titles = {
+            "immediate_action": "૧. તાત્કાલિક પગલાં:",
+            "treatment": "૨. ભલામણ કરેલ ઉપચાર:",
+            "prevention": "૩. રોગ અટકાવવાના ઉપાયો:",
+            "monitoring": "૪. ખેતર નિરીક્ષણ પદ્ધતિ:",
+            "safety_disclaimer": "સુરક્ષા સૂચના:",
+        }
+    elif "hin" in lang_code or lang_code == "hi":
+        lang_code = "hi"
+        section_titles = {
+            "immediate_action": "१. त्वरित कदम:",
+            "treatment": "२. अनुशंसित उपचार:",
+            "prevention": "३. रोकथाम एवं बचाव के उपाय:",
+            "monitoring": "४. फसल निगरानी प्रोटोकॉल:",
+            "safety_disclaimer": "सुरक्षा सूचना:",
+        }
+    else:
+        lang_code = "en"
+        section_titles = {
+            "immediate_action": "1. Immediate Action:",
+            "treatment": "2. Recommended Treatment:",
+            "prevention": "3. Cultural and Organic Prevention:",
+            "monitoring": "4. Field Monitoring Protocol:",
+            "safety_disclaimer": "Safety Notice:",
+        }
+
     parts = []
-    if adv_res.get("immediate_action"):
-        parts.append(adv_res["immediate_action"])
-    if adv_res.get("treatment"):
-        parts.append(adv_res["treatment"])
+    # Build complete multi-point spoken narration across all 4 agronomic sections
+    for field in ["immediate_action", "treatment", "prevention", "monitoring"]:
+        val = adv_res.get(field)
+        if val and isinstance(val, str) and val.strip():
+            header = section_titles.get(field, "")
+            parts.append(f"{header} {val.strip()}")
+
+    # Conclude with safety disclaimer if present
+    disclaimer = adv_res.get("safety_disclaimer")
+    if disclaimer and isinstance(disclaimer, str) and disclaimer.strip():
+        disc_clean = re.sub(r"^(?:DISCLAIMER|અસ્વીકરણ|अस्वीकरण)\s*:\s*", "", disclaimer.strip(), flags=re.IGNORECASE)
+        parts.append(f"{section_titles.get('safety_disclaimer', '')} {disc_clean}")
+
     text_to_speak = " ".join(parts).strip()
     if not text_to_speak:
         return None
-    return await run_tts_gradio(text_to_speak, language)
+
+    return await run_tts_gradio(text_to_speak, lang_code)
 
 
 def run_translation_gradio(text: str, target_lang_name: str):
