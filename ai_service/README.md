@@ -8,6 +8,9 @@ sdk_version: 5.16.0
 app_file: app.py
 suggested_hardware: cpu-basic
 pinned: false
+models:
+  - ai4bharat/indictrans2-en-indic-dist-200M
+  - Qwen/Qwen2.5-1.5B-Instruct
 tags:
   - agriculture
   - smart-farming
