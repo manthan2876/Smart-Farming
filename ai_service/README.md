@@ -270,6 +270,7 @@ You can customize this Space using Hugging Face Space Secrets or environment var
 
 ## Author & License
 
-- **Lead Developer**: **Maharsh Patel** ([@Maharsh8805](https://huggingface.co/Maharsh8805))
+- **Lead Developer & Model Architect**: **Manthan Patel**
+- **Hugging Face Space Host**: [Maharsh8805 / smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)
 - **Monorepo Repository**: [GitHub — Maharsh8805 / Smart-Farming](https://github.com/Maharsh8805/Smart-Farming)
 - **License**: Released under the [MIT License](https://opensource.org/licenses/MIT).

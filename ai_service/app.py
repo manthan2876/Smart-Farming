@@ -17,6 +17,10 @@ CURRENT_DIR = Path(__file__).resolve().parent
 if str(CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(CURRENT_DIR))
 
+# Ensure Gradio binds explicitly to port 7860 without fallback probing to 7861
+os.environ["GRADIO_SERVER_PORT"] = "7860"
+os.environ["GRADIO_SERVER_NAME"] = "0.0.0.0"
+
 # ZeroGPU hook detection
 try:
     import spaces
@@ -974,7 +978,8 @@ curl -X POST https://maharsh8805-smart-farming-ai.hf.space/advisory/advise \\
         gr.HTML(
             """
 <div style="text-align: center; color: #64748b; font-size: 0.9rem; padding: 24px 0 12px 0; border-top: 1px solid #e2e8f0; margin-top: 24px;">
-    🌾 <b>Smart Farming AI</b> &bull; Developed by <a href="https://huggingface.co/Maharsh8805" target="_blank" style="color: #059669; text-decoration: none; font-weight: 600;">Maharsh Patel</a> &bull; 
+    🌾 <b>Smart Farming AI</b> &bull; Developed by <b>Manthan Patel</b> &bull; 
+    Hosted on <a href="https://huggingface.co/spaces/Maharsh8805/smart-farming-ai" target="_blank" style="color: #059669; text-decoration: none; font-weight: 600;">HF Spaces</a> &bull; 
     Powered by PyTorch, EfficientNet, YOLOv8, IndicTrans2 &amp; Edge-TTS &bull; 
     Licensed under MIT
 </div>
@@ -989,7 +994,7 @@ curl -X POST https://maharsh8805-smart-farming-ai.hf.space/advisory/advise \\
 demo = build_gradio_ui()
 
 # Mount Gradio onto the FastAPI app so both UI and REST endpoints (/health, /vision, /tts, etc.) work!
-app = gr.mount_gradio_app(fastapi_app, demo, path="/", server_port=7860)
+app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 
 # Signal ZeroGPU host supervisor that startup initialization is ready
 trigger_zerogpu_startup()
