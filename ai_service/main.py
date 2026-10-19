@@ -105,5 +105,4 @@ app.add_api_route("/synthesize", tts_router.routes[1].endpoint, methods=["POST"]
 if __name__ == "__main__":
     import uvicorn
     # Hugging Face Spaces exposes port 7860
-    port = int(os.getenv("PORT", 7860))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=settings.DEBUG)
+    uvicorn.run("main:app", host="0.0.0.0", port=7860, reload=settings.DEBUG)

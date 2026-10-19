@@ -737,12 +737,12 @@ Licensed under MIT
 demo = build_gradio_ui()
 
 # Mount Gradio onto the FastAPI app so both UI and REST endpoints (/health, /vision, /tts, etc.) work!
-app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+app = gr.mount_gradio_app(fastapi_app, demo, path="/", server_port=7860)
 
 # Signal ZeroGPU host supervisor that startup initialization is ready
 trigger_zerogpu_startup()
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 7860))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # Hugging Face Spaces routes user traffic to port 7860
+    uvicorn.run(app, host="0.0.0.0", port=7860)
