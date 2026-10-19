@@ -372,7 +372,7 @@ def build_gradio_ui():
 ### Enterprise Crop Disease Diagnostics, Severity Assessment & Multilingual Agronomic Advisory Hub
 
 [![Microservice Status](https://img.shields.io/badge/Status-Active%20%26%20Online-00C853?style=flat-square)](/health)
-[![API Documentation](https://img.shields.io/badge/REST%20API-FastAPI%20Swagger%20Docs-009688?style=flat-square)](/docs)
+[![Production Architecture](https://img.shields.io/badge/Microservice-FastAPI%20%2B%20Gradio-009688?style=flat-square)](#)
 [![Supported Crops](https://img.shields.io/badge/Crops%20Supported-5%20Major%20Cash%20Crops-2E7D32?style=flat-square)](#)
 [![Diseases Covered](https://img.shields.io/badge/Conditions%20Covered-32%20Pathologies-1565C0?style=flat-square)](#)
 [![Languages](https://img.shields.io/badge/Languages-English%20%7C%20Hindi%20%7C%20Gujarati-FF8F00?style=flat-square)](#)
@@ -707,7 +707,7 @@ External applications (such as our Flutter Android App and React Web Dashboard) 
 | **Translation** | `/translation/translate` | `POST` | JSON: `{texts: [...], target_lang: "hi"|"gu"}` |
 | **Speech** | `/tts/synthesize` | `POST` | JSON: `{text, language: "gu"|"hi"|"en"}` |
 
-📖 **Interactive Documentation**: Access the interactive Swagger API documentation at **[`/docs`](/docs)** or download OpenAPI specification at **[`/openapi.json`](/openapi.json)**.
+🔒 **Secure API Architecture**: Direct public Swagger browsing is disabled. Endpoints are consumed securely via authenticated backend calls and tested directly via the interactive studios above.
 """
                     )
 

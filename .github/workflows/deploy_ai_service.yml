@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'ai_service/**'
+      - '.github/workflows/deploy_ai_service.yml'
   workflow_dispatch:
 
 jobs:
@@ -33,11 +34,16 @@ jobs:
           git clone --depth 1 https://Maharsh8805:${HF_TOKEN}@huggingface.co/spaces/Maharsh8805/smart-farming-ai hf_mirror
 
           echo "Synchronizing ai_service source files..."
-          for f in app.py main.py requirements.txt README.md config.yaml advisory_kb.json packages.txt Dockerfile; do
+          for f in app.py main.py requirements.txt README.md config.yaml advisory_kb.json packages.txt; do
             if [ -f "ai_service/$f" ]; then
               cp "ai_service/$f" "hf_mirror/$f"
             fi
           done
+
+          # Purge unused Dockerfile and any compiled bytecode from Space mirror
+          rm -f hf_mirror/Dockerfile
+          find hf_mirror -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+          find hf_mirror -type f -name "*.pyc" -delete 2>/dev/null || true
 
           for dir in core routers vision_engine training; do
             if [ -d "ai_service/$dir" ]; then
@@ -54,6 +60,9 @@ jobs:
           done
 
           cd hf_mirror
+
+          # Stage all additions, updates, and removals (__pycache__, Dockerfile)
+          git add -A
 
           if [ -z "$(git status --porcelain)" ]; then
             echo "Hugging Face Space is already up to date. No deployment needed."

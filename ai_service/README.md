@@ -29,7 +29,7 @@ license: mit
 > **Enterprise-Grade, Multilingual Agricultural AI for Crop Leaf Disease Diagnostics, Severity Assessment & ICAR/KVK-Aligned Farmer Advisories**
 
 [![Live Health Check](https://img.shields.io/badge/Service%20Status-Active%20%26%20Online-00C853?style=for-the-badge&logo=fastapi)](https://maharsh8805-smart-farming-ai.hf.space/health)
-[![FastAPI Docs](https://img.shields.io/badge/Swagger%20UI-Interactive%20Docs-009688?style=for-the-badge&logo=swagger)](https://maharsh8805-smart-farming-ai.hf.space/docs)
+[![FastAPI Microservice](https://img.shields.io/badge/FastAPI-Production%20Microservice-009688?style=for-the-badge&logo=fastapi)](https://maharsh8805-smart-farming-ai.hf.space/health)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2%2B%20CPU%20%2F%20ZeroGPU-EE4C2C?style=for-the-badge&logo=pytorch)](https://pytorch.org)
 [![Gradio](https://img.shields.io/badge/Gradio-5.16%2B-FF7C00?style=for-the-badge&logo=gradio)](https://gradio.app)
 
@@ -200,7 +200,7 @@ The Space mounts a production FastAPI application alongside Gradio on port `7860
 | `/translation/translate` | `POST` | `application/json` | Translate English agronomic texts to Hindi (`hi`) or Gujarati (`gu`) |
 | `/tts/synthesize` | `POST` | `application/json` | Synthesize neural voice audio in `gu`, `hi`, or `en` |
 
-📖 **Interactive Swagger UI**: Explore and test endpoints directly at **[`https://maharsh8805-smart-farming-ai.hf.space/docs`](https://maharsh8805-smart-farming-ai.hf.space/docs)**.
+🔒 **Protected API Architecture**: Direct public Swagger UI browsing is disabled. Microservice endpoints are consumed programmatically via authenticated backend calls and tested via the interactive Gradio studios above.
 
 ---
 

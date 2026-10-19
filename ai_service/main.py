@@ -36,6 +36,9 @@ app = FastAPI(
     title=settings.SERVICE_NAME,
     version=settings.VERSION,
     description="Unified AI microservice for crop vision, Indic translation, agronomic advisory, and neural speech.",
+    docs_url=None,       # Disable Swagger UI (/docs)
+    redoc_url=None,      # Disable ReDoc (/redoc)
+    openapi_url=None,    # Disable OpenAPI schema export (/openapi.json)
 )
 
 # CORS Middleware
@@ -52,8 +55,8 @@ START_TIME = time.time()
 
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
-    # Allow public health and docs endpoints without secret
-    if request.url.path in ("/", "/health", "/docs", "/openapi.json"):
+    # Allow public health check endpoints without secret
+    if request.url.path in ("/", "/health"):
         return await call_next(request)
 
     # If GATEWAY_SECRET is configured, enforce Bearer authentication
