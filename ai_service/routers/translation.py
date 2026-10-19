@@ -143,7 +143,263 @@ _AGRONOMIC_SEED_TRANSLATIONS: dict[str, dict[str, str]] = {
     },
 }
 
+CHEMICAL_RECOMMENDATIONS: dict[str, dict[str, str]] = {
+    "Azoxystrobin 18.2% + Difenoconazole 11.4% SC @ 1 ml/L or Chlorothalonil 75% WP @ 2 g/L upon label confirmation": {
+        "gu": "એઝોક્સીસ્ટ્રોબિન 18.2% + ડાયફેનોકોનાઝોલ 11.4% SC @ 1 મિલી/લિ અથવા ક્લોરોથાલોનીલ 75% WP @ 2 ગ્રામ/લિ લેબલ ચકાસણી મુજબ",
+        "hi": "एज़ोक्सीस्ट्रोबिन 18.2% + डाइफेनोकोनाज़ोल 11.4% SC @ 1 मिली/लीटर या क्लोरोथालोनिल 75% WP @ 2 ग्राम/लीटर लेबल पुष्टि के अनुसार",
+    },
+    "Soil drenching with Carbendazim 50% WP @ 1 g/L or Trichoderma viride enriched FYM under KVK verification": {
+        "gu": "કાર્બેન્ડાઝીમ 50% WP @ 1 ગ્રામ/લિ સાથે જમીનમાં ડ્રેન્ચિંગ (પિયત) અથવા KVK ચકાસણી હેઠળ ટ્રાઇકોડર્મા વિરીડી સમૃદ્ધ છાણીયું ખાતર",
+        "hi": "कार्बेन्डाजिम 50% WP @ 1 ग्राम/लीटर के साथ मिट्टी में ड्रेन्चिंग या KVK सत्यापन के तहत ट्राइकोडर्मा विरिडी समृद्ध गोबर की खाद",
+    },
+    "Mancozeb 75% WP @ 2.5 g/L or Tebuconazole 25.9% EC @ 1 ml/L": {
+        "gu": "મેન્કોઝેબ 75% WP @ 2.5 ગ્રામ/લિ અથવા ટેબ્યુકોનાઝોલ 25.9% EC @ 1 મિલી/લિ",
+        "hi": "मैंकोजेब 75% WP @ 2.5 ग्राम/लीटर या टेबुकोनाज़ोल 25.9% EC @ 1 मिली/लीटर",
+    },
+    "Foliar micronutrient spray: Ferrous Sulfate 0.5% + Citric Acid 0.1% or Zinc Sulfate 0.2%": {
+        "gu": "છંટકાવ માટે સૂક્ષ્મ પોષકતત્વો: ફેરસ સલ્ફેટ 0.5% + સાઇટ્રિક એસિડ 0.1% અથવા ઝિંક સલ્ફેટ 0.2%",
+        "hi": "पर्णीय सूक्ष्म पोषक तत्व छिड़काव: फेरस सल्फेट 0.5% + साइट्रिक एसिड 0.1% या जिंक सल्फेट 0.2%",
+    },
+    "Imidacloprid 17.8% SL @ 0.3 ml/L or Thiamethoxam 25% WG @ 0.25 g/L to manage aphid vector": {
+        "gu": "મોલો-મશી (એફિડ) નિયંત્રણ માટે ઈમિડાક્લોપ્રિડ 17.8% SL @ 0.3 મિલી/લિ અથવા થાયામેથોક્સામ 25% WG @ 0.25 ગ્રામ/લિ",
+        "hi": "माहू (एफिड) कीट नियंत्रण के लिए इमिडाक्लोप्रिड 17.8% SL @ 0.3 मिली/लीटर या थायमेथॉक्सम 25% WG @ 0.25 ग्राम/लीटर",
+    },
+    "Copper Oxychloride 50% WP @ 2.5 g/L with Streptocycline 0.5 g/10 L drenching under KVK recommendation": {
+        "gu": "કોપર ઓક્સીક્લોરાઇડ 50% WP @ 2.5 ગ્રામ/લિ સાથે સ્ટ્રેપ્ટોસાયક્લીન 0.5 ગ્રામ/10 લિટર KVK ભલામણ મુજબ ડ્રેન્ચિંગ",
+        "hi": "कॉपर ऑक्सीक्लोराइड 50% WP @ 2.5 ग्राम/लीटर के साथ स्ट्रेप्टोसाइक्लिन 0.5 ग्राम/10 लीटर KVK सिफारिश के तहत ड्रेन्चिंग",
+    },
+    "Carbendazim + Mancozeb @ 2 g/L or Azoxystrobin 23% SC @ 1 ml/L": {
+        "gu": "કાર્બેન્ડાઝીમ + મેન્કોઝેબ @ 2 ગ્રામ/લિ અથવા એઝોક્સીસ્ટ્રોબિન 23% SC @ 1 મિલી/લિ",
+        "hi": "कार्बेन्डाजिम + मैंकोजेब @ 2 ग्राम/लीटर या एज़ोक्सीस्ट्रोबिन 23% SC @ 1 मिली/लीटर",
+    },
+    "Bio-nematicides (Paecilomyces lilacinus @ 5 kg/ha) or Neem cake @ 250 kg/ha; chemical nematicides only under official permit": {
+        "gu": "જૈવિક નેમાટીસાઇડ્સ (પેસિલોમાયસીસ લિલાસીનસ @ 5 કિગ્રા/હેક્ટર) અથવા લીંબોળીનો ખોળ @ 250 કિગ્રા/હેક્ટર; રાસાયણિક નેમાટીસાઇડ્સ ફક્ત સત્તાવાર પરવાનગી હેઠળ",
+        "hi": "जैव-नेमाटीसाइड्स (पैसिलोमाइसीस लिलासिनस @ 5 किग्रा/हेक्टेयर) या नीम की खली @ 250 किग्रा/हेक्टेयर; रासायनिक नेमाटीसाइड्स केवल आधिकारिक अनुमति के तहत",
+    },
+    "Chlorantraniliprole 18.5% SC @ 0.3 ml/L or Acetamiprid 20% SP @ 0.2 g/L under label guidelines": {
+        "gu": "ક્લોરાન્ટ્રાનિલીપ્રોલ 18.5% SC @ 0.3 મિલી/લિ અથવા એસિટામિપ્રિડ 20% SP @ 0.2 ગ્રામ/લિ લેબલ માર્ગદર્શિકા મુજબ",
+        "hi": "क्लोरेंट्रानिलीप्रोल 18.5% SC @ 0.3 मिली/लीटर या एसिटामिप्रिड 20% SP @ 0.2 ग्राम/लीटर लेबल दिशानिर्देशों के अनुसार",
+    },
+    "Thiamethoxam 25% WG @ 0.3 g/L or Flonicamid 50% WG @ 0.3 g/L for aphid vector management": {
+        "gu": "મોલો-મશી (એફિડ) નિયંત્રણ માટે થાયામેથોક્સામ 25% WG @ 0.3 ગ્રામ/લિ અથવા ફ્લોનિકામિડ 50% WG @ 0.3 ગ્રામ/લિ",
+        "hi": "माहू (एफिड) कीट नियंत्रण के लिए थायमेथॉक्सम 25% WG @ 0.3 ग्राम/लीटर या फ्लोनिकामिड 50% WG @ 0.3 ग्राम/लीटर",
+    },
+    "Mancozeb 75% WP @ 2.5 g/L or Azoxystrobin + Difenoconazole @ 1 ml/L": {
+        "gu": "મેન્કોઝેબ 75% WP @ 2.5 ગ્રામ/લિ અથવા એઝોક્સીસ્ટ્રોબિન + ડાયફેનોકોનાઝોલ @ 1 મિલી/લિ",
+        "hi": "मैंकोजेब 75% WP @ 2.5 ग्राम/लीटर या एज़ोक्सीस्ट्रोबिन + डाइफेनोकोनाज़ोल @ 1 मिली/लीटर",
+    },
+    "Diafenthiuron 50% WP @ 1.2 g/L or Spinetoram 11.7% SC @ 1 ml/L for vector management": {
+        "gu": "વાહક જીવાત નિયંત્રણ માટે ડાયફેન્થિયુરોન 50% WP @ 1.2 ગ્રામ/લિ અથવા સ્પીનેટોરામ 11.7% SC @ 1 મિલી/લિ",
+        "hi": "वाहक कीट नियंत्रण के लिए डायफेन्थियूरॉन 50% WP @ 1.2 ग्राम/लीटर या स्पिनिटोरम 11.7% SC @ 1 मिली/लीटर",
+    },
+    "Calcium Nitrate @ 5 g/L + Boron @ 1 g/L or 19-19-19 water-soluble foliar spray": {
+        "gu": "કેલ્શિયમ નાઇટ્રેટ @ 5 ગ્રામ/લિ + બોરોન @ 1 ગ્રામ/લિ અથવા 19-19-19 પાણીમાં દ્રાવ્ય પાન પર છંટકાવ",
+        "hi": "कैल्शियम नाइट्रेट @ 5 ग्राम/लीटर + बोरॉन @ 1 ग्राम/लीटर या 19-19-19 पानी में घुलनशील पर्णीय छिड़काव",
+    },
+    "Wettable Sulfur 80% WP @ 3 g/L or Hexaconazole 5% EC @ 1 ml/L": {
+        "gu": "વેટેબલ સલ્ફર 80% WP @ 3 ગ્રામ/લિ અથવા હેક્ઝાકોનાઝોલ 5% EC @ 1 મિલી/લિ",
+        "hi": "घुलनशील सल्फर 80% WP @ 3 ग्राम/लीटर या हेक्साकोनाज़ोल 5% EC @ 1 मिली/लीटर",
+    },
+}
+
+_AGRONOMIC_CLAUSE_MAP: dict[str, dict[str, str]] = {
+    "gu": {
+        "upon label confirmation": "લેબલ ચકાસણી મુજબ",
+        "under KVK verification": "KVK ચકાસણી હેઠળ",
+        "under KVK recommendation": "KVK ભલામણ મુજબ",
+        "under KVK guidance": "KVK માર્ગદર્શન હેઠળ",
+        "under local KVK supervision": "સ્થાનિક KVK દેખરેખ હેઠળ",
+        "under label guidelines": "લેબલ માર્ગદર્શિકા મુજબ",
+        "only under official permit": "ફક્ત સત્તાવાર પરવાનગી હેઠળ",
+        "under official permit": "સત્તાવાર પરવાનગી હેઠળ",
+        "to manage aphid vector": "મોલો-મશી (એફિડ) નિયંત્રણ માટે",
+        "for aphid vector management": "મોલો-મશી (એફિડ) નિયંત્રણ માટે",
+        "for vector management": "વાહક જીવાત નિયંત્રણ માટે",
+        "Soil drenching with": "સાથે જમીનમાં ડ્રેન્ચિંગ (પિયત)",
+        "water-soluble foliar spray": "પાણીમાં દ્રાવ્ય પાન પર છંટકાવ",
+        "Foliar micronutrient spray:": "છંટકાવ માટે સૂક્ષ્મ પોષકતત્વો:",
+        "Foliar micronutrient spray": "છંટકાવ માટે સૂક્ષ્મ પોષકતત્વો",
+        "or Neem cake": "અથવા લીંબોળીનો ખોળ",
+        "Bio-nematicides": "જૈવિક નેમાટીસાઇડ્સ",
+        "chemical nematicides": "રાસાયણિક નેમાટીસાઇડ્સ",
+        "drenching under KVK recommendation": "સાથે KVK ભલામણ મુજબ ડ્રેન્ચિંગ",
+        "drenching": "ડ્રેન્ચિંગ (પિયત)",
+        "enriched FYM": "સમૃદ્ધ છાણીયું ખાતર",
+        "FYM": "છાણીયું ખાતર",
+        " or ": " અથવા ",
+        " with ": " સાથે ",
+        " @ 1 ml/L": " @ 1 મિલી/લિ",
+        " @ 2 ml/L": " @ 2 મિલી/લિ",
+        " @ 0.3 ml/L": " @ 0.3 મિલી/લિ",
+        " @ 0.5 ml/L": " @ 0.5 મિલી/લિ",
+        " @ 1 g/L": " @ 1 ગ્રામ/લિ",
+        " @ 2 g/L": " @ 2 ગ્રામ/લિ",
+        " @ 2.5 g/L": " @ 2.5 ગ્રામ/લિ",
+        " @ 3 g/L": " @ 3 ગ્રામ/લિ",
+        " @ 5 g/L": " @ 5 ગ્રામ/લિ",
+        " @ 0.2 g/L": " @ 0.2 ગ્રામ/લિ",
+        " @ 0.25 g/L": " @ 0.25 ગ્રામ/લિ",
+        " @ 0.3 g/L": " @ 0.3 ગ્રામ/લિ",
+        " @ 5 kg/ha": " @ 5 કિગ્રા/હેક્ટર",
+        " @ 250 kg/ha": " @ 250 કિગ્રા/હેક્ટર",
+        " 0.5 g/10 L": " 0.5 ગ્રામ/10 લિટર",
+        " 1 ml/L": " 1 મિલી/લિ",
+        " 2 g/L": " 2 ગ્રામ/લિ",
+    },
+    "hi": {
+        "upon label confirmation": "लेबल पुष्टि के अनुसार",
+        "under KVK verification": "KVK सत्यापन के तहत",
+        "under KVK recommendation": "KVK सिफारिश के तहत",
+        "under KVK guidance": "KVK मार्गदर्शन के तहत",
+        "under local KVK supervision": "स्थानीय KVK देखरेख में",
+        "under label guidelines": "लेबल दिशानिर्देशों के अनुसार",
+        "only under official permit": "केवल आधिकारिक अनुमति के तहत",
+        "under official permit": "आधिकारिक अनुमति के तहत",
+        "to manage aphid vector": "माहू (एफिड) कीट नियंत्रण के लिए",
+        "for aphid vector management": "माहू कीट नियंत्रण के लिए",
+        "for vector management": "वाहक कीट नियंत्रण के लिए",
+        "Soil drenching with": "के साथ मिट्टी में ड्रेन्चिंग",
+        "water-soluble foliar spray": "पानी में घुलनशील पर्णीय छिड़काव",
+        "Foliar micronutrient spray:": "पर्णीय सूक्ष्म पोषक तत्व छिड़काव:",
+        "Foliar micronutrient spray": "पर्णीय सूक्ष्म पोषक तत्व छिड़काव",
+        "or Neem cake": "या नीम की खली",
+        "Bio-nematicides": "जैव-नेमाटीसाइड्स",
+        "chemical nematicides": "रासायनिक नेमाटीसाइड्स",
+        "drenching under KVK recommendation": "के साथ KVK सिफारिश के तहत ड्रेन्चिंग",
+        "drenching": "ड्रेन्चिंग",
+        "enriched FYM": "समृद्ध गोबर की खाद",
+        "FYM": "गोबर की खाद",
+        " or ": " या ",
+        " with ": " के साथ ",
+        " @ 1 ml/L": " @ 1 मिली/लीटर",
+        " @ 2 ml/L": " @ 2 मिली/लीटर",
+        " @ 0.3 ml/L": " @ 0.3 मिली/लीटर",
+        " @ 0.5 ml/L": " @ 0.5 मिली/लीटर",
+        " @ 1 g/L": " @ 1 ग्राम/लीटर",
+        " @ 2 g/L": " @ 2 ग्राम/लीटर",
+        " @ 2.5 g/L": " @ 2.5 ग्राम/लीटर",
+        " @ 3 g/L": " @ 3 ग्राम/लीटर",
+        " @ 5 g/L": " @ 5 ग्राम/लीटर",
+        " @ 0.2 g/L": " @ 0.2 ग्राम/लीटर",
+        " @ 0.25 g/L": " @ 0.25 ग्राम/लीटर",
+        " @ 0.3 g/L": " @ 0.3 ग्राम/लीटर",
+        " @ 5 kg/ha": " @ 5 किग्रा/हेक्टेयर",
+        " @ 250 kg/ha": " @ 250 किग्रा/हेक्टेयर",
+        " 0.5 g/10 L": " 0.5 ग्राम/10 लीटर",
+        " 1 ml/L": " 1 मिली/लीटर",
+        " 2 g/L": " 2 ग्राम/लीटर",
+    },
+}
+
+_CHEMICAL_NAME_MAP: dict[str, dict[str, str]] = {
+    "gu": {
+        "Azoxystrobin": "એઝોક્સીસ્ટ્રોબિન",
+        "Difenoconazole": "ડાયફેનોકોનાઝોલ",
+        "Chlorothalonil": "ક્લોરોથાલોનીલ",
+        "Carbendazim": "કાર્બેન્ડાઝીમ",
+        "Mancozeb": "મેન્કોઝેબ",
+        "Trichoderma viride": "ટ્રાઇકોડર્મા વિરીડી",
+        "Tebuconazole": "ટેબ્યુકોનાઝોલ",
+        "Ferrous Sulfate": "ફેરસ સલ્ફેટ",
+        "Citric Acid": "સાઇટ્રિક એસિડ",
+        "Zinc Sulfate": "ઝિંક સલ્ફેટ",
+        "Imidacloprid": "ઈમિડાક્લોપ્રિડ",
+        "Thiamethoxam": "થાયામેથોક્સામ",
+        "Copper Oxychloride": "કોપર ઓક્સીક્લોરાઇડ",
+        "Streptocycline": "સ્ટ્રેપ્ટોસાયક્લીન",
+        "Chlorantraniliprole": "ક્લોરાન્ટ્રાનિલીપ્રોલ",
+        "Acetamiprid": "એસિટામિપ્રિડ",
+        "Flonicamid": "ફ્લોનિકામિડ",
+        "Diafenthiuron": "ડાયફેન્થિયુરોન",
+        "Spinetoram": "સ્પીનેટોરામ",
+        "Calcium Nitrate": "કેલ્શિયમ નાઇટ્રેટ",
+        "Boron": "બોરોન",
+        "Hexaconazole": "હેક્ઝાકોનાઝોલ",
+        "Sulfur": "સલ્ફર",
+        "Wettable Sulfur": "વેટેબલ સલ્ફર",
+        "Neem oil": "લીમડાનું તેલ",
+        "Neem cake": "લીંબોળીનો ખોળ",
+        "Pyraclostrobin": "પાયરાક્લોસ્ટ્રોબિન",
+        "Chlorpyrifos": "ક્લોરપાયરીફોસ",
+    },
+    "hi": {
+        "Azoxystrobin": "एज़ोक्सीस्ट्रोबिन",
+        "Difenoconazole": "डाइफेनोकोनाज़ोल",
+        "Chlorothalonil": "क्लोरोथालोनिल",
+        "Carbendazim": "कार्बेन्डाजिम",
+        "Mancozeb": "मैंकोजेब",
+        "Trichoderma viride": "ट्राइकोडर्मा विरिडी",
+        "Tebuconazole": "टेबुकोनाज़ोल",
+        "Ferrous Sulfate": "फेरस सल्फेट",
+        "Citric Acid": "साइट्रिक एसिड",
+        "Zinc Sulfate": "जिंक सल्फेट",
+        "Imidacloprid": "इमिडाक्लोप्रिड",
+        "Thiamethoxam": "थायमेथॉक्सम",
+        "Copper Oxychloride": "कॉपर ऑक्सीक्लोराइड",
+        "Streptocycline": "स्ट्रेप्टोसाइक्लिन",
+        "Chlorantraniliprole": "क्लोरेंट्रानिलीप्रोल",
+        "Acetamiprid": "एसिटामिप्रिड",
+        "Flonicamid": "फ्लोनिकामिड",
+        "Diafenthiuron": "डायफेन्थियूरॉन",
+        "Spinetoram": "स्पिनिटोरम",
+        "Calcium Nitrate": "कैल्शियम नाइट्रेट",
+        "Boron": "बोरॉन",
+        "Hexaconazole": "हेक्साकोनाज़ोल",
+        "Sulfur": "सल्फर",
+        "Wettable Sulfur": "घुलनशील सल्फर",
+        "Neem oil": "नीम का तेल",
+        "Neem cake": "नीम की खली",
+        "Pyraclostrobin": "पायराक्लोस्ट्रोबिन",
+        "Chlorpyrifos": "क्लोरपायरीफॉस",
+    },
+}
+
+
+def translate_chemical_recommendation(chem_text: str, target_code: str) -> str:
+    """Translates agricultural chemical formulations and dosages accurately into Gujarati or Hindi."""
+    clean = chem_text.strip()
+    if target_code not in ("hi", "gu"):
+        return clean
+    if clean in CHEMICAL_RECOMMENDATIONS and target_code in CHEMICAL_RECOMMENDATIONS[clean]:
+        return CHEMICAL_RECOMMENDATIONS[clean][target_code]
+
+    res = clean
+    for phrase, tr in _AGRONOMIC_CLAUSE_MAP.get(target_code, {}).items():
+        res = res.replace(phrase, tr)
+    for chem, tr in _CHEMICAL_NAME_MAP.get(target_code, {}).items():
+        res = re.sub(r"\b" + re.escape(chem) + r"\b", tr, res)
+    return res
+
+
+def translate_treatment_recommendation(text: str, target_code: str) -> str:
+    """Translates [Recommended: ...] clauses embedded in treatment advisory text."""
+    if not text or target_code not in ("hi", "gu"):
+        return text
+    prefix = "ભલામણ કરેલ" if target_code == "gu" else "अनुशंसित"
+
+    def repl(m: re.Match) -> str:
+        inner = m.group(1).strip()
+        trans = translate_chemical_recommendation(inner, target_code)
+        return f"[{prefix}: {trans}]"
+
+    return re.sub(r"\[Recommended:\s*(.+?)\]", repl, text, flags=re.IGNORECASE)
+
+
 _AGRONOMIC_PATTERNS = [
+    (
+        re.compile(r"^\[Recommended:\s*(.+?)\]$", re.IGNORECASE),
+        {
+            "gu": lambda m: f"[ભલામણ કરેલ: {translate_chemical_recommendation(m.group(1), 'gu')}]",
+            "hi": lambda m: f"[अनुशंसित: {translate_chemical_recommendation(m.group(1), 'hi')}]",
+        }
+    ),
+    (
+        re.compile(r"^Recommended:\s*(.+)$", re.IGNORECASE),
+        {
+            "gu": lambda m: f"ભલામણ કરેલ: {translate_chemical_recommendation(m.group(1), 'gu')}",
+            "hi": lambda m: f"अनुशंसित: {translate_chemical_recommendation(m.group(1), 'hi')}",
+        }
+    ),
     (
         re.compile(r"^No verified guidance is stored for (.+?) - (.+?)\. Please consult your local KVK or agriculture officer\.?$", re.IGNORECASE),
         {
@@ -173,7 +429,7 @@ def _init_cache():
     global _cache
 
     # 1. Load persisted cache from disk if available
-    if CACHE_FILE.exists():
+    if CACHE_FILE.exists() and CACHE_FILE.stat().st_size > 0:
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 _cache = json.load(f)
@@ -209,6 +465,16 @@ def _init_cache():
                                 if len(en_sents) == len(tr_sents):
                                     for es, ts in zip(en_sents, tr_sents):
                                         _cache[f"{lang}:{es}"] = ts
+
+                chem_rec = cond_val.get("chemical_recommendation")
+                if chem_rec and isinstance(chem_rec, str) and "none" not in chem_rec.lower() and "requires local diagnosis" not in chem_rec.lower():
+                    for lang in ("hi", "gu"):
+                        tr_chem = translate_chemical_recommendation(chem_rec, lang)
+                        lbl = "ભલામણ કરેલ" if lang == "gu" else "अनुशंसित"
+                        _cache[f"{lang}:[Recommended: {chem_rec.strip()}]"] = f"[{lbl}: {tr_chem.strip()}]"
+                        _cache[f"{lang}:Recommended: {chem_rec.strip()}"] = f"{lbl}: {tr_chem.strip()}"
+                        _cache[f"{lang}:{chem_rec.strip()}"] = tr_chem.strip()
+
             logger.info("Indexed %d verified sentence pairs from advisory_kb.json.", loaded_kb_pairs)
         except Exception as exc:
             logger.warning("Failed to extract translation pairs from KB: %s", exc)
@@ -244,6 +510,13 @@ def resolve_agronomic_phrase(text: str, target_code: str) -> Optional[str]:
         return None
 
     clean = text.strip()
+
+    # Direct match for chemical recommendations with or without brackets
+    if clean.startswith("[Recommended:") and clean.endswith("]"):
+        return translate_treatment_recommendation(clean, target_code)
+    if "[Recommended:" in clean:
+        return translate_treatment_recommendation(clean, target_code)
+
     cache_key = f"{target_code}:{clean}"
     if cache_key in _cache:
         return _cache[cache_key]
@@ -464,18 +737,24 @@ def translate_single_text(text: str, target_code: str) -> str:
 
     if not needs_external and len(translated_sentences) == len(sentences):
         assembled = " ".join(ts for ts in translated_sentences if ts)
+        if "[Recommended:" in assembled:
+            assembled = translate_treatment_recommendation(assembled, target_code)
         _cache[cache_key] = assembled
         return assembled
 
     # Tier 3: Fast Cloud Groq LLM (if key provided, ~300ms)
     groq_res = _call_groq_translate(clean, target_code)
     if groq_res:
+        if "[Recommended:" in groq_res:
+            groq_res = translate_treatment_recommendation(groq_res, target_code)
         _cache[cache_key] = groq_res
         return groq_res
 
     # Tier 4: Public Google Translate API (fast, robust, ~400ms)
     gt_res = _call_google_translate(clean, target_code)
     if gt_res:
+        if "[Recommended:" in gt_res:
+            gt_res = translate_treatment_recommendation(gt_res, target_code)
         _cache[cache_key] = gt_res
         return gt_res
 
@@ -483,10 +762,15 @@ def translate_single_text(text: str, target_code: str) -> str:
     indictrans_code = LANG_CODES.get(target_code, "hin_Deva")
     it_res = _run_indictrans_batch([clean], indictrans_code)
     if it_res and it_res[0]:
-        _cache[cache_key] = it_res[0]
-        return it_res[0]
+        res_t = it_res[0]
+        if "[Recommended:" in res_t:
+            res_t = translate_treatment_recommendation(res_t, target_code)
+        _cache[cache_key] = res_t
+        return res_t
 
     # Tier 6: Safe graceful fallback to source text
+    if "[Recommended:" in clean:
+        clean = translate_treatment_recommendation(clean, target_code)
     logger.info("Translation fallback used source text for: '%s'", clean[:30])
     return clean
 

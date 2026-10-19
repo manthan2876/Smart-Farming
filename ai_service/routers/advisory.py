@@ -18,8 +18,22 @@ try:
     import torch
 except ImportError:
     torch = None
-from fastapi import APIRouter
-from pydantic import BaseModel
+try:
+    from fastapi import APIRouter
+except ImportError:
+    class APIRouter:  # type: ignore
+        def get(self, *args, **kwargs):
+            return lambda fn: fn
+        def post(self, *args, **kwargs):
+            return lambda fn: fn
+
+try:
+    from pydantic import BaseModel
+except ImportError:
+    class BaseModel:  # type: ignore
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
 
 from core.config import settings
 
@@ -482,6 +496,9 @@ def _package_response(data: dict, lang: str, kb_entry: Optional[dict[str, Any]] 
     out["language"] = lang
     out["safety_disclaimer"] = DISCLAIMERS.get(lang, DISCLAIMERS["en"])
 
+    chem_rec = kb_entry.get("chemical_recommendation") if isinstance(kb_entry, dict) else None
+    has_chem = bool(chem_rec and "none" not in chem_rec.lower() and "requires local diagnosis" not in chem_rec.lower())
+
     # 1. Zero-latency instant verified translation from Knowledge Base
     if kb_entry and isinstance(kb_entry, dict):
         trans = kb_entry.get("translations", {}).get(lang)
@@ -489,16 +506,23 @@ def _package_response(data: dict, lang: str, kb_entry: Optional[dict[str, Any]] 
             for k in FIELDS:
                 if trans.get(k):
                     out[k] = trans[k]
+            if has_chem and out.get("treatment") and "[Recommended:" not in out["treatment"] and "ભલામણ કરેલ:" not in out["treatment"] and "अनुशंसित:" not in out["treatment"]:
+                from routers.translation import translate_chemical_recommendation
+                rec_label = "ભલામણ કરેલ" if lang == "gu" else "अनुशंसित"
+                translated_chem = translate_chemical_recommendation(chem_rec, lang)
+                out["treatment"] = f"{out['treatment']} [{rec_label}: {translated_chem}]"
             return out
 
     # 2. Dynamic in-process translation via IndicTrans2 if needed
     try:
-        from routers.translation import translate_texts
+        from routers.translation import translate_texts, translate_treatment_recommendation
 
         texts_to_translate = [data[k] for k in FIELDS]
         translated = translate_texts(texts_to_translate, lang)
 
         for k, tr in zip(FIELDS, translated):
+            if "[Recommended:" in tr:
+                tr = translate_treatment_recommendation(tr, lang)
             out[k] = tr
         return out
     except Exception as exc:

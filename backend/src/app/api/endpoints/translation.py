@@ -50,6 +50,10 @@ def _rec_is_valid_indic(
             trans = rec.get(k)
             if not trans or not isinstance(trans, str) or not any(is_indic_char(ch, lang) for ch in trans):
                 return False
+            # Check for untranslated English [Recommended: ...] chemical clause in treatment
+            if k == "treatment" and "[Recommended:" in orig:
+                if "[Recommended:" in trans:
+                    return False
             verified_any = True
 
     return verified_any
