@@ -319,7 +319,7 @@ bash deploy.sh
 ```
 
 > [!IMPORTANT]
-> Hugging Face Spaces container runtime requires the server to bind strictly to port `7860`. Both `ai_service/app.py` and `ai_service/main.py` explicitly bind to `0.0.0.0:7860`.
+> Hugging Face Spaces container runtime requires the server to bind strictly to port `7860`. The unified entrypoint `ai_service/app.py` explicitly binds to `0.0.0.0:7860`.
 
 ---
 
@@ -464,7 +464,7 @@ For private on-premise deployments or air-gapped field servers:
 
 ### Error: Address already in use (`Errno 98` / Port `7861`) on Hugging Face Spaces
 - **Cause:** Gradio defaulted to port `7861` because another process was detected or port wasn't explicitly bounded.
-- **Resolution:** In both `ai_service/app.py` and `ai_service/main.py`, enforce `server_port=7860` and `port=7860`.
+- **Resolution:** In `ai_service/app.py`, enforce `server_port=7860` and `port=7860`.
 
 ### Supabase SSL Connection Refused
 - **Cause:** Connecting to direct port `6543` without SSL or through an IPv6-only network.
