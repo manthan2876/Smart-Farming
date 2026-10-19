@@ -1319,10 +1319,10 @@ curl -X POST https://maharsh8805-smart-farming-ai.hf.space/advisory/advise \\
         gr.HTML(
             """
 <div style="text-align: center; color: #64748b; font-size: 0.9rem; padding: 24px 0 12px 0; border-top: 1px solid #e2e8f0; margin-top: 24px;">
-    🌾 <b>Smart Farming AI</b> &bull; Developed by <b>Manthan Patel</b> &bull; 
+    🌾 <b>Smart Farming AI</b> &bull; Developed by <b>Manthan Kuvadiya</b> &bull; 
     Hosted on <a href="https://huggingface.co/spaces/Maharsh8805/smart-farming-ai" target="_blank" style="color: #059669; text-decoration: none; font-weight: 600;">HF Spaces</a> &bull; 
-    Powered by PyTorch, EfficientNet, YOLOv8, IndicTrans2 &amp; Edge-TTS &bull; 
-    Licensed under MIT
+    <a href="https://github.com/manthan2876/Smart-Farming" target="_blank" style="color: #059669; text-decoration: none; font-weight: 600;">GitHub Repository</a> &bull; 
+    Powered by PyTorch, EfficientNet, YOLOv8, IndicTrans2 &amp; Edge-TTS
 </div>
 """
         )
