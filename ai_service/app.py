@@ -17,7 +17,8 @@ CURRENT_DIR = Path(__file__).resolve().parent
 if str(CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(CURRENT_DIR))
 
-# Ensure Gradio binds explicitly to port 7860 without fallback probing to 7861
+# Ensure Gradio binds explicitly to port 7860 and disables SSR mode (which attempts Node 7861 proxying)
+os.environ["GRADIO_SSR_MODE"] = "False"
 os.environ["GRADIO_SERVER_PORT"] = "7860"
 os.environ["GRADIO_SERVER_NAME"] = "0.0.0.0"
 
@@ -74,11 +75,12 @@ fastapi_app.add_middleware(
 
 @fastapi_app.middleware("http")
 async def security_middleware(request: Request, call_next):
-    # Allow public health check endpoints without secret
-    if request.url.path in ("/", "/health"):
+    # Allow public health check endpoints and all Gradio UI static assets
+    path = request.url.path
+    if path in ("/", "/health") or path.startswith(("/_app", "/assets", "/config", "/theme.css", "/gradio_api", "/favicon")):
         return await call_next(request)
 
-    # If GATEWAY_SECRET is configured, enforce Bearer authentication
+    # If GATEWAY_SECRET is configured, enforce Bearer authentication on custom API endpoints
     secret = settings.GATEWAY_SECRET
     if secret:
         auth_header = request.headers.get("Authorization", "")
@@ -1002,4 +1004,4 @@ trigger_zerogpu_startup()
 if __name__ == "__main__":
     import uvicorn
     # Hugging Face Spaces routes user traffic to port 7860
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    uvicorn.run(app, host="0.0.0.0", port=7860, proxy_headers=True, forwarded_allow_ips="*")
