@@ -313,7 +313,7 @@ def format_advisory_markdown(
 
 
 # ==============================================================================
-# GPU-Accelerated Functions & ZeroGPU Startup
+# Execution Functions (ZeroGPU with Automatic CPU Fallback)
 # ==============================================================================
 
 @spaces.GPU
@@ -322,36 +322,83 @@ def _spaces_gpu_startup():
     return True
 
 
-@spaces.GPU(duration=120)
-def run_advisory_gradio(crop: str, disease: str, confidence: float, language: str):
-    """Executes advisory lookup and synthesis, returning formatted Markdown and raw JSON."""
+def _run_advisory_core(crop: str, disease: str, confidence: float, language: str):
+    """Executes advisory lookup and synthesis on CPU."""
+    from routers.advisory import advise, AdvisoryRequest
+    req = AdvisoryRequest(crop=crop, disease=disease, confidence=confidence, language=language)
+    res = advise(req)
+    md = format_advisory_markdown(res, crop, disease, confidence, language)
+    return md, res
+
+
+@spaces.GPU(duration=25)
+def _run_advisory_gpu(crop: str, disease: str, confidence: float, language: str):
+    return _run_advisory_core(crop, disease, confidence, language)
+
+
+def run_advisory_gradio(crop: str, disease: str, confidence: float, language: str, prefer_cpu: bool = True):
+    """Executes advisory lookup and synthesis with 100% resilient CPU fallback if ZeroGPU quota is reached."""
+    if prefer_cpu:
+        try:
+            return _run_advisory_core(crop, disease, confidence, language)
+        except Exception as exc:
+            return f"### ❌ Advisory Generation Error\n`{str(exc)}`", {"error": str(exc)}
+
+    # Attempt ZeroGPU execution first; if quota is exhausted or unavailable, fall back cleanly to CPU!
     try:
-        from routers.advisory import advise, AdvisoryRequest
-        req = AdvisoryRequest(crop=crop, disease=disease, confidence=confidence, language=language)
-        res = advise(req)
-        md = format_advisory_markdown(res, crop, disease, confidence, language)
-        return md, res
+        return _run_advisory_gpu(crop, disease, confidence, language)
     except Exception as exc:
-        err_msg = f"### ❌ Advisory Generation Error\n`{str(exc)}`"
-        return err_msg, {"error": str(exc)}
+        logger.info("ZeroGPU unavailable or quota reached (%s). Falling back seamlessly to CPU.", exc)
+        try:
+            md, res = _run_advisory_core(crop, disease, confidence, language)
+            if isinstance(md, str):
+                md = "💡 *[⚡ Notice: ZeroGPU quota exhausted or unavailable. Completed via CPU fallback]*\n\n" + md
+            return md, res
+        except Exception as cpu_exc:
+            return f"### ❌ Advisory Generation Error\n`{str(cpu_exc)}`", {"error": str(cpu_exc)}
 
 
-@spaces.GPU(duration=30)
-def run_vision_gradio(image):
-    """Executes multi-stage vision pipeline on uploaded leaf image."""
+def _run_vision_core(image):
+    """Executes multi-stage vision pipeline on CPU."""
     if image is None:
         return "### ⚠️ No Image Provided\nPlease upload a leaf image or click one of the sample images below.", {"error": "No image uploaded"}
+    import cv2
+    from vision_engine.pipeline import run_vision_pipeline
+    # Gradio passes RGB numpy array -> OpenCV expects BGR
+    image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    res = run_vision_pipeline(image_bgr, filename="gradio_test.jpg")
+    md = format_vision_markdown(res)
+    return md, res
+
+
+@spaces.GPU(duration=20)
+def _run_vision_gpu(image):
+    return _run_vision_core(image)
+
+
+def run_vision_gradio(image, prefer_cpu: bool = True):
+    """Executes multi-stage vision pipeline with 100% resilient CPU fallback if ZeroGPU quota is reached."""
+    if image is None:
+        return "### ⚠️ No Image Provided\nPlease upload a leaf image or click one of the sample images below.", {"error": "No image uploaded"}
+
+    if prefer_cpu:
+        try:
+            return _run_vision_core(image)
+        except Exception as exc:
+            return f"### ❌ Vision Inference Error\n`{str(exc)}`", {"error": str(exc)}
+
+    # Attempt ZeroGPU execution first; if quota is exhausted or unavailable, fall back cleanly to CPU!
     try:
-        import cv2
-        from vision_engine.pipeline import run_vision_pipeline
-        # Gradio passes RGB numpy array -> OpenCV expects BGR
-        image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        res = run_vision_pipeline(image_bgr, filename="gradio_test.jpg")
-        md = format_vision_markdown(res)
-        return md, res
+        return _run_vision_gpu(image)
     except Exception as exc:
-        err_msg = f"### ❌ Vision Inference Error\n`{str(exc)}`"
-        return err_msg, {"error": str(exc)}
+        logger.info("ZeroGPU unavailable or quota reached (%s). Falling back seamlessly to CPU.", exc)
+        try:
+            md, res = _run_vision_core(image)
+            if isinstance(md, str):
+                md = "💡 *[⚡ Notice: ZeroGPU quota exhausted or unavailable. Completed via CPU fallback]*\n\n" + md
+            return md, res
+        except Exception as cpu_exc:
+            return f"### ❌ Vision Inference Error\n`{str(cpu_exc)}`", {"error": str(cpu_exc)}
 
 
 def run_health_gradio():
@@ -718,6 +765,11 @@ The pipeline automatically runs **OpenCV quality validation**, **crop species id
                                 inputs=vision_in,
                                 label="🌿 Preloaded Test Samples (Click to load):",
                             )
+                        vision_cpu_chk = gr.Checkbox(
+                            value=True,
+                            label="⚡ Run on CPU (Instant diagnosis, 0 GPU quota consumed)",
+                            info="Uncheck only if you have remaining ZeroGPU quota and want dynamic GPU allocation.",
+                        )
                         vision_btn = gr.Button("🔍 Run Multi-Stage Vision Analysis", variant="primary", size="lg")
     
                     with gr.Column(scale=1):
@@ -727,7 +779,7 @@ The pipeline automatically runs **OpenCV quality validation**, **crop species id
     
                 vision_btn.click(
                     fn=run_vision_gradio,
-                    inputs=vision_in,
+                    inputs=[vision_in, vision_cpu_chk],
                     outputs=[vision_md_out, vision_json_out],
                 )
     
@@ -778,6 +830,11 @@ biological treatments, prevention practices, and field monitoring instructions i
                             value="gu",
                             label="4. Target Advisory Language",
                         )
+                        adv_cpu_chk = gr.Checkbox(
+                            value=True,
+                            label="⚡ Run on CPU (Instant advisory, 0 GPU quota consumed)",
+                            info="Uncheck only if you have remaining ZeroGPU quota and want dynamic GPU allocation.",
+                        )
                         adv_btn = gr.Button("📋 Generate Agronomic Advisory", variant="primary", size="lg")
     
                     with gr.Column(scale=1):
@@ -790,7 +847,7 @@ biological treatments, prevention practices, and field monitoring instructions i
     
                 adv_btn.click(
                     fn=run_advisory_gradio,
-                    inputs=[crop_in, disease_in, conf_in, lang_in],
+                    inputs=[crop_in, disease_in, conf_in, lang_in, adv_cpu_chk],
                     outputs=[adv_md_out, adv_json_out],
                 )
                 adv_audio_btn.click(
@@ -997,6 +1054,8 @@ demo = build_gradio_ui()
 
 # Mount Gradio onto the FastAPI app so both UI and REST endpoints (/health, /vision, /tts, etc.) work!
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+# Provide server instance so ZeroGPU request supervisor doesn't emit No blocks.server warning
+demo.server = app
 
 # Signal ZeroGPU host supervisor that startup initialization is ready
 trigger_zerogpu_startup()
