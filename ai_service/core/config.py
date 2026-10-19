@@ -9,7 +9,11 @@ from pathlib import Path
 try:
     from pydantic_settings import BaseSettings
 except ImportError:
-    from pydantic import BaseModel as BaseSettings
+    try:
+        from pydantic import BaseModel as BaseSettings
+    except ImportError:
+        class BaseSettings:  # type: ignore
+            pass
 try:
     import torch
 except ImportError:

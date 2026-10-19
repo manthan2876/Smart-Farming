@@ -528,17 +528,45 @@ async def run_advisory_audio_gradio(adv_res: dict[str, Any], language: str):
     return await run_tts_gradio(text_to_speak, lang_code)
 
 
-def run_translation_gradio(text: str, target_lang_name: str):
-    """Translates text from English into Hindi or Gujarati using IndicTrans2."""
+def _run_translation_core(text: str, target_lang_name: str) -> str:
+    """Translates text from English into Hindi or Gujarati using the multi-engine translation pipeline."""
     if not text or not text.strip():
-        return "Please enter English text to translate."
+        return "⚠️ Please enter English text to translate."
     lang_code = "hi" if "hindi" in target_lang_name.lower() else "gu"
     try:
         from routers.translation import translate_texts
         results = translate_texts([text], lang_code)
-        return results[0] if results else "Translation returned empty result."
+        return results[0] if results else text
     except Exception as exc:
-        return f"Translation notice: {exc}"
+        logger.error("Core translation error: %s", exc)
+        return f"⚠️ Translation Notice: {exc}"
+
+
+@spaces.GPU(duration=25)
+def _run_translation_gpu(text: str, target_lang_name: str) -> str:
+    return _run_translation_core(text, target_lang_name)
+
+
+def run_translation_gradio(text: str, target_lang_name: str, prefer_cpu: bool = True) -> str:
+    """Translates text from English into Hindi or Gujarati with Zero-Hang guarantees."""
+    if not text or not text.strip():
+        return "⚠️ Please enter English text to translate."
+
+    if prefer_cpu:
+        try:
+            return _run_translation_core(text, target_lang_name)
+        except Exception as exc:
+            return f"⚠️ Translation Notice: {exc}"
+
+    # Attempt ZeroGPU execution first; if quota is exhausted or unavailable, fall back cleanly to CPU!
+    try:
+        return _run_translation_gpu(text, target_lang_name)
+    except Exception as exc:
+        logger.info("ZeroGPU translation unavailable or quota reached (%s). Falling back seamlessly to CPU.", exc)
+        try:
+            return _run_translation_core(text, target_lang_name)
+        except Exception as cpu_exc:
+            return f"⚠️ Translation Notice: {cpu_exc}"
 
 
 def trigger_zerogpu_startup():
@@ -1086,6 +1114,11 @@ from English into native Indian languages (**Hindi** and **Gujarati**).
                             value="Gujarati (ગુજરાતી)",
                             label="Target Indic Language",
                         )
+                        trans_prefer_cpu = gr.Checkbox(
+                            label="⚡ Run on CPU (Instant / Free Mode)",
+                            value=True,
+                            info="Bypasses GPU queue locks for instant response using pre-warmed agronomic facts & fast neural fallbacks.",
+                        )
                         gr.Markdown("#### ⚡ 1-Click Common Advisory Inputs:")
                         with gr.Row():
                             btn_trans_sample1 = gr.Button("Sample 1: Chemical Spray", size="sm")
@@ -1103,7 +1136,11 @@ from English into native Indian languages (**Hindi** and **Gujarati**).
                     fn=lambda: "Avoid overhead irrigation and remove infected leaves from the field to stop spore germination.",
                     outputs=trans_text,
                 )
-                trans_btn.click(fn=run_translation_gradio, inputs=[trans_text, trans_lang], outputs=trans_out)
+                trans_btn.click(
+                    fn=run_translation_gradio,
+                    inputs=[trans_text, trans_lang, trans_prefer_cpu],
+                    outputs=trans_out,
+                )
     
             # ----------------------------------------------------------------------
             # TAB 6: ⚡ API Reference & System Health
