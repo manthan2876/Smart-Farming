@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 2.0  
-**Date:** 06 October 2026  
+**Date:** 19 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -24,19 +24,22 @@ This document describes what the project currently does, how complete each capab
 
 ---
 
+---
+
 ## Executive Summary
 
 The core AI diagnosis pipeline supports two execution modes controlled by `REQUIRE_REDIS`:
 
-**Default / Serverless mode (`REQUIRE_REDIS=False`):**
+**Default / Production Cloud mode (`REQUIRE_REDIS=False`):**
 
 1. The user uploads a JPEG, PNG, or WebP leaf image via `POST /predict`.
-2. The backend validates the content-type and extension, verifies the file bytes with PIL `Image.verify()` (magic-byte check), hashes the image, and checks the Upstash Redis REST dedup cache (`sf:dedup:{hash}`, 24 h TTL). A cached completed result is returned immediately.
-3. The image is saved to the active storage backend (local disk or AWS S3 in production).
-4. `run_pipeline()` is called **synchronously** in the request: calls the model service (Cloud Run Service #2) via HTTPS with OIDC auth, runs the 8-stage pipeline (preprocessing → crop identification → decision routing → disease classification → severity estimation → pest detection → weather → recommendation), then persists to PostgreSQL.
-5. A RAG retriever injects verified agronomic safety guidelines (pesticide bans, PHI constraints) into the LLM prompt.
-6. The completed result is saved to Upstash Redis REST dedup cache and returned immediately in the same HTTP response. `FastAPI BackgroundTasks` pre-translates the recommendation into Hindi and Gujarati, storing them in the `entity_translations` table for instant future lookups.
-7. If disease or crop confidence is below the configured threshold, `ensure_expert_review()` automatically creates a pending expert-review record.
+2. The backend validates the content-type and extension, verifies the file bytes with PIL `Image.verify()` (binary magic-byte check), hashes the image, and checks the Upstash Redis REST dedup cache (`sf:dedup:{hash}`, 24 h TTL). A cached completed result is returned immediately (<20ms).
+3. The image is saved to the active storage backend (**Supabase Object Storage** `smart-farming-data-dev` with 15-minute signed URLs in production, or AWS S3 / local disk).
+4. `run_pipeline()` is called **synchronously** in the request: calls the consolidated AI microservice on Hugging Face Spaces (`https://maharsh8805-smart-farming-ai.hf.space`, port 7860), runs the 7-stage vision pipeline (preprocessing → crop identification → leaf isolation → disease classification → severity estimation → pest detection → decision routing), then persists findings to Supabase Managed PostgreSQL.
+5. Live ambient weather is enriched via OpenWeatherMap (cached for 30 minutes in Upstash under `sf:weather:{lat}:{lon}`).
+6. An agronomic advisory recommendation is generated via Qwen2.5-1.5B local in-memory or Groq Llama-3.3-70B, validated against ICAR/KVK regional practice rules (`advisory_kb.json`).
+7. The completed result is saved to Upstash Redis REST dedup cache and returned immediately in the HTTP response. `FastAPI BackgroundTasks` pre-translates the recommendation into Hindi and Gujarati using IndicTrans2 dist-200M, storing them in the `entity_translations` table for instant future lookups.
+8. If disease or crop confidence is below the configured threshold (`0.70`), `ensure_expert_review()` automatically creates a pending expert-review record.
 
 **ARQ worker mode (`REQUIRE_REDIS=True`):**
 
@@ -44,19 +47,13 @@ The core AI diagnosis pipeline supports two execution modes controlled by `REQUI
 4. The prediction job is enqueued into ARQ; a placeholder DB record and `prediction_id` are returned immediately (202-style response).
 5. The ARQ worker runs the pipeline; each stage publishes a Redis pub/sub event for WebSocket streaming. The `POST /predict` response is a placeholder with `status.pipeline: "processing"`.
 
-**Scheduled crons (production):** QStash (`QSTASH_TOKEN`, `QSTASH_URL`) delivers webhook calls to `/api/v1/internal-cron/weather-risk` (verified with `CRON_SECRET`) for proactive weather-risk alert generation.
+**Scheduled crons & keepalive (production):** 
+- QStash delivers scheduled webhook calls to `/api/v1/internal-cron/weather-risk` (verified with `CRON_SECRET`) for proactive weather-risk alert generation.
+- Automated external keepalive pings via `cron-jobs.org` (every 10 minutes) keep the Render backend and Hugging Face Space active.
 
-The mobile application has been fully rebuilt from a prototype to a working farmer-facing client: full JWT authentication, farm/plot management, weather with TTS, alerts, feedback, expert-review escalation, on-demand translation, and a cloud TTS service with on-device fallback — all orchestrated by a 5-screen bottom-navigation shell (`FarmerShell`).
+The mobile application is a fully functional farmer-facing client: full JWT authentication, farm/plot management, weather with TTS, alerts, feedback, expert-review escalation, on-demand translation, and cloud TTS service with on-device fallback — all orchestrated by a 5-screen bottom-navigation shell (`FarmerShell`).
 
-The web frontend is a functional multi-role application with a shared typed API client, token refresh, weather with TTS, admin dashboard with drift metrics and model health, and an operational MLOps dataset export that works end-to-end.
-
-**Key remaining gaps:**
-
-- ARQ worker runs in a separate OS process; `pipeline.reload_config()` only affects the FastAPI process. Model promotions require a worker restart to take effect.
-- Login rate limiting uses a hard-coded development secret key; the `X-User-ID` identity fallback is still active in production code paths.
-- `refresh_token` cookie is set with `secure=False`; must be changed before HTTPS deployment.
-- Mobile offline queue uses `SharedPreferences` for raw image bytes — not durable for large payloads; `plot_id` is not preserved in the queue item.
-- Test coverage is limited. Admin metrics, expert review, farm geometry, RAG, model registry, translation, and mobile parsing have no automated tests.
+The web frontend is a functional multi-role application on Vercel with a shared typed API client, token refresh, weather with TTS, admin dashboard with drift metrics and model health, and an operational MLOps dataset export that works end-to-end.
 
 ---
 
@@ -64,23 +61,23 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 ### 1.1 Image upload and request validation
 
-**Status: Mostly implemented**
+**Status: Implemented**
 
 **What works:**
 
 - `POST /predict` accepts JPEG, PNG, and WebP via multipart form upload.
 - `settings.UPLOAD_MAX_BYTES` enforces a server-side file size limit (default 10 MB).
 - **File bytes are independently verified:** PIL `Image.verify()` (magic-byte / header decode check) runs before the file is persisted. Malformed files with a valid extension are rejected with `400 Bad Request`.
-- The file content is SHA-256 hashed; identical image bytes reuse the same filename on disk.
+- The file content is SHA-256 hashed; identical image bytes reuse the same filename on disk or in Supabase Object Storage.
 - A completed prediction for the same file and same plot is returned from the Upstash Redis REST dedup cache (24 h TTL) without re-running the pipeline.
-- Files are saved under `backend/data/uploads` via `core/paths.py`; all path logic runs through `resolve_storage_path()`, which prevents path traversal outside the configured storage root.
+- Files are saved under `backend/data/uploads` or committed to Supabase Object Storage (`smart-farming-data-dev`) with time-bounded signed URLs.
 - In `REQUIRE_REDIS=False` mode (default), a synchronous model-service call runs the full pipeline within the request and returns the completed result immediately. In `REQUIRE_REDIS=True` (ARQ) mode, a quality pre-check runs synchronously before enqueuing; user-readable rejection reasons are returned for `failed_blur`, `failed_lighting`, and `failed_no_leaf`.
 - Content-type headers are validated (`_ALLOWED_CONTENT_TYPES`); extension-based fallback handles clients that omit content-type.
+- Geographic reference coordinates are configured to Gujarat, India (`DEFAULT_LAT=21.7645`, `DEFAULT_LON=72.1519`, `DEFAULT_LOCATION="Gujarat, India"`), ensuring authentic agronomic weather lookups when client GPS is omitted.
 
 **Known gaps:**
 
 - No idempotency key for two simultaneous identical requests arriving in parallel (race condition window between dedup check and prediction insert).
-- Default lat/lon fallback is Warsaw (52.2297, 21.0122) — a dev artifact; unset clients produce geographically incorrect weather data.
 - Upload metadata such as device model, capture time, or GPS EXIF is not extracted or stored.
 
 **Relevant code:**
@@ -88,12 +85,12 @@ The web frontend is a functional multi-role application with a shared typed API 
 - [predict.py](../backend/src/app/api/endpoints/predict.py) — upload handler, PIL validation, dedup cache, sync pipeline or ARQ enqueue
 - [preprocessing/service.py](../backend/src/app/services/preprocessing/service.py) — blur/lighting/leaf detection
 - [core/paths.py](../backend/src/app/core/paths.py) — path resolution and traversal protection
-- [core/config.py](../backend/src/app/core/config.py) — upload size and storage roots
+- [core/config.py](../backend/src/app/core/config.py) — upload size, geographic defaults, and storage roots
 
 **What to improve:**
 
 - Add idempotency protection for concurrent duplicate uploads (dedup check → insert race window).
-- Resolve Warsaw default lat/lon — require clients to send location or improve GPS fallback.
+- Extract GPS EXIF from raw camera uploads when present.
 - Surface content-type rejection as a clear user-facing message on the scan page.
 - Add tests for oversized files, wrong content-type, duplicate concurrent uploads.
 
@@ -1386,7 +1383,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 
 **What works:**
 
-- **Mode A: Synchronous / Serverless default (`REQUIRE_REDIS=False`):** Predictions execute synchronously via `run_pipeline()`, calling the model service (Service #2) directly. Caching and deduplication use Upstash Serverless Redis REST (`sf:dedup:{hash}`). No background polling worker is required, allowing Cloud Run containers to scale to zero.
+- **Mode A: Synchronous / Production Cloud default (`REQUIRE_REDIS=False`):** Predictions execute synchronously via `run_pipeline()`, calling the unified AI microservice on Hugging Face Spaces (`https://maharsh8805-smart-farming-ai.hf.space`) directly. Caching and deduplication use Upstash Serverless Redis REST (`sf:dedup:{hash}`). No background polling worker is required, keeping memory usage minimal and avoiding persistent socket timeouts.
 - **Mode B: Asynchronous ARQ task queue (`REQUIRE_REDIS=True`):**
   - FastAPI startup initializes an ARQ Redis pool (`core/arq.py`); stored in `app.state.arq_pool`.
   - `POST /predict` enqueues via `arq_pool.enqueue_job("process_prediction_job", ...)`. Returns `503` if pool is unavailable.
@@ -1419,9 +1416,10 @@ The web frontend is a functional multi-role application with a shared typed API 
 - `core/paths.py` provides `ensure_storage_directories()`, `resolve_backend_path()`, `resolve_storage_path()` (with path traversal protection), and `storage_relative_path()`.
 - Storage directories: `DATA_ROOT`, `UPLOAD_ROOT`, `PROCESSED_ROOT`, `AUDIO_ROOT` — all resolved from `settings`.
 - Modular storage backend abstraction (`core/storage.py`):
-  - `LocalStorageBackend`: Local filesystem storage with direct file I/O and relative URL serving.
+  - `SupabaseStorageBackend`: Production default object storage client managing buckets on Supabase (`smart-farming-data-dev`) with time-bounded signed URLs (15-min expiry).
+  - `LocalStorageBackend`: Local filesystem storage with direct file I/O and relative URL serving for offline development.
   - `S3StorageBackend`: Object storage client supporting AWS S3 with AES-256 server-side encryption and SigV4 authentication.
-  - `get_storage()` factory instantiates the active backend based on `STORAGE_BACKEND` (`"local"`, `"s3"`).
+  - `get_storage()` factory instantiates the active backend based on `STORAGE_BACKEND` (`"supabase"`, `"local"`, `"s3"`).
   - Presigned URL generation for secure client media access (`storage.get_url(...)` with configurable expiration).
   - Orphaned blob purge utility (`purge_orphaned_blobs`) supporting `dry_run` previews and configurable grace periods.
 
@@ -1447,7 +1445,7 @@ The web frontend is a functional multi-role application with a shared typed API 
 - **24-hour unread deduplication (`_alert_exists`):** Suppresses creating duplicate unread alerts of the same kind for the same plot if one was generated within the previous 24 hours.
 - **Multi-channel execution:**
   - ARQ cron: runs at 06:00, 12:00, 18:00 UTC daily in dedicated worker environments.
-  - Serverless QStash webhook: `POST /api/v1/internal-cron/weather-risk` verified with `CRON_SECRET` for Cloud Run environments.
+  - Serverless QStash webhook: `POST /api/v1/internal-cron/weather-risk` verified with `CRON_SECRET` for cloud production environments.
   - Manual admin trigger: `POST /admin/weather-risk/trigger` for on-demand evaluation and validation.
 
 **Known gaps:**
@@ -1599,4 +1597,4 @@ The web frontend is a functional multi-role application with a shared typed API 
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 06 October 2026*
+*Last Updated: 19 October 2026*

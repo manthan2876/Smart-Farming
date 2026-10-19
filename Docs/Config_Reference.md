@@ -1,13 +1,13 @@
 # Configuration Reference — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 06 October 2026  
+**Version:** 2.1 (Monorepo & Cloud Architecture)  
+**Date:** 19 October 2026  
 **Status:** Active / Production Reference  
 
 ---
 
-This document is the single source of truth for all runtime configuration in the Smart Farming platform. It covers the ML pipeline config file, backend and frontend environment variables, the model registry, and hot-reload behavior.
+This document is the definitive single source of truth for all runtime configuration in the Smart Farming platform. It covers the ML pipeline configuration file, backend environment variables, AI microservice variables, frontend and mobile environment settings, the model registry, and dynamic configuration hot-reloading.
 
 ## Table of Contents
 
@@ -15,20 +15,31 @@ This document is the single source of truth for all runtime configuration in the
    - [Full File](#full-file)
    - [Field Reference](#field-reference)
 2. [Environment Variables — Backend](#2-environment-variables--backend)
-3. [Environment Variables — Frontend](#3-environment-variables--frontend)
-4. [model_registry.json](#4-model_registryjson)
-5. [Hot Reload](#5-hot-reload)
+   - [Security & Authentication](#security--authentication)
+   - [Database](#database)
+   - [Unified AI Microservice (Single Source of Truth)](#unified-ai-microservice-single-source-of-truth)
+   - [Storage & Media Assets (Supabase Default)](#storage--media-assets-supabase-default)
+   - [Redis, Caching & Task Queues](#redis-caching--task-queues)
+   - [Upstash QStash & Internal Crons](#upstash-qstash--internal-crons)
+   - [Geographic Defaults (Indian Agricultural Reference)](#geographic-defaults-indian-agricultural-reference)
+   - [External AI & Cloud Integrations](#external-ai--cloud-integrations)
+   - [SMTP Email Dispatch](#smtp-email-dispatch)
+3. [Environment Variables — AI Microservice (Hugging Face Space)](#3-environment-variables--ai-microservice-hugging-face-space)
+4. [Environment Variables — Frontend (React)](#4-environment-variables--frontend-react)
+5. [Environment Variables — Mobile (Flutter)](#5-environment-variables--mobile-flutter)
+6. [model_registry.json](#6-model_registryjson)
+7. [Dynamic Configuration & Hot Reload](#7-dynamic-configuration--hot-reload)
 
 ---
 
 ## 1. `config.yaml` — ML Pipeline
 
-**Location:** `backend/config.yaml`
+**Location:** `backend/config.yaml` (also packaged in `ai_service/config.yaml`)
 
-Controls model paths, inference thresholds, and storage directories for the ML pipeline. All relative paths are resolved from the `backend/` directory.
+Defines model checkpoints, confidence thresholds, and local filesystem directories. All relative paths are resolved relative to the component root.
 
 > [!TIP]
-> The `thresholds` section can be updated at runtime without a server restart. See [Hot Reload](#5-hot-reload) for details.
+> The `thresholds` section can be updated at runtime without a server restart using the Admin API or Upstash Redis REST sync. See [Dynamic Configuration & Hot Reload](#7-dynamic-configuration--hot-reload).
 
 ### Full File
 
@@ -62,8 +73,8 @@ models:
   pest_classifier:
     path: models/pest_classifier/pest_classifier.pt
 thresholds:
-  crop_confidence: 0.7
-  disease_confidence: 0.7
+  crop_confidence: 0.70
+  disease_confidence: 0.70
   blur_var_threshold: 50.0
   min_brightness: 40.0
   max_brightness: 240.0
@@ -72,322 +83,263 @@ storage:
   processed_dir: data/processed/
 ```
 
----
-
 ### Field Reference
 
 #### `models.crop_identifier`
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `path` | string | `models/crop_identifier_v1.pth` | Path (relative to `backend/`) to the crop identifier PyTorch checkpoint (`.pth`). |
-| `labels` | string | `models/crop_identifier_labels.json` | Path to JSON file mapping index → class name for the crop identifier. |
-| `arch` | string | `efficientnet_b0` | EfficientNet variant string passed to `timm`. |
-
----
+- `path`: Path to crop classifier weights (`.pth`).
+- `labels`: Path to JSON index-to-label class mapping.
+- `arch`: Network backbone (default: `efficientnet_b0`).
 
 #### `models.disease_models.{CropName}`
-
-One entry per supported crop. The key **must exactly match** the class label output by the crop identifier model (case-sensitive).
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `path` | string | — | Path (relative to `backend/`) to the per-crop disease classifier checkpoint (`.pth`). |
-| `labels` | string | — | Path to the per-crop class label JSON file (index → disease name). |
-| `arch` | string | `efficientnet_b2` | EfficientNet variant string passed to `timm`. |
-
-**Supported crop keys:**
-
-| Key | Model File |
-|---|---|
-| `Cotton` | `models/disease_Cotton.pth` |
-| `Groundnut` | `models/disease_Groundnut.pth` |
-| `Pepper_Bell` | `models/disease_Pepper_Bell.pth` |
-| `Potato` | `models/disease_Potato.pth` |
-| `Tomato` | `models/disease_Tomato.pth` |
-
-> [!IMPORTANT]
-> Adding a new crop requires: (1) adding an entry under `disease_models` with the exact label string, (2) placing the checkpoint and label JSON at the specified paths, and (3) **restarting the server** — model path changes are not hot-reloadable.
-
----
+One entry per supported crop: `Cotton`, `Groundnut`, `Pepper_Bell`, `Potato`, `Tomato`. Keys must match the class output of the crop identifier.
 
 #### `models.pest_classifier`
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `path` | string | `models/pest_classifier/pest_classifier.pt` | Path to the YOLOv8 pest classifier weights (`.pt`). If the file is missing at startup, pest detection is **skipped gracefully** — the pipeline continues without raising an error. |
-
----
+- `path`: Path to YOLOv8 pest detection weights (`.pt`). If missing at startup, pest detection is gracefully bypassed without halting the diagnostic pipeline.
 
 #### `thresholds`
-
-> [!NOTE]
-> `crop_confidence` and `disease_confidence` are hot-reloadable via `PUT /admin/config`. The other threshold fields require a server restart.
-
-| Field | Type | Default | Range | Description |
-|---|---|---|---|---|
-| `crop_confidence` | float | `0.7` | 0–1 | Minimum confidence for a crop prediction to be trusted. Below this value, the crop is flagged as `unsupported_crop` and the request is escalated. Mapped to `crop_routing_threshold` in the Admin API. |
-| `disease_confidence` | float | `0.7` | 0–1 | Minimum confidence for a disease prediction. Below this value, the result is escalated to expert review (`escalation_required: true`). Mapped to `expert_escalation_cutoff` in the Admin API. |
-| `blur_var_threshold` | float | `50.0` | > 0 | Laplacian variance threshold for blur detection. Images scoring below this value are rejected with status `failed_blur`. |
-| `min_brightness` | float | `40.0` | 0–255 | Minimum HSV V-channel mean. Images below this value are rejected with status `failed_lighting` (too dark). |
-| `max_brightness` | float | `240.0` | 0–255 | Maximum HSV V-channel mean. Images above this value are rejected with status `failed_lighting` (overexposed). |
-
----
-
-#### `storage`
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `upload_dir` | string | `data/uploads/` | Directory (relative to `backend/`) where raw uploaded images are stored. |
-| `processed_dir` | string | `data/processed/` | Directory (relative to `backend/`) for OpenCV-processed images and Grad-CAM heatmaps. |
-
-> [!NOTE]
-> When `STORAGE_BACKEND=s3` or `STORAGE_BACKEND=gcs`, these directories are used as temporary local staging areas before upload. See [`STORAGE_BACKEND`](#storage) in the environment variables section.
+- `crop_confidence` (default: `0.70`): Minimum confidence required before routing to a crop-specific disease classifier. Below this cutoff, the crop is deemed ambiguous.
+- `disease_confidence` (default: `0.70`): Predictions scoring below this confidence trigger automatic escalation to the agronomist expert review queue (`status = pending_expert_review`).
+- `blur_var_threshold` (default: `50.0`): Minimum Laplacian variance for sharpness. Unfocused images are rejected with `failed_blur`.
+- `min_brightness` (default: `40.0`) & `max_brightness` (default: `240.0`): Permissible lighting range in HSV V-channel mean.
 
 ---
 
 ## 2. Environment Variables — Backend
 
-**Location:** `.env` or `backend/.env` (or Google Cloud Run environment variables)
+**Location:** `backend/.env` (Local) or Render Dashboard Environment Variables (Production)
 
-> [!CAUTION]
-> Never commit `.env` files to version control. Values marked **CHANGE IN PRODUCTION** must be replaced with strong, randomly generated secrets before any public or production deployment.
-
-### Authentication & Security
+### Security & Authentication
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `SECRET_KEY` | string | `dev-secret-key-change-me` | **⚠ CHANGE IN PRODUCTION.** Primary JWT signing key. |
-| `JWT_SECRET_KEY` | string | `dev-secret-key-change-me` | Alias for `SECRET_KEY`. Both can be set to the same value. |
+| `SECRET_KEY` | string | `dev-secret-key-change-me` | Primary JWT signing key (HS256). **Must be changed in production.** |
+| `JWT_SECRET_KEY` | string | `dev-secret-key-change-me` | Alias for `SECRET_KEY`. |
 | `ALGORITHM` | string | `HS256` | JWT signing algorithm. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | int | `30` | Access token lifetime in minutes. |
-| `ENVIRONMENT` | string | `development` | Set to `production` in live deployments to enforce security policies and production origins. |
-| `DEBUG` | bool | `True` | When `True`, enables `X-User-ID` header fallback authentication for local development. **Must be `False` in production.** |
-| `CORS_ORIGINS` | string | `http://localhost:5173,...` | Comma-separated list of allowed frontend origins (e.g. `https://smart-farming-dashboard.vercel.app,http://localhost:5173`). |
+| `ENVIRONMENT` | string | `development` | Deployment mode: `development` or `production`. In production, enforces strict security policies. |
+| `DEBUG` | bool | `True` | When `True`, enables `X-User-ID` header bypass for local dev. **Must be `False` in production.** |
+| `CORS_ORIGINS` | string | `http://localhost:5173,...` | Whitelist of frontend origins (comma-separated). Supports regex matching for `*.vercel.app`. |
 
 ### Database
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy connection DSN. For Cloud Run / production, set to Supabase managed PostgreSQL (e.g., `postgresql://postgres.<PROJECT_REF>:<DB_PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require`). Normalized automatically in `session.py` to `postgresql+psycopg2://`. |
+| `DATABASE_URL` | string | `sqlite:///./dev_database.db` | SQLAlchemy connection string. In production, points to Supabase Managed PostgreSQL via Session Pooler (`postgresql://postgres.<REF>:<PASS>@aws-0-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require`). |
+| `PROD_DATABASE_URL` | string | `None` | Optional production fallback DSN. |
 
-### Model Inference Server (Server 2)
+### Unified AI Microservice (Single Source of Truth)
 
-Used in decoupled microservices architectures (such as Google Cloud Run):
-
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `MODEL_SERVER_URL` | string | `http://127.0.0.1:8001` | URL of the dedicated PyTorch inference microservice (Cloud Run Service #2, e.g. `https://inference-service-<id>.<region>.run.app`). When configured, the main backend forwards image prediction requests to this service over HTTP/HTTPS with GCP OIDC authentication. |
-| `MODEL_SERVER_TIMEOUT` | int | `60` | HTTP request timeout in seconds when calling the inference server. |
-
-### Redis & Job Queue
+All AI, computer vision, translation, LLM advisory, and speech capabilities are centralized under the unified microservice deployed on Hugging Face Spaces.
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `UPSTASH_REDIS_REST_URL` | string | `None` | Upstash Serverless Redis REST endpoint URL (e.g. `https://<db-id>.upstash.io`). Powers high-speed translation caching, 30-min weather response caching, prediction deduplication, and dynamic admin threshold sync. 100% serverless over HTTPS. |
-| `UPSTASH_REDIS_REST_TOKEN` | string | `None` | Upstash Serverless Redis REST full-access bearer token. |
-| `REDIS_URL` | string | `redis://127.0.0.1:6379` | Legacy Redis connection URL used by the local Docker ARQ job queue. |
-| `REQUIRE_REDIS` | bool | `False` | Determines whether the backend requires local TCP Redis to run.<br>• **Cloud Run Production:** Must be **`False`**. Persistent ARQ polling workers prevent scale-to-zero and exhaust monthly free-tier quotas. With `REQUIRE_REDIS=False`, predictions run synchronously via HTTP to the inference service, allowing Cloud Run to scale to **0 instances** when idle.<br>• **Docker Compose / VM:** Can be set to `True` when running persistent background ARQ worker containers. |
+| `AI_SERVICE_URL` | string | `https://maharsh8805-smart-farming-ai.hf.space` | **Single source of truth.** Base URL of the unified AI microservice. Subroutes are automatically derived from this value. |
+| `MODEL_SERVER_URL` | string | `{AI_SERVICE_URL}/vision` | Automatically derived endpoint for the 7-stage vision pipeline. |
+| `MODEL_SERVER_TIMEOUT` | int | `120` | Maximum timeout in seconds for deep learning vision inference. |
+| `TRANSLATION_SERVER_URL`| string | `{AI_SERVICE_URL}/translation` | Automatically derived endpoint for IndicTrans2 translation. |
+| `TRANSLATION_SERVER_TIMEOUT` | float | `45.0` | Timeout in seconds for regional translation queries. |
+| `ADVISORY_SERVER_URL` | string | `{AI_SERVICE_URL}/advisory` | Automatically derived endpoint for LLM agronomic advisory. |
+| `ADVISORY_SERVER_TIMEOUT` | float | `60.0` | Timeout in seconds for LLM reasoning. |
+| `TTS_SERVER_URL` | string | `{AI_SERVICE_URL}/tts` | Automatically derived endpoint for neural speech synthesis. |
+| `TTS_SERVER_TIMEOUT` | float | `90.0` | Timeout in seconds for audio generation. |
+| `GATEWAY_API_KEY` | string | `None` | Optional Bearer authorization key for securing the AI microservice. |
 
-### QStash (Serverless Cron)
+> [!NOTE]
+> Pydantic model validators in `backend/src/app/core/config.py` automatically sanitize endpoints and purge obsolete tunnels (`trycloudflare.com`, `workers.dev`, `ngrok`), ensuring all subroutes consistently point to `AI_SERVICE_URL`.
 
-Upstash QStash is used for durable, serverless cron scheduling in Cloud Run production environments — replacing ARQ polling workers that would otherwise prevent scale-to-zero.
+### Storage & Media Assets (Supabase Default)
 
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `QSTASH_REGION` | string | `US_EAST_1` | QStash region (e.g., `US_EAST_1`). |
-| `QSTASH_URL` | string | `None` | Upstash QStash API base URL (e.g., `https://qstash-us-east-1.upstash.io/v2`). |
-| `QSTASH_TOKEN` | string | `None` | QStash bearer token for publishing scheduled jobs. |
-| `QSTASH_CURRENT_SIGNING_KEY` | string | `None` | Current signing key for verifying incoming QStash webhook requests. |
-| `QSTASH_NEXT_SIGNING_KEY` | string | `None` | Next signing key used during key rotation to maintain zero-downtime verification. |
-| `CRON_SECRET` | string | `None` | Shared secret for verifying internal cron webhook requests delivered from QStash. |
-
-### File Uploads & Local Paths
+The backend features a unified storage abstraction layer (`backend/src/app/core/storage.py`) supporting Supabase Object Storage as the primary cloud default, with pluggable support for AWS S3 and local disk.
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `UPLOAD_MAX_BYTES` | int | `10485760` | Maximum upload file size in bytes. Default is 10 MB (10 × 1024²). |
-| `BACKEND_ROOT` | Path | Auto | Root directory of the backend repository. |
-| `CONFIG_PATH` | Path | `config.yaml` | Path to pipeline `config.yaml`. |
-| `DATA_ROOT` | Path | `data/` | Root directory for local file storage. |
+| `STORAGE_BACKEND` | string | `supabase` | Primary storage engine: `supabase` (production default), `s3`, or `local`. |
+| `SUPABASE_URL` | string | `""` | Supabase project URL (e.g., `https://<project-ref>.supabase.co`). |
+| `SUPABASE_SERVICE_ROLE_KEY` | string | `""` | Supabase privileged service role key for direct storage bucket write/delete. |
+| `SUPABASE_ANON_KEY` | string | `""` | Supabase public anonymous API key. |
+| `SUPABASE_BUCKET` | string | `smart-farming-data-dev` | Target Supabase storage bucket name for media assets. |
+| `SUPABASE_SIGNED_URL_EXPIRY_SECONDS` | int | `900` | Expiration time for signed download URLs (default: 15 minutes / 900s). |
+| `UPLOAD_MAX_BYTES` | int | `10485760` | Server-side upload ceiling (default: 10 MB / 10 × 1024²). |
 
-### ML Inference Thresholds (Fallback)
-
-These are used as fallback values only when `config.yaml` cannot be loaded. The `config.yaml` values take precedence.
-
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `CROP_CONFIDENCE_THRESHOLD` | float | `0.7` | Fallback for `thresholds.crop_confidence`. |
-| `DISEASE_CONFIDENCE_THRESHOLD` | float | `0.7` | Fallback for `thresholds.disease_confidence`. |
-
-### External AI & Cloud Services
+#### Backward-Compatible S3 Fallback Variables
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `HF_TOKEN` | string | **required** | HuggingFace user access token with read permissions. Used for the Qwen3-4B Agronomist LLM recommendation engine. |
-| `OPENWEATHER_API` | string | `""` | OpenWeatherMap API key used to enrich disease diagnostics with live ambient temperature, humidity, and rainfall. |
-| `GEMINI_API_KEY` | string | `""` | Google Gemini API key used for multimodal agronomist advisory fallback and multilingual translations. |
-| `GOOGLE_TTS_API_KEY` | string | `""` | Google Cloud Text-to-Speech API key for Gujarati, Hindi, and English voice synthesis. |
-| `TRANSLATION_SERVER_URL` | string | `""` | Base URL of dedicated IndicTrans2 translation microservice (e.g. Colab ngrok tunnel or Hugging Face Space). Powers dynamic agricultural advisory translation into Hindi and Gujarati. |
-| `TRANSLATION_SERVER_TIMEOUT` | float | `15.0` | HTTP request timeout in seconds when calling the IndicTrans2 translation server before falling back to HF Qwen / original English. |
+| `AWS_ACCESS_KEY_ID` | string | `""` | AWS IAM access key ID. |
+| `AWS_SECRET_ACCESS_KEY` | string | `""` | AWS IAM secret access key. |
+| `AWS_REGION` | string | `us-east-1` | AWS region name. |
+| `AWS_S3_BUCKET` | string | Alias to `SUPABASE_BUCKET` | AWS S3 bucket name. |
+| `S3_PRESIGNED_EXPIRY_SECONDS` | int | `900` | Alias to `SUPABASE_SIGNED_URL_EXPIRY_SECONDS`. |
 
-### SMTP Email Service (Password Reset Tokens)
-
-Used to dispatch secure, ephemeral password reset tokens via TLS email.
+### Redis, Caching & Task Queues
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `SMTP_HOST` | string | `smtp.gmail.com` | SMTP relay server hostname. |
-| `SMTP_PORT` | int | `587` | SMTP port (typically 587 for STARTTLS or 465 for SSL). |
-| `SMTP_USER` | string | `""` | Authenticated email address / sender account. |
-| `SMTP_PASSWORD` | string | `""` | SMTP application password or account credentials. |
+| `REQUIRE_REDIS` | bool | `False` | **`False` in Render / production:** Disables continuous TCP worker polling to enable instant cold starts and scale-to-zero.<br>**`True` in local dev:** Activates local ARQ worker queue. |
+| `UPSTASH_REDIS_REST_URL` | string | `None` | Upstash Serverless Redis REST endpoint (`https://<db>.upstash.io`). Powers phrase translation cache, image deduplication, weather cache, and dynamic threshold sync. |
+| `UPSTASH_REDIS_REST_TOKEN`| string | `None` | Upstash Serverless Redis REST bearer token. |
+| `LOCAL_REDIS_URL` | string | `redis://localhost:6379`| Local Redis connection URL for ARQ workers. |
+
+### Upstash QStash & Internal Crons
+
+Used for serverless scheduled jobs without maintaining always-on background worker daemons.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `QSTASH_URL` | string | `https://qstash.upstash.io/v2` | Upstash QStash REST API base URL. |
+| `QSTASH_TOKEN` | string | `None` | QStash authentication token for scheduling jobs. |
+| `QSTASH_CURRENT_SIGNING_KEY` | string | `None` | Current HMAC key used to verify incoming webhook signatures. |
+| `QSTASH_NEXT_SIGNING_KEY` | string | `None` | Next signing key used during zero-downtime key rotation. |
+| `CRON_SECRET` | string | `None` | Shared header secret (`x-cron-secret`) for verifying internal cron webhook endpoints (`/api/v1/internal-cron/*`). |
+
+### Geographic Defaults (Indian Agricultural Reference)
+
+When client GPS coordinates are omitted or unavailable, the backend uses these agricultural reference coordinates for meteorological lookups:
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `DEFAULT_LAT` | float | `21.7645` | Default latitude coordinate (Gujarat, India). |
+| `DEFAULT_LON` | float | `72.1519` | Default longitude coordinate (Gujarat, India). |
+| `DEFAULT_LOCATION` | string | `Gujarat, India` | Default location string representation. |
+
+### External AI & Cloud Integrations
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `OPENWEATHER_API` | string | `""` | OpenWeatherMap API key for live temperature, humidity, and rainfall metrics. |
+| `GROQ_API_KEY` | string | `""` | Groq cloud API key for ultra-fast Llama-3.3-70B agronomic advisory inference. |
+| `GROQ_MODEL` | string | `llama-3.3-70b-versatile` | Groq LLM model name. |
+| `GEMINI_API_KEY` | string | `""` | Google Gemini API key used as fallback for multimodal advisory. |
+| `HF_TOKEN` | string | `""` | Hugging Face user access token for model hub access. |
+
+### SMTP Email Dispatch
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SMTP_HOST` | string | `None` | SMTP mail relay server (e.g., `smtp.gmail.com` or custom SMTP provider). |
+| `SMTP_PORT` | int | `587` | SMTP port (587 for STARTTLS). |
+| `SMTP_USER` | string | `None` | Authenticated sender email address. |
+| `SMTP_PASSWORD` | string | `None` | SMTP password or app password. |
 | `SMTP_TLS` | bool | `True` | Enable STARTTLS encryption. |
-| `SMTP_FROM_EMAIL` | string | `""` | From address header (defaults to `SMTP_USER` if omitted). |
+| `EMAILS_FROM_EMAIL` | string | `None` | From email address header. |
+| `EMAILS_FROM_NAME` | string | `Smart Farming Support` | Friendly display name. |
+| `FRONTEND_URL` | string | `http://localhost:5173` | Frontend URL included in password reset email links. |
 
-### Object Storage (AWS S3)
+---
 
-The backend provides a unified, S3-compatible storage abstraction (`storage.py`) supporting local disk and AWS S3 / MinIO.
+## 3. Environment Variables — AI Microservice (Hugging Face Space)
+
+**Location:** Hugging Face Space Settings $\to$ Variables & Secrets (or `ai_service/.env`)
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `STORAGE_BACKEND` | string | `s3` | Storage driver. Options: `s3` or `local`. |
-| `AWS_ACCESS_KEY_ID` | string | — | AWS IAM access key ID with S3 permissions. |
-| `AWS_SECRET_ACCESS_KEY` | string | — | AWS IAM secret access key. |
-| `AWS_REGION` | string | `us-east-1` | AWS region (e.g. `us-east-1`, `ap-south-1`). |
-| `AWS_S3_BUCKET` | string | `smart-farming-data` | Target AWS S3 bucket name. |
-| `AWS_ENDPOINT_URL` | string | — | S3 endpoint override (used for local testing with MinIO or LocalStack). |
-| `S3_PRESIGNED_EXPIRY_SECONDS` | int | `900` | Expiration lifetime in seconds for signed download URLs (default: 15 minutes). |
-
-> [!NOTE]
-> All S3 objects are uploaded with standard server-side AES-256 encryption (`ServerSideEncryption="AES256"`) and signed using AWS SigV4 (`signature_version="s3v4"`).
-
----
-
-## 3. Environment Variables — Frontend
-
-**Location:** `frontend/.env` (Local) or **Vercel Project Environment Variables** (Production)
-
-| Variable | Type | Example / Default | Description |
-|---|---|---|---|
-| `VITE_API_URL` | string | `https://smart-farming-backend-xxx.run.app` | Base URL of the backend API, consumed by Axios client in `frontend/src/api/client.ts`. Default for local dev: `http://localhost:8000`. |
-| `VITE_GOOGLE_MAPS_API_KEY` | string | `<YOUR_GOOGLE_MAPS_API_KEY>` | Google Maps JavaScript API key used for farm boundary geo-tagging, satellite field views, and soil moisture overlays in `FarmSettingsPage.tsx`. |
-| `VITE_GOOGLE_MAPS_MAP_ID` | string | `<YOUR_MAP_ID>` | Map ID for vector styling in Google Maps JavaScript API. |
-
-> [!NOTE]
-> Vite only exposes variables prefixed with `VITE_` to client-side bundles. Secrets must never be stored in frontend environment variables.
-
-## 3.1 Environment Variables — Mobile (Flutter)
-
-**Location:** `mobile/.env` (passed to the build via `--dart-define-from-file=.env`)
-
-> [!CAUTION]
-> Never commit `mobile/.env` to version control. The `SUPABASE_ANON_KEY` is a public read-only key safe for embedding in client apps, but should still be kept out of version history to avoid accidental exposure.
-
-| Variable | Type | Example / Default | Description |
-|---|---|---|---|
-| `SUPABASE_URL` | string | `https://ntqevjzjhntkilmknrfh.supabase.co` | Supabase project URL. Used by `RemoteConfigService` to query `public.app_config` table via PostgREST. |
-| `SUPABASE_ANON_KEY` | string | `eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...` | Supabase anonymous (public) API key. Required for authenticated PostgREST queries. Safe to embed in client builds; RLS policy restricts access to SELECT only. |
-
-> [!NOTE]
-> The mobile app resolves the backend URL at startup exclusively from the Supabase `app_config` table (`key='api_base_url'`), with automatic offline local caching in SharedPreferences for subsequent launches. Local dev and arbitrary URL overrides are disallowed.
+| `PORT` | int | `7860` | HTTP listening port (strictly `7860` on Hugging Face Spaces). |
+| `FORCE_CPU` | bool | `False` | Force PyTorch CPU execution even if CUDA is detected. |
+| `CPU_THREADS` | int | `min(cpu_count, 4)` | Number of PyTorch CPU inference threads. |
+| `USE_LOCAL_LLM` | bool | `True` | Whether to load in-memory Qwen2.5-1.5B for local advisory generation. |
+| `LOCAL_LLM_MODEL` | string | `Qwen/Qwen2.5-1.5B-Instruct` | Hugging Face model identifier for local LLM advisory. |
+| `GROQ_API_KEY` | string | `""` | Optional Groq API key for cloud LLM advisory acceleration. |
+| `GROQ_MODEL` | string | `llama-3.3-70b-versatile` | Target Groq model. |
+| `GEMINI_API_KEY` | string | `""` | Google Gemini API key for fallback advisory. |
+| `INDICTRANS_MODEL` | string | `ai4bharat/indictrans2-en-indic-dist-200M` | Distilled IndicTrans2 model for English $\to$ Hindi/Gujarati translation. |
+| `GATEWAY_SECRET` | string | `""` | Optional shared Bearer secret for incoming API requests. |
 
 ---
 
-## 4. `model_registry.json`
+## 4. Environment Variables — Frontend (React)
+
+**Location:** `frontend/.env` (Local) or Vercel Project Environment Variables (Production)
+
+| Variable | Type | Example | Description |
+|---|---|---|---|
+| `VITE_API_URL` | string | `https://smart-farming-backend.onrender.com` | Backend API base URL consumed by Axios in `frontend/src/api/client.ts`. |
+| `VITE_GOOGLE_MAPS_API_KEY` | string | `<API_KEY>` | Google Maps API key for farm boundary geo-tagging and satellite imagery. |
+| `VITE_GOOGLE_MAPS_MAP_ID` | string | `<MAP_ID>` | Map ID for vector styling. |
+
+> [!IMPORTANT]
+> Vite only exposes variables prefixed with `VITE_` to client-side bundles. Never place backend secrets or private keys in the frontend configuration.
+
+---
+
+## 5. Environment Variables — Mobile (Flutter)
+
+**Location:** `mobile/.env` (Passed via `--dart-define-from-file=.env`)
+
+| Variable | Type | Description |
+|---|---|---|
+| `SUPABASE_URL` | string | Supabase project URL used by `RemoteConfigService` to query `public.app_config`. |
+| `SUPABASE_ANON_KEY` | string | Supabase public anonymous API key (read-only access governed by RLS). |
+
+> [!NOTE]
+> The mobile client dynamically resolves `api_base_url` from the Supabase `app_config` table at runtime, caching the endpoint locally in SharedPreferences for offline resiliency.
+
+---
+
+## 6. `model_registry.json`
 
 **Location:** `backend/model_registry.json`
 
-Tracks promoted model versions, checkpoints, and validation metrics for each task.
-
-### Decoupled Microservices Behavior (Cloud Run)
-
-In production, heavy model weights (`.pth`, `.pt`) are housed inside Cloud Run Service #2 (`inference-service`), not the main backend container.
-- When `MODEL_SERVER_URL` is set, the Model Registry endpoint (`GET /admin/models/health`) recognizes that inference is delegated to the remote service.
-- It validates healthy connectivity and displays active model versions, validation accuracies, and promotion history loaded directly from `model_registry.json`.
-
-### Structure
+Tracks active model versions, validation accuracies, and promotion history:
 
 ```json
 {
+  "crop_identifier": {
+    "current_version": "v1.0",
+    "versions": [
+      {
+        "version": "v1.0",
+        "checkpoint_path": "models/crop_identifier_v1.pth",
+        "val_acc": 0.9948,
+        "promoted_at": "2026-01-15"
+      }
+    ]
+  },
   "tomato_disease": {
     "current_version": "v1.0",
     "versions": [
       {
         "version": "v1.0",
         "checkpoint_path": "models/disease_Tomato.pth",
-        "val_acc": 0.908,
-        "promoted_at": "2025-01-01"
+        "val_acc": 0.9080,
+        "promoted_at": "2026-02-01"
       }
     ]
   }
 }
 ```
 
-### Field Reference
-
-| Field | Type | Description |
-|---|---|---|
-| `{task_key}` | object | Top-level key identifying the model task (e.g., `tomato_disease`, `potato_disease`). |
-| `current_version` | string | The version string currently active in production for this task. |
-| `versions` | array | Ordered list of all promoted versions (most recent last). |
-| `versions[].version` | string | Semantic version string (e.g., `v1.0`, `v2.1`). |
-| `versions[].checkpoint_path` | string | Path to the model checkpoint (relative to `backend/`). |
-| `versions[].val_acc` | float | Validation accuracy recorded at promotion time (0–1). |
-| `versions[].promoted_at` | string | ISO 8601 date when this version was promoted. |
-
 ---
 
-## 5. Hot Reload
+## 7. Dynamic Configuration & Hot Reload
 
-The platform supports partial runtime configuration updates without a full server restart.
+The platform supports live threshold updates without application downtime or service restarts.
 
-### What Can Be Hot-Reloaded
+### Hot-Reloadable Fields
 
-| Config Field | `config.yaml` key | Admin API param |
-|---|---|---|
-| Crop confidence threshold | `thresholds.crop_confidence` | `crop_routing_threshold` |
-| Disease confidence threshold | `thresholds.disease_confidence` | `expert_escalation_cutoff` |
+| Parameter | Admin API Payload Field | `config.yaml` Mapping | Upstash Redis Key |
+|---|---|---|---|
+| Crop Confidence Cutoff | `crop_routing_threshold` | `thresholds.crop_confidence` | `sf:config:thresholds` |
+| Disease Escalation Cutoff | `expert_escalation_cutoff` | `thresholds.disease_confidence` | `sf:config:thresholds` |
 
-### What Requires a Server Restart
-
-- All `models.*` fields (model paths, label paths, architectures)
-- All `storage.*` fields
-- `thresholds.blur_var_threshold`, `thresholds.min_brightness`, `thresholds.max_brightness`
-
-### Hot-Reload Flow
+### Synchronization Flow
 
 ```
 Admin Client
-  │
-  │  PUT /admin/config
-  │  { "crop_routing_threshold": 0.65, "expert_escalation_cutoff": 0.75 }
-  ▼
-API Process
-  ├─ Writes new values to config.yaml & in-memory pipeline state
-  ├─ Sets "sf:config:thresholds" in Upstash Serverless Redis REST
-  │     │
-  │     ▼
-  │   All Cloud Run Backend & Inference Instances
-  │   (Read live "sf:config:thresholds" on next inference request)
-  │
-  └─ Publishes event to Redis channel: config_reload_events
-        │
-        ▼
-    ARQ Worker Processes (Local / Docker Compose only)
-      ├─ Subscribed to config_reload_events
-      └─ Each worker calls pipeline.reload_config()
+   │
+   │  PUT /admin/config
+   │  { "crop_routing_threshold": 0.75, "expert_escalation_cutoff": 0.70 }
+   ▼
+FastAPI API Gateway
+   ├─ Updates in-memory settings and rewrites config.yaml
+   └─ Writes updated JSON to Upstash Redis REST under key "sf:config:thresholds"
+         │
+         ▼
+All Distributed Backend & AI Service Instances
+(Query sf:config:thresholds on subsequent inferences with zero downtime)
 ```
-
-> [!IMPORTANT]
-> The `PUT /admin/config` endpoint requires admin-level authentication. Unauthenticated or non-admin requests will be rejected with `403 Forbidden`.
-
-> [!NOTE]
-> In serverless Cloud Run deployments (`REQUIRE_REDIS=False`), threshold updates are persisted to Upstash Redis REST under key `sf:config:thresholds`. All autoscaled backend and inference instances dynamically read this key, ensuring instantaneous system-wide synchronization without requiring worker polling daemons or container restarts.
-
-> [!NOTE]
-> In production, the `internal-cron` endpoint (`POST /internal/cron/weather-risk`) acts as a QStash webhook receiver. QStash publishes to this endpoint on schedule, triggering server-side weather risk evaluation without a persistent polling worker. When `PUT /admin/config` updates thresholds, the new values are written to `sf:config:thresholds` in Upstash Redis REST and are picked up by the next cron invocation automatically.
 
 ---
 
-*AI-Powered Smart Farming — Documentation*  
-*Last Updated: 06 October 2026*
+*AI-Powered Smart Farming — Configuration Reference*  
+*Last Updated: 19 October 2026*  
+*Maintained by the Smart Farming Engineering Team*

@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 2.0  
-**Date:** 06 October 2026  
+**Date:** 19 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -163,7 +163,7 @@ curl -X POST http://localhost:8000/admin/models/promote \
 
 This updates `config.yaml` and `model_registry.json` atomically.
 
-> **Note:** In the default production mode (`REQUIRE_REDIS=False`), the Redis hot-reload event is not published. After promoting, trigger a Cloud Run rolling deployment to reload models in production: `gcloud run deploy smart-farming-backend --image <IMAGE>`
+> **Note:** In the default production mode (`REQUIRE_REDIS=False`), the Redis hot-reload event is not published. After promoting, push the new model weights to the Hugging Face AI microservice (`Maharsh8805/smart-farming-ai`) via GitHub Actions `deploy_ai_service.yml` or the deployment script.
 
 ---
 
@@ -202,10 +202,10 @@ The script uses a deliberate two-phase approach to prevent catastrophic forgetti
 - [ ] Store `best.pth` and `labels.json` in version control or a model store.
 - [ ] Register the model via the `/admin/models/promote` endpoint to update `model_registry.json`.
 - [ ] Run the test evaluation (`eval` mode) before promoting to production.
-- [ ] In production (`REQUIRE_REDIS=False`), redeploy the Cloud Run service to pick up the new `config.yaml` / model weights after promotion.
+- [ ] In production (`REQUIRE_REDIS=False`), deploy the updated model weights to the Hugging Face Space AI microservice using `.github/workflows/deploy_ai_service.yml`.
 
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 06 October 2026*
+*Last Updated: 19 October 2026*
 

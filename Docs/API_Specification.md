@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Smart Farming  
 **Version:** 2.0  
-**Date:** 06 October 2026  
+**Date:** 19 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -34,29 +34,29 @@
 
 ## 1. Overview
 
-The Smart Farming backend is an AI-powered crop disease detection and advisory platform. It exposes a REST API consumed by mobile and web clients. The platform operates in two modes:
+The Smart Farming backend is an AI-powered crop disease detection and agronomic intelligence platform. It exposes a comprehensive REST API consumed by React web and Flutter mobile clients. The platform operates in two modes:
 
-- **Serverless Production (Google Cloud Run):** Prediction requests run synchronously (`REQUIRE_REDIS=False`) to allow scaling to 0 instances when idle. Image deduplication (`sf:dedup:{hash}`), phrase translations (`sf:trans:{lang}:{hash}`), and weather (`sf:weather:{lat}:{lon}`) are cached via Upstash Serverless Redis REST.
-- **Asynchronous Task Queue (Local Dev / Dedicated Host):** `REQUIRE_REDIS=True` enqueues prediction jobs into ARQ, publishing real-time stage progress over WebSocket.
+- **Production Cloud Architecture (Render & Hugging Face Spaces):** The API Gateway runs on Render (`smart-farming-backend` via `render.yaml`). Prediction requests run synchronously (`REQUIRE_REDIS=False`) to provide low latency and high availability. Image deduplication (`sf:dedup:{hash}`), phrase translations (`sf:trans:{lang}:{hash}`), and weather responses (`sf:weather:{lat}:{lon}`) are cached via Upstash Serverless Redis REST. All heavy ML inference, regional translation, LLM advisory, and speech synthesis are offloaded to the unified AI microservice on Hugging Face Spaces (`https://maharsh8805-smart-farming-ai.hf.space`, port `7860`).
+- **Asynchronous Task Queue (Local Dev / Dedicated Host):** `REQUIRE_REDIS=True` enqueues prediction jobs into ARQ, publishing real-time stage progress over WebSocket (`/ws/predictions/{id}`).
 
 ### Technology Stack
 
 | Layer | Technology | Deployment Details |
 |---|---|---|
-| **API Gateway** | FastAPI (Python 3.11) | Cloud Run Service #1 (`smart-farming-backend`, 512MiB, Public) |
-| **Inference Microservice** | FastAPI + PyTorch CPU | Cloud Run Service #2 (`inference-service`, 2GiB, Private OIDC) |
-| **Auth** | JWT (HS256) | Bearer tokens in headers, HttpOnly refresh cookies |
+| **API Gateway** | FastAPI 0.115+ (Python 3.11) | Render Web Service (`smart-farming-backend` via `render.yaml`) |
+| **Unified AI Microservice** | FastAPI + PyTorch CPU/ZeroGPU | Hugging Face Spaces (`Maharsh8805/smart-farming-ai`, port `7860`) |
+| **Authentication** | JWT (HS256) | Bearer tokens in headers, HttpOnly refresh cookies (`SameSite=Strict`), Argon2id hashing |
 | **Serverless Cache** | Upstash Redis REST | HTTPS Token Auth (`sf:*` namespace, sub-20ms latency) |
-| **Task Queue** | ARQ (async Redis Queue) | Active when `REQUIRE_REDIS=True` |
-| **Scheduled Crons** | QStash | Upstash QStash — serverless scheduled crons and webhooks (production) |
-| **Relational Database** | PostgreSQL 15+ | Supabase Managed PostgreSQL with SSL (`sslmode=require`) |
-| **Entity Translations** | Supabase PostgreSQL table | Pre-computed multilingual translations (`entity_translations`) |
-| **Object Storage** | Google Cloud Storage | Multi-regional bucket `smart-farming-data` via S3 HMAC XML API |
-| **Real-time** | WebSocket | `/ws/predictions/{id}` |
-| **ML Models** | EfficientNet-B0/B2, YOLOv8 | Qwen3-4B Agronomist LLM via HuggingFace API |
-| **Text-to-Speech** | Google Cloud TTS | Audio narration in English, Hindi, and Gujarati (`GOOGLE_TTS_API_KEY`) |
-| **Translation** | IndicTrans2 / Hugging Face | Dynamic advisory localization into Hindi and Gujarati (`TRANSLATION_SERVER_URL`) |
-| **Advisory Fallback** | Gemini API | Google AI — multimodal advisory fallback when primary LLM is unavailable |
+| **Task Queue** | ARQ (async Redis Queue) | Active when `REQUIRE_REDIS=True` (local development) |
+| **Scheduled Crons** | QStash & cron-jobs.org | Upstash QStash webhooks (`/api/v1/internal-cron`) & external keepalive pings |
+| **Relational Database** | PostgreSQL 15+ | Supabase Managed PostgreSQL via Session Pooler (port `5432`, `sslmode=require`) |
+| **Entity Translations** | Supabase PostgreSQL table | Pre-computed multilingual advisory translations (`entity_translations`) |
+| **Object Storage** | Supabase Object Storage | Bucket `smart-farming-data-dev` with 15-min signed URLs (fallback: AWS S3 / Local) |
+| **Real-time Streaming** | WebSocket | `/ws/predictions/{id}` |
+| **Vision Diagnostics** | DeepLabV3+, DenseNet-121, YOLOv8-nano | 7-stage vision pipeline in `ai_service/vision_engine` |
+| **Text-to-Speech** | Microsoft Edge-TTS Neural | High-fidelity voice synthesis (`hi-IN-Swara`, `gu-IN-Dhwani`, `en-IN-Neerja`) |
+| **Translation** | AI4Bharat IndicTrans2 dist-200M | High-speed regional translation (`TRANSLATION_SERVER_URL`) |
+| **Agronomic Advisory** | Qwen2.5-1.5B / Groq Llama-3.3-70B | Local in-memory LLM + Groq API + Gemini 2.5 Flash fallback + ICAR/KVK KB |
 
 ---
 
@@ -481,7 +481,7 @@ Resets account password using a single-use verification token received via email
 
 The prediction pipeline runs in one of two modes depending on the `REQUIRE_REDIS` environment variable:
 
-- **`REQUIRE_REDIS=False` (default / production on Cloud Run):** The pipeline runs **synchronously**. `POST /predict` blocks until the full result is ready and returns it directly in the response.
+- **`REQUIRE_REDIS=False` (default / production cloud on Render):** The pipeline runs **synchronously**. `POST /predict` blocks until the full result is ready and returns it directly in the response.
 - **`REQUIRE_REDIS=True` (ARQ / local dev):** The pipeline is **asynchronous**. `POST /predict` enqueues an ARQ job and returns an immediate `200` placeholder. Clients should track progress via WebSocket and fetch results via `GET /predictions/{id}`.
 
 ### 6.1 Submit Prediction
@@ -1889,13 +1889,18 @@ Marks a specific alert as read.
 
 ## 15. TTS Endpoint
 
-### 15.1 Generate Audio Narration
+### 15.1 Generate Speech Audio
 
 ```
-POST /tts/generate
+POST /tts
 ```
 
-Generates an audio narration from text using the Google Cloud Text-to-Speech API (`GOOGLE_TTS_API_KEY`). Supports English, Hindi, and Gujarati. If the Google Cloud TTS API is unavailable, the server falls back to basic audio synthesis. The resulting audio file is stored and returned as a presigned URL or a local path (depending on deployment mode), and is also accessible via the media endpoints.
+Synthesizes high-fidelity spoken audio from text using the Microsoft Edge-TTS Neural engine (`hi-IN-SwaraNeural`, `gu-IN-DhwaniNeural`, `en-IN-NeerjaNeural`) via the unified AI microservice.
+
+**Features:**
+- **Auto-Translation Guard:** If the user requests Gujarati or Hindi speech, but incoming text is in English, the endpoint automatically pre-translates the text into the target Indic script before synthesis.
+- **Number & Decimal Expansion:** Numbers, percentages, and decimals are automatically converted into regional words (via `tts_normalizer.py`) for natural cadence.
+- **Dual Caching:** Synthesized audio is cached locally by SHA-256 hash (`audio/{hash}.wav`) and mirrored to **Supabase Object Storage**, ensuring sub-20ms latency on repeat calls.
 
 **Authentication:** Bearer token required.
 
@@ -1904,16 +1909,14 @@ Generates an audio narration from text using the Google Cloud Text-to-Speech API
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `text` | string | ✅ | The text to synthesize into speech |
-| `language` | string | ✅ | Target language code: `en`, `hi`, or `gu` |
-| `prediction_id` | integer | ❌ | If provided, associates the audio with this prediction and stores it as its TTS media asset |
+| `language` | string | ❌ | Target language: `"Hindi"`, `"Gujarati"`, `"English"` (or codes `"hi"`, `"gu"`, `"en"`). Default: `"English"`. |
 
 #### Example Request
 
 ```json
 {
   "text": "Remove and dispose of heavily infected leaves immediately to prevent spread.",
-  "language": "hi",
-  "prediction_id": 42
+  "language": "Gujarati"
 }
 ```
 
@@ -1921,64 +1924,28 @@ Generates an audio narration from text using the Google Cloud Text-to-Speech API
 
 ```json
 {
-  "prediction_id": 42,
-  "audio_url": "https://storage.example.com/predictions/42/audio.mp3?X-Amz-Expires=900&...",
-  "duration_seconds": 47,
-  "language": "hi",
-  "provider": "google_cloud_tts"
+  "audioContent": "UklGRi4AAABXQVZFZm10IBAAAAABAAEA...",
+  "format": "wav",
+  "cached": false
 }
 ```
-
-> **Fallback:** When `provider` is `"basic_synthesis"`, the Google Cloud TTS API was unavailable and a basic synthesized audio file was returned instead.
 
 ---
 
 ## 16. Translation Endpoint
 
-### 16.1 Translate Text
+### 16.1 Translate Prediction Recommendation & Expert Guidance
 
 ```
-POST /translation
+POST /predictions/{prediction_id}/translate?target_language={lang}
 ```
 
-Translates text between languages using the IndicTrans2 dedicated microservice. Used for dynamic advisory localization not covered by pre-computed `entity_translations`.
+Translates the diagnostic advisory and expert guidance for a prediction on-demand using AI4Bharat IndicTrans2 (`ai4bharat/indictrans2-en-indic-dist-200M`) on the AI microservice.
 
-**Authentication:** Bearer token required.
-
-#### Request Body (`application/json`)
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `text` | string | ✅ | Source text to translate |
-| `target_language` | string | ❌ | Override target language; defaults to user's profile language |
-
-#### Example Request
-
-```json
-{
-  "text": "Remove infected leaves and apply fungicide."
-}
-```
-
-#### Example Response `200 OK`
-
-```json
-{
-  "original": "Remove infected leaves and apply fungicide.",
-  "translated": "ચેપગ્રસ્ત પાંદડા દૂર કરો અને ફૂગનાશક લગાવો.",
-  "target_language": "Gujarati"
-}
-```
-
----
-
-### 16.2 Get Cached Prediction Translation
-
-```
-GET /predictions/{prediction_id}/translation?lang=hi
-```
-
-Returns a pre-cached translation for the specified prediction from the `entity_translations` table. This is faster than the dynamic `POST /translation` endpoint because translations are pre-computed in the background after each prediction.
+**Features:**
+- **Zero-Latency In-Memory Cache:** If already translated, returns immediately from `prediction.result["translations"][target_code]`.
+- **Database Persistence:** Persists translated fields (`immediate_action`, `treatment`, `prevention`, `monitoring`, `farmer_guidance`) into the `entity_translations` table in PostgreSQL.
+- **Graceful Fallback:** If the translation engine is unreachable, returns canonical English with `translation_status: "degraded"`.
 
 **Authentication:** Bearer token required.
 
@@ -1986,34 +1953,48 @@ Returns a pre-cached translation for the specified prediction from the `entity_t
 
 | Parameter | Type | Description |
 |---|---|---|
-| `prediction_id` | integer | The prediction whose translation to retrieve |
+| `prediction_id` | integer | The prediction whose recommendation to translate |
 
 #### Query Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| `lang` | string | ✅ Target language code: `hi` (Hindi) or `gu` (Gujarati) |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `target_language` | string | ✅ | Target language: `"Hindi"`, `"Gujarati"`, `"English"`, or codes `"hi"`, `"gu"`, `"en"` |
 
 #### Example Response `200 OK`
 
 ```json
 {
   "prediction_id": 42,
-  "lang": "hi",
+  "language": "gu",
+  "cached": false,
+  "recommendation": {
+    "immediate_action": "ચેપગ્રસ્ત પાંદડા તાત્કાલિક દૂર કરો અને નાશ કરો.",
+    "treatment": "કોપર આધારિત ફૂગનાશકનો છંટકાવ કરો.",
+    "prevention": "છોડ વચ્ચે યોગ્ય અંતર રાખો.",
+    "monitoring": "દર 3 દિવસે પાંદડાની નીચેની સપાટી તપાસો."
+  },
+  "expert_guidance": "પાણીનો ભરાવો થવા દેશો નહીં.",
   "translations": {
-    "immediate_action": "...",
-    "treatment": "...",
-    "prevention": "...",
-    "monitoring": "..."
+    "gu": { ... }
   }
 }
 ```
 
-#### Error Responses
+---
 
-| Status | Condition |
-|---|---|
-| `404 Not Found` | No pre-computed translation exists for this prediction and language yet |
+### 16.2 Static & Cloud Media Streaming
+
+```
+GET /data/{file_path:path}
+```
+
+Public asset streaming endpoint for uploaded scans, Grad-CAM heatmaps, HSV severity masks, and audio files.
+
+**Behavior:**
+1. Checks local cache (`backend/data/{file_path}`). If present, serves immediately via `FileResponse`.
+2. If not found on local disk and `STORAGE_BACKEND="supabase"`, securely streams binary content from Supabase Object Storage with appropriate `Content-Type` headers (`image/jpeg`, `image/png`, `image/webp`, `audio/mpeg`, `audio/wav`) and `Cache-Control: public, max-age=86400`.
+3. Returns `404 Not Found` if the asset does not exist in any configured storage backend.
 
 ---
 
@@ -2435,4 +2416,4 @@ Boundary fields accept a standard GeoJSON Polygon geometry object:
 ---
 
 *AI-Powered Smart Farming — Documentation*  
-*Last Updated: 06 October 2026*
+*Last Updated: 19 October 2026*
