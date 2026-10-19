@@ -104,7 +104,7 @@ export default function HistoryPage() {
               options={uniqueCrops.map((crop) => ({
                 value: crop,
                 label: crop === "All" ? t("all") : translateCrop(crop, language),
-                icon: crop === "All" ? <Filter size={14} className="text-muted" /> : <Sprout size={14} className="text-farmer-700 shrink-0" />,
+                icon: crop === "All" ? <Filter size={14} className="text-muted" /> : <Sprout size={14} className="text-farmer-700 dark:text-farmer-300 shrink-0" />,
               }))}
             />
           </div>

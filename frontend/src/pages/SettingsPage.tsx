@@ -374,7 +374,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="flex items-center gap-3 font-display text-3xl text-ink sm:text-4xl"><SettingsIcon size={28} className="text-farmer-700" /> {t("settings")}</h1>
+        <h1 className="flex items-center gap-3 font-display text-3xl text-ink sm:text-4xl"><SettingsIcon size={28} className="text-farmer-700 dark:text-farmer-300" /> {t("settings")}</h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">{t("settingsSubtitle")}</p>
       </div>
 
@@ -392,7 +392,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">
-              <ShieldCheck size={14} className="text-farmer-600" />
+              <ShieldCheck size={14} className="text-farmer-600 dark:text-farmer-400" />
               <span>
                 {user?.role === "admin"
                   ? t("roleAdmin")
@@ -472,7 +472,7 @@ export default function SettingsPage() {
 
           {phoneSuccess && (
             <div className="mt-4 rounded-sm border border-green-200 bg-green-50 p-3 text-sm text-farmer-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300 flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-farmer-700 shrink-0" />
+              <CheckCircle2 size={16} className="text-farmer-700 dark:text-green-400 shrink-0" />
               <span>{phoneSuccess}</span>
             </div>
           )}
@@ -598,7 +598,7 @@ export default function SettingsPage() {
 
           {emailSuccess && (
             <div className="mt-4 rounded-sm border border-green-200 bg-green-50 p-3 text-sm text-farmer-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300 flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-farmer-700 shrink-0" />
+              <CheckCircle2 size={16} className="text-farmer-700 dark:text-green-400 shrink-0" />
               <span>{emailSuccess}</span>
             </div>
           )}
@@ -654,7 +654,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="flex items-center gap-2 font-display text-xl text-ink">
-              <Sun size={20} className="text-farmer-700" />
+              <Sun size={20} className="text-farmer-700 dark:text-farmer-300" />
               <span>{t("appearanceTheme")}</span>
             </h3>
             <p className="mt-2 text-sm text-muted">
@@ -666,13 +666,13 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Globe size={20} className="text-farmer-700" /> {t("languagePreferences")}</h3>
+        <h3 className="flex items-center gap-2 font-display text-xl text-ink"><Globe size={20} className="text-farmer-700 dark:text-farmer-300" /> {t("languagePreferences")}</h3>
         <p className="mt-2 text-sm text-muted">{t("languageSubtitle")}</p>
         
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="settings-language">
-              <Globe size={15} className="text-farmer-700" />
+              <Globe size={15} className="text-farmer-700 dark:text-farmer-300" />
               <span>{t("interfaceLanguage")}</span>
             </label>
             <Select 
@@ -688,7 +688,7 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="settings-units">
-              <Sliders size={15} className="text-farmer-700" />
+              <Sliders size={15} className="text-farmer-700 dark:text-farmer-300" />
               <span>{t("units")}</span>
             </label>
             <Select 
@@ -714,7 +714,7 @@ export default function SettingsPage() {
           >
             {t("save")}
           </Button>
-          {prefSaved && <span className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700"><CheckCircle2 size={16} /> {t("savedSuccess")}</span>}
+          {prefSaved && <span className="inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 dark:text-farmer-300"><CheckCircle2 size={16} /> {t("savedSuccess")}</span>}
         </div>
       </Card>
 
@@ -829,7 +829,7 @@ export default function SettingsPage() {
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="export-crop">
-                  <Sprout size={15} className="text-expert-700" />
+                  <Sprout size={15} className="text-expert-700 dark:text-cyan-400" />
                   <span>{t("targetCrop")}</span>
                 </label>
                 <Select 
@@ -839,14 +839,14 @@ export default function SettingsPage() {
                   theme="expert"
                   options={[
                     { value: "All Crops (Tomato, Cotton, Potato)", label: "All Crops (Tomato, Cotton, Potato)" },
-                    { value: "Cotton", label: "Cotton", icon: <Sprout size={14} className="text-expert-600 shrink-0" /> },
-                    { value: "Tomato", label: "Tomato", icon: <Sprout size={14} className="text-expert-600 shrink-0" /> },
+                    { value: "Cotton", label: "Cotton", icon: <Sprout size={14} className="text-expert-600 dark:text-cyan-400 shrink-0" /> },
+                    { value: "Tomato", label: "Tomato", icon: <Sprout size={14} className="text-expert-600 dark:text-cyan-400 shrink-0" /> },
                   ]}
                 />
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-ink" htmlFor="export-format">
-                  <FolderArchive size={15} className="text-expert-700" />
+                  <FolderArchive size={15} className="text-expert-700 dark:text-cyan-400" />
                   <span>{t("archiveFormat")}</span>
                 </label>
                 <Select 
@@ -879,37 +879,37 @@ export default function SettingsPage() {
 
             <div className="mt-6">
               <label className="text-sm font-semibold text-ink">Dataset Split: Train {splitTrain}% / Val {splitVal}% / Test {100 - splitTrain - splitVal}%</label>
-              <input className="mt-4 w-full accent-farmer-700" type="range" min="50" max="90" value={splitTrain} onChange={e => setSplitTrain(Number(e.target.value))} />
+              <input className="mt-4 w-full accent-farmer-700 dark:accent-farmer-400" type="range" min="50" max="90" value={splitTrain} onChange={e => setSplitTrain(Number(e.target.value))} />
             </div>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <Button className="bg-expert-700 hover:bg-expert-500" onClick={handleExportMLOps} disabled={isExporting}>
+              <Button className="bg-expert-700 hover:bg-expert-500 dark:bg-cyan-700 dark:hover:bg-cyan-600 dark:text-white" onClick={handleExportMLOps} disabled={isExporting}>
                 <DownloadCloud size={18} /> {isExporting ? t("packaging") : t("exportArchive")}
               </Button>
-              <Button variant="secondary" className="border-expert-500 text-expert-700" disabled={isExporting}>
+              <Button variant="secondary" className="border-expert-500 text-expert-700 dark:border-cyan-600 dark:text-cyan-300 dark:hover:bg-cyan-950/40" disabled={isExporting}>
                 <Cloud size={18} /> {t("syncS3")}
               </Button>
             </div>
           </div>
 
           <div className="rounded-sm border border-line bg-surface p-5 sm:p-6">
-            <h3 className="flex items-center gap-2 font-display text-lg text-ink"><Sliders size={18} className="text-farmer-700" /> {t("decisionThresholds")}</h3>
+            <h3 className="flex items-center gap-2 font-display text-lg text-ink"><Sliders size={18} className="text-farmer-700 dark:text-farmer-300" /> {t("decisionThresholds")}</h3>
             <p className="mt-2 text-sm text-muted">{t("thresholdsSubtitle")}</p>
             
             <div className="mt-6">
               <label className="text-sm font-semibold text-ink">{t("cropRoutingConfMin")}: {routingThresh}%</label>
-              <input className="mt-3 w-full accent-farmer-700" type="range" min="50" max="95" value={routingThresh} onChange={e => setRoutingThresh(Number(e.target.value))} />
+              <input className="mt-3 w-full accent-farmer-700 dark:accent-farmer-400" type="range" min="50" max="95" value={routingThresh} onChange={e => setRoutingThresh(Number(e.target.value))} />
             </div>
             
             <div className="mt-6">
               <label className="text-sm font-semibold text-ink">{t("expertEscalationCutoff")}: {expertThresh}%</label>
-              <input className="mt-3 w-full accent-farmer-700" type="range" min="50" max="95" value={expertThresh} onChange={e => setExpertThresh(Number(e.target.value))} />
+              <input className="mt-3 w-full accent-farmer-700 dark:accent-farmer-400" type="range" min="50" max="95" value={expertThresh} onChange={e => setExpertThresh(Number(e.target.value))} />
             </div>
 
             <Button className="mt-7" onClick={() => updateConfig.mutate()} disabled={updateConfig.isPending}>
               {updateConfig.isPending ? t("saving") : t("saveConfigParams")}
             </Button>
-            {configSaved && <span className="ml-4 inline-flex items-center gap-1 text-sm font-semibold text-farmer-700"><CheckCircle2 size={16} /> {t("saved")}</span>}
+            {configSaved && <span className="ml-4 inline-flex items-center gap-1 text-sm font-semibold text-farmer-700 dark:text-farmer-300"><CheckCircle2 size={16} /> {t("saved")}</span>}
           </div>
 
           <div className="rounded-sm border border-red-300 bg-red-50 dark:border-red-900/60 dark:bg-red-950/30 p-5 sm:p-6">

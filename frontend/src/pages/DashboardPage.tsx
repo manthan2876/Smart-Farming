@@ -57,7 +57,7 @@ export default function DashboardPage() {
         </div>
         <div>
           <Link to="/scan">
-            <Button className="bg-farmer-700 font-semibold text-white hover:bg-farmer-800 transition-colors">
+            <Button className="bg-farmer-700 font-semibold text-white hover:bg-farmer-800 dark:bg-farmer-600 dark:hover:bg-farmer-500 transition-colors">
               <Scan size={18} /> {t("scanCta")}
             </Button>
           </Link>

@@ -135,6 +135,19 @@
     background-color: rgba(var(--color-muted) / 0.3);
     border-radius: 2px;
   }
+
+  /* Ensure high-contrast dark theme readability for text-farmer, text-expert, text-admin when not explicitly overridden with dark:text-* */
+  .dark .text-farmer-700:not([class*="dark:text-"]),
+  .dark .text-farmer-800:not([class*="dark:text-"]),
+  .dark .text-farmer-900:not([class*="dark:text-"]),
+  .dark .text-expert-700:not([class*="dark:text-"]),
+  .dark .text-expert-600:not([class*="dark:text-"]),
+  .dark .text-expert-500:not([class*="dark:text-"]),
+  .dark .text-admin-700:not([class*="dark:text-"]),
+  .dark .text-admin-600:not([class*="dark:text-"]),
+  .dark .text-admin-500:not([class*="dark:text-"]) {
+    color: rgb(172 199 150);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

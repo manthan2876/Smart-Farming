@@ -83,7 +83,7 @@ export default function AdminFeedbackPage() {
                 <Button 
                   size="sm" 
                   variant="secondary" 
-                  className="border-danger text-danger hover:bg-red-50 dark:border-red-500 dark:text-red-400"
+                  className="border-danger text-danger hover:bg-red-50 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-950/40"
                   onClick={() => mutation.mutate({ id: fb.id, status: 'rejected' })}
                   disabled={mutation.isPending}
                 >

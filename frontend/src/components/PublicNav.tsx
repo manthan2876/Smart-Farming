@@ -21,7 +21,7 @@ export default function PublicNav() {
           <LanguageToggle />
           <ThemeToggle />
         </div>
-        <Link className="rounded-sm bg-farmer-700 px-3.5 py-2 text-white border border-farmer-800 transition-colors hover:bg-farmer-800" to="/auth/login">{t("signIn")}</Link>
+        <Link className="rounded-sm bg-farmer-700 px-3.5 py-2 text-white border border-farmer-800 transition-colors hover:bg-farmer-800 dark:bg-farmer-600 dark:hover:bg-farmer-500 dark:border-farmer-500" to="/auth/login">{t("signIn")}</Link>
       </div>
     </nav>
   );

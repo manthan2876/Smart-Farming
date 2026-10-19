@@ -201,7 +201,7 @@ export default function WeatherPage() {
             <h3 className="font-display text-xl text-ink">{t("agronomicWeatherAdvisory")}</h3>
             {isTranslating && (
               <span className="inline-flex items-center gap-1.5 text-xs text-muted">
-                <Loader2 size={12} className="animate-spin text-farmer-700" /> {t("translating")}
+                <Loader2 size={12} className="animate-spin text-farmer-700 dark:text-farmer-300" /> {t("translating")}
               </span>
             )}
           </div>

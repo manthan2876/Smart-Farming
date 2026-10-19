@@ -383,7 +383,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
           <button
             onClick={handleSignOut}
-            className="rounded-xs p-1.5 text-muted hover:bg-red-50 hover:text-danger transition-colors"
+            className="rounded-xs p-1.5 text-muted hover:bg-red-50 hover:text-danger dark:hover:bg-red-950/40 dark:hover:text-red-400 transition-colors"
             title={t("logout")}
             aria-label={t("logout")}
           >

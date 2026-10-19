@@ -40,7 +40,7 @@ export default function Input({
         <input
           id={id}
           type={effectiveType}
-          className={`min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/60 transition-colors focus:border-farmer-700 focus:outline-none focus:ring-1 focus:ring-farmer-700 ${
+          className={`min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/60 transition-colors focus:border-farmer-700 focus:outline-none focus:ring-1 focus:ring-farmer-700 dark:focus:border-farmer-400 dark:focus:ring-farmer-400 ${
             leadingIcon ? "pl-10" : ""
           } ${enableToggle && isPassword ? "pr-10" : trailingIcon ? "pr-10" : ""} ${className}`}
           {...props}

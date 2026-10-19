@@ -467,7 +467,7 @@ export default function ProcessingPage() {
               <span className="font-semibold text-farmer-700 dark:text-emerald-400">{t("advisoryReady")}</span>
             ) : isPestDone ? (
               <span className="inline-flex items-center gap-2 text-muted">
-                <Loader2 size={16} className="animate-spin text-farmer-700" />
+                <Loader2 size={16} className="animate-spin text-farmer-700 dark:text-farmer-300" />
                 {t("synthesizingAdvice")}
               </span>
             ) : (

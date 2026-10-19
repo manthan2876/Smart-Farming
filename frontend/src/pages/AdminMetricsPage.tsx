@@ -79,8 +79,8 @@ export default function AdminMetricsPage() {
     }
   };
 
-  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><Loader2 className="animate-spin text-admin-500" /></div>;
-  if (!data) return <div className="rounded-md border border-red-100 bg-red-50 p-6 text-danger">Failed to load metrics.</div>;
+  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><Loader2 className="animate-spin text-admin-500 dark:text-amber-400" /></div>;
+  if (!data) return <div className="rounded-md border border-red-100 bg-red-50 p-6 text-danger dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">Failed to load metrics.</div>;
 
   const localizedDiseaseDist = (data?.disease_distribution || []).map((entry: any) => ({
     ...entry,
@@ -314,7 +314,7 @@ export default function AdminMetricsPage() {
               value={exportCrop}
               onChange={(val) => setExportCrop(val)}
               theme="admin"
-              leadingIcon={<Sprout size={14} className="text-admin-600" />}
+              leadingIcon={<Sprout size={14} className="text-admin-600 dark:text-amber-400" />}
               options={[
                 { value: "All Crops", label: t("allCrops") },
                 ...CROP_OPTIONS.slice(1).map((c) => ({ value: c, label: translateCrop(c, language) })),
@@ -327,7 +327,7 @@ export default function AdminMetricsPage() {
               value={exportStatus}
               onChange={(val) => setExportStatus(val)}
               theme="admin"
-              leadingIcon={<Filter size={14} className="text-admin-600" />}
+              leadingIcon={<Filter size={14} className="text-admin-600 dark:text-amber-400" />}
               options={[
                 { value: "Any", label: t("any") },
                 { value: "pending_review", label: t("pendingReview") },
@@ -342,7 +342,7 @@ export default function AdminMetricsPage() {
               value={exportImageTarget}
               onChange={(val) => setExportImageTarget(val as any)}
               theme="admin"
-              leadingIcon={<Image size={14} className="text-admin-600" />}
+              leadingIcon={<Image size={14} className="text-admin-600 dark:text-amber-400" />}
               options={[
                 { value: "preprocessed", label: t("preprocessedImg") },
                 { value: "raw", label: t("rawImg") },
@@ -355,7 +355,7 @@ export default function AdminMetricsPage() {
               value={exportFormat}
               onChange={(val) => setExportFormat(val as any)}
               theme="admin"
-              leadingIcon={<FileText size={14} className="text-admin-600" />}
+              leadingIcon={<FileText size={14} className="text-admin-600 dark:text-amber-400" />}
               options={[
                 { value: "PyTorch Folder", label: "PyTorch Folder" },
                 { value: "JSON Manifest", label: "JSON Manifest" },

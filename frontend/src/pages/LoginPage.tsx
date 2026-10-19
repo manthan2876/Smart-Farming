@@ -280,14 +280,14 @@ export default function LoginPage() {
 
           {resetSuccess && (
             <div className="mt-6 flex items-center gap-2 rounded-sm border border-farmer-200 bg-farmer-50 p-3 text-sm font-medium text-farmer-800 dark:border-farmer-900/50 dark:bg-farmer-950/40 dark:text-farmer-300">
-              <CheckCircle2 size={18} className="shrink-0 text-farmer-600" />
+              <CheckCircle2 size={18} className="shrink-0 text-farmer-600 dark:text-farmer-400" />
               <span>{t("passwordResetSuccess")}</span>
             </div>
           )}
 
           {verifiedSuccess && (
             <div className="mt-6 flex items-center gap-2 rounded-sm border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
-              <CheckCircle2 size={18} className="shrink-0 text-green-600" />
+              <CheckCircle2 size={18} className="shrink-0 text-green-600 dark:text-green-400" />
               <span>Email verified successfully! You can now sign in with your credentials.</span>
             </div>
           )}

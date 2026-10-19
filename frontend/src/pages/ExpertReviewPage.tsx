@@ -105,7 +105,7 @@ export default function ExpertReviewPage() {
             <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("modelTelemetryContext")}</h3>
             <div className="mt-5 grid gap-6 sm:grid-cols-2">
               <ul className="space-y-3 text-sm text-ink"><li><strong>{t("crop")}:</strong> {review.crop}</li><li><strong>{t("identifiedCondition")}:</strong> {review.disease} ({(review.disease_conf * 100).toFixed(0)}%)</li><li><strong>{t("severity")}:</strong> {review.severity_pct.toFixed(0)}% {t("affectedArea")}</li><li><strong>{t("pests")}:</strong> {t("noPests")}</li></ul>
-              <ul className="space-y-3 text-sm text-ink"><li><CloudSun size={16} className="mr-2 inline text-expert-500" /><strong>{t("weather")}:</strong> Current conditions available in prediction</li><li><MapPin size={16} className="mr-2 inline text-expert-500" /><strong>{t("location")}:</strong> Prediction location</li><li><History size={16} className="mr-2 inline text-expert-500" /><strong>{t("history")}:</strong> Review prediction history</li></ul>
+              <ul className="space-y-3 text-sm text-ink"><li><CloudSun size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("weather")}:</strong> Current conditions available in prediction</li><li><MapPin size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("location")}:</strong> Prediction location</li><li><History size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("history")}:</strong> Review prediction history</li></ul>
             </div>
           </Card>
         </div>
@@ -124,7 +124,7 @@ export default function ExpertReviewPage() {
                     value={correctedDisease}
                     onChange={(val) => setCorrectedDisease(val)}
                     theme="expert"
-                    leadingIcon={<ShieldAlert size={15} className="text-expert-700" />}
+                    leadingIcon={<ShieldAlert size={15} className="text-expert-700 dark:text-cyan-400" />}
                     placeholder={t("selectDisease")}
                     options={[
                       { value: "", label: t("selectDisease") },
@@ -138,7 +138,7 @@ export default function ExpertReviewPage() {
               <label className="block space-y-2 text-sm font-semibold text-ink">
                 {t("correctedSeverity")}
                 <input
-                  className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 font-normal text-ink focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500"
+                  className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 font-normal text-ink focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500 dark:focus:border-farmer-400 dark:focus:ring-farmer-400"
                   value={correctedSeverity}
                   onChange={(event) => setCorrectedSeverity(event.target.value)}
                   placeholder={t("affectedPercentage")}
@@ -153,7 +153,7 @@ export default function ExpertReviewPage() {
               <input type="checkbox" checked={addToRetraining} onChange={event => setAddToRetraining(event.target.checked)} className="h-4 w-4 rounded border-line accent-farmer-600 dark:accent-farmer-400" />
               <span>{t("flagRetraining")}</span>
             </label>
-            <textarea className="min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink placeholder:text-muted focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500" placeholder={t("retrainingNotesPlaceholder")} value={internalNote} onChange={event => setInternalNote(event.target.value)} />
+            <textarea className="min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink placeholder:text-muted focus:border-farmer-500 focus:outline-none focus:ring-1 focus:ring-farmer-500 dark:focus:border-farmer-400 dark:focus:ring-farmer-400" placeholder={t("retrainingNotesPlaceholder")} value={internalNote} onChange={event => setInternalNote(event.target.value)} />
           </div>
           <div className="mt-8 flex gap-3 border-t border-line pt-5"><Button variant="secondary" className="flex-1" onClick={() => navigate("/admin/expert")}>{t("cancel")}</Button><Button className="flex-1" onClick={() => mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending ? t("submitting") : t("submitReview")}</Button></div>
         </Card>

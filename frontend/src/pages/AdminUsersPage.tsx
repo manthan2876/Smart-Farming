@@ -217,12 +217,12 @@ export default function AdminUsersPage() {
                 setPage(0);
               }}
               theme="admin"
-              leadingIcon={<Filter size={15} className="text-admin-700" />}
+              leadingIcon={<Filter size={15} className="text-admin-700 dark:text-amber-400" />}
               options={[
                 { value: "all", label: t("allRoles") },
-                { value: "farmer", label: t("farmers"), icon: <Sprout size={14} className="text-farmer-600 shrink-0" /> },
-                { value: "expert", label: t("fieldExperts"), icon: <GraduationCap size={14} className="text-expert-700 shrink-0" /> },
-                { value: "admin", label: t("administrators"), icon: <ShieldCheck size={14} className="text-admin-700 shrink-0" /> },
+                { value: "farmer", label: t("farmers"), icon: <Sprout size={14} className="text-farmer-600 dark:text-farmer-400 shrink-0" /> },
+                { value: "expert", label: t("fieldExperts"), icon: <GraduationCap size={14} className="text-expert-700 dark:text-cyan-400 shrink-0" /> },
+                { value: "admin", label: t("administrators"), icon: <ShieldCheck size={14} className="text-admin-700 dark:text-amber-400 shrink-0" /> },
               ]}
               className="min-w-[160px]"
             />
@@ -417,9 +417,9 @@ export default function AdminUsersPage() {
                 disabled={isSelf && newRole === "admin"}
                 theme="admin"
                 options={[
-                  { value: "farmer", label: `Farmer / Grower (${t("farmerFieldAccuracy")})`, icon: <Sprout size={14} className="text-farmer-600 shrink-0" /> },
-                  { value: "expert", label: `Field Expert / Specialist (${t("expertTriageQueue")})`, icon: <GraduationCap size={14} className="text-expert-700 shrink-0" /> },
-                  { value: "admin", label: `Administrator (${t("administrators")})`, icon: <ShieldCheck size={14} className="text-admin-700 shrink-0" /> },
+                  { value: "farmer", label: `Farmer / Grower (${t("farmerFieldAccuracy")})`, icon: <Sprout size={14} className="text-farmer-600 dark:text-farmer-400 shrink-0" /> },
+                  { value: "expert", label: `Field Expert / Specialist (${t("expertTriageQueue")})`, icon: <GraduationCap size={14} className="text-expert-700 dark:text-cyan-400 shrink-0" /> },
+                  { value: "admin", label: `Administrator (${t("administrators")})`, icon: <ShieldCheck size={14} className="text-admin-700 dark:text-amber-400 shrink-0" /> },
                 ]}
               />
             </div>

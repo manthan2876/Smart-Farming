@@ -169,10 +169,10 @@ export default function AlertsPage() {
                   <div
                     className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${
                       isExpert
-                        ? "bg-expert-100 text-expert-700"
+                        ? "bg-expert-100 text-expert-700 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border dark:border-cyan-800"
                         : isCritical
-                        ? "bg-red-100 text-danger dark:bg-red-950/60 dark:text-red-300"
-                        : "bg-farmer-100 text-farmer-800"
+                        ? "bg-red-100 text-danger dark:bg-red-950/60 dark:text-red-300 dark:border dark:border-red-900"
+                        : "bg-farmer-100 text-farmer-800 dark:bg-farmer-900/60 dark:text-farmer-200 dark:border dark:border-farmer-700"
                     }`}
                   >
                     {isExpert ? (

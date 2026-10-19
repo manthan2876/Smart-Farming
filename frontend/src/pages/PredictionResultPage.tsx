@@ -201,8 +201,8 @@ export default function PredictionResultPage() {
     }
   };
 
-  if (isLoading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-farmer-700" size={36} /></div>;
-  if (isError || !prediction) return <Card className="text-danger">Failed to load prediction details.</Card>;
+  if (isLoading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-farmer-700 dark:text-farmer-300" size={36} /></div>;
+  if (isError || !prediction) return <Card className="text-danger dark:text-red-400">Failed to load prediction details.</Card>;
 
   const primary = prediction.follow_up || prediction;
   const original = prediction.follow_up ? prediction : null;
@@ -452,9 +452,9 @@ export default function PredictionResultPage() {
             )}
             <p className="mt-1 text-sm text-muted">{t("modelConfidence")}: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
-              <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700"}`} style={{ width: `${diseaseConfidence}%` }} />
+              <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700 dark:bg-farmer-500"}`} style={{ width: `${diseaseConfidence}%` }} />
             </div>
-            {isLowConfidence && <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">{t("tentativeDiagnosisDesc")}</div>}
+            {isLowConfidence && <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200">{t("tentativeDiagnosisDesc")}</div>}
             {predictionData.disease?.could_also_be && (
               <div className="mt-3 rounded border border-amber-300 bg-amber-50/80 p-3 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
                 <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
@@ -495,31 +495,31 @@ export default function PredictionResultPage() {
     <>
       {isUploading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface/95 p-4 no-print">
-          <Loader2 size={52} className="animate-spin text-farmer-700" />
+          <Loader2 size={52} className="animate-spin text-farmer-700 dark:text-farmer-300" />
           <h2 className="mt-6 font-display text-2xl text-ink">{t("rerunningPipeline")}</h2>
           <p className="mt-2 text-muted">{t("analyzingFollowUpPhoto")}</p>
         </div>
       )}
       <motion.div className="space-y-6 pb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         {/* Printable Official Header */}
-        <div className="hidden print-only mb-6 border-b border-gray-300 pb-4">
+        <div className="hidden print-only mb-6 border-b border-gray-300 dark:border-gray-700 pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{t("diagnosticReportTitle")}</h1>
-              <p className="text-xs text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("diagnosticReportTitle")}</h1>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                 {t("scanReference")}: #{primary.prediction_id || id} | Generated: {new Date().toLocaleString()}
               </p>
             </div>
             <div className="text-right">
-              <span className="text-sm font-bold text-emerald-800">Smart Farming Platform</span>
-              <p className="text-xs text-gray-500">Agri-tech Field Intelligence</p>
+              <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Smart Farming Platform</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Agri-tech Field Intelligence</p>
             </div>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <Link to="/history" className="no-print text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700">
+            <Link to="/history" className="no-print text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700 dark:hover:text-farmer-300">
               &larr; {t("backToHistory")}
             </Link>
             <h1 className="mt-2 font-display text-3xl text-ink sm:text-4xl">
@@ -538,9 +538,9 @@ export default function PredictionResultPage() {
         </div>
 
         {isPendingReview && (
-          <Card className="border-admin-100 bg-admin-50">
-            <h3 className="font-display text-xl text-admin-700">{t("additionalReviewRequired")}</h3>
-            <p className="mt-2 text-sm leading-6 text-admin-700">
+          <Card className="border-admin-100 bg-admin-50 dark:border-amber-800/60 dark:bg-amber-950/40">
+            <h3 className="font-display text-xl text-admin-700 dark:text-amber-200">{t("additionalReviewRequired")}</h3>
+            <p className="mt-2 text-sm leading-6 text-admin-700 dark:text-amber-300/90">
               {t("additionalReviewDesc")}
             </p>
           </Card>
@@ -579,15 +579,15 @@ export default function PredictionResultPage() {
                 <div className="min-w-40 rounded-sm border border-line bg-canvas p-4" key={index}>
                   <div className="text-xs text-muted">{new Date(item.created_at).toLocaleDateString()}</div>
                   <div className="mt-2 font-semibold text-ink">{translateDisease(item.disease, language)}</div>
-                  <div className={`mt-1 text-xs font-semibold ${item.severity_pct > 60 ? "text-danger" : "text-farmer-700"}`}>
+                  <div className={`mt-1 text-xs font-semibold ${item.severity_pct > 60 ? "text-danger" : "text-farmer-700 dark:text-farmer-300"}`}>
                     {t("severity")}: {item.severity_pct}%
                   </div>
                 </div>
               ))}
-              <div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4">
-                <div className="text-xs font-bold text-expert-700">{t("latestScan")}</div>
+              <div className="min-w-40 rounded-sm border-2 border-expert-500 bg-expert-50 p-4 dark:border-cyan-500 dark:bg-cyan-950/60">
+                <div className="text-xs font-bold text-expert-700 dark:text-cyan-300">{t("latestScan")}</div>
                 <div className="mt-2 font-semibold text-ink">{translateDisease(primary.disease?.label, language)}</div>
-                <div className="mt-1 text-xs font-semibold text-farmer-700">
+                <div className="mt-1 text-xs font-semibold text-farmer-700 dark:text-farmer-300">
                   {t("severity")}: {primary.severity?.percent || 0}%
                 </div>
               </div>
@@ -597,7 +597,7 @@ export default function PredictionResultPage() {
 
         {isProcessing ? (
           <Card className="flex flex-col items-center text-center" padding="lg">
-            <Loader2 size={48} className="animate-spin text-farmer-700" />
+            <Loader2 size={48} className="animate-spin text-farmer-700 dark:text-farmer-300" />
             <h2 className="mt-5 font-display text-2xl text-ink">{t("runningPipeline")}</h2>
             <p className="mt-2 text-muted">{t("analyzingBackground")}</p>
           </Card>
@@ -629,7 +629,7 @@ export default function PredictionResultPage() {
                   {t("farmerFeedbackSubtitle")}
                 </p>
                 <textarea
-                  className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100"
+                  className="mt-4 min-h-24 w-full rounded-sm border border-line bg-surface p-3 text-sm text-ink focus:border-farmer-500 focus:outline-none focus:ring-4 focus:ring-farmer-100 dark:focus:border-farmer-400 dark:focus:ring-farmer-900/40"
                   placeholder={t("optionalNotes")}
                   value={farmerNote}
                   onChange={(event) => setFarmerNote(event.target.value)}

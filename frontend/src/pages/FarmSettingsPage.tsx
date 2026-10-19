@@ -605,7 +605,7 @@ export default function FarmSettingsPage() {
                   type="button"
                   onClick={handleLocate}
                   disabled={isLocating}
-                  className="inline-flex items-center gap-1.5 rounded-sm border border-expert-100 bg-expert-50 px-3 py-1.5 text-xs font-semibold text-expert-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-sm border border-expert-100 bg-expert-50 px-3 py-1.5 text-xs font-semibold text-expert-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-cyan-800/60 dark:bg-cyan-950/40 dark:text-cyan-200"
                 >
                   <Navigation2 size={14} className={isLocating ? 'animate-spin' : ''} />
                   {isLocating ? t("locating") : t("myLocation")}
@@ -658,10 +658,10 @@ export default function FarmSettingsPage() {
                 <p className="mt-1 text-xs text-muted">{isEditingBoundary ? "Edit mode: click to add, drag to move, double-click to delete, or click a line to insert." : "Map mode: pan and zoom normally. Click Edit boundary to change points."}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => setIsEditingBoundary((editing) => !editing)} className={`rounded-sm px-3 py-2 text-xs font-semibold ${isEditingBoundary ? "bg-farmer-700 text-white" : "border border-line bg-surface text-ink"}`}>
+                <button type="button" onClick={() => setIsEditingBoundary((editing) => !editing)} className={`rounded-sm px-3 py-2 text-xs font-semibold ${isEditingBoundary ? "bg-farmer-700 text-white dark:bg-farmer-600" : "border border-line bg-surface text-ink"}`}>
                   {isEditingBoundary ? t("stopEditing") : t("editBoundaryBtn")}
                 </button>
-                <button type="button" onClick={handleLocate} disabled={isLocating} className="inline-flex items-center gap-1.5 rounded-sm border border-expert-100 bg-expert-50 px-3 py-2 text-xs font-semibold text-expert-700 disabled:opacity-60">
+                <button type="button" onClick={handleLocate} disabled={isLocating} className="inline-flex items-center gap-1.5 rounded-sm border border-expert-100 bg-expert-50 px-3 py-2 text-xs font-semibold text-expert-700 disabled:opacity-60 dark:border-cyan-800/60 dark:bg-cyan-950/40 dark:text-cyan-200">
                   <Navigation2 size={14} className={isLocating ? "animate-spin" : ""} /> {isLocating ? t("locating") : t("myLocation")}
                 </button>
                 <button type="button" onClick={() => setMapLayer((layer) => layer === "satellite" ? "street" : "satellite")} className="inline-flex items-center gap-1.5 rounded-sm border border-line px-3 py-2 text-xs font-semibold text-ink">
