@@ -139,7 +139,7 @@ SAMPLE_MAP = [
 ]
 VALID_SAMPLE_EXAMPLES = [[path] for label, path in SAMPLE_MAP if Path(path).exists()]
 
-# Disease choices per crop for the Advisory Assistant
+# Disease choices per crop for the Advisory Assistant (All 32 conditions mapped to verified ICAR KB)
 DISEASE_CHOICES_BY_CROP = {
     "Tomato": [
         "Early Blight",
@@ -147,23 +147,31 @@ DISEASE_CHOICES_BY_CROP = {
         "Bacterial Spot",
         "Leaf Mold",
         "Septoria Leaf Spot",
+        "Spider Mites",
+        "Target Spot",
         "Tomato Mosaic Virus",
         "Tomato Yellow Leaf Curl Virus",
         "Healthy",
     ],
     "Cotton": [
-        "Bacterial Blight",
         "Alternaria Leaf Spot",
+        "Bacterial Blight",
+        "Cercospora Leaf Spot",
         "Curl Virus",
         "Fusarium Wilt",
+        "Leaf Reddening",
         "Powdery Mildew",
         "Target Spot",
+        "Verticillium Wilt",
         "Healthy",
     ],
     "Groundnut": [
         "Early Leaf Spot",
         "Late Leaf Spot",
         "Rust",
+        "Alternaria Leaf Spot",
+        "Nutrition Deficiency",
+        "Rosette",
         "Healthy",
     ],
     "Potato": [
@@ -172,6 +180,8 @@ DISEASE_CHOICES_BY_CROP = {
         "Bacteria",
         "Fungi",
         "Nematode",
+        "Pest",
+        "Virus",
         "Healthy",
     ],
     "Pepper Bell": [
@@ -179,6 +189,7 @@ DISEASE_CHOICES_BY_CROP = {
         "Cercospora Leaf Spot",
         "Edema",
         "Leaf Curl",
+        "Nutrition Deficiency",
         "Powdery Mildew",
         "Healthy",
     ],
@@ -277,8 +288,34 @@ def format_advisory_markdown(
     if not isinstance(adv, dict) or "error" in adv:
         return f"### ⚠️ Advisory Error\n\n{adv.get('error', 'Unable to generate advisory.')}"
 
-    lang_names = {"en": "English", "hi": "Hindi (हिन्दी)", "gu": "Gujarati (ગુજરાતી)"}
-    lang_display = lang_names.get(language, language.upper())
+    lang_code = (language or "en").lower().strip()
+    if "guj" in lang_code or lang_code == "gu":
+        title = f"### 📋 કૃષિ સલાહ અહેવાલ (Agronomic Advisory): **{crop} — {disease}**"
+        h_lang = "ગુજરાતી (Gujarati)"
+        h1 = "#### 🚨 ૧. તાત્કાલિક પગલાં (Immediate Action)"
+        h2 = "#### 💊 ૨. ભલામણ કરેલ ઉપચાર (Recommended Treatment)"
+        h3 = "#### 🛡️ ૩. રોગ અટકાવવાના ઉપાયો (Cultural & Organic Prevention)"
+        h4 = "#### 👁️ ૪. ખેતર નિરીક્ષણ પદ્ધતિ (Field Monitoring Protocol)"
+        h_safe = "⚠️ **સત્તાવાર સુરક્ષા સૂચના (Official Safety Notice)**:"
+        h_src = "સંદર્ભ અને સ્ત્રોતો (Sources):"
+    elif "hin" in lang_code or lang_code == "hi":
+        title = f"### 📋 कृषि सलाह रिपोर्ट (Agronomic Advisory): **{crop} — {disease}**"
+        h_lang = "हिन्दी (Hindi)"
+        h1 = "#### 🚨 १. त्वरित कदम (Immediate Action)"
+        h2 = "#### 💊 २. अनुशंसित उपचार (Recommended Treatment)"
+        h3 = "#### 🛡️ ३. रोकथाम एवं बचाव के उपाय (Cultural & Organic Prevention)"
+        h4 = "#### 👁️ ४. फसल निगरानी प्रोटोकॉल (Field Monitoring Protocol)"
+        h_safe = "⚠️ **आधिकारिक सुरक्षा सूचना (Official Safety Notice)**:"
+        h_src = "संदर्भ एवं स्रोत (Sources):"
+    else:
+        title = f"### 📋 Agronomic Advisory Report: **{crop} — {disease}**"
+        h_lang = "English"
+        h1 = "#### 🚨 1. Immediate Action"
+        h2 = "#### 💊 2. Recommended Chemical & Biological Treatment"
+        h3 = "#### 🛡️ 3. Cultural & Organic Prevention"
+        h4 = "#### 👁️ 4. Field Monitoring Protocol"
+        h_safe = "⚠️ **Official Safety Notice**:"
+        h_src = "Sources:"
 
     immediate = adv.get("immediate_action", "Isolate infected plants and monitor closely.")
     treatment = adv.get("treatment", "Consult your local KVK for verified chemical sprays.")
@@ -287,28 +324,28 @@ def format_advisory_markdown(
     disclaimer = adv.get("safety_disclaimer", "Always consult an agriculture officer before applying chemical pesticides.")
     sources = ", ".join(adv.get("sources", ["ICAR / KVK Agronomic Guidelines"]))
 
-    return f"""### 📋 Agronomic Advisory Report: **{crop} — {disease}**
-**Target Language:** `{lang_display}` | **Diagnosis Confidence:** `{confidence * 100:.1f}%`
+    return f"""{title}
+**Target Language:** `{h_lang}` | **Diagnosis Confidence:** `{confidence * 100:.1f}%`
 
 ---
 
-#### 🚨 1. Immediate Action
+{h1}
 {immediate}
 
-#### 💊 2. Recommended Chemical / Biological Treatment
+{h2}
 {treatment}
 
-#### 🛡️ 3. Cultural & Organic Prevention
+{h3}
 {prevention}
 
-#### 👁️ 4. Field Monitoring Protocol
+{h4}
 {monitoring}
 
 ---
-> ⚠️ **Official Safety Notice**:
+> {h_safe}
 > {disclaimer}
 
-*Sources: {sources}*
+*{h_src} {sources}*
 """
 
 
@@ -410,10 +447,18 @@ async def run_tts_gradio(text: str, language: str):
     """Synthesizes speech audio using Microsoft Neural regional voices."""
     if not text or not text.strip():
         return None
+    lang_code = (language or "gu").lower().strip()
+    if "guj" in lang_code or lang_code == "gu":
+        lang_code = "gu"
+    elif "hin" in lang_code or lang_code == "hi":
+        lang_code = "hi"
+    else:
+        lang_code = "en"
+
     try:
         import base64
         from routers.tts import synthesize_speech, TTSRequest
-        req = TTSRequest(text=text, language=language, speaker="female")
+        req = TTSRequest(text=text, language=lang_code, speaker="female")
         res = await synthesize_speech(req)
         b64 = res.get("audioContent", "")
         if not b64:

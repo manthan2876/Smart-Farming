@@ -10,7 +10,10 @@ try:
     from pydantic_settings import BaseSettings
 except ImportError:
     from pydantic import BaseModel as BaseSettings
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 
 AI_SERVICE_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = AI_SERVICE_DIR.parent
@@ -23,7 +26,7 @@ def _detect_device() -> str:
     # REST API endpoints (/vision, /translation, /advisory) must run on CPU to avoid CUDA resource locks.
     if os.getenv("SPACES_ZERO_GPU"):
         return "cpu"
-    if torch.cuda.is_available():
+    if torch and hasattr(torch, "cuda") and torch.cuda.is_available():
         try:
             torch.zeros(1, device="cuda")
             return "cuda"
@@ -45,8 +48,8 @@ class Settings(BaseSettings):
     GATEWAY_SECRET: str = os.getenv("GATEWAY_SECRET", "")
     ALLOW_ALL_ORIGINS: bool = True
 
-    # Advisory LLM Engine (100% Local In-Memory Qwen2.5 or Optional Groq API)
-    USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "true").lower() in ("true", "1")
+    # Advisory LLM Engine (Default False for instant verified ICAR/KVK facts, or Optional Groq/Local LLM)
+    USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "false").lower() in ("true", "1")
     LOCAL_LLM_MODEL: str = os.getenv("LOCAL_LLM_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
@@ -76,5 +79,5 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Configure PyTorch CPU threading
-if settings.DEVICE == "cpu":
+if torch and hasattr(torch, "set_num_threads") and settings.DEVICE == "cpu":
     torch.set_num_threads(settings.CPU_THREADS)
