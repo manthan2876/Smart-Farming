@@ -1,8 +1,8 @@
 # MLOps Training Guide — Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
+**Version:** 2.2  
+**Date:** 20 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -14,7 +14,7 @@ This document explains how to reproduce a training run for either the **crop ide
 ### 1. Python environment
 
 ```bash
-# Create a virtual environment (Python 3.11)
+# Create a virtual environment (Python 3.12+)
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
@@ -36,16 +36,16 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 
 ## Step 1: Export the Dataset
 
-Use the Admin dashboard or the API to export a labelled dataset:
+Use the Admin dashboard or the API to export a labelled dataset. In production, this uses the spatial deterministic split (hashed on `plot_id` to eliminate rescan leakage), 70/30 replay buffer mixing, and defaults strictly to verified candidates (`added_to_dataset`):
 
 ```bash
 # Via the API (requires admin token)
-curl -X POST http://localhost:8000/admin/dataset/export \
+curl -X POST https://smart-farming-backend-kkty.onrender.com/api/v1/admin/mlops/export \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "filters": {"expert": true, "farmer": true, "crop": null, "status": "pending_review"},
-    "split": {"train": 70, "val": 15, "test": 15},
+    "filters": {"expert": true, "farmer": true, "crop": null, "status": "added_to_dataset"},
+    "split": {"train": 0.70, "val": 0.15, "test": 0.15},
     "format": "PyTorch Folder",
     "imageTarget": "preprocessed"
   }' \
@@ -79,7 +79,7 @@ data/exports/latest/
 ### Disease classifier (EfficientNet-B2)
 
 ```bash
-python backend/scripts/train_eval.py disease \
+python ai_service/training/train_eval.py disease \
     --dataset-dir data/exports/latest \
     --model-name efficientnet_b2 \
     --epochs 30 \
@@ -94,7 +94,7 @@ python backend/scripts/train_eval.py disease \
 ### Crop identifier (EfficientNet-B0)
 
 ```bash
-python backend/scripts/train_eval.py crop \
+python ai_service/training/train_eval.py crop \
     --dataset-dir data/exports/latest \
     --model-name efficientnet_b0 \
     --epochs 20 \
@@ -134,7 +134,7 @@ models/training_runs/disease_v2/
 ## Step 4: Evaluate an Existing Checkpoint
 
 ```bash
-python backend/scripts/train_eval.py eval \
+python ai_service/training/train_eval.py eval \
     --checkpoint models/training_runs/disease_v2/best.pth \
     --dataset-dir data/exports/latest
 ```
@@ -147,7 +147,7 @@ Once satisfied with evaluation metrics, promote the checkpoint to production:
 
 ```bash
 # Via the model registry API (requires admin token)
-curl -X POST http://localhost:8000/admin/models/promote \
+curl -X POST https://smart-farming-backend-kkty.onrender.com/api/v1/admin/models/promote \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -210,5 +210,5 @@ The script uses a deliberate two-phase approach to prevent catastrophic forgetti
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 20 October 2026*
 

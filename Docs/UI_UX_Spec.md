@@ -1,8 +1,8 @@
 # UI/UX Specification — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
+**Version:** 2.2  
+**Date:** 20 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -483,30 +483,69 @@ The Flutter mobile app mirrors the web translation architecture via `mobile/lib/
 
 ## 8. Mobile Application UI (Flutter)
 
-### 8.1 Overview
+### 8.1 Overview & Persona Alignment
 
-The farmer-facing Flutter mobile app (`mobile/`) runs on Android (API 21+) and shares the backend REST API with the web dashboard. It is exclusively for the `farmer` role. Expert and admin roles are rejected at login with a clear error message.
+The farmer-facing Flutter mobile app (`mobile/`) runs on Android (API 21+) and iOS, sharing the backend REST API with the web dashboard. It is strictly dedicated to the **farmer persona**, optimized for outdoor field conditions, regional languages, low digital literacy, and variable rural network connectivity. Administrative, user management, and expert side-by-side verification dashboards remain strictly web-based to maintain focused mobile ergonomics.
 
-### 8.2 Navigation Shell
+### 8.2 Entry, Onboarding & Phone-First Auth
 
-`FarmerShell` provides a 5-tab bottom navigation bar:
+1. **`LanguageSplashScreen` (`lib/screens/splash/language_splash_screen.dart`):**
+   - Displayed immediately upon first launch before any authentication prompts.
+   - High-contrast visual language cards for English, ગુજરાતી (Gujarati), and हिन्दी (Hindi).
+   - Generous touch targets ($\ge 64\text{px}$ card height) with native script typography.
+2. **Phone-First Authentication (`lib/screens/auth/login_screen.dart`):**
+   - Phone number input field prioritized over email identifiers.
+   - Simplified password entry with toggleable visibility.
+   - Automatic backend validation rejecting `expert` or `admin` logins with clear advisory notices directing them to the web dashboard.
+3. **1-Tap Guest Mode ("Try Without Account"):**
+   - Solves registration drop-off by allowing immediate field scanning without up-front sign-up.
+   - Calls `POST /api/v1/auth/guest` behind the scenes to allocate an ephemeral farmer session.
+   - Prompts the farmer to attach a permanent phone number or password only when attempting to save scan history permanently or configure multiple plots.
 
-| Tab | Icon | Screen |
-|---|---|---|
-| Today | `home` | `TodayScreen` — dashboard with current weather and recent alerts |
-| Farm | `agriculture` | `FarmScreen` — farm details, plots list, boundary drawing |
-| Scan | `center_focus_strong` (FAB) | `CreatePredictionSheet` → `ProcessingSheet` → `ResultDetailSheet` |
-| Alerts | `notifications` | `AlertsScreen` — expert review and weather alerts with unread badge |
-| History | `history` | `HistoryScreen` — past scan list |
+### 8.3 Navigation Shell (`FarmerShell`)
 
-### 8.3 Login Screen
+`FarmerShell` provides a 5-tab bottom navigation bar designed with high-contrast active indicators and minimum 48px touch targets:
 
-- Header row: app logo (green `eco` icon on primary-color rounded rectangle) + language selector button (`TextButton.icon` with `Icons.language`)
-- No server settings or backend URL input (removed; URL governed by Supabase Remote Config)
-- Supports registration (name, location, identifier, password) and login (identifier + password)
-- Forgot password flow via bottom sheet
+| Tab | Icon | Screen | Primary Capabilities |
+|---|---|---|---|
+| **Today** | `home` | `TodayScreen` | Real-time weather card, agricultural spray window advisory, pending sync counter, quick scan trigger |
+| **Farm** | `agriculture` | `FarmScreen` | Farm overview, crop plots list, area calculations, boundary drawing |
+| **Scan** | `center_focus_strong` (FAB) | `CreatePredictionSheet` | Camera viewfinder with edge detection guidance, image compression, live upload |
+| **Alerts** | `notifications` | `AlertsScreen` | Weather risk warnings, fungal outbreak alerts, expert diagnostic review notifications |
+| **History** | `history` | `HistoryScreen` | Historical scan timeline, filter by crop/plot, rescan progression comparison |
 
-### 8.4 Boundary Drawing Screen (`FieldBoundaryScreen`)
+### 8.4 Leaf Diagnostic Workflow & Result Sheet
+
+The scan workflow transitions through three cohesive modal bottom sheets:
+1. **`CreatePredictionSheet`:**
+   - On-device image compression (JPEG 85% quality, max 1024px dimension) ensuring rapid upload over 2G/3G connections.
+   - Quality gate checks before network transmission (blur and darkness heuristics).
+2. **`ProcessingSheet`:**
+   - Real-time diagnostic pipeline stages visualized with animated step indicators: Quality Assessment → Crop Identification → Disease Classification → Generating Advisory.
+3. **`ResultDetailSheet`:**
+   - **Qualitative Confidence Chips:** Replaces confusing raw probabilities (e.g. `91.4%`) with intuitive qualitative indicators:
+     - 🟢 **High Confidence:** Established diagnosis with standard agronomic protocol.
+     - 🟡 **Moderate Confidence:** Presumptive diagnosis with cautionary monitoring advice.
+     - 🔴 **Needs Expert Review:** Automatic routing to human agricultural extension experts.
+   - **Four-Section Agronomic Advisory:** Clearly segmented into:
+     - 🚨 *Immediate Actions* (What to do today)
+     - 💊 *Treatment Protocol* (Organic and chemical options)
+     - 🛡️ *Preventive Measures* (Cultural practices to halt spread)
+     - 👁️ *Monitoring Schedule* (Follow-up timeline)
+   - **Dual Text-to-Speech (TTS) Engine:** Regional audio readback button allowing farmers to listen to the full diagnostic advisory in their native language (EN, GU, HI).
+
+### 8.5 Offline Resilience & Queue Service
+
+- **Local SQLite Store (`lib/services/offline_queue_db.dart`):** Scans taken in dead zones or intermittent network coverage are persisted locally with on-device compressed leaf photos, selected plot IDs, and timestamps.
+- **Background Synchronization (`lib/services/offline_sync_service.dart`):** Monitors network connectivity and executes exponential backoff retries when connectivity is restored, notifying the farmer via an in-app banner upon successful upload.
+
+### 8.6 History & Rescan Progression (`RescanComparisonSheet`)
+
+- Accessible via `HistoryScreen` when multiple scans exist for a specific plot or crop.
+- Opens `RescanComparisonSheet` providing a side-by-side visual and diagnostic comparison of two scans over time.
+- Enables farmers and field officers to evaluate whether treatments (fungicides, pruning) are arresting disease progression.
+
+### 8.7 Boundary Drawing Screen (`FieldBoundaryScreen`)
 
 Activated when tapping "Draw Boundary" for a farm or plot in `FarmScreen`.
 
@@ -533,18 +572,15 @@ Activated when tapping "Draw Boundary" for a farm or plot in `FarmScreen`.
 | Moving a corner | Cyan (`#00b0ff`) |
 | Magnetic snapping to farm edge | Orange-Amber (`#f57f17`) |
 
-### 8.5 Settings Screen
+### 8.8 Design Tokens & Outdoor Accessibility (Mobile)
 
-`SettingsScreen` — language preference, password change. Accessed via Settings icon in `FarmerShell` app bar.
-
-### 8.6 Design Tokens (Mobile)
-
-| Token | Value | Usage |
+| Token | Value | Outdoor UX Rationale |
 |---|---|---|
-| `AppColors.primary` | `Color(0xff2e7d32)` | Primary green — buttons, icons, accents |
-| `AppColors.primaryLight` | Light green tint | Backgrounds, chips |
-| `AppColors.textPrimary` | Dark text | Body text |
-| `AppColors.textMuted` | Muted text | Subtitles, hints |
+| `AppColors.primary` | `Color(0xff2e7d32)` | Forest green; readable under direct sunlight |
+| `AppColors.primaryLight` | `Color(0xffe8f5e9)` | High-contrast tint for active chips and cards |
+| `AppColors.textPrimary` | `Color(0xff1b1b1b)` | Deep near-black for maximum contrast on field devices |
+| `AppColors.textMuted` | `Color(0xff616161)` | Secondary metadata labels |
+| `Touch Target Minimum` | `48 × 48 dp` | Ergonomic touch sizing for gloved or outdoor hands |
 
 ---
 
@@ -552,4 +588,4 @@ Activated when tapping "Draw Boundary" for a farm or plot in `FarmScreen`.
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 20 October 2026*

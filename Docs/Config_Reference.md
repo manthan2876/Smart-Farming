@@ -188,9 +188,10 @@ Used for serverless scheduled jobs without maintaining always-on background work
 |---|---|---|---|
 | `QSTASH_URL` | string | `https://qstash.upstash.io/v2` | Upstash QStash REST API base URL. |
 | `QSTASH_TOKEN` | string | `None` | QStash authentication token for scheduling jobs. |
-| `QSTASH_CURRENT_SIGNING_KEY` | string | `None` | Current HMAC key used to verify incoming webhook signatures. |
+| `QSTASH_CURRENT_SIGNING_KEY` | string | `None` | Current HMAC key used to verify incoming multi-region webhook signatures (`Upstash-Signature`). |
 | `QSTASH_NEXT_SIGNING_KEY` | string | `None` | Next signing key used during zero-downtime key rotation. |
-| `CRON_SECRET` | string | `None` | Shared header secret (`x-cron-secret`) for verifying internal cron webhook endpoints (`/api/v1/internal-cron/*`). |
+| `CRON_SECRET` | string | `None` | Shared header secret (`x-cron-secret` or `Authorization: Bearer <CRON_SECRET>`) for verifying internal cron webhook endpoints (`/api/v1/internal/cron/*`). |
+| `METRICS_API_KEY` | string | `None` | Header key (`x-api-key`) for read-only polling of `/api/v1/admin/metrics` by GitHub Actions MLOps drift monitor. |
 
 ### Geographic Defaults (Indian Agricultural Reference)
 

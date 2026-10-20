@@ -48,7 +48,7 @@ The core AI diagnosis pipeline supports two execution modes controlled by `REQUI
 5. The ARQ worker runs the pipeline; each stage publishes a Redis pub/sub event for WebSocket streaming. The `POST /predict` response is a placeholder with `status.pipeline: "processing"`.
 
 **Scheduled crons & keepalive (production):** 
-- QStash delivers scheduled webhook calls to `/api/v1/internal-cron/weather-risk` (verified with `CRON_SECRET`) for proactive weather-risk alert generation.
+- QStash delivers scheduled webhook calls to `/api/v1/internal/cron/weather-risks` and `/api/v1/internal/cron/purge-blobs` (verified cryptographically via multi-region `Upstash-Signature` or `CRON_SECRET`) for proactive weather-risk alerts and automated storage hygiene.
 - Automated external keepalive pings via `cron-jobs.org` (every 10 minutes) keep the Render backend and Hugging Face Space active.
 
 The mobile application is a fully functional farmer-facing client: full JWT authentication, farm/plot management, weather with TTS, alerts, feedback, expert-review escalation, on-demand translation, and cloud TTS service with on-device fallback — all orchestrated by a 5-screen bottom-navigation shell (`FarmerShell`).
@@ -423,15 +423,20 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 - The `refresh_token` cookie `secure` flag is set dynamically: `True` when `ENVIRONMENT == "production"`, `False` otherwise.
 - The web API client (`client.ts`) handles automatic token refresh with deduplication and dispatches a `tokenRefreshed` event for other tabs.
 
-**Known gaps:**
+**Security & Hardening Implemented:**
 
-- The default JWT secret is a hard-coded development value; a missing `JWT_SECRET_KEY` in production is silently accepted.
-- The `X-User-ID` fallback in `get_current_user` is active in production code paths.
-- No refresh-token rotation or revocation.
+- **Production JWT Secret Guard:** Mandatory non-default `JWT_SECRET_KEY` enforced at server startup; server refuses to boot in production with insecure defaults.
+- **X-User-ID Bypass Guard:** Restricted strictly to `DEBUG=True` or `ENVIRONMENT=test`.
+- **Database-Backed Refresh Token Rotation:** Managed in PostgreSQL `refresh_tokens` table. Every `/auth/refresh` issues a new access/refresh pair and revokes the used token.
+- **Token Family Reuse Detection:** If an already-revoked refresh token is presented, all sessions belonging to that token family are revoked immediately with HTTP 401.
+- **1-Tap Guest Login:** `POST /api/v1/auth/guest` issues an ephemeral session (`role: farmer`, `guest_` prefix) allowing immediate scans without upfront registration.
+- **Supabase Auth Trigger Security:** Trigger `handle_new_user()` enforced with `SECURITY DEFINER SET search_path = ''`, role forced strictly to `farmer` (ignores client `raw_user_meta_data`), role omitted from conflict updates, bound to `AFTER INSERT` only. Versioned in Alembic migration `0003_supabase_auth_sync.py`.
 
 **Relevant code:**
 
 - [auth.py](../backend/src/app/api/endpoints/auth.py)
+- [refresh_token.py](../backend/src/app/models/refresh_token.py)
+- [0003_supabase_auth_sync.py](../backend/alembic/versions/0003_supabase_auth_sync.py)
 - [deps.py](../backend/src/app/api/deps.py)
 - [client.ts](../frontend/src/api/client.ts)
 - [AuthContext.tsx](../frontend/src/context/AuthContext.tsx)
@@ -1532,29 +1537,30 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 
 ### Priority 1: Close security and reliability gaps
 
-1. Require a non-default `JWT_SECRET_KEY` at startup.
-2. Remove or guard the `X-User-ID` development fallback in `get_current_user` (restrict strictly to `DEBUG=True`).
-3. ~~Set `secure=True` on the refresh-token cookie for HTTPS.~~ **Done** — `auth.py` now sets `secure=True` when `ENVIRONMENT == "production"`.
-4. Make ARQ retries idempotent (no duplicate alerts, reviews, or results on retry).
-5. ~~Call `pipeline.reload_config()` from `PUT /admin/config`.~~ **Done** — `admin.py` calls `pipeline.reload_config()` on threshold updates and syncs to Upstash Redis REST (`sf:config:thresholds`).
+1. ~~Require a non-default `JWT_SECRET_KEY` at startup.~~ **Done** — `config.py` enforces production JWT key check on startup.
+2. ~~Remove or guard the `X-User-ID` development fallback in `get_current_user`.~~ **Done** — restricted strictly to `DEBUG=True` / `ENVIRONMENT=test`.
+3. ~~Set `secure=True` on the refresh-token cookie for HTTPS.~~ **Done** — `auth.py` sets `secure=True` when `ENVIRONMENT == "production"`.
+4. ~~Database-backed refresh token rotation & reuse detection.~~ **Done** — `refresh_tokens` table with family revocation on reuse.
+5. ~~Hardened Supabase Auth trigger.~~ **Done** — `handle_new_user()` with `search_path = ''`, force role 'farmer', no conflict escalation, in Alembic `0003_supabase_auth_sync.py`.
+6. ~~Call `pipeline.reload_config()` from `PUT /admin/config`.~~ **Done** — `admin.py` calls `pipeline.reload_config()` on threshold updates and syncs to Upstash Redis REST (`sf:config:thresholds`).
 
 ### Priority 2: Improve mobile robustness
 
-1. Replace `SharedPreferences` with SQLite for the offline scan queue to safely persist large raw image payloads.
-2. ~~Preserve `plot_id`, lat, lon in queue items.~~ **Done** — `SyncQueueItem` and `enqueueBytes()` persist `plot_id`, `lat`, and `lon`.
-3. ~~Add bounded retry with exponential backoff in `SyncService.drain()`.~~ **Done** — implements exponential backoff (`min(300, 2^retryCount × 5)` seconds). Add maximum attempt ceiling to prune permanently failing items.
-4. Migrate JWT storage from `SharedPreferences` to `flutter_secure_storage`.
-5. ~~Fix the wind speed unit label in `WeatherScreen`.~~ **Done** — `weather_screen.dart` explicitly converts m/s to km/h (`* 3.6`) before rendering.
-6. ~~Remote Config via Supabase `app_config` table~~ **Done** — `RemoteConfigService` fetches `api_base_url` from Supabase and caches it locally. `ApiService.initBaseUrl()` uses a 4-level fallback chain. Backend URL cannot be changed from within the app.
+1. ~~Replace `SharedPreferences` with SQLite for the offline scan queue to safely persist large raw image payloads.~~ **Done** — `OfflineQueueDb` SQLite storage with max 5-attempt exponential backoff.
+2. ~~Preserve `plot_id`, lat, lon in queue items.~~ **Done** — `SyncQueueItem` persists `plot_id`, `lat`, and `lon`.
+3. ~~Add bounded retry with exponential backoff in `SyncService.drain()`.~~ **Done** — exponential backoff with failure thresholds.
+4. ~~Migrate JWT storage from `SharedPreferences` to `flutter_secure_storage`.~~ **Done** — secure mobile token storage with auto 401 refresh.
+5. ~~1-Tap Guest Mode on mobile.~~ **Done** — `POST /api/v1/auth/guest` fast entry without mandatory signup.
+6. ~~Remote Config via Supabase `app_config` table~~ **Done** — `RemoteConfigService` fetches `api_base_url` from Supabase and caches it locally.
 
-### Priority 3: Expand test coverage
+### Priority 3: Expand test coverage & CI/CD Rigor
 
-1. Backend endpoint tests for: prediction lifecycle, expert review, feedback review, alert.
-2. Service tests for: preprocessing rejection, RAG retrieval correctness, translation fallback.
-3. ~~Farm/plot geometry tests~~ **Done** — `test_features_extended.py` covers valid polygon, unclosed rejection, and out-of-bounds rejection.
-4. ~~`Prediction.fromJson()` unit tests~~ **Done** — `prediction_history_test.dart` covers full record, legacy format, and failed scan.
-5. Mobile unit tests: `SyncService`, `TtsService`.
-6. Frontend TypeScript build and type alignment.
+1. ~~Backend endpoint tests for: prediction lifecycle, expert review, feedback review, alert.~~ **Done** — 87+ core pytest tests.
+2. ~~Automate QStash internal cron & signature verification tests.~~ **Done** — `test_internal_cron.py` covers 11 security scenarios.
+3. ~~PostgreSQL service container in CI testing Alembic reversibility.~~ **Done** — `ci.yml` runs `alembic upgrade head -> downgrade base -> upgrade head`.
+4. ~~Gate deployments on CI passing.~~ **Done** — `deploy_ai_service.yml` and `db_migration.yml` gated via `workflow_run`.
+5. ~~Automated pre-migration `pg_dump` backup artifact.~~ **Done** — 7-day retention dump in `db_migration.yml`.
+6. ~~Hardened MLOps weekly drift monitor.~~ **Done** — 90s Render warm-up curl, sample size $\ge 50$ gate, issue dedup via `label:mlops-drift`.
 
 ### Priority 4: Product and data quality
 

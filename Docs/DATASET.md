@@ -1,8 +1,8 @@
 # Dataset Documentation — Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
+**Version:** 2.2  
+**Date:** 20 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -225,9 +225,19 @@ Leaf-level crops extracted from GLUE whole-plant field photos (background: soil/
 
 ---
 
-## 5. Retraining / Production Data (separate from the above)
+## 5. Retraining / Production Data & Split Architecture
 
-Per `mlops_training_guide.md`, production retraining pulls a **different** dataset — farmer/expert-labeled predictions exported live from the platform via `/admin/dataset/export`, not the original Kaggle/Mendeley sources above. Keep this distinction clear in the repo: the datasets in this document are the **original training data**; the export pipeline produces **new labeled data from real usage** for periodic retraining.
+Production retraining pulls real-world diagnostic samples — farmer/expert-labeled predictions exported live from the platform via `POST /api/v1/admin/mlops/export`. The export pipeline enforces rigorous partitioning safeguards:
+
+### 5.1 Spatial Deterministic Splitting (Zero Rescan Leakage)
+A common vulnerability in agricultural computer vision is **split leakage**, where repeated scans of the same plot, row, or plant across different days land in both training and test sets, artificially inflating test accuracy.
+- Smart Farming prevents this by partitioning candidates deterministically on `plot_id` (using SHA-256 hash modulo 100).
+- All leaf photos from a specific plot strictly belong to the same split partition (`train`, `val`, or `test`). If `plot_id` is null, it falls back to a deterministic hash of `farmer_id`.
+
+### 5.2 70/30 Replay Buffer Protocol
+Fine-tuning exclusively on expert-corrected candidates induces catastrophic forgetting because candidates are heavily biased towards edge cases, misclassifications, and hard examples.
+- The export service automatically implements a **replay buffer**: 70% archive baseline data combined with 30% newly approved candidates (`added_to_dataset`).
+- This preserves the high-precision baseline decision boundaries while adapting specifically to recently emerged disease variants.
 
 ---
 
@@ -245,4 +255,4 @@ Per `mlops_training_guide.md`, production retraining pulls a **different** datas
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 20 October 2026*

@@ -105,9 +105,9 @@ A consolidated single-server deployment using Docker Compose:
 
 | Tool | Minimum Version | Installation / Notes |
 |---|---|---|
-| **Python** | 3.11+ | Recommended: `pyenv` or `conda` |
-| **Node.js** | 18 LTS+ | Recommended: `nvm` (`node -v` $\ge$ 18.0) |
-| **Flutter SDK** | 3.19+ | Required only for mobile development (`flutter doctor`) |
+| **Python** | 3.12+ | Recommended: `pyenv` or `conda` (Python 3.12 matched in CI & Render) |
+| **Node.js** | 20 LTS+ | Recommended: `nvm` (`node -v` $\ge$ 20.0) |
+| **Flutter SDK** | 3.24+ | Required only for mobile development (`flutter doctor`) |
 | **Git** | 2.40+ | With Git LFS installed (`git lfs install`) |
 | **PostgreSQL Client** | 15+ | `psql` for database inspection and migrations |
 
@@ -120,7 +120,7 @@ A consolidated single-server deployment using Docker Compose:
 1. **Create and activate a virtual environment:**
    ```bash
    cd backend
-   python3.11 -m venv venv
+   python3.12 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
@@ -164,7 +164,7 @@ To run the AI microservice locally instead of connecting to Hugging Face Spaces:
 1. **Set up virtual environment:**
    ```bash
    cd ai_service
-   python3.11 -m venv venv
+   python3.12 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
    ```
@@ -236,17 +236,31 @@ alembic upgrade head
 # Inspect current revision
 alembic current
 
-# Create a new migration after modifying SQLAlchemy models
-alembic revision --autogenerate -m "describe_changes"
+# Test migration reversibility (Upgrade -> Downgrade -> Upgrade)
+alembic upgrade head
+alembic downgrade base
+alembic upgrade head
 ```
 
-### 4.2 Production Migrations via GitHub Actions
+### 4.2 Migration Lineage
+The platform enforces a deterministic, reversible migration chain:
+- **`0000_baseline.py`**: Idempotent table creation of all core models (`users`, `farms`, `plots`, `predictions`, `feedback`, `alerts`, etc.) for clean installs and CI.
+- **`0001_add_feedback_review_fields.py`**: Adds expert review triage fields to `feedback`.
+- **`0002_add_password_reset_tokens.py`**: Creates `password_reset_tokens` table with FK to `users.id`.
+- **`0003_supabase_auth_sync.py`**: Installs hardened Supabase Auth trigger (`handle_new_user()` with `SECURITY DEFINER SET search_path = ''`, role forced strictly to `farmer`, immutable role on conflict update, `AFTER INSERT` only).
+
+### 4.3 Production Migrations via GitHub Actions
 
 Migrations to the production Supabase database are automatically executed using the workflow [`.github/workflows/db_migration.yml`](file:///home/manthan/Projects/Smart-Farming/.github/workflows/db_migration.yml).
 
+**Safety & Verification Gates:**
+1. **Gated on CI:** Migrations only execute after [`.github/workflows/ci.yml`](file:///home/manthan/Projects/Smart-Farming/.github/workflows/ci.yml) completes successfully via `workflow_run`.
+2. **Automated `pg_dump` Backup:** Before applying DDL changes, `db_migration.yml` runs `pg_dump` and uploads a timestamped compressed backup artifact (`prod-db-backup-<sha>`) with 7-day retention for instant rollback capability.
+3. **Execution Script:** Uses `backend/scripts/migrate_to_prod.py --schema-only --yes` ensuring zero accidental data loss.
+
 To trigger a migration manually:
 1. Navigate to **Actions** in GitHub.
-2. Select **Run Database Migrations**.
+2. Select **Migrate Database to Production**.
 3. Click **Run workflow** against the `main` branch.
 
 ---
@@ -350,11 +364,23 @@ bash deploy.sh
    - Create a database in [Upstash Console](https://console.upstash.com) (e.g., `smart-farming-redis`).
    - Copy `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into your Render backend environment variables.
 
-2. **QStash Scheduled Webhook (Weather Risk):**
-   - Create a scheduled job in Upstash QStash:
-     - **Destination:** `https://smart-farming-backend.onrender.com/api/v1/internal-cron/weather-risk`
-     - **Cron Schedule:** `*/30 * * * *` (Every 30 minutes)
-     - **Header:** `x-cron-secret: <YOUR_CRON_SECRET>`
+2. **Automated QStash Cron Registration CLI:**
+   Run the idempotent schedule registration script:
+   ```bash
+   python backend/scripts/setup_qstash_schedules.py \
+     --base-url https://smart-farming-backend-kkty.onrender.com
+   ```
+   This automatically registers and verifies:
+   - **Job 1 (Weather Risks):**
+     - **Destination:** `https://smart-farming-backend-kkty.onrender.com/api/v1/internal/cron/weather-risks`
+     - **Cron Schedule:** `0 6,12,18 * * *` (3 times daily at 06:00, 12:00, 18:00 UTC)
+     - **Schedule ID:** `sf-weather-risks` (idempotent, prevents duplicate job creation)
+     - **Verification:** Signed `Upstash-Signature` JWT or `Authorization: Bearer <CRON_SECRET>`
+   - **Job 2 (Storage Hygiene & Blob Purge):**
+     - **Destination:** `https://smart-farming-backend-kkty.onrender.com/api/v1/internal/cron/purge-blobs`
+     - **Cron Schedule:** `0 3 * * 0` (Weekly on Sunday at 03:00 UTC)
+     - **Schedule ID:** `sf-purge-blobs`
+     - **Cleanup Scope:** 1-hour unreferenced images, 30-day audio files, 7-day unflagged heatmaps
 
 ---
 
@@ -404,20 +430,40 @@ This zero-cost solution guarantees near-zero cold starts for agricultural users 
 
 ## 6. CI/CD Automation (GitHub Actions)
 
-The repository maintains two specialized GitHub Actions workflows in `.github/workflows/`:
+The repository maintains four specialized GitHub Actions workflows in `.github/workflows/`:
 
 ```
 .github/workflows/
-├── deploy_ai_service.yml    ← Automatically updates Hugging Face Space on ai_service/** commits
-└── db_migration.yml         ← Executes Alembic database migrations against Supabase
+├── ci.yml                     ← Primary CI: PostgreSQL 16 migration cycle, pytest (87+ tests), frontend build, mobile analyzer
+├── deploy_ai_service.yml      ← Gated on CI: syncs ai_service to Hugging Face Space & polls /health
+├── db_migration.yml           ← Gated on CI: automated pg_dump backup artifact + Alembic migration against Supabase Prod
+└── mlops_retrain_check.yml    ← Weekly Monday drift monitor with cold-start warmup, sample gate, and issue dedup
 ```
 
-### GitHub Repository Secrets Required
+### GitHub Repository Secrets & Variables
 
-| Secret Name | Purpose |
-|---|---|
-| `HF_TOKEN` | Hugging Face API token with write access to `Maharsh8805/smart-farming-ai` |
-| `DATABASE_URL` | Supabase Session Pooler DSN used by Alembic in `db_migration.yml` |
+| Variable / Secret | Type | Purpose |
+|---|---|---|
+| `HF_TOKEN` | Secret | Hugging Face write token for deploying to Space `Maharsh8805/smart-farming-ai` |
+| `PROD_DATABASE_URL` | Secret | Supabase Production Session Pooler DSN (`postgresql://...`) |
+| `DEV_DATABASE_URL` | Secret | Supabase Development Session Pooler DSN |
+| `ADMIN_JWT` / `ADMIN_API_KEY` | Secret | Optional token for automated MLOps drift metric polling |
+| `BACKEND_URL` | Variable | Production backend base URL (`https://smart-farming-backend-kkty.onrender.com`) |
+
+---
+
+## 7. Backend Maintenance & Operational Scripts (`backend/scripts/`)
+
+All maintenance utilities live in `backend/scripts/` and adhere to strict production guards:
+
+| Script | Purpose | Usage |
+|---|---|---|
+| `_common.py` | Shared connection URL sanitization, environment loader, and prompt confirmation | Internal library used across scripts |
+| `check_services.py` | Read-only non-destructive health checks (Database latency, Storage upload/delete, Upstash Redis ping, Supabase Auth API) | `python backend/scripts/check_services.py --env dev` |
+| `migrate_to_prod.py` | Production database migration CLI used by `db_migration.yml` | `python backend/scripts/migrate_to_prod.py --schema-only --yes` |
+| `setup_qstash_schedules.py` | Idempotent Upstash QStash cron registration (`sf-weather-risks`, `sf-purge-blobs`) | `python backend/scripts/setup_qstash_schedules.py` |
+| `migrate_users_to_supabase_auth.py` | One-time backfill of `public.users` into Supabase Auth with pagination (>100 users) and cryptographically random passwords | `python backend/scripts/migrate_users_to_supabase_auth.py --env dev` |
+| `sync_user_password.py` | Updates a user's password in both PostgreSQL Argon2 and Supabase Auth (prompts via `getpass`, no shell history leak) | `python backend/scripts/sync_user_password.py --email user@example.com --env dev` |
 
 ---
 

@@ -1,8 +1,8 @@
 # MLOps & Retraining Guide — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
+**Version:** 2.2  
+**Date:** 20 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -148,6 +148,15 @@ Correction rate high + confidence OK     →  Label noise in historical data or 
 
 > **Tip:** Review the 7-day vs. 30-day confidence gap weekly. A sudden drop in `avg_disease_confidence_7d` against a stable `avg_disease_confidence_30d` often indicates a seasonal distribution shift (e.g., monsoon-season disease patterns).
 
+### 3.2 Automated Weekly Drift Monitor (`mlops_retrain_check.yml`)
+
+The production pipeline automates drift detection via GitHub Actions (`.github/workflows/mlops_retrain_check.yml`), executing every Monday at 06:00 UTC (or triggered on demand):
+
+1. **Pre-flight Render Warm-up:** Cold-start spin-up ping against `/health` (4 retries, 15s delay, 90s max-time) prevents false negative alerts from free-tier hibernation.
+2. **Authenticated Metric Query:** Queries `/api/v1/admin/metrics` using `ADMIN_JWT` (Bearer token) or fallback `ADMIN_API_KEY` / `METRICS_API_KEY` (`X-API-Key`).
+3. **Statistical Sample Gate ($N \ge 50$):** Skips alerts if `total_predictions_7d < 50` to avoid triggering false alarms from early-stage statistical variance or low-traffic intervals.
+4. **Automated Issue Deduplication:** When drift thresholds are breached (`avg_disease_confidence_7d < 0.75`, `low_confidence_rate_7d > 15%`, or `expert_correction_rate > 20%`), the action checks for existing open issues tagged `mlops-drift`. If found, it appends a telemetry comment rather than creating duplicate issues.
+
 ---
 
 ## 4. Prerequisites
@@ -190,10 +199,10 @@ export DATABASE_URL="postgresql://..."
 
 ## 5. Step 1 — Export the Dataset
 
-Export approved `DatasetCandidate` records as a labelled image dataset using the Admin API.
+Export approved `DatasetCandidate` records as a labelled image dataset using the MLOps Admin API.
 
 ```bash
-curl -X POST http://localhost:8000/admin/dataset/export \
+curl -X POST https://smart-farming-backend-kkty.onrender.com/api/v1/admin/mlops/export \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -201,9 +210,9 @@ curl -X POST http://localhost:8000/admin/dataset/export \
       "expert": true,
       "farmer": true,
       "crop": null,
-      "status": "pending_review"
+      "status": "added_to_dataset"
     },
-    "split": {"train": 70, "val": 15, "test": 15},
+    "split": {"train": 0.70, "val": 0.15, "test": 0.15},
     "format": "PyTorch Folder",
     "imageTarget": "preprocessed"
   }' \
@@ -213,15 +222,20 @@ curl -X POST http://localhost:8000/admin/dataset/export \
 unzip dataset_export.zip -d data/exports/latest
 ```
 
+### Export Guards & Safety Architecture
+1. **Spatial Deterministic Split (Zero Rescan Leakage):** Images are split deterministically by `plot_id` (using SHA-256 hash modulo 100). Rescans of the same plant or field across different dates always land in the same partition (train, val, or test), eliminating data leakage.
+2. **Replay Buffer Mixing:** Automatically combines 70% archive baseline data with 30% newly approved candidates to prevent catastrophic forgetting and performance degradation on established disease classes.
+3. **Status Filter:** Defaults strictly to `status: "added_to_dataset"`. Candidates in `pending_review` or `rejected` states are excluded by default.
+
 ### Export Filter Options
 
 | Filter Key | Values | Notes |
 |---|---|---|
 | `expert` | `true` / `false` | Include expert-correction candidates |
 | `farmer` | `true` / `false` | Include farmer-feedback-reviewed candidates |
-| `crop` | `null` \| `"tomato"` \| `"wheat"` … | Filter by crop type (null = all) |
-| `status` | `"pending_review"` \| `"approved"` | `pending_review` includes unprocessed candidates |
-| `imageTarget` | `"raw"` \| `"preprocessed"` | Use `preprocessed` for consistency with production pipeline |
+| `crop` | `null` \| `"tomato"` \| `"cotton"` … | Filter by crop type (null = all) |
+| `status` | `"added_to_dataset"` \| `"pending_review"` \| `"all"` | Defaults safely to `"added_to_dataset"` |
+| `imageTarget` | `"raw"` \| `"preprocessed"` | Use `preprocessed` (512x512 normalized) for pipeline consistency |
 
 ### Exported Directory Structure
 
@@ -254,7 +268,7 @@ data/exports/latest/
 The disease classifier is the primary model. EfficientNet-B2 balances accuracy and inference speed well for the 38-class disease taxonomy used in this project.
 
 ```bash
-python backend/scripts/train_eval.py disease \
+python ai_service/training/train_eval.py disease \
     --dataset-dir data/exports/latest \
     --model-name efficientnet_b2 \
     --epochs 30 \
@@ -271,7 +285,7 @@ python backend/scripts/train_eval.py disease \
 The crop identifier is a lighter model (EfficientNet-B0) since crop classification is a simpler, lower-cardinality task.
 
 ```bash
-python backend/scripts/train_eval.py crop \
+python ai_service/training/train_eval.py crop \
     --dataset-dir data/exports/latest \
     --model-name efficientnet_b0 \
     --epochs 20 \
@@ -316,7 +330,7 @@ Epoch 0 ──────── Epoch N (warmup) ──────── Epoch
 
 ## 8. Training Script Reference
 
-Full flag reference for `backend/scripts/train_eval.py`:
+Full flag reference for `ai_service/training/train_eval.py`:
 
 | Flag | Default | Description |
 |---|---|---|
@@ -380,7 +394,7 @@ models/training_runs/disease_v2/
 Run standalone evaluation on the held-out test set before committing to a promotion decision:
 
 ```bash
-python backend/scripts/train_eval.py eval \
+python ai_service/training/train_eval.py eval \
     --checkpoint models/training_runs/disease_v2/best.pth \
     --dataset-dir data/exports/latest
 ```
@@ -393,11 +407,11 @@ This re-computes test accuracy, per-class report, and confusion matrix from the 
 
 ```bash
 # Compare old vs. new checkpoint on the same dataset
-python backend/scripts/train_eval.py eval \
+python ai_service/training/train_eval.py eval \
     --checkpoint models/current_production/disease_v1.pth \
     --dataset-dir data/exports/latest
 
-python backend/scripts/train_eval.py eval \
+python ai_service/training/train_eval.py eval \
     --checkpoint models/training_runs/disease_v2/best.pth \
     --dataset-dir data/exports/latest
 ```

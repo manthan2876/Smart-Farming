@@ -298,15 +298,53 @@ Authenticates a user by phone or email and password. Sets the `refresh_token` Ht
 
 ---
 
+### 5.2b Guest Login (1-Tap Fast Entry)
+
+```
+POST /auth/guest
+POST /api/v1/auth/guest
+```
+
+Allows farmers on mobile or web to initiate diagnostic scans immediately without creating an account or providing phone/email upfront. Issues an ephemeral JWT session with the `farmer` role and a unique `guest_` prefix identifier.
+
+**Authentication:** None required.  
+**Rate Limit:** 10 requests / minute per IP.
+
+#### Request Body
+
+Empty JSON object `{}`.
+
+#### Example Response `200 OK`
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "user": {
+    "id": "guest_9b1deb4d3b7d4e89",
+    "name": "Guest Farmer",
+    "role": "farmer",
+    "is_guest": true,
+    "language": "English"
+  }
+}
+```
+
+---
+
 ### 5.3 Refresh Token
 
 ```
 POST /auth/refresh
+POST /api/v1/auth/refresh
 ```
 
-Issues a new access token using the refresh token stored in the HttpOnly cookie. Also rotates the refresh token (issues a new one).
+Rotates the current access token and refresh token pair using database-backed rotation (`refresh_tokens` table).
 
-**Authentication:** HttpOnly `refresh_token` cookie (no Bearer header required).
+**Authentication:** HttpOnly `refresh_token` cookie or Bearer refresh token.  
+**Security Invariant (Reuse Detection):** If an expired or previously rotated refresh token is presented, the security system detects token theft, immediately invalidates the entire token family, and returns `401 Unauthorized`.
 
 #### Request Body
 
@@ -2070,41 +2108,74 @@ Public asset streaming endpoint for uploaded scans, Grad-CAM heatmaps, HSV sever
 
 ---
 
-## 16.5 Internal Cron Endpoint
+## 16.5 Internal Cron Endpoints
+
+These endpoints are triggered serverlessly by **Upstash QStash** or manual operational pipelines. Each request is authenticated using cryptographic `Upstash-Signature` verification or a shared `CRON_SECRET`.
 
 ### 16.5.1 Weather Risk Evaluation (Cron Webhook)
 
 ```
-POST /internal-cron/weather-risk
-POST /api/v1/internal-cron/weather-risk
+POST /internal/cron/weather-risks
+POST /api/v1/internal/cron/weather-risks
 ```
 
-Triggers the proactive weather risk evaluation job for all registered farms. This endpoint is called on a schedule by **QStash** (Upstash serverless cron) in production. It is protected by the `CRON_SECRET` header and should not be called directly by clients.
+Evaluates microclimate disease risks across all registered farm plots using 0.1° grid-rounded weather caches, enqueues proactive alerts, and updates telemetry. Dispatched 3x daily by QStash at `0 6,12,18 * * *`.
 
-**Authentication:** `CRON_SECRET` header (not a Bearer token).  
-**Caller:** QStash on schedule.
+**Authentication:** `Upstash-Signature` header (HS256 JWT) or `Authorization: Bearer <CRON_SECRET>` or `X-Cron-Secret`.  
+**Schedule ID:** `sf-weather-risks`
 
 #### Request Headers
 
-| Header | Value |
-|---|---|
-| `CRON_SECRET` | Must match the server's configured `CRON_SECRET` environment variable |
+| Header | Value | Description |
+|---|---|---|
+| `Upstash-Signature` | `<JWT>` | Multi-region HS256 JWT signed with Upstash Current or Next signing key |
+| `Authorization` | `Bearer <CRON_SECRET>` | Shared secret alternative for local testing or manual CLI runners |
 
 #### Example Response `200 OK`
 
 ```json
 {
-  "detail": "Weather risk evaluation triggered",
-  "farms_evaluated": 312,
-  "alerts_created": 8
+  "status": "success",
+  "message": "Weather risks evaluated successfully.",
+  "timestamp": 1729420800.0
 }
 ```
 
-#### Error Responses
+### 16.5.2 Storage Hygiene & Orphaned Blob Purge
 
-| Status | Condition |
-|---|---|
-| `401 Unauthorized` | Missing or invalid `CRON_SECRET` header |
+```
+POST /internal/cron/purge-blobs
+POST /api/v1/internal/cron/purge-blobs
+```
+
+Executes a 3-stage storage hygiene sweep:
+1. Purges unreferenced temporary raw and processed images older than 1 hour.
+2. Prunes cached TTS speech narration audio files older than 30 days.
+3. Prunes processed heatmaps for unflagged historical scans older than 7 days (regenerates dynamically on demand).
+
+Dispatched weekly on Sunday at `0 3 * * 0` by QStash (`sf-purge-blobs`).
+
+**Authentication:** Same as `weather-risks`.
+
+#### Example Response `200 OK`
+
+```json
+{
+  "status": "success",
+  "message": "Storage cleanup and blob purge completed successfully.",
+  "orphaned_blobs": {
+    "purged_raw": 14,
+    "purged_processed": 14
+  },
+  "pruned_audio": {
+    "pruned_audio_files": 28
+  },
+  "pruned_heatmaps": {
+    "pruned_heatmaps": 65
+  },
+  "timestamp": 1729420800.0
+}
+```
 
 ---
 
@@ -2219,6 +2290,50 @@ Lists all registered model types and their current production versions.
       "architecture": "EfficientNet-B2"
     }
   ]
+}
+```
+
+---
+
+### 17.4 Export Dataset Candidates for Retraining
+
+```
+POST /admin/mlops/export
+POST /api/v1/admin/mlops/export
+```
+
+Exports verified diagnostic candidates for retraining with deterministic spatial splitting and replay buffer mixing to prevent data leakage and catastrophic forgetting.
+
+**Authentication:** Bearer token required.  
+**Role Required:** `admin`.
+
+#### Request Body (`application/json`)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `format` | string | ✅ | `"PyTorch Folder"` or `"JSON Manifest"` |
+| `imageTarget` | string | ✅ | `"raw"` or `"preprocessed"` (512x512 normalized) |
+| `split` | object | ❌ | Spatial train/val/test split ratios (defaults to `{"train": 0.70, "val": 0.15, "test": 0.15}`) |
+| `filters` | object | ❌ | Filter criteria: `status` (defaults to `"added_to_dataset"`), `crop`, `source` |
+
+#### Key Security & Leakage Guards
+1. **Spatial Deterministic Split:** Splits candidates by `plot_id` (deterministic SHA-256 hash). Rescans of the same diseased plant across different days always land in the same split partition, guaranteeing zero train/test contamination.
+2. **Replay Buffer Mixing:** Automatically blends 70% baseline archive images with 30% new candidate scans to prevent model degradation on established classes.
+3. **Status Filter:** Defaults strictly to `status: "added_to_dataset"` (vetted candidates only).
+
+#### Example Response `200 OK`
+
+```json
+{
+  "status": "success",
+  "download_url": "https://zgsbxzwyumvxazbroiws.supabase.co/storage/v1/object/sign/smart-farming-data-dev/exports/export_20261020_060000.zip?token=...",
+  "candidate_count": 340,
+  "replay_count": 790,
+  "split_distribution": {
+    "train": 791,
+    "val": 169,
+    "test": 170
+  }
 }
 ```
 

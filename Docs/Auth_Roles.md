@@ -1,8 +1,8 @@
 # Authentication & Roles / Permissions Reference
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
+**Version:** 2.1  
+**Date:** 20 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -19,6 +19,7 @@
 8. [Expert Review State Machine](#8-expert-review-state-machine)
 9. [Prediction Status Lifecycle](#9-prediction-status-lifecycle)
 10. [Admin Role-Change Guards](#10-admin-role-change-guards)
+11. [Supabase Auth Trigger Security](#11-supabase-auth-trigger-security)
 
 ---
 
@@ -30,8 +31,10 @@
 | **Signing algorithm** | HS256 |
 | **Access token lifetime** | 30 minutes |
 | **Refresh token lifetime** | 30 days |
-| **Refresh token storage** | HttpOnly cookie — `refresh_token` |
-| **Refresh token rotation** | Each `/auth/refresh` call issues a **new** access + refresh pair |
+| **Refresh token storage** | HttpOnly cookie — `refresh_token` (also available via mobile headers) |
+| **Refresh token rotation** | Database-backed rotation in `refresh_tokens` table. Every refresh issues a new pair and revokes the old token |
+| **Reuse detection** | If a previously used refresh token is presented, all tokens in the family are revoked immediately (session termination) |
+| **Guest Mode** | 1-Tap guest login (`POST /auth/guest`) issuing ephemeral tokens with `guest_` ID prefix |
 | **Password hashing** | Argon2id (Version 19, 64 MB memory cost, 3 iterations, 4 parallel threads) via `pwdlib[argon2]` |
 
 > [!CAUTION]
@@ -45,12 +48,13 @@
 
 | Method | Endpoint | Description | Notes |
 |---|---|---|---|
-| `POST` | `/auth/register` | Create a new account | Phone **or** email required |
+| `POST` | `/auth/register` | Create a new account | Phone **or** email required; default role is `farmer` |
 | `POST` | `/auth/login` | Obtain access + refresh tokens | Rate-limited: **5 requests / minute** |
+| `POST` | `/auth/guest` | 1-Tap Guest login | Issues temporary token (role: `farmer`, `guest_` prefix, no registration required) |
 | `POST` | `/auth/forgot-password` | Request password reset token | Dispatches secure, ephemeral single-use token via SMTP email |
 | `POST` | `/auth/reset-password` | Set new password with email token | Validates token expiry and resets password |
-| `POST` | `/auth/refresh` | Rotate token pair | Reads `refresh_token` HttpOnly cookie; issues new pair |
-| `POST` | `/auth/logout` | Invalidate session | Clears the `refresh_token` cookie |
+| `POST` | `/auth/refresh` | Rotate token pair | Reads `refresh_token` cookie; validates DB state, issues new pair |
+| `POST` | `/auth/logout` | Invalidate session | Revokes DB refresh token and clears the `refresh_token` cookie |
 | `POST` | `/auth/change-password` | Change own password | Requires current password; auth required |
 
 ---
@@ -285,8 +289,85 @@ if target_user.role == "admin" AND admin_count == 1 AND new_role != "admin":
 
 ---
 
+## 11. Supabase Auth Trigger Security
+
+The PostgreSQL database maintains an automated integration trigger that mirrors Supabase Auth (`auth.users`) registrations into the application database (`public.users`) and provisions default farm records.
+
+### 11.1 Hardened Trigger Architecture (`handle_new_user()`)
+
+To eliminate privilege escalation risks, the trigger enforces strict architectural safety rules:
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_role text;
+  v_name text;
+  v_language text;
+  v_farm_name text;
+  v_location text;
+BEGIN
+  -- Strict security guard: Read role ONLY from server-controlled raw_app_meta_data.
+  -- Client-controlled raw_user_meta_data can NEVER set role to expert or admin.
+  v_role := coalesce(new.raw_app_meta_data->>'role', 'farmer');
+  IF v_role NOT IN ('farmer', 'expert', 'admin') THEN
+    v_role := 'farmer';
+  END IF;
+
+  v_name := coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1));
+  v_language := coalesce(new.raw_user_meta_data->>'language', 'English');
+  v_location := coalesce(new.raw_user_meta_data->>'location', 'Gujarat, India');
+  v_farm_name := coalesce(new.raw_user_meta_data->>'farm_name', (v_name || '''s Farm'));
+
+  -- Insert public.users. NEVER overwrite existing user role on conflict.
+  INSERT INTO public.users (
+    id, email, phone, name, language, role, created_at
+  )
+  VALUES (
+    new.id::text, new.email, new.phone, v_name, v_language, v_role, coalesce(new.created_at, now())
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = excluded.email,
+    phone = coalesce(excluded.phone, public.users.phone),
+    name = coalesce(excluded.name, public.users.name);
+
+  -- Provision initial Farm record for farmers
+  IF v_role = 'farmer' THEN
+    INSERT INTO public.farms (
+      user_id, name, location, area_acres, latitude, longitude, crop_history
+    )
+    VALUES (
+      new.id::text,
+      v_farm_name,
+      v_location,
+      nullif(new.raw_user_meta_data->>'farm_area_acres', '')::double precision,
+      nullif(new.raw_user_meta_data->>'latitude', '')::double precision,
+      nullif(new.raw_user_meta_data->>'longitude', '')::double precision,
+      '[]'::json
+    )
+    ON CONFLICT (user_id) DO NOTHING;
+  END IF;
+
+  RETURN new;
+END;
+$$;
+```
+
+### 11.2 Safety Invariants
+1. **No Client Role Escalation:** Reads role exclusively from `raw_app_meta_data` (writable only by the service-role admin key), defaulting strictly to `'farmer'`. Client-supplied `raw_user_meta_data` is ignored for role determination.
+2. **Immutable Role on Profile Updates:** In `ON CONFLICT (id) DO UPDATE`, `role` is omitted, ensuring that subsequent profile or metadata updates cannot modify a user's assigned role.
+3. **Execution Context Isolation:** `SECURITY DEFINER SET search_path = ''` mitigates schema search-path injection vulnerabilities.
+4. **Trigger Event Restriction:** Bound strictly to `AFTER INSERT ON auth.users` (omits `UPDATE`).
+5. **Alembic Versioning:** Packaged into migration [`0003_supabase_auth_sync.py`](file:///home/manthan/Projects/Smart-Farming/backend/alembic/versions/0003_supabase_auth_sync.py) with dialect guards for automated deployment in CI/CD.
+
+---
+
 *AI-Powered Smart Farming — Authentication & Roles Reference*  
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 20 October 2026*

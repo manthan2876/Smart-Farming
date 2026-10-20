@@ -1,8 +1,8 @@
 # Architecture & System Design Document
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.1 (Live Monorepo & Cloud Architecture)  
-**Date:** 19 October 2026  
+**Version:** 2.2 (Hardened Monorepo, Gated CI/CD & Cloud Architecture)  
+**Date:** 20 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -55,11 +55,11 @@ The system is architected around five core tenets:
 flowchart TD
     subgraph CLIENTS["Client Layer"]
         SPA["React 18 + TypeScript SPA (Vercel Edge)\nVite 6 · Tailwind CSS · Anti-Vibecoded\nCustom SVG Icons · Trilingual (EN/HI/GU)\nRoles: Farmer · Expert · Admin"]
-        MOB["Flutter Mobile App (Android/iOS)\nFarmerShell · Bottom Nav · Off-line Queue\nCenter-crosshair GIS Map Bounds\nRemoteConfig via Supabase app_config"]
+        MOB["Flutter Mobile App (Farmer-Only Persona)\nRegional Language Splash (EN/HI/GU)\nPhone-First + 1-Tap Guest Mode\n5-Tab FarmerShell · Center FAB · Offline SQLite Queue\nOn-device 1024px Compression · Dual TTS Engine"]
     end
 
     subgraph BACKEND_HOST["Backend Service (Render)"]
-        API["FastAPI 0.115+ · Uvicorn (Python 3.11)\nrender.yaml Blueprint · Port $PORT\nCORS · Slowapi Rate Limiting\nJWT HS256 + HttpOnly Refresh Cookie\nStorage Router: Supabase / S3 / Local\nREQUIRE_REDIS=False → Synchronous\nREQUIRE_REDIS=True → ARQ Worker"]
+        API["FastAPI 0.115+ · Uvicorn (Python 3.12)\nrender.yaml Blueprint · Port $PORT\nCORS · Slowapi Rate Limiting\nJWT HS256 + DB-Backed Refresh Token Rotation\n1-Tap Guest Mode (/api/v1/auth/guest)\nStorage Router: Supabase / S3 / Local\nREQUIRE_REDIS=False → Synchronous\nREQUIRE_REDIS=True → ARQ Worker"]
     end
 
     subgraph AI_MICROSERVICE["Unified AI Microservice (Hugging Face Spaces)"]
@@ -78,14 +78,14 @@ flowchart TD
     end
 
     subgraph PERSISTENCE["Persistence & Storage Layer"]
-        DB["Supabase Managed PostgreSQL\nSession Pooler (Port 5432) · SSL (require)\nAlembic Versioned Migrations\nentity_translations · app_config"]
+        DB["Supabase Managed PostgreSQL 15+\nSession Pooler (Port 5432) · SSL (require)\nAlembic Versioned Migrations (0000 to 0003)\nHardened auth.users trigger (search_path='', farmer-only)\nentity_translations · app_config · refresh_tokens"]
         OBJ["Supabase Object Storage\nBucket: smart-farming-data-dev\n15-min Time-Bounded Signed URLs\n(Fallback: AWS S3 / Local Disk)"]
-        UPSTASH["Upstash Serverless Redis REST\nHTTPS Bearer Auth · sf:* Namespace\n• Translation Cache (sf:trans:*)\n• Image Dedup (sf:dedup:*)\n• Weather Cache & Cron Locks\n• Dynamic Threshold Sync (sf:config:*)"]
+        UPSTASH["Upstash Serverless Redis REST\nHTTPS Bearer Auth · sf:* Namespace\n• Translation Cache (sf:trans:*)\n• Image Dedup (sf:dedup:*)\n• Grid Weather Cache (0.1° ~11km)\n• Dynamic Threshold Sync (sf:config:*)"]
     end
 
     subgraph SCHEDULING["Scheduling & External Services"]
         CRON["cron-jobs.org (External Heartbeat)\nZero-cost 10-min keepalive pings\nKeeps Render backend & HF Space warm"]
-        QSTASH["Upstash QStash\nServerless Scheduled Crons\nPOST /api/v1/internal-cron (CRON_SECRET)"]
+        QSTASH["Upstash QStash\nServerless Scheduled Crons\nPOST /api/v1/internal/cron/* (Upstash-Signature)"]
         OWM["OpenWeatherMap API\nLive Ambient Temp, Humidity, Rain"]
     end
 
@@ -96,7 +96,7 @@ flowchart TD
     API -- "SQLAlchemy / asyncpg (SSL)" --> DB
     API -- "REST (Bearer HTTPS)" --> UPSTASH
     API -- "REST" --> OWM
-    QSTASH -- "Webhook POST (CRON_SECRET)" --> API
+    QSTASH -- "Webhook POST (Upstash-Signature / CRON_SECRET)" --> API
     CRON -. "Keepalive Ping" .-> API
     CRON -. "Keepalive Ping" .-> HF_SPACE
 ```
@@ -197,23 +197,23 @@ All heavy machine learning and generative AI workloads are consolidated into a s
 **Entry Point:** `backend/src/app/main.py`
 
 Registers 17 modular endpoint routers:
-- `/auth` — User registration, login, token refresh, password reset via SMTP, password update
+- `/auth` — User registration, login, 1-tap guest login (`/auth/guest`), DB-backed token refresh (`/auth/refresh`), password reset via SMTP, password update
 - `/profile` — User profile, location, language preference
 - `/farm` — Farm creation, plot boundary polygons, soil details
 - `/predict` — Image upload, validation, deduction check, sync pipeline / ARQ dispatch
 - `/history` — Paginated diagnostic history, date filtering, crop filters
 - `/feedback` — Farmer feedback on diagnosis accuracy
-- `/weather` — Live meteorological data, 30-min Upstash cached
+- `/weather` — Live meteorological data, 30-min Upstash cached (0.1° grid rounded)
 - `/crops` — Catalogue of supported crops and their pathogens
 - `/health` — Health check reporting DB connectivity and AI service status
 - `/alerts` — Push and in-app alerts (weather risk, expert review updates)
-- `/admin` — System metrics, user role management, threshold config hot-reload
-- `/expert` — Expert triage queue, side-by-side review, label override
-- `/internal-cron` (also at `/api/v1/internal-cron`) — QStash webhook receiver for scheduled jobs
+- `/admin` — System metrics, user role management, threshold config hot-reload, MLOps exports
+- `/expert` — Expert triage queue, side-by-side review, atomic claiming (15-min lease lock), label override
+- `/internal/cron` (also at `/api/v1/internal/cron`) — Multi-region QStash webhook receiver for scheduled jobs (`/weather-risks`, `/purge-blobs`)
 - `/tts` — Audio narration dispatch, speech synthesis caching
 - `/translation` — Dynamic prediction advisory translation (`POST /predictions/{id}/translate`)
-- `/mlops` — Retraining pipeline trigger and dataset candidate curation
-- `/model-registry` — Model performance telemetry and version promotion
+- `/mlops` — Retraining pipeline trigger and dataset candidate curation (spatial split, 70/30 replay)
+- `/model-registry` — Model performance telemetry, calibrated temperature $T$, and version promotion
 
 ---
 
@@ -452,15 +452,15 @@ flowchart LR
     end
 
     subgraph PROACTIVE_CRON["Scheduled Agronomic Tasks"]
-        QSTASH["Upstash QStash\nServerless Cron Scheduler"]
-        WEBHOOK["POST /api/v1/internal-cron\n(Verified via CRON_SECRET)"]
-        EVAL["Evaluate Farm Weather Risks\n& Dispatch Proactive Alerts"]
+        QSTASH["Upstash QStash\nServerless Cron Scheduler\nMulti-Region Upstash-Signature"]
+        WEBHOOK["POST /api/v1/internal/cron/weather-risks\nPOST /api/v1/internal/cron/purge-blobs\n(Verified via Upstash-Signature / CRON_SECRET)"]
+        EVAL["Evaluate Farm Weather Risks\n& Execute Storage Cleanup"]
         QSTASH --> WEBHOOK --> EVAL
     end
 ```
 
 1. **Keepalive Pings:** Scheduled external HTTP GET requests via `cron-jobs.org` prevent Render and Hugging Face Free Spaces from spinning down during business hours.
-2. **QStash Serverless Crons:** Durable webhooks trigger periodic weather evaluations (`/api/v1/internal-cron/weather-risk`) without requiring an always-on Celery or ARQ daemon.
+2. **QStash Serverless Crons:** Durable webhooks trigger periodic weather evaluations (`/api/v1/internal/cron/weather-risks` at `0 6,12,18 * * *`) and storage hygiene (`/api/v1/internal/cron/purge-blobs` weekly at `0 3 * * 0`) without requiring an always-on Celery or ARQ daemon. Each request is cryptographically validated via `Upstash-Signature` (HS256 with key rotation and payload body hash integrity).
 3. **Upstash Distributed Locks:** Prevents duplicate concurrent executions using atomic Redis keys (`sf:cron:last_weather_eval`).
 
 ---
@@ -477,10 +477,21 @@ flowchart LR
 | `/history` | `HistoryPage` | Farmer+ | Paginated diagnostic log with search and crop filtering |
 | `/weather` | `WeatherPage` | Farmer+ | Real-time weather, spray condition advisories, neural voice playback |
 | `/farm/settings` | `FarmSettingsPage` | Farmer+ | Interactive Google Maps GIS boundary polygon creator |
-| `/admin/expert` | `ExpertQueuePage` | Expert+ | Agronomist triage desk for low-confidence scans |
+| `/admin/expert` | `ExpertQueuePage` | Expert+ | Agronomist triage desk for low-confidence scans with 15-min lease locking |
 | `/admin/expert/:id`| `ExpertReviewPage` | Expert+ | Side-by-side diagnostic validation and override interface |
 | `/admin/metrics` | `AdminMetricsPage` | Admin only | System-wide ML telemetry, drift monitoring, active models |
 | `/admin/users` | `AdminUsersPage` | Admin only | User directory and role management with safety locks |
+
+### Mobile Architecture (Flutter)
+The mobile app is strictly tailored to the **Farmer persona**:
+- **Regional Language Splash:** High-contrast regional selection cards (`Gujarati`, `Hindi`, `English`) on launch.
+- **Phone-First Auth + 1-Tap Guest Mode:** Instant scan without mandatory registration (`POST /api/v1/auth/guest`).
+- **5-Tab FarmerShell:** Bottom navigation (`Today`, `History`, Center Hero Camera FAB, `Farm`, `Settings`).
+- **Offline SQLite Queue:** Scans taken in poor connectivity are queued locally and automatically uploaded with exponential backoff on reconnection.
+- **On-Device Compression:** `ImageCompressor` downsizes images to 1024px ($\le 150\text{ KB}$) with an ambient luminance quality gate.
+- **Dual TTS Engine:** Edge-TTS cloud audio with instant on-device `flutter_tts` fallback.
+- **Qualitative Confidence & Statutory Badges:** Green/Yellow/Orange chips (`High`, `Medium`, `Low`) and statutory Central Insecticides Board (CIB&RC) safe-handling notices.
+- **Rescan Comparison:** Longitudinal side-by-side progression sheet comparing current vs prior lesion coverage.
 
 ---
 
@@ -492,26 +503,63 @@ flowchart TD
         MAIN["Branch: main"]
     end
 
-    subgraph WORKFLOWS["GitHub Actions CI/CD"]
-        WF_AI["deploy_ai_service.yml\nTrigger: push to ai_service/**\nSyncs to Hugging Face Space\nMaharsh8805/smart-farming-ai"]
-        WF_DB["db_migration.yml\nTrigger: manual / release\nRuns Alembic upgrade head\nagainst Supabase PostgreSQL"]
+    subgraph CI["Continuous Integration (ci.yml)"]
+        LINT["Lint & Formatting"]
+        TEST_DB["PostgreSQL 16 Service Container\nAlembic upgrade head -> downgrade base -> upgrade head"]
+        TEST_BE["Backend Pytest Suite (87+ tests)\nStorage, Token Rotation, Expert Lease,\nGolden Benchmark, QStash Security"]
+        TEST_FE["Frontend Typecheck & Build (npm run build)"]
+        TEST_MOB["Mobile Flutter Analyze & Tests"]
+    end
+
+    subgraph WORKFLOWS["Gated Deployments (workflow_run on CI Success)"]
+        WF_AI["deploy_ai_service.yml\nGated on CI Success\nSyncs to Hugging Face Space\nPreserves Promoted config.yaml\nPolls /health"]
+        WF_DB["db_migration.yml\nGated on CI Success\nPre-migration pg_dump Backup Artifact\nRuns Alembic on Supabase Prod"]
+        WF_DRIFT["mlops_retrain_check.yml (Weekly Cron)\nPre-flight Render warm-up (90s)\nSample size >= 50 gate\nDeduplicates issues via label:mlops-drift"]
     end
 
     subgraph CLOUD_RUNTIMES["Live Production Targets"]
         HF_SPACE["Hugging Face Space\n(smart-farming-ai)\nPort 7860"]
-        RENDER["Render Web Service\n(smart-farming-backend)\nAuto-deploys from backend/**"]
-        VERCEL["Vercel Edge Network\n(Frontend Dashboard)\nAuto-deploys from frontend/**"]
+        RENDER["Render Web Service\n(smart-farming-backend)\nAuto-deploys after CI passes"]
+        VERCEL["Vercel Edge Network\n(Frontend Dashboard)\nAuto-deploys after CI passes"]
+        SUPABASE["Supabase Cloud PostgreSQL\nProduction Database"]
     end
 
-    MAIN -->|Paths: ai_service/**| WF_AI --> HF_SPACE
-    MAIN -->|Paths: backend/**| RENDER
-    MAIN -->|Paths: frontend/**| VERCEL
-    MAIN -->|Workflow dispatch| WF_DB
+    MAIN --> CI
+    CI -->|workflow_run: success| WF_AI --> HF_SPACE
+    CI -->|workflow_run: success| WF_DB --> SUPABASE
+    CI -->|Checks Pass| RENDER
+    CI -->|Checks Pass| VERCEL
 ```
 
 ### Active GitHub Actions Workflows
-1. **`deploy_ai_service.yml`:** Detects changes in `ai_service/**`, authenticates via `HF_TOKEN`, formats Git LFS attributes for `.pth`/`.pt` weights, and pushes directly to the Hugging Face Space repository.
-2. **`db_migration.yml`:** Connects securely to the Supabase Session Pooler using `DATABASE_URL` secrets and executes `alembic upgrade head`.
+1. **`ci.yml` (Continuous Integration & Verification):**
+   - Triggers on push/PR touching `backend/**`, `ai_service/**`, `frontend/**`, `mobile/**`, and `.github/workflows/**`.
+   - Runs a PostgreSQL 16 container verifying Alembic reversibility (`upgrade head -> downgrade base -> upgrade head`).
+   - Executes 87+ backend tests (`pytest backend/tests`), frontend build typechecking, and Flutter mobile analysis.
+2. **`deploy_ai_service.yml`:**
+   - Gated on `ci.yml` success via `workflow_run`.
+   - Synchronizes code and model definitions while preserving active promoted `config.yaml` on the Space.
+   - Polls `GET /health` with retries before completing.
+3. **`db_migration.yml`:**
+   - Gated on `ci.yml` success via `workflow_run`.
+   - Exports an automated `pg_dump` backup uploaded as a GitHub Actions artifact (7-day retention).
+   - Executes `migrate_to_prod.py --schema-only --yes` against production Supabase.
+4. **`mlops_retrain_check.yml`:**
+   - Weekly scheduled monitor running Monday at 06:00 UTC.
+   - Pings `/health` with 90s timeout and retries to wake cold Render free-tier instances.
+   - Enforces statistical sample gate ($\ge 50$ scans) before alerting.
+   - Deduplicates GitHub issues by checking `label:mlops-drift` with `gh issue list`.
+
+### Maintenance Scripts Architecture (`backend/scripts/`)
+
+| Script | Purpose | Production Guard |
+|---|---|---|
+| `_common.py` | Shared database URL sanitization, environment loaders, and prompt confirmation | Refuses production writes without explicit confirmation |
+| `migrate_to_prod.py` | Database schema migration CLI used by `db_migration.yml` | Requires `--schema-only --yes` in CI |
+| `setup_qstash_schedules.py` | Idempotent Upstash QStash cron registration (`sf-weather-risks`, `sf-purge-blobs`) | Uses `Upstash-Schedule-Id` header |
+| `check_services.py` | Non-destructive read-only health checks (Postgres, Storage, Redis REST, Auth API) | 100% read-only with auto-cleanup probe |
+| `migrate_users_to_supabase_auth.py` | One-time backfill of `public.users` into Supabase Auth with pagination (>100) | Generates cryptographically unique passwords |
+| `sync_user_password.py` | Synchronizes user password in Postgres Argon2 and Supabase Auth | Uses secure `getpass` prompt (no shell history exposure) |
 
 ---
 
