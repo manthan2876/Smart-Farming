@@ -86,7 +86,7 @@ The platform operates as a decoupled microservices architecture designed for fau
 │  ├── Weather Service (OpenWeather API)                                                                  │
 │  ├── LLM Advisory Engine (Google Gemini 2.5 Flash / Hugging Face Qwen Fallback)                         │
 │  ├── Google Cloud Translation (Write-time async translation) & Google Cloud TTS Audio                   │
-│  ├── Storage Abstraction (AWS S3 with 15-minute Presigned URLs)                                          │
+│  ├── Storage Abstraction (AWS S3 with 15-minute Presigned URLs)                                         │
 │  ├── ARQ Job Enqueuer & In-process Serverless Fallback                                                  │
 │  └── Notifications & Triage Alerts Engine (Auto-mark read on scan navigation)                           │
 └───┬───────────────────────────────┬────────────────────────────────┬───────────────────────────────┬────┘
@@ -462,7 +462,7 @@ The Flutter mobile app targets Android (API 21+) and is exclusively for the **fa
 #### Setup `mobile/.env`
 ```env
 # Compile-time fallback backend URL (used if Supabase remote config unavailable)
-API_BASE_URL=https://smart-farming-backend-17713614069.us-central1.run.app
+API_BASE_URL=https://smart-farming-backend-kkty.onrender.com
 
 # Supabase Remote Config
 SUPABASE_URL=https://<YOUR_PROJECT_REF>.supabase.co
@@ -606,7 +606,7 @@ Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at b
 
 | Variable | Description | Example |
 |---|---|---|
-| `API_BASE_URL` | Compile-time fallback backend URL. Used only if Supabase Remote Config and cache are both unavailable. | `https://smart-farming-backend-17713614069.us-central1.run.app` |
+| `API_BASE_URL` | Compile-time fallback backend URL. Used only if Supabase Remote Config and cache are both unavailable. | `https://smart-farming-backend-kkty.onrender.com` |
 | `SUPABASE_URL` | Supabase project URL — used by `RemoteConfigService` to query the `app_config` table. | `https://ntqevjzjhntkilmknrfh.supabase.co` |
 | `SUPABASE_ANON_KEY` | Supabase anonymous (public) key. Required for PostgREST REST queries. RLS restricts to SELECT only. | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
 
