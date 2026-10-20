@@ -1,5 +1,18 @@
 from __future__ import annotations
 
+import os
+import sys
+from pathlib import Path
+
+# Ensure repository root, ai_service, and backend/src are available on sys.path
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+if str(ROOT_DIR / "ai_service") not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR / "ai_service"))
+if str(ROOT_DIR / "backend" / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR / "backend" / "src"))
+
 import pytest
 import numpy as np
 from ai_service.vision_engine.stages.decision_router import route_to_disease_model

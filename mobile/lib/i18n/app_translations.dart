@@ -27,7 +27,6 @@ class AppTranslations {
     'tryFreeScan': {'en': 'Try 1 Free Diagnostic Scan (Guest)', 'hi': '1 मुफ्त पत्ती जांच आजमाएं (गेस्ट)', 'gu': '1 મફત પાંદડાની તપાસ કરો (ગેસ્ટ)'},
     'guestSubtitle': {'en': 'Direct photo diagnosis without creating an account', 'hi': 'बिना खाता बनाए सीधे पत्ती का फोटो जांचें', 'gu': 'ખાતું બનાવ્યા વગર સીધું પાંદડું તપાસો'},
     'guestBannerNotice': {'en': 'Guest Mode: Register to save past diagnoses to your farm history', 'hi': 'गेस्ट मोड: अपने खेत के इतिहास को सहेजने के लिए रजिस्टर करें', 'gu': 'ગેસ્ટ મોડ: તમારા ફાર્મ હિસ્ટ્રીમાં પરિણામો સાચવવા માટે નોંધણી કરો'},
-    'holdSteady': {'en': 'Hold camera steady', 'hi': 'कैमरा स्थिर रखें', 'gu': 'કેમેરો સ્થિર રાખો'},
     'moreLight': {'en': 'Move to brighter daylight', 'hi': 'अधिक रोशनी में ले जाएं', 'gu': 'વધુ પ્રકાશમાં લઈ જાઓ'},
     'fillFrame': {'en': 'Fill the frame with the leaf', 'hi': 'पत्ती को फ्रेम के बीच में रखें', 'gu': 'પાંદડાને ચોરસમાં બરાબર ગોઠવો'},
     'imageTooDark': {'en': 'Photo is too dark. Please take it in daylight.', 'hi': 'फोटो बहुत अंधेरी है। कृपया धूप में लें।', 'gu': 'ફોટો વધુ અંધારાવાળો છે. કૃપા કરીને સૂર્યપ્રકાશમાં લો.'},
@@ -110,7 +109,7 @@ class AppTranslations {
     'cameraGuideTitle': {'en': 'Position Leaf in Frame', 'hi': 'पत्ती को फ्रेम के बीच में रखें', 'gu': 'પાનને ફ્રેમની વચ્ચે રાખો'},
     'centerLeaf': {'en': 'Place infected area inside the box', 'hi': 'रोगग्रस्त भाग को बॉक्स के अंदर रखें', 'gu': 'રોગગ્રસ્ત ભાગને બોક્સની અંદર રાખો'},
     'goodLighting': {'en': 'Ensure bright, natural daylight', 'hi': 'पर्याप्त प्राकृतिक रोशनी सुनिश्चित करें', 'gu': 'પૂરતો કુદરતી પ્રકાશ હોવાની ખાતરી કરો'},
-    'holdSteady': {'en': 'Hold phone steady to avoid blur', 'hi': 'धुंधलापन से बचने के लिए फोन स्थिर रखें', 'gu': 'ઝાંખાપણું ટાળવા માટે ફોન સ્થિર રાખો'},
+    'holdSteady': {'en': 'Hold camera steady', 'hi': 'कैमरा स्थिर रखें', 'gu': 'કેમેરો સ્થિર રાખો'},
     'tapToCapture': {'en': 'Tap shutter to capture leaf', 'hi': 'पत्ती का फोटो लेने के लिए बटन दबाएं', 'gu': 'ફોટો લેવા માટે બટન દબાવો'},
     'uploadGallery': {'en': 'Choose from Gallery', 'hi': 'गैलरी से फोटो चुनें', 'gu': 'ગેલેરીમાંથી ફોટો પસંદ કરો'},
 

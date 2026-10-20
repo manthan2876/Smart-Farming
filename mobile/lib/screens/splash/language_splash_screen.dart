@@ -33,8 +33,6 @@ class _LanguageSplashScreenState extends State<LanguageSplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAF7),
       body: SafeArea(

@@ -47,7 +47,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Tuple
 
-import cv2
+try:
+    import cv2
+except Exception:
+    cv2 = None
 import numpy as np
 
 
