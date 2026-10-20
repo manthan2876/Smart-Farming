@@ -154,6 +154,10 @@ def run_vision_pipeline(image_bgr: np.ndarray, filename: str = "upload.jpg") -> 
 
     total_duration_ms = round((time.perf_counter() - t0_total) * 1000)
     context["stages"]["total_vision_duration_ms"] = total_duration_ms
+    context["timing_ms"] = {
+        k: v.get("duration_ms", 0) for k, v in context.get("stages", {}).items() if isinstance(v, dict)
+    }
+    context["timing_ms"]["total"] = total_duration_ms
 
     return _clean_context_for_response(context)
 

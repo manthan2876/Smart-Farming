@@ -334,17 +334,19 @@ with torch.no_grad():
 
 ##### Per-Class Metrics (Held-Out Test Set, N = 1,115)
 
-| Disease Class | Precision | Recall | F1-Score | Support (Images) |
-|---|---|---|---|---|
-| **Bacterial Spot** | 0.998 | 0.981 | 0.990 | 536 |
-| **Cercospora Leaf Spot** | 0.977 | 0.990 | 0.983 | 210 |
-| **Edema** | 0.750 | 0.600 | 0.667 | 5 |
-| **Healthy** | 0.974 | 0.996 | 0.985 | 227 |
-| **Leaf Curl** | 0.980 | 0.980 | 0.980 | 51 |
-| **Nutrition Deficiency** | 0.967 | 1.000 | 0.983 | 58 |
-| **Powdery Mildew** | 0.964 | 0.964 | 0.964 | 28 |
-| **Macro Average** | **0.944** | **0.930** | **0.936** | **1,115** |
-| **Weighted Average** | **0.985** | **0.985** | **0.985** | **1,115** |
+| Disease Class | Precision | Recall | F1-Score | Support (Images) | 95% Wilson CI (Recall) |
+|---|---|---|---|---|---|
+| **Bacterial Spot** | 0.998 | 0.981 | 0.990 | 536 | [0.966, 0.990] |
+| **Cercospora Leaf Spot** | 0.977 | 0.990 | 0.983 | 210 | [0.966, 0.998] |
+| **Edema** ⚠️ | 0.750 | 0.600 | 0.667 | 5 | **[0.231, 0.882]** |
+| **Healthy** | 0.974 | 0.996 | 0.985 | 227 | [0.975, 0.999] |
+| **Leaf Curl** | 0.980 | 0.980 | 0.980 | 51 | [0.895, 0.997] |
+| **Nutrition Deficiency** | 0.967 | 1.000 | 0.983 | 58 | [0.938, 1.000] |
+| **Powdery Mildew** | 0.964 | 0.964 | 0.964 | 28 | [0.823, 0.994] |
+| **Macro Average** | **0.944** | **0.930** | **0.936** | **1,115** | — |
+| **Weighted Average** | **0.985** | **0.985** | **0.985** | **1,115** | — |
+
+> ⚠️ **Small Support Warning (Edema):** With test support $N = 5$, the empirical recall of 60.0% has a wide 95% Wilson score confidence interval of **[23.1%, 88.2%]**. True field recall error margins are substantially wider than point estimates; cases are conservatively flagged for agronomist confirmation.
 
 ##### In-Situ Field Set vs. Controlled Environment Breakdown
 
@@ -406,18 +408,20 @@ with torch.no_grad():
 
 ##### Per-Class Metrics (Held-Out Test Set, N = 1,152)
 
-| Disease Class | Precision | Recall | F1-Score | Support (Images) |
-|---|---|---|---|---|
-| **Bacteria** | 0.902 | 0.988 | 0.943 | 84 |
-| **Early Blight** | 1.000 | 1.000 | 1.000 | 266 |
-| **Fungi** | 0.832 | 0.900 | 0.865 | 110 |
-| **Healthy** | 0.960 | 0.973 | 0.967 | 224 |
-| **Late Blight** | 0.993 | 0.959 | 0.975 | 290 |
-| **Nematode** | 1.000 | 0.400 | 0.571 | 10 |
-| **Pest (Damage)** | 0.859 | 0.744 | 0.798 | 90 |
-| **Virus** | 0.860 | 0.949 | 0.902 | 78 |
-| **Macro Average** | **0.926** | **0.864** | **0.878** | **1,152** |
-| **Weighted Average** | **0.947** | **0.945** | **0.944** | **1,152** |
+| Disease Class | Precision | Recall | F1-Score | Support (Images) | 95% Wilson CI (Recall) |
+|---|---|---|---|---|---|
+| **Bacteria** | 0.902 | 0.988 | 0.943 | 84 | [0.935, 0.998] |
+| **Early Blight** | 1.000 | 1.000 | 1.000 | 266 | [0.986, 1.000] |
+| **Fungi** | 0.832 | 0.900 | 0.865 | 110 | [0.830, 0.944] |
+| **Healthy** | 0.960 | 0.973 | 0.967 | 224 | [0.942, 0.988] |
+| **Late Blight** | 0.993 | 0.959 | 0.975 | 290 | [0.929, 0.976] |
+| **Nematode** ⚠️ | 1.000 | 0.400 | 0.571 | 10 | **[0.168, 0.687]** |
+| **Pest (Damage)** | 0.859 | 0.744 | 0.798 | 90 | [0.645, 0.823] |
+| **Virus** | 0.860 | 0.949 | 0.902 | 78 | [0.875, 0.980] |
+| **Macro Average** | **0.926** | **0.864** | **0.878** | **1,152** | — |
+| **Weighted Average** | **0.947** | **0.945** | **0.944** | **1,152** | — |
+
+> ⚠️ **Small Support Warning (Potato Nematode):** Test support is limited to $N = 10$ images. The empirical recall of 40.0% translates to a 95% Wilson score confidence interval of **[16.8%, 68.7%]**. Nematode manifestations are primarily root-based, making foliar signals subtle and prone to false negatives; agronomist escalation is active.
 
 ##### In-Situ Field Set vs. Controlled Environment Breakdown
 
@@ -483,18 +487,20 @@ with torch.no_grad():
 
 ##### Per-Class Metrics (Held-Out Test Set, N = 929)
 
-| Disease Class | Precision | Recall | F1-Score | Support (Images) |
-|---|---|---|---|---|
-| **Bacterial Spot** | 0.970 | 0.896 | 0.931 | 182 |
-| **Early Blight** | 0.908 | 0.945 | 0.927 | 220 |
-| **Healthy** | 0.975 | 0.956 | 0.966 | 206 |
-| **Late Blight** | 0.931 | 0.892 | 0.911 | 166 |
-| **Mold Leaf** | 0.824 | 0.813 | 0.819 | 75 |
-| **Mosaic Virus** | 0.368 | 0.500 | 0.424 | 14 |
-| **Septoria** | 0.600 | 0.733 | 0.660 | 45 |
-| **Yellow Curl Virus** | 0.609 | 0.667 | 0.636 | 21 |
-| **Macro Average** | **0.773** | **0.800** | **0.784** | **929** |
-| **Weighted Average** | **0.903** | **0.895** | **0.898** | **929** |
+| Disease Class | Precision | Recall | F1-Score | Support (Images) | 95% Wilson CI (Recall) |
+|---|---|---|---|---|---|
+| **Bacterial Spot** | 0.970 | 0.896 | 0.931 | 182 | [0.843, 0.932] |
+| **Early Blight** | 0.908 | 0.945 | 0.927 | 220 | [0.906, 0.969] |
+| **Healthy** | 0.975 | 0.956 | 0.966 | 206 | [0.919, 0.977] |
+| **Late Blight** | 0.931 | 0.892 | 0.911 | 166 | [0.835, 0.931] |
+| **Mold Leaf** | 0.824 | 0.813 | 0.819 | 75 | [0.710, 0.885] |
+| **Mosaic Virus** ⚠️ | 0.368 | 0.500 | 0.424 | 14 | **[0.268, 0.732]** |
+| **Septoria** | 0.600 | 0.733 | 0.660 | 45 | [0.590, 0.840] |
+| **Yellow Curl Virus** | 0.609 | 0.667 | 0.636 | 21 | [0.454, 0.828] |
+| **Macro Average** | **0.773** | **0.800** | **0.784** | **929** | — |
+| **Weighted Average** | **0.903** | **0.895** | **0.898** | **929** | — |
+
+> ⚠️ **Small Support Warning (Tomato Mosaic Virus):** With $N = 14$ test images, empirical recall is 50.0% with a wide 95% Wilson confidence interval of **[26.8%, 73.2%]**. Tomato mosaic symptom confusion with nutritional deficiencies is frequent; low-confidence predictions automatically route to human experts.
 
 ##### In-Situ Field Set vs. Controlled Environment Breakdown
 

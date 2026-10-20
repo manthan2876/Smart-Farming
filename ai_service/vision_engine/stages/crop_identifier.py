@@ -57,12 +57,23 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
         else:
             probs = torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()
 
-    top_idx = int(np.argmax(probs))
+    top_indices = np.argsort(probs)[::-1]
+    top_idx = int(top_indices[0])
     label = classes[top_idx]
     confidence = float(probs[top_idx])
 
+    top2 = [
+        {"label": str(classes[idx]), "confidence": round(float(probs[idx]), 4)}
+        for idx in top_indices[:2]
+    ]
+
+    # Calculate Shannon entropy for Out-Of-Distribution (OOD) guarding
+    entropy = float(-np.sum(probs * np.log(np.clip(probs, 1e-12, 1.0))))
+
     context["crop"]["label"] = label
     context["crop"]["confidence"] = confidence
+    context["crop"]["top2"] = top2
+    context["crop"]["entropy"] = round(entropy, 3)
     context["crop"]["model_name"] = "EfficientNet-B0"
     context["crop"]["model_file"] = "crop_identifier_v1.pth"
     context["crop"]["model_version"] = "v1.0"
@@ -70,24 +81,38 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
     context["crop"]["temperature"] = temperature
     context["status"]["crop_identification"] = "completed"
 
-    threshold = config["thresholds"].get("crop_confidence", 0.7)
+    threshold = config["thresholds"].get("crop_confidence", 0.70)
     context["crop"]["uncertainty"] = round(float(1.0 - confidence), 3)
 
+    # 1. Out-Of-Distribution (OOD) Guard (max prob < 0.45 or entropy > 1.5)
+    if confidence < 0.45 or entropy > 1.5:
+        context["crop"]["status"] = "out_of_distribution"
+        context["crop"]["is_uncertain"] = True
+        context["crop"]["confidence_rating"] = "low"
+        context.setdefault("notes", []).append(
+            f"Image is out-of-distribution (confidence={confidence:.2f}, entropy={entropy:.2f}). Not a recognized crop leaf."
+        )
+        return context
+
+    # 2. Uncertain-Crop Band (0.50 <= confidence < 0.75)
+    if confidence < 0.75:
+        context["crop"]["confidence_rating"] = "low"
+        context["crop"]["status"] = "uncertain_crop"
+        context["crop"]["is_uncertain"] = True
+        context["crop"]["is_uncertain_band"] = True
+        context.setdefault("notes", []).append(
+            f"Crop identification is borderline (confidence={confidence:.2f}, top-2: {top2[0]['label']} vs {top2[1]['label']}). Dual-crop safety routing active."
+        )
+        return context
+
+    # 3. High/Moderate Confidence
     if confidence >= 0.85:
         context["crop"]["confidence_rating"] = "high"
-    elif confidence >= threshold:
+    else:
         context["crop"]["confidence_rating"] = "moderate"
-    else:
-        context["crop"]["confidence_rating"] = "low"
 
-    if confidence < threshold:
-        context["crop"]["status"] = "unsupported_crop"
-        context["crop"]["is_uncertain"] = True
-        context.setdefault("notes", []).append(
-            f"Crop confidence ({confidence:.2f}) is below threshold ({threshold}). Flagged for review."
-        )
-    else:
-        context["crop"]["status"] = "supported_crop"
-        context["crop"]["is_uncertain"] = False
+    context["crop"]["status"] = "supported_crop"
+    context["crop"]["is_uncertain"] = False
+    context["crop"]["is_uncertain_band"] = False
 
     return context

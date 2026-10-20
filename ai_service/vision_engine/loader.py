@@ -1,11 +1,13 @@
 """
-loader.py — Model loading utilities with in-memory cache for model_service.
+loader.py — Model loading utilities with LRU in-memory cache and ONNX int8 support.
 """
 
 from __future__ import annotations
 
+import gc
 import json
 import logging
+from collections import OrderedDict
 from pathlib import Path
 from typing import Optional, Tuple, Any
 
@@ -14,13 +16,19 @@ import timm
 
 logger = logging.getLogger(__name__)
 
-_model_cache: dict[str, Any] = {}
+# Permanent cache for models required on every request (e.g. crop_identifier)
+_persistent_model_cache: dict[str, Any] = {}
+
+# In-memory LRU cache for per-crop disease models (limits memory on free-tier 2 vCPU / 16GB / Render 512MB)
+MAX_DISEASE_MODELS = 2
+_disease_model_lru: OrderedDict[str, Any] = OrderedDict()
 
 try:
     from core.config import settings
     DEVICE = settings.DEVICE
 except Exception:
     DEVICE = "cpu"
+
 SERVICE_ROOT = Path(__file__).resolve().parent.parent
 
 # Fallback class labels in case disk read or Git LFS issues occur
@@ -32,6 +40,28 @@ FALLBACK_LABELS: dict[str, list[str]] = {
     "disease_Pepper_Bell": ["Bacterial Spot", "Cercospora Leaf Spot", "Edema", "Healthy", "Leaf Curl", "Nutrition Deficiency", "Powdery Mildew"],
     "disease_Potato": ["Bacteria", "Early Blight", "Fungi", "Healthy", "Late Blight", "Nematode", "Pest", "Virus"],
 }
+
+
+class ONNXModelWrapper:
+    """Wrapper that adapts ONNX Runtime InferenceSession to PyTorch callable interface."""
+
+    def __init__(self, session_path: str):
+        import onnxruntime as ort
+        self.session = ort.InferenceSession(session_path, providers=["CPUExecutionProvider"])
+        self.input_name = self.session.get_inputs()[0].name
+        self.output_name = self.session.get_outputs()[0].name
+        self.path = session_path
+
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        arr = tensor.detach().cpu().numpy()
+        preds = self.session.run([self.output_name], {self.input_name: arr})[0]
+        return torch.from_numpy(preds)
+
+    def to(self, device: str) -> "ONNXModelWrapper":
+        return self
+
+    def eval(self) -> "ONNXModelWrapper":
+        return self
 
 
 def resolve_model_path(rel_or_abs_path: str | Path) -> Path:
@@ -70,23 +100,48 @@ def _get_fallback_labels(labels_path: Path) -> Optional[list[str]]:
     return None
 
 
+def _find_onnx_candidate(model_path: Path) -> Optional[Path]:
+    """Check if an int8 or fp32 ONNX model is available beside the PyTorch checkpoint."""
+    if model_path.suffix.lower() == ".onnx" and model_path.exists():
+        return model_path
+
+    # Check for quantized int8 ONNX first
+    int8_candidate = model_path.with_name(f"{model_path.stem}_int8.onnx")
+    if int8_candidate.exists():
+        return int8_candidate
+
+    # Check for standard ONNX
+    onnx_candidate = model_path.with_suffix(".onnx")
+    if onnx_candidate.exists():
+        return onnx_candidate
+
+    return None
+
+
 def load_efficientnet(
     model_path: str | Path,
     labels_path: str | Path,
     arch: str,
     device: str = DEVICE,
-) -> Optional[Tuple[torch.nn.Module, list]]:
+) -> Optional[Tuple[Any, list]]:
     """
-    Load a timm EfficientNet model + its class labels from disk.
-    Returns (model, classes) or None if either file is missing or invalid.
-    Results are cached by model_path.
+    Load an EfficientNet model (ONNX int8 if available, otherwise PyTorch timm) + class labels.
+    Uses persistent caching for crop_identifier, and an LRU cache (maxsize=2) for disease models
+    to stay well within free-tier memory quotas.
     """
     model_path = resolve_model_path(model_path)
     labels_path = resolve_model_path(labels_path)
     cache_key = str(model_path)
 
-    if cache_key in _model_cache:
-        return _model_cache[cache_key]
+    is_crop_model = "crop_identifier" in cache_key or "crop" in model_path.stem.lower()
+
+    if is_crop_model:
+        if cache_key in _persistent_model_cache:
+            return _persistent_model_cache[cache_key]
+    else:
+        if cache_key in _disease_model_lru:
+            _disease_model_lru.move_to_end(cache_key)
+            return _disease_model_lru[cache_key]
 
     if not model_path.exists():
         logger.error(f"[ModelLoader] Model file not found: {model_path}")
@@ -112,18 +167,52 @@ def load_efficientnet(
         logger.error(f"[ModelLoader] Could not resolve classes for {labels_path}")
         return None
 
+    # Try loading ONNX model first for 2-3x speed and 75% RAM savings
+    onnx_file = _find_onnx_candidate(model_path)
+    if onnx_file:
+        try:
+            model = ONNXModelWrapper(str(onnx_file))
+            logger.info(f"[ModelLoader] Loaded ONNX session from {onnx_file.name} ({len(classes)} classes)")
+            entry = (model, classes)
+            if is_crop_model:
+                _persistent_model_cache[cache_key] = entry
+            else:
+                _store_in_disease_lru(cache_key, entry)
+            return entry
+        except Exception as exc:
+            logger.warning(f"[ModelLoader] Could not load ONNX session from {onnx_file}: {exc}. Falling back to PyTorch.")
+
+    # PyTorch timm model loading
     try:
         model = timm.create_model(arch, pretrained=False, num_classes=len(classes))
         model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
         model.to(device)
         model.eval()
 
-        _model_cache[cache_key] = (model, classes)
-        logger.info(f"[ModelLoader] Loaded '{arch}' from {model_path.name} ({len(classes)} classes) on {device}")
-        return _model_cache[cache_key]
+        entry = (model, classes)
+        if is_crop_model:
+            _persistent_model_cache[cache_key] = entry
+            logger.info(f"[ModelLoader] Loaded permanent crop model '{arch}' from {model_path.name} on {device}")
+        else:
+            _store_in_disease_lru(cache_key, entry)
+            logger.info(f"[ModelLoader] Loaded disease model '{arch}' into LRU from {model_path.name} on {device}")
+        return entry
     except Exception as exc:
         logger.error(f"[ModelLoader] Failed loading model {model_path}: {exc}", exc_info=True)
         return None
+
+
+def _store_in_disease_lru(key: str, entry: Any) -> None:
+    if key in _disease_model_lru:
+        _disease_model_lru.move_to_end(key)
+    else:
+        if len(_disease_model_lru) >= MAX_DISEASE_MODELS:
+            evicted_key, _ = _disease_model_lru.popitem(last=False)
+            logger.info(f"[ModelLoader] LRU eviction: unloaded disease model '{Path(evicted_key).name}' to conserve RAM budget.")
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            gc.collect()
+        _disease_model_lru[key] = entry
 
 
 def load_yolo(model_path: str | Path):
@@ -134,8 +223,8 @@ def load_yolo(model_path: str | Path):
     model_path = resolve_model_path(model_path)
     cache_key = str(model_path)
 
-    if cache_key in _model_cache:
-        return _model_cache[cache_key]
+    if cache_key in _persistent_model_cache:
+        return _persistent_model_cache[cache_key]
 
     if not model_path.exists():
         logger.error(f"[ModelLoader] YOLO model file not found: {model_path}")
@@ -148,7 +237,7 @@ def load_yolo(model_path: str | Path):
     try:
         from ultralytics import YOLO
         model = YOLO(str(model_path))
-        _model_cache[cache_key] = model
+        _persistent_model_cache[cache_key] = model
         logger.info(f"[ModelLoader] Loaded YOLO model from {model_path.name}")
         return model
     except ImportError:
@@ -159,6 +248,16 @@ def load_yolo(model_path: str | Path):
         return None
 
 
-def clear_cache() -> None:
-    _model_cache.clear()
+def get_cache_stats() -> dict[str, Any]:
+    """Return memory and cache diagnostic statistics."""
+    return {
+        "persistent_models": list(_persistent_model_cache.keys()),
+        "lru_disease_models": list(_disease_model_lru.keys()),
+        "max_disease_models": MAX_DISEASE_MODELS,
+    }
 
+
+def clear_cache() -> None:
+    _persistent_model_cache.clear()
+    _disease_model_lru.clear()
+    gc.collect()

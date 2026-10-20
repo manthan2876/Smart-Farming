@@ -62,6 +62,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, models, transforms
 from tqdm import tqdm
+import numpy as np
 
 # ─── Optional DB logging ───────────────────────────────────────────────────────
 _DB_AVAILABLE = False
@@ -233,6 +234,126 @@ def evaluate(
     return total_loss / n, total_acc / n
 
 
+# ─── Calibration and Reproducibility helpers ────────────────────────────────────
+@torch.no_grad()
+def collect_logits_and_labels(
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Collect raw model logits and ground-truth labels across a DataLoader."""
+    model.eval()
+    all_logits: list[np.ndarray] = []
+    all_labels: list[np.ndarray] = []
+    for images, labels in loader:
+        images = images.to(device)
+        outputs = model(images)
+        all_logits.append(outputs.detach().cpu().numpy())
+        all_labels.append(labels.numpy())
+    if not all_logits:
+        return np.empty((0, 0)), np.empty((0,), dtype=int)
+    return np.concatenate(all_logits, axis=0), np.concatenate(all_labels, axis=0)
+
+
+def compute_ece_metrics(
+    y_true: np.ndarray,
+    probs: np.ndarray,
+    num_bins: int = 10,
+) -> float:
+    """Computes Expected Calibration Error (ECE) across confidence bins."""
+    n = len(y_true)
+    if n == 0 or probs.size == 0:
+        return 0.0
+    confidences = np.max(probs, axis=1)
+    predictions = np.argmax(probs, axis=1)
+    accuracies = (predictions == y_true).astype(float)
+    bin_boundaries = np.linspace(0.0, 1.0, num_bins + 1)
+    ece = 0.0
+
+    for i in range(num_bins):
+        low, high = bin_boundaries[i], bin_boundaries[i + 1]
+        mask = (confidences >= low) & (confidences <= high if i == num_bins - 1 else confidences < high)
+        bin_count = int(np.sum(mask))
+        if bin_count > 0:
+            bin_acc = float(np.mean(accuracies[mask]))
+            bin_conf = float(np.mean(confidences[mask]))
+            ece += (bin_count / n) * abs(bin_acc - bin_conf)
+    return float(ece)
+
+
+def fit_temperature_scaling(
+    logits: np.ndarray,
+    labels: np.ndarray,
+) -> tuple[float, float, float]:
+    """
+    Fits optimal temperature T on validation logits by minimizing NLL loss via bounded optimization.
+    Returns (optimal_temperature, uncalibrated_ece, calibrated_ece).
+    """
+    if logits.size == 0 or len(labels) == 0:
+        return 1.0, 0.0, 0.0
+
+    # Uncalibrated probabilities (T=1.0)
+    shifted_1 = logits - np.max(logits, axis=1, keepdims=True)
+    exp_1 = np.exp(shifted_1)
+    probs_1 = exp_1 / np.sum(exp_1, axis=1, keepdims=True)
+    uncal_ece = compute_ece_metrics(labels, probs_1)
+
+    try:
+        from scipy.optimize import minimize_scalar
+
+        def nll_obj(t: float) -> float:
+            scaled = logits / max(float(t), 1e-4)
+            shifted = scaled - np.max(scaled, axis=1, keepdims=True)
+            exp_s = np.exp(shifted)
+            probs = exp_s / np.sum(exp_s, axis=1, keepdims=True)
+            n_samples = len(labels)
+            correct_probs = probs[np.arange(n_samples), labels]
+            return -float(np.mean(np.log(np.clip(correct_probs, 1e-12, 1.0))))
+
+        res = minimize_scalar(nll_obj, bounds=(0.05, 10.0), method="bounded")
+        opt_t = float(res.x)
+    except Exception as exc:
+        logger.warning("Could not optimize temperature scaling via scipy: %s", exc)
+        opt_t = 1.0
+
+    # Calibrated probabilities with optimal T
+    scaled_opt = logits / max(opt_t, 1e-4)
+    shifted_opt = scaled_opt - np.max(scaled_opt, axis=1, keepdims=True)
+    exp_opt = np.exp(shifted_opt)
+    probs_opt = exp_opt / np.sum(exp_opt, axis=1, keepdims=True)
+    cal_ece = compute_ece_metrics(labels, probs_opt)
+
+    return round(opt_t, 4), round(uncal_ece, 4), round(cal_ece, 4)
+
+
+def _get_git_commit() -> str | None:
+    try:
+        import subprocess
+        out = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL)
+        return out.decode("utf-8").strip()
+    except Exception:
+        return None
+
+
+def _compute_dataset_hash(dataset_dir: Path) -> str:
+    import hashlib
+    meta = dataset_dir / "metadata.json"
+    if meta.exists():
+        try:
+            return hashlib.sha256(meta.read_bytes()).hexdigest()
+        except Exception:
+            pass
+    hasher = hashlib.sha256()
+    for path in sorted(dataset_dir.glob("**/*")):
+        if path.is_file():
+            hasher.update(path.name.encode())
+            try:
+                hasher.update(str(path.stat().st_size).encode())
+            except Exception:
+                pass
+    return hasher.hexdigest()
+
+
 # ─── DB logging helpers ──────────────────────────────────────────────────────────
 def _db_create_run(model_name: str, total_epochs: int, export_config: dict | None) -> int | None:
     """Create a MlopsRun record and return its id."""
@@ -285,8 +406,18 @@ def _db_update_run(
 
 # ─── Main training function ──────────────────────────────────────────────────────
 def train(args: argparse.Namespace) -> dict[str, Any]:
+    import random
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    dataset_hash = _compute_dataset_hash(Path(args.dataset_dir))
+    git_commit = _get_git_commit()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Device: %s", device)
@@ -510,6 +641,33 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
 
     total_time = time.time() - run_start
 
+    # ── Post-Training Temperature Calibration ──────────────────────────────
+    logger.info("Fitting post-training temperature scaling (T) on validation set…")
+    val_logits, val_labels_arr = collect_logits_and_labels(model, val_loader, device)
+    optimal_t, val_ece_uncal, val_ece_cal = fit_temperature_scaling(val_logits, val_labels_arr)
+    logger.info("Optimal Temperature T=%.4f (Val ECE: %.4f -> %.4f)", optimal_t, val_ece_uncal, val_ece_cal)
+
+    test_logits, test_labels_arr = collect_logits_and_labels(model, test_loader, device)
+    if test_logits.size > 0 and len(test_labels_arr) > 0:
+        shifted_uncal = test_logits - np.max(test_logits, axis=1, keepdims=True)
+        exp_uncal = np.exp(shifted_uncal)
+        probs_uncal = exp_uncal / np.sum(exp_uncal, axis=1, keepdims=True)
+        test_ece_uncal = compute_ece_metrics(test_labels_arr, probs_uncal)
+
+        scaled_cal = test_logits / max(optimal_t, 1e-4)
+        shifted_cal = scaled_cal - np.max(scaled_cal, axis=1, keepdims=True)
+        exp_cal = np.exp(shifted_cal)
+        probs_cal = exp_cal / np.sum(exp_cal, axis=1, keepdims=True)
+        test_ece_cal = compute_ece_metrics(test_labels_arr, probs_cal)
+    else:
+        test_ece_uncal = 0.0
+        test_ece_cal = 0.0
+    logger.info("Test ECE: %.4f (uncalibrated T=1.0) -> %.4f (calibrated T=%.4f)", test_ece_uncal, test_ece_cal, optimal_t)
+
+    macro_f1 = None
+    if isinstance(report, dict) and "macro avg" in report:
+        macro_f1 = round(float(report["macro avg"].get("f1-score", 0.0)), 4)
+
     # ── Save final metrics ───────────────────────────────────────────────────────
     final_metrics: dict[str, Any] = {
         "task": args.task,
@@ -521,10 +679,25 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         "best_val_loss": round(best_val_loss, 4),
         "test_acc": round(test_acc, 4),
         "test_loss": round(test_loss, 4),
+        "macro_f1": macro_f1,
+        "optimal_temperature": optimal_t,
+        "temperature": optimal_t,
+        "val_ece_uncalibrated": val_ece_uncal,
+        "val_ece_calibrated": val_ece_cal,
+        "test_ece_uncalibrated": test_ece_uncal,
+        "test_ece_calibrated": test_ece_cal,
+        "seed": args.seed,
+        "random_seed": args.seed,
+        "dataset_sha256": dataset_hash,
+        "dataset_hash": dataset_hash,
+        "git_commit": git_commit,
+        "python_version": sys.version.split()[0],
+        "torch_version": torch.__version__,
         "epochs_trained": len(history),
         "total_time_s": round(total_time, 1),
         "history": history,
         "per_class_report": report,
+        "per_class_metrics": report,
         "confusion_matrix": cm,
         "checkpoint": str(output_dir / "best.pth"),
         "labels_file": str(labels_path),
@@ -629,6 +802,8 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Train from random initialization (no ImageNet weights)")
     parser.add_argument("--use-class-weights", action="store_true", default=True,
                         help="Use inverse-frequency class weights in loss function")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for deterministic initialization and sampling")
     return parser
 
 

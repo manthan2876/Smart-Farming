@@ -152,11 +152,16 @@ async def get_metrics(
     med_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf >= 0.50, Prediction.disease_conf < 0.75).scalar() or 0
     low_conf = session.query(func.count(Prediction.id)).filter(Prediction.disease_conf < 0.50).scalar() or 0
 
+    authoritative_acc = expert_validated_accuracy if expert_validated_accuracy is not None else accuracy
+
     return {
         "total_users": total_users,
         "total_scans": total_scans,
         "completed_scans": total_completed,
-        "accuracy": accuracy,
+        "accuracy": authoritative_acc,
+        "farmer_reported_accuracy": accuracy,
+        "expert_audit_accuracy": expert_validated_accuracy,
+        "accuracy_source": "expert_audit" if expert_validated_accuracy is not None else "farmer_feedback",
         "queue_depth": total_processing,
         "failures": {
             "total_failed": total_failed,

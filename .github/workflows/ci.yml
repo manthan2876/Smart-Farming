@@ -38,7 +38,7 @@ jobs:
 
       - name: Run Pytest Suite
         env:
-          PYTHONPATH: backend/src
+          PYTHONPATH: backend/src:ai_service
           ENVIRONMENT: test
           SECRET_KEY: test-secret-key-32-bytes-long-for-testing-only
           JWT_SECRET_KEY: test-secret-key-32-bytes-long-for-testing-only
@@ -52,6 +52,9 @@ jobs:
             backend/tests/test_media_authorization.py \
             backend/tests/test_admin_management.py \
             backend/tests/test_system_health.py \
+            backend/tests/test_mlops_export.py \
+            backend/tests/test_model_registry_db.py \
+            backend/tests/test_golden_benchmark.py \
             -v
 
   frontend-check:

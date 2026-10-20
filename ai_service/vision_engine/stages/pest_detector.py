@@ -113,9 +113,23 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
             all_probs_dict[label] = conf
 
         predictions.sort(key=lambda item: item["confidence"], reverse=True)
-        detected_pests = [p for p in predictions if p["confidence"] >= 0.40]
 
-        if detected_pests:
+        def _is_background_clean_leaf(name: str) -> bool:
+            lower = name.lower()
+            return any(k in lower for k in ("no pest", "no_pest", "clean", "healthy", "none", "background"))
+
+        # Threshold increased from 0.40 to 0.65 to eliminate false alarms on healthy foliage
+        pest_threshold = float(config.get("thresholds", {}).get("pest_confidence", 0.65))
+        detected_pests = [
+            p for p in predictions
+            if p["confidence"] >= pest_threshold and not _is_background_clean_leaf(p["label"])
+        ]
+
+        top_pred = predictions[0] if predictions else None
+        if top_pred and _is_background_clean_leaf(top_pred["label"]):
+            pest_status = "no_pests_detected"
+            context["pests"] = []
+        elif detected_pests:
             context["pests"] = detected_pests
             pest_status = "pest_detected"
         else:
@@ -123,10 +137,11 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
             pest_status = "no_pests_detected"
 
         context["pest_classification"] = {
-            "model_type": "classification",
-            "model_name": "YOLOv8 Pest Classifier",
+            "model_type": "pest_damage_classifier",
+            "model_name": "YOLOv8 Pest Damage Classifier",
             "model_used": "pest_classifier.pt",
             "status": pest_status,
+            "threshold": pest_threshold,
             "top_k": 3,
             "top_predictions": predictions[:3],
             "all_probs": all_probs_dict,

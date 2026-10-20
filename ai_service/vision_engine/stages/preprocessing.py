@@ -33,9 +33,11 @@ class OpenCVPreprocessorService:
             context.setdefault("notes", []).append("Image is corrupt or unreadable.")
             return context
 
-        # ── A. Global Blur and Brightness Detection ────────────────────
+        # ── A. Global Blur and Brightness Detection (Resolution-Normalized) ──
         gray = cv2.cvtColor(input_im, cv2.COLOR_BGR2GRAY)
-        blur_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        # Normalize to standard 512x512 canvas so blur variance is resolution-invariant
+        gray_512 = cv2.resize(gray, (512, 512), interpolation=cv2.INTER_AREA)
+        blur_score = float(cv2.Laplacian(gray_512, cv2.CV_64F).var())
         context["image"]["blur_score"] = blur_score
 
         hsv = cv2.cvtColor(input_im, cv2.COLOR_BGR2HSV)
@@ -63,7 +65,8 @@ class OpenCVPreprocessorService:
 
         # ── C. Subject-Specific Sharpness Evaluation ──────────────────
         leaf_gray = cv2.cvtColor(leaf_crop_bgr, cv2.COLOR_BGR2GRAY)
-        leaf_blur_score = float(cv2.Laplacian(leaf_gray, cv2.CV_64F).var())
+        leaf_gray_512 = cv2.resize(leaf_gray, (512, 512), interpolation=cv2.INTER_AREA)
+        leaf_blur_score = float(cv2.Laplacian(leaf_gray_512, cv2.CV_64F).var())
         effective_blur = max(blur_score, leaf_blur_score)
         context["image"]["blur_score"] = effective_blur
         context["image"]["leaf_blur_score"] = leaf_blur_score

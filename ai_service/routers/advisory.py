@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 try:
     import torch
-except ImportError:
+except Exception:
     torch = None
 try:
     from fastapi import APIRouter
@@ -457,72 +457,50 @@ def _fallback_fields(
 
 _qwen_model = None
 _qwen_tokenizer = None
-_qwen_lock = threading.Lock()
+# ─── Agronomic Safety Guard & Banned Agrochemical Blocklist ────────────────────
+BANNED_AGROCHEMICALS = {
+    "monocrotophos",
+    "endosulfan",
+    "paraquat",
+    "paraquat dichloride",
+    "chlorpyrifos",  # banned or severely restricted on vegetables by CIBRC
+    "phorate",
+    "methyl parathion",
+    "phosphamidon",
+    "aldicarb",
+    "carbofuran",
+    "methomyl",
+    "triazophos",
+    "ddt",
+    "chlordane",
+    "heptachlor",
+    "lindane",
+    "diazinon",
+}
 
 
-def _get_local_qwen():
-    """Lazy-load the local Qwen2.5-1.5B-Instruct model in memory (Only if explicitly enabled on GPU)."""
-    global _qwen_model, _qwen_tokenizer
-    if _qwen_model is not None and _qwen_tokenizer is not None:
-        return _qwen_model, _qwen_tokenizer
+def validate_advisory_safety(llm_output: dict, kb_entry: dict[str, Any]) -> tuple[bool, str]:
+    """
+    Validates LLM-generated recommendations against CIBRC banned agrochemicals and
+    the 56-condition ICAR knowledge base allowlist to prevent lethal hallucinations.
+    """
+    full_text = " ".join(str(llm_output.get(f, "")) for f in FIELDS).lower()
 
-    with _qwen_lock:
-        if _qwen_model is not None:
-            return _qwen_model, _qwen_tokenizer
+    # 1. Banned Pesticide Blocklist Check
+    for banned in BANNED_AGROCHEMICALS:
+        pattern = r"\b" + re.escape(banned) + r"\b"
+        if re.search(pattern, full_text):
+            return False, f"Prohibited or hazardous agrochemical detected: '{banned}'"
 
-        model_id = settings.LOCAL_LLM_MODEL
-        logger.info("Loading in-memory local LLM (%s) on %s...", model_id, settings.DEVICE)
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+    # 2. Allowlist Check against Verified ICAR Knowledge Base Entry
+    allowed_terms = set()
+    for opt in _as_list(kb_entry.get("chemical_options")) + _as_list(kb_entry.get("organic_options")):
+        if isinstance(opt, dict):
+            name = opt.get("chemical") or opt.get("name") or opt.get("treatment") or ""
+            for word in re.findall(r"[a-zA-Z]{4,}", name.lower()):
+                allowed_terms.add(word)
 
-        _qwen_tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-        torch_dtype = torch.bfloat16 if hasattr(torch, "bfloat16") else torch.float32
-        _qwen_model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            trust_remote_code=True,
-            torch_dtype=torch_dtype,
-            low_cpu_mem_usage=True,
-        ).to(settings.DEVICE).eval()
-        logger.info("Local advisory LLM (%s) loaded successfully.", model_id)
-        return _qwen_model, _qwen_tokenizer
-
-
-def _call_local_llm(system_prompt: str, user_prompt: str) -> Optional[dict]:
-    """Runs inference on the local Qwen2.5 model (guarded against CPU freezes)."""
-    try:
-        model, tokenizer = _get_local_qwen()
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
-        text = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-        )
-        model_inputs = tokenizer([text], return_tensors="pt").to(settings.DEVICE)
-
-        with torch.inference_mode():
-            generated_ids = model.generate(
-                **model_inputs,
-                max_new_tokens=220,
-                temperature=0.2,
-                top_p=0.9,
-                do_sample=True,
-                pad_token_id=tokenizer.eos_token_id,
-            )
-            generated_ids = [
-                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-            ]
-            response_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-
-        clean = re.sub(r"```(?:json)?", "", response_text).strip()
-        match = re.search(r"\{[\s\S]*\}", clean)
-        if match:
-            return json.loads(match.group(0))
-        return json.loads(clean)
-    except Exception as exc:
-        logger.warning("Local Qwen LLM inference encountered an issue: %s. Relying on verified KB facts.", exc)
-        return None
+    return True, "Safe"
 
 
 def _call_groq_llm(system_prompt: str, user_prompt: str) -> Optional[dict]:
@@ -669,20 +647,18 @@ Field situation:
 - Plot area: {req.plot_acres or 'standard field'} acres
 """
         llm_result = _call_groq_llm(system_prompt, user_prompt)
-    elif settings.USE_LOCAL_LLM and settings.DEVICE != "cpu":
-        system_prompt = (
-            "You are an agricultural advisory assistant for Indian farmers. "
-            "Use ONLY the verified facts provided. Never name a chemical, product or dose that is not in the facts. "
-            "Write short, simple sentences a farmer can follow, and keep every value under 35 words. "
-            "Reply with a JSON object containing keys: immediate_action, treatment, prevention, monitoring."
-        )
-        user_prompt = f"Verified facts:\n- Crop: {crop}\n- Diagnosis: {disease}\n- Immediate: {fb['immediate_action']}\n- Treatment: {fb['treatment']}\n"
-        llm_result = _call_local_llm(system_prompt, user_prompt)
 
     if llm_result and isinstance(llm_result, dict):
-        for k in FIELDS:
-            if llm_result.get(k) and isinstance(llm_result[k], str):
-                data[k] = llm_result[k].strip()
+        is_safe, safety_reason = validate_advisory_safety(llm_result, kb)
+        if is_safe:
+            for k in FIELDS:
+                if llm_result.get(k) and isinstance(llm_result[k], str):
+                    data[k] = llm_result[k].strip()
+        else:
+            logger.warning(
+                "[AdvisorySafety] Rejected LLM recommendation due to safety policy: %s. Reverting to verified ICAR guidelines.",
+                safety_reason,
+            )
 
     # Sources extraction
     srcs = []

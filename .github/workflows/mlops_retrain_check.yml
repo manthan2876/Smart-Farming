@@ -1,0 +1,105 @@
+name: MLOps Retrain Trigger & Drift Alert
+
+on:
+  schedule:
+    # Run every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      backend_url:
+        description: 'Backend base URL to query'
+        required: false
+        default: 'https://smart-farming-backend-kkty.onrender.com'
+
+jobs:
+  check-retrain-thresholds:
+    name: Check Drift & Retrain Triggers
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Query Metrics & Evaluate Triggers
+        id: evaluate_metrics
+        env:
+          BACKEND_URL: ${{ github.event.inputs.backend_url || vars.BACKEND_URL || 'https://smart-farming-backend-kkty.onrender.com' }}
+          ADMIN_JWT: ${{ secrets.ADMIN_JWT }}
+        run: |
+          python - << 'EOF'
+          import os
+          import json
+          import urllib.request
+          import sys
+
+          backend_url = os.environ.get("BACKEND_URL", "https://smart-farming-backend-kkty.onrender.com").rstrip("/")
+          admin_jwt = os.environ.get("ADMIN_JWT", "")
+
+          headers = {"Accept": "application/json"}
+          if admin_jwt:
+              headers["Authorization"] = f"Bearer {admin_jwt}"
+
+          metrics_endpoint = f"{backend_url}/api/v1/admin/metrics"
+          print(f"Querying {metrics_endpoint}...")
+
+          tripped = False
+          reasons = []
+
+          try:
+              req = urllib.request.Request(metrics_endpoint, headers=headers)
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  data = json.loads(resp.read().decode())
+          except Exception as exc:
+              print(f"Warning: Could not fetch production metrics: {exc}")
+              data = {}
+
+          low_conf_rate = data.get("low_confidence_rate", 0.0)
+          correction_rate = data.get("expert_correction_rate", 0.0)
+          unreviewed_count = data.get("unreviewed_feedback_count", 0)
+
+          print(f"Current Metrics: low_conf_rate={low_conf_rate:.2%}, correction_rate={correction_rate:.2%}")
+
+          if low_conf_rate > 0.25:
+              tripped = True
+              reasons.append(f"- **Low Confidence Rate:** {low_conf_rate:.2%} (Threshold: > 25%)")
+
+          if correction_rate > 0.20:
+              tripped = True
+              reasons.append(f"- **Expert Correction Rate:** {correction_rate:.2%} (Threshold: > 20%)")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"tripped={str(tripped).lower()}\n")
+              f.write(f"summary={'; '.join(reasons)}\n")
+              f.write(f"low_conf={low_conf_rate:.4f}\n")
+              f.write(f"correction_rate={correction_rate:.4f}\n")
+          EOF
+
+      - name: Open Retrain Alert Issue
+        if: steps.evaluate_metrics.outputs.tripped == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "🚨 [MLOps Retrain Trigger] Production Accuracy Drift Detected" \
+            --body "### Automated Retraining Trigger Alert
+
+          The weekly MLOps drift monitor detected that active inference performance has breached safety retraining thresholds:
+
+          ${{ steps.evaluate_metrics.outputs.summary }}
+
+          #### Recommended Action Plan:
+          1. Export verified candidate dataset with 70/30 replay buffer:
+             \`POST /api/v1/admin/mlops/export\`
+          2. Fine-tune on Kaggle / Google Colab GPU:
+             \`python ai_service/training/train_eval.py disease --dataset-dir /path/to/export\`
+          3. Inspect new post-calibration temperature scaling ($T$) and macro-F1 in \`metrics.json\`.
+          4. Submit candidate for database promotion:
+             \`POST /api/v1/admin/models/promote\`"
+

@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "last_updated": "2026-09-21T18:45:00+00:00",
+  "last_updated": "2026-10-20T08:04:07.116421+00:00",
   "models": {
     "crop_identifier": {
       "active_version": "v1.0",
@@ -52,7 +52,7 @@
       }
     },
     "groundnut_disease": {
-      "active_version": "v1.0",
+      "active_version": "v1.0.0",
       "versions": {
         "v1.0": {
           "arch": "efficientnet_b2",
@@ -71,7 +71,23 @@
           "test_acc": 0.938,
           "trained_at": "2026-08-21T02:04:02+00:00",
           "notes": "Trained with EfficientNet-B2 (07_train_disease_classifier.ipynb), macro-F1: 0.9461",
-          "status": "active"
+          "status": "retired"
+        },
+        "v2.0.0": {
+          "arch": "efficientnet_b2",
+          "checkpoint": null,
+          "hf_repo_id": null,
+          "hf_weight_path": null,
+          "labels": null,
+          "num_classes": 0,
+          "val_acc": 0.94,
+          "test_acc": 0.93,
+          "macro_f1": 0.91,
+          "temperature": 1.12,
+          "promoted_at": "2026-10-20T08:04:07.096989+00:00",
+          "promoted_by": "admin_test_001",
+          "notes": "Retrained with 70/30 spatial replay buffer and calibrated T=1.12",
+          "status": "retired"
         }
       }
     },

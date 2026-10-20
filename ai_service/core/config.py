@@ -16,7 +16,7 @@ except ImportError:
             pass
 try:
     import torch
-except ImportError:
+except Exception:
     torch = None
 
 AI_SERVICE_DIR = Path(__file__).resolve().parent.parent

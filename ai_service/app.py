@@ -81,15 +81,17 @@ async def security_middleware(request: Request, call_next):
     if path in ("/", "/health") or path.startswith(("/_app", "/assets", "/config", "/theme.css", "/gradio_api", "/favicon")):
         return await call_next(request)
 
-    # If GATEWAY_SECRET is configured, enforce Bearer authentication on custom API endpoints
+    # Enforce Bearer authentication on microservice endpoints
     secret = settings.GATEWAY_SECRET
-    if secret:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header != f"Bearer {secret}":
-            return JSONResponse(
-                status_code=401,
-                content={"error": "Unauthorized", "message": "Invalid or missing Bearer token."},
-            )
+    auth_header = request.headers.get("Authorization", "")
+    if not secret or auth_header != f"Bearer {secret}":
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": "Unauthorized",
+                "message": "Microservice requires valid Bearer authentication. Provide 'Authorization: Bearer <GATEWAY_SECRET>'.",
+            },
+        )
 
     return await call_next(request)
 
@@ -97,6 +99,20 @@ async def security_middleware(request: Request, call_next):
 @fastapi_app.get("/health")
 def root_health():
     uptime_sec = round(time.time() - START_TIME, 1)
+    rss_mb = 0.0
+    try:
+        import resource
+        rss_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
+    except Exception:
+        pass
+
+    cache_stats = {}
+    try:
+        from vision_engine.loader import get_cache_stats
+        cache_stats = get_cache_stats()
+    except Exception:
+        pass
+
     return {
         "service": "smart-farming-ai",
         "status": "active",
@@ -104,12 +120,42 @@ def root_health():
         "device": settings.DEVICE,
         "cpu_threads": settings.CPU_THREADS,
         "uptime_seconds": uptime_sec,
+        "memory_rss_mb": rss_mb,
+        "model_cache": cache_stats,
         "routes": {
             "vision": "/vision/predict",
             "translation": "/translation/translate",
             "advisory": "/advisory/advise",
             "tts": "/tts/synthesize",
+            "warmup": "/warmup",
         },
+    }
+
+
+@fastapi_app.post("/warmup")
+def warmup_service():
+    """Runs a warm-up pass through vision models to eliminate cold-start latency."""
+    t0 = time.perf_counter()
+    warmed = []
+    try:
+        from vision_engine.loader import load_efficientnet
+        res = load_efficientnet("models/crop_identifier_v1.pth", "models/labels_crop.json", "efficientnet_b0")
+        if res:
+            model, _ = res
+            dummy = torch.zeros(1, 3, 224, 224, device=settings.DEVICE)
+            with torch.no_grad():
+                _ = model(dummy)
+            warmed.append("crop_identifier")
+    except Exception as exc:
+        logger.warning("Vision warmup error: %s", exc)
+
+    duration_ms = round((time.perf_counter() - t0) * 1000)
+    return {
+        "status": "warmed",
+        "warmed_components": warmed,
+        "device": settings.DEVICE,
+        "warmup_duration_ms": duration_ms,
+        "timestamp": time.time(),
     }
 
 

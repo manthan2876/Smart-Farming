@@ -18,9 +18,12 @@ from typing import Any
 import yaml
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin_role
+from app.core import get_session
 from app.core.config import settings
+from app.models.model_registry import ModelRegistryRecord
 
 logger = logging.getLogger("smart-farming.api")
 
@@ -41,6 +44,41 @@ def _load_registry() -> dict[str, Any]:
 def _save_registry(registry: dict[str, Any]) -> None:
     registry["last_updated"] = datetime.now(timezone.utc).isoformat()
     _REGISTRY_PATH.write_text(json.dumps(registry, indent=2), encoding="utf-8")
+
+
+def _seed_db_from_file_if_empty(session: Session) -> None:
+    """Bootstrap durable database registry from legacy model_registry.json on first run."""
+    try:
+        count = session.query(ModelRegistryRecord).count()
+        if count > 0:
+            return
+
+        file_reg = _load_registry()
+        models = file_reg.get("models", {})
+        for m_key, m_info in models.items():
+            active_ver = m_info.get("active_version")
+            for ver_name, ver_info in m_info.get("versions", {}).items():
+                rec = ModelRegistryRecord(
+                    model_key=m_key,
+                    version=ver_name,
+                    arch=ver_info.get("arch", "efficientnet_b2"),
+                    checkpoint_path=ver_info.get("checkpoint"),
+                    labels_json=ver_info.get("labels", []) if isinstance(ver_info.get("labels"), list) else [],
+                    num_classes=ver_info.get("num_classes", 0),
+                    val_acc=float(ver_info.get("val_acc") or 0.0),
+                    test_acc=float(ver_info.get("test_acc") or 0.0),
+                    macro_f1=float(ver_info.get("macro_f1") or 0.0) if ver_info.get("macro_f1") is not None else None,
+                    temperature=float(ver_info.get("temperature", 1.0)),
+                    status="active" if ver_name == active_ver else "retired",
+                    promoted_at=datetime.now(timezone.utc),
+                    promoted_by="system_bootstrap",
+                    notes=ver_info.get("notes"),
+                )
+                session.add(rec)
+        session.commit()
+    except Exception as exc:
+        logger.warning("Could not bootstrap DB model registry from file: %s", exc)
+        session.rollback()
 
 
 def _load_config() -> dict[str, Any]:
@@ -67,13 +105,42 @@ def _resolve_model_path(relative_path: str | None) -> Path | None:
 
 
 @router.get("")
-async def list_models(is_admin: str = Depends(require_admin_role)) -> dict[str, Any]:
-    """List all registered model versions with their metrics and active status."""
-    registry = _load_registry()
+async def list_models(
+    is_admin: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """List all registered model versions from the durable database registry."""
+    _seed_db_from_file_if_empty(session)
+    records = session.query(ModelRegistryRecord).order_by(ModelRegistryRecord.promoted_at.desc()).all()
+    models_dict: dict[str, Any] = {}
+    for r in records:
+        entry = models_dict.setdefault(r.model_key, {"active_version": None, "versions": {}})
+        if r.status == "active":
+            entry["active_version"] = r.version
+        entry["versions"][r.version] = {
+            "arch": r.arch,
+            "checkpoint": r.checkpoint_path,
+            "hf_repo_id": r.hf_repo_id,
+            "hf_weight_path": r.hf_weight_path,
+            "labels": r.labels_json,
+            "num_classes": r.num_classes,
+            "val_acc": r.val_acc,
+            "test_acc": r.test_acc,
+            "macro_f1": r.macro_f1,
+            "per_class_metrics": r.per_class_metrics,
+            "temperature": r.temperature,
+            "status": r.status,
+            "dataset_hash": r.dataset_hash,
+            "git_commit": r.git_commit,
+            "random_seed": r.random_seed,
+            "promoted_at": r.promoted_at.isoformat() if r.promoted_at else None,
+            "promoted_by": r.promoted_by,
+            "notes": r.notes,
+        }
     return {
-        "schema_version": registry.get("schema_version", "1.0"),
-        "last_updated": registry.get("last_updated"),
-        "models": registry.get("models", {}),
+        "schema_version": "2.0",
+        "storage": "postgresql_database",
+        "models": models_dict,
     }
 
 
@@ -137,57 +204,167 @@ async def model_health(is_admin: str = Depends(require_admin_role)) -> dict[str,
 class PromoteRequest(BaseModel):
     model_key: str = Field(description="Registry key, e.g. 'tomato_disease' or 'crop_identifier'")
     version: str = Field(description="Version string, e.g. 'v2.0'")
-    checkpoint_path: str = Field(description="Path to .pth checkpoint, relative to backend root")
+    checkpoint_path: str | None = Field(default=None, description="Path to .pth checkpoint, relative to backend root")
+    hf_repo_id: str | None = Field(default=None, description="Hugging Face Model Hub repository, e.g. 'Maharsh8805/smart-farming-models'")
+    hf_weight_path: str | None = Field(default=None, description="Weight filename on HF Model Hub")
     labels_path: str | None = Field(default=None, description="Path to labels.json, relative to backend root")
     arch: str = Field(default="efficientnet_b2", description="Model architecture identifier")
     num_classes: int | None = Field(default=None)
+    metrics_json: dict[str, Any] | None = Field(default=None, description="Parsed metrics dictionary from training run")
+    metrics_path: str | None = Field(default=None, description="Path to metrics.json file on disk")
     val_acc: float | None = Field(default=None, ge=0.0, le=1.0)
     test_acc: float | None = Field(default=None, ge=0.0, le=1.0)
+    macro_f1: float | None = Field(default=None, ge=0.0, le=1.0)
+    temperature: float | None = Field(default=1.0, gt=0.0)
+    dataset_hash: str | None = None
+    git_commit: str | None = None
+    random_seed: int | None = None
     notes: str | None = Field(default=None, max_length=1000)
-    # Promotion gate: require minimum test accuracy before allowing promotion
-    min_test_acc: float | None = Field(default=None, ge=0.0, le=1.0,
-                                        description="Reject promotion if test_acc is below this threshold")
+    min_test_acc: float | None = Field(default=0.85, ge=0.0, le=1.0, description="Minimum test accuracy required")
+    min_macro_f1: float | None = Field(default=0.80, ge=0.0, le=1.0, description="Minimum macro-F1 score required")
+    min_class_recall: float | None = Field(default=0.70, ge=0.0, le=1.0, description="Minimum per-class recall required")
 
 
 @router.post("/promote")
 async def promote_model(
     payload: PromoteRequest,
     is_admin: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     """
-    Promote a model version to active.
+    Promote a model version to active in the durable PostgreSQL/Supabase registry.
 
-    Updates both model_registry.json and config.yaml atomically.
-    Enforces a minimum test accuracy gate if min_test_acc is set.
+    Validates promotion gates automatically:
+    1. Minimum test accuracy gate (min_test_acc, default 0.85)
+    2. Minimum macro-F1 score gate (min_macro_f1, default 0.80)
+    3. Minimum per-class recall gate (min_class_recall, default 0.70)
     """
-    # ── Promotion gate ─────────────────────────────────────────────────────────
-    if payload.min_test_acc is not None and payload.test_acc is not None:
-        if payload.test_acc < payload.min_test_acc:
+    # ── 1. Resolve and Parse Metrics ──────────────────────────────────────────
+    metrics: dict[str, Any] = dict(payload.metrics_json or {})
+    if payload.metrics_path:
+        mp = Path(payload.metrics_path)
+        if not mp.is_absolute():
+            mp = _CONFIG_PATH.parent.parent / payload.metrics_path
+        if mp.exists():
+            try:
+                loaded_m = json.loads(mp.read_text(encoding="utf-8"))
+                metrics.update(loaded_m)
+            except Exception as exc:
+                logger.warning("Could not read metrics_path %s: %s", mp, exc)
+
+    test_acc = payload.test_acc if payload.test_acc is not None else metrics.get("test_acc") or metrics.get("accuracy")
+    val_acc = payload.val_acc if payload.val_acc is not None else metrics.get("val_acc") or 0.0
+    macro_f1 = payload.macro_f1 if payload.macro_f1 is not None else metrics.get("macro_f1") or metrics.get("macro_avg", {}).get("f1-score")
+    per_class = (
+        metrics.get("per_class_metrics")
+        or metrics.get("classification_report")
+        or metrics.get("per_class_report")
+        or {}
+    )
+    if macro_f1 is None and isinstance(per_class, dict):
+        macro_f1 = (
+            per_class.get("macro avg", {}).get("f1-score")
+            or per_class.get("macro_avg", {}).get("f1-score")
+        )
+    temperature = payload.temperature if payload.temperature is not None else metrics.get("optimal_temperature") or metrics.get("temperature", 1.0)
+    dataset_hash = payload.dataset_hash or metrics.get("dataset_hash") or metrics.get("dataset_sha256")
+    git_commit = payload.git_commit or metrics.get("git_commit")
+    random_seed = payload.random_seed if payload.random_seed is not None else metrics.get("seed")
+
+    # ── 2. Rigorous Promotion Gates ───────────────────────────────────────────
+    if payload.min_test_acc is not None:
+        if test_acc is None or test_acc < payload.min_test_acc:
             raise HTTPException(
                 status_code=422,
                 detail=(
-                    f"Promotion rejected: test_acc={payload.test_acc:.4f} is below "
+                    f"Promotion rejected: test_acc={test_acc} is below "
                     f"the required minimum of {payload.min_test_acc:.4f}."
                 ),
             )
 
-    # ── Verify checkpoint exists ───────────────────────────────────────────────
-    ckpt_path = _resolve_model_path(payload.checkpoint_path)
-    if ckpt_path is None or not ckpt_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail=f"Checkpoint not found at: {payload.checkpoint_path}",
-        )
-
-    if payload.labels_path:
-        labels_path = _resolve_model_path(payload.labels_path)
-        if labels_path and not labels_path.exists():
+    if payload.min_macro_f1 is not None and macro_f1 is not None:
+        if macro_f1 < payload.min_macro_f1:
             raise HTTPException(
-                status_code=404,
-                detail=f"Labels file not found at: {payload.labels_path}",
+                status_code=422,
+                detail=(
+                    f"Promotion rejected: macro_f1={macro_f1:.4f} is below "
+                    f"the required minimum of {payload.min_macro_f1:.4f}."
+                ),
             )
 
-    # ── Update registry ────────────────────────────────────────────────────────
+    if payload.min_class_recall is not None and per_class:
+        weak_classes = []
+        for cls_name, cls_data in per_class.items():
+            if isinstance(cls_data, dict) and "recall" in cls_data:
+                rec = float(cls_data["recall"])
+                if rec < payload.min_class_recall:
+                    weak_classes.append(f"{cls_name} (recall={rec:.2f})")
+        if weak_classes:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Promotion rejected: Class recall below minimum {payload.min_class_recall:.2f} "
+                    f"for: {', '.join(weak_classes)}."
+                ),
+            )
+
+    # ── 3. Verify Checkpoint (Local or HF Hub) ────────────────────────────────
+    if payload.checkpoint_path:
+        ckpt_path = _resolve_model_path(payload.checkpoint_path)
+        if (ckpt_path is None or not ckpt_path.exists()) and not settings.MODEL_SERVER_URL and not payload.hf_repo_id:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Checkpoint not found at: {payload.checkpoint_path}",
+            )
+
+    labels = []
+    if payload.labels_path:
+        labels_path = _resolve_model_path(payload.labels_path)
+        if labels_path and labels_path.exists():
+            try:
+                labels = json.loads(labels_path.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+    num_classes = payload.num_classes or len(labels) or metrics.get("num_classes", 0)
+
+    # ── 4. Durable DB Registry Update (Supabase / PostgreSQL) ───────────────────
+    _seed_db_from_file_if_empty(session)
+    # Retire any existing active versions of this model in the database
+    existing_actives = (
+        session.query(ModelRegistryRecord)
+        .filter(ModelRegistryRecord.model_key == payload.model_key, ModelRegistryRecord.status == "active")
+        .all()
+    )
+    for act in existing_actives:
+        act.status = "retired"
+
+    new_db_record = ModelRegistryRecord(
+        model_key=payload.model_key,
+        version=payload.version,
+        arch=payload.arch,
+        hf_repo_id=payload.hf_repo_id,
+        hf_weight_path=payload.hf_weight_path,
+        checkpoint_path=payload.checkpoint_path,
+        labels_json=labels,
+        num_classes=num_classes,
+        val_acc=float(val_acc or 0.0),
+        test_acc=float(test_acc or 0.0),
+        macro_f1=float(macro_f1) if macro_f1 is not None else None,
+        per_class_metrics=per_class if per_class else None,
+        temperature=float(temperature or 1.0),
+        status="active",
+        dataset_hash=str(dataset_hash) if dataset_hash else None,
+        git_commit=str(git_commit) if git_commit else None,
+        random_seed=int(random_seed) if random_seed is not None else None,
+        notes=payload.notes,
+        promoted_at=datetime.now(timezone.utc),
+        promoted_by=is_admin,
+    )
+    session.add(new_db_record)
+    session.commit()
+    logger.info("Persisted active model '%s' version '%s' to database registry", payload.model_key, payload.version)
+
+    # ── 5. Backward Compatibility: Sync Local File & config.yaml ─────────────
     registry = _load_registry()
     models = registry.setdefault("models", {})
     model_entry = models.setdefault(payload.model_key, {"versions": {}})
@@ -195,69 +372,68 @@ async def promote_model(
     model_entry["versions"][payload.version] = {
         "arch": payload.arch,
         "checkpoint": payload.checkpoint_path,
+        "hf_repo_id": payload.hf_repo_id,
+        "hf_weight_path": payload.hf_weight_path,
         "labels": payload.labels_path,
-        "num_classes": payload.num_classes,
-        "val_acc": payload.val_acc,
-        "test_acc": payload.test_acc,
+        "num_classes": num_classes,
+        "val_acc": val_acc,
+        "test_acc": test_acc,
+        "macro_f1": macro_f1,
+        "temperature": temperature,
         "promoted_at": datetime.now(timezone.utc).isoformat(),
         "promoted_by": is_admin,
         "notes": payload.notes,
         "status": "active",
     }
-    # Mark all previous versions as retired
     for ver, ver_info in model_entry["versions"].items():
         if ver != payload.version:
             ver_info["status"] = "retired"
-
     _save_registry(registry)
-    logger.info("Model '%s' promoted to version '%s' by admin '%s'",
-                payload.model_key, payload.version, is_admin)
 
-    # ── Update config.yaml if applicable ──────────────────────────────────────
+    # Update config.yaml if checkpoint is local
     config = _load_config()
     updated_config = False
-
-    if payload.model_key == "crop_identifier":
-        config.setdefault("models", {})["crop_identifier"] = {
-            "path": payload.checkpoint_path,
-            "labels": payload.labels_path or config.get("models", {}).get("crop_identifier", {}).get("labels"),
-            "arch": payload.arch,
-        }
-        updated_config = True
-
-    elif payload.model_key.endswith("_disease"):
-        # e.g. "tomato_disease" → crop key "Tomato"
-        crop_name_raw = payload.model_key.replace("_disease", "")
-        # Normalize: first letter upper, rest lower, handle Pepper_Bell style
-        crop_key = "_".join(part.capitalize() for part in crop_name_raw.split("_"))
-        disease_models = config.setdefault("models", {}).setdefault("disease_models", {})
-        existing = disease_models.get(crop_key, {})
-        disease_models[crop_key] = {
-            **existing,
-            "path": payload.checkpoint_path,
-            "labels": payload.labels_path or existing.get("labels"),
-            "arch": payload.arch,
-        }
-        updated_config = True
+    if payload.checkpoint_path:
+        if payload.model_key == "crop_identifier":
+            config.setdefault("models", {})["crop_identifier"] = {
+                "path": payload.checkpoint_path,
+                "labels": payload.labels_path or config.get("models", {}).get("crop_identifier", {}).get("labels"),
+                "arch": payload.arch,
+                "temperature": temperature,
+            }
+            updated_config = True
+        elif payload.model_key.endswith("_disease"):
+            crop_name_raw = payload.model_key.replace("_disease", "")
+            crop_key = "_".join(part.capitalize() for part in crop_name_raw.split("_"))
+            disease_models = config.setdefault("models", {}).setdefault("disease_models", {})
+            existing = disease_models.get(crop_key, {})
+            disease_models[crop_key] = {
+                **existing,
+                "path": payload.checkpoint_path,
+                "labels": payload.labels_path or existing.get("labels"),
+                "arch": payload.arch,
+                "temperature": temperature,
+            }
+            updated_config = True
 
     if updated_config:
         _save_config(config)
-        # Trigger a pipeline config reload so the new model takes effect without restart
         try:
             from app import pipeline as _pipeline
             _pipeline.reload_config()
-            logger.info("Pipeline config reloaded after model promotion")
-        except Exception as exc:
-            logger.warning("Could not reload pipeline config: %s", exc)
+        except Exception:
+            pass
 
     return {
         "status": "promoted",
         "model_key": payload.model_key,
         "version": payload.version,
-        "config_updated": updated_config,
-        "checkpoint": payload.checkpoint_path,
-        "test_acc": payload.test_acc,
-        "promoted_at": registry["models"][payload.model_key]["versions"][payload.version]["promoted_at"],
+        "active_version": payload.version,
+        "storage": "postgresql_database",
+        "test_acc": test_acc,
+        "macro_f1": macro_f1,
+        "temperature": temperature,
+        "promoted_at": new_db_record.promoted_at.isoformat(),
     }
 
 
@@ -268,61 +444,51 @@ class RollbackRequest(BaseModel):
 
 @router.post("/rollback")
 async def rollback_model(
-    payload: RollbackRequest, is_admin: str = Depends(require_admin_role)
+    payload: RollbackRequest,
+    is_admin: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    """Roll back active model to the specified or immediately preceding retired version."""
-    registry = _load_registry()
-    model_entry = registry.get("models", {}).get(payload.model_key)
-    if not model_entry:
+    """Roll back active model to target version in durable database registry."""
+    _seed_db_from_file_if_empty(session)
+    active_rec = (
+        session.query(ModelRegistryRecord)
+        .filter(ModelRegistryRecord.model_key == payload.model_key, ModelRegistryRecord.status == "active")
+        .first()
+    )
+
+    records = (
+        session.query(ModelRegistryRecord)
+        .filter(ModelRegistryRecord.model_key == payload.model_key)
+        .order_by(ModelRegistryRecord.promoted_at.desc())
+        .all()
+    )
+    if not records:
         raise HTTPException(status_code=404, detail=f"Model '{payload.model_key}' not in registry.")
 
-    current_active = model_entry.get("active_version")
-    versions = model_entry.get("versions", {})
-
+    current_active = active_rec.version if active_rec else None
     target_ver = payload.target_version
     if not target_ver:
-        # Find the most recently retired version
-        retired_vers = [v for v, info in versions.items() if v != current_active]
-        if not retired_vers:
+        retired = [r for r in records if r.version != current_active]
+        if not retired:
             raise HTTPException(status_code=400, detail="No previous versions available for rollback.")
-        target_ver = sorted(retired_vers, reverse=True)[0]
+        target_ver = retired[0].version
 
-    if target_ver not in versions:
+    target_rec = next((r for r in records if r.version == target_ver), None)
+    if not target_rec:
         raise HTTPException(status_code=404, detail=f"Target version '{target_ver}' not found in registry.")
 
-    target_info = versions[target_ver]
-    target_checkpoint = _resolve_model_path(target_info.get("checkpoint"))
-    if not target_checkpoint.exists():
-        raise HTTPException(status_code=400, detail=f"Target checkpoint missing on disk: {target_checkpoint}")
+    # Update DB statuses
+    for r in records:
+        r.status = "active" if r.version == target_ver else "retired"
+    session.commit()
 
-    # Switch active version in registry
-    model_entry["active_version"] = target_ver
-    for v, info in versions.items():
+    # Sync local file
+    registry = _load_registry()
+    entry = registry.get("models", {}).get(payload.model_key, {})
+    entry["active_version"] = target_ver
+    for v, info in entry.get("versions", {}).items():
         info["status"] = "active" if v == target_ver else "retired"
-
     _save_registry(registry)
-
-    # Update config.yaml
-    config = _load_config()
-    updated_config = False
-    if payload.model_key == "crop_identifier":
-        config.setdefault("models", {})["crop_identifier"]["path"] = target_info.get("checkpoint")
-        updated_config = True
-    elif payload.model_key.endswith("_disease"):
-        crop_raw = payload.model_key.replace("_disease", "")
-        crop_key = "_".join(part.capitalize() for part in crop_raw.split("_"))
-        disease_models = config.setdefault("models", {}).setdefault("disease_models", {})
-        if crop_key in disease_models:
-            disease_models[crop_key]["path"] = target_info.get("checkpoint")
-            updated_config = True
-
-    if updated_config:
-        _save_config(config)
-        try:
-            from app import pipeline
-            pipeline.reload_config()
-        except Exception:
-            pass
 
     logger.info("Model '%s' rolled back from '%s' to '%s'", payload.model_key, current_active, target_ver)
     return {
@@ -330,6 +496,7 @@ async def rollback_model(
         "model_key": payload.model_key,
         "previous_version": current_active,
         "active_version": target_ver,
+        "storage": "postgresql_database",
     }
 
 
