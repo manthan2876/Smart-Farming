@@ -20,9 +20,14 @@ from app.core import get_session
 from app.models import User, Prediction, ExpertReview
 import app.pipeline as pipeline_mod
 from app.services.recommendation.service import generate_recommendation
-from ai_service.vision_engine.stages.decision_router import route_to_disease_model
-from ai_service.vision_engine.stages.severity import estimate_severity, _severity_bucket
-from ai_service.vision_engine.stages.pest_detector import predict_pest
+
+try:
+    import torch
+    from ai_service.vision_engine.stages.decision_router import route_to_disease_model
+    from ai_service.vision_engine.stages.severity import estimate_severity, _severity_bucket
+    from ai_service.vision_engine.stages.pest_detector import predict_pest
+except (ImportError, OSError, ValueError) as _torch_err:
+    pytest.skip(f"ai_service dependencies unavailable: {_torch_err}", allow_module_level=True)
 
 
 # ── Fixtures & Helpers ─────────────────────────────────────────────────────────

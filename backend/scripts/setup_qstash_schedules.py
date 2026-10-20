@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 import httpx
@@ -66,6 +65,7 @@ def delete_schedule(schedule_id: str) -> bool:
 def create_or_update_schedule(
     destination_url: str,
     cron_expression: str,
+    schedule_id: str | None = None,
     retries: int = 3,
     failure_callback: str | None = None,
 ) -> bool:
@@ -76,9 +76,14 @@ def create_or_update_schedule(
         "Upstash-Retries": str(retries),
         "Content-Type": "application/json",
     })
+    if schedule_id:
+        headers["Upstash-Schedule-Id"] = schedule_id
     if failure_callback:
         headers["Upstash-Failure-Callback"] = failure_callback
+
     print(f"\n[INFO] Registering Schedule:")
+    if schedule_id:
+        print(f"       Schedule ID : {schedule_id}")
     print(f"       Destination : {destination_url}")
     print(f"       Expression  : {cron_expression}")
     if failure_callback:
@@ -88,11 +93,11 @@ def create_or_update_schedule(
         resp = httpx.post(endpoint, headers=headers, timeout=10.0)
         if resp.status_code in (200, 201):
             data = resp.json() if resp.text else {}
-            schedule_id = data.get("scheduleId") or data.get("id") or "OK"
-            print(f"[SUCCESS] Schedule created successfully! (ID: {schedule_id})")
+            assigned_id = data.get("scheduleId") or data.get("id") or schedule_id or "OK"
+            print(f"[SUCCESS] Schedule created/updated successfully! (ID: {assigned_id})")
             return True
         else:
-            print(f"[ERROR] Failed to create schedule: HTTP {resp.status_code} - {resp.text}")
+            print(f"[ERROR] Failed to register schedule: HTTP {resp.status_code} - {resp.text}")
             return False
     except Exception as exc:
         print(f"[ERROR] Connection error: {exc}")
@@ -106,7 +111,8 @@ def main():
     parser.add_argument(
         "--base-url",
         type=str,
-        help="Base URL of your deployed FastAPI server (e.g. https://smart-farming-api.a.run.app)",
+        default=os.getenv("BACKEND_URL", "https://smart-farming-backend-kkty.onrender.com"),
+        help="Base URL of your deployed FastAPI server (defaults to Render deployment)",
     )
     parser.add_argument(
         "--failure-callback",
@@ -140,25 +146,28 @@ def main():
         delete_schedule(args.delete)
         return
 
-    if not args.base_url:
-        print("\n[NOTE] No --base-url provided. Showing current active schedules:")
-        list_schedules()
-        print("\nTo register schedules for your deployment, run:")
-        print("  python backend/scripts/setup_qstash_schedules.py --base-url https://your-cloud-run-domain.run.app")
-        return
-
     base = args.base_url.rstrip("/")
     dlq_url = args.failure_callback or f"{base}/api/v1/internal/cron/failure-callback"
 
     # Schedule 1: Weather Risks (06:00, 12:00, 18:00 UTC)
     weather_url = f"{base}/api/v1/internal/cron/weather-risks"
     weather_cron = "0 6,12,18 * * *"
-    create_or_update_schedule(weather_url, weather_cron, failure_callback=dlq_url)
+    create_or_update_schedule(
+        destination_url=weather_url,
+        cron_expression=weather_cron,
+        schedule_id="sf-weather-risks",
+        failure_callback=dlq_url,
+    )
 
     # Schedule 2: Orphaned Blob Purge (Sundays at 03:00 UTC)
     blob_url = f"{base}/api/v1/internal/cron/purge-blobs"
     blob_cron = "0 3 * * 0"
-    create_or_update_schedule(blob_url, blob_cron, failure_callback=dlq_url)
+    create_or_update_schedule(
+        destination_url=blob_url,
+        cron_expression=blob_cron,
+        schedule_id="sf-purge-blobs",
+        failure_callback=dlq_url,
+    )
 
     print("\n" + "=" * 65)
     print("  QSTASH SCHEDULE SYNC COMPLETE!")

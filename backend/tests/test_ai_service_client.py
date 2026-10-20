@@ -16,7 +16,7 @@ from app.services.translation.service import (
 from app.services.recommendation.service import call_remote_advisory_server
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_model_client_sends_ai_service_auth():
     mock_resp = MagicMock()
     mock_resp.status_code = 200
@@ -36,7 +36,7 @@ async def test_model_client_sends_ai_service_auth():
                 assert call_kwargs["headers"].get("Authorization") == "Bearer test-secret-key-123"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_translation_async_sends_ai_service_auth():
     mock_resp = MagicMock()
     mock_resp.status_code = 200
@@ -105,7 +105,7 @@ def test_clients_without_auth_key_do_not_send_auth_header():
                 assert "Authorization" not in call_kwargs["headers"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_tts_client_sends_ai_service_auth(tmp_path):
     from app.api.endpoints.tts import generate_tts, TTSRequest
 

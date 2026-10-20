@@ -84,6 +84,7 @@ async def verify_qstash_signature(
             break
         except jwt.ExpiredSignatureError:
             last_error = "Signature has expired"
+            break
         except jwt.InvalidSignatureError:
             last_error = "Invalid signature for key"
         except Exception as exc:

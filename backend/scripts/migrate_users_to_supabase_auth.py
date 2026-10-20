@@ -5,82 +5,76 @@ users (admin, expert, farmer) exist in Supabase Auth with matching UUIDs.
 
 Usage:
     python backend/scripts/migrate_users_to_supabase_auth.py --env dev
-    python backend/scripts/migrate_users_to_supabase_auth.py --env prod
-    python backend/scripts/migrate_users_to_supabase_auth.py --env both
+    python backend/scripts/migrate_users_to_supabase_auth.py --env prod --yes
 """
 
 from __future__ import annotations
 
 import argparse
-import glob
-import os
+import secrets
 import sys
 from pathlib import Path
 
-# Ensure backend root is in sys.path
-backend_dir = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(backend_dir))
-sys.path.insert(0, str(backend_dir / "src"))
+# Setup paths via _common
+scripts_dir = Path(__file__).resolve().parent
+sys.path.insert(0, str(scripts_dir))
 
-for _d in glob.glob("/home/manthan/.cache/uv/archive-v0/*"):
-    try:
-        _items = set(os.listdir(_d))
-        if "tests" not in _items and "numpy" not in _items and "cv2" not in _items:
-            sys.path.append(_d)
-    except OSError:
-        pass
-
-from dotenv import load_dotenv
-
-load_dotenv(backend_dir / ".env")
-
+from _common import confirm_prod_action, get_supabase_env_config
 import httpx
 from sqlalchemy import text
 from app.core.session import create_app_engine
 
-DEFAULT_MIGRATION_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", "TemporaryPass123!")
 
-ENV_CONFIGS = {
-    "dev": {
-        "label": "Development (smart-farming-dev)",
-        "db_url": os.getenv("DATABASE_URL", ""),
-        "supabase_url": os.getenv("DEV_SUPABASE_URL", "https://zgsbxzwyumvxazbroiws.supabase.co"),
-        "service_role_key": os.getenv("DEV_SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
-    },
-    "prod": {
-        "label": "Production (smart-farming)",
-        "db_url": os.getenv("PROD_DATABASE_URL", ""),
-        "supabase_url": os.getenv("PROD_SUPABASE_URL", "https://ntqevjzjhntkilmknrfh.supabase.co"),
-        "service_role_key": os.getenv("PROD_SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
-    },
-}
+def fetch_all_supabase_auth_users(supabase_url: str, service_key: str) -> tuple[dict[str, str], dict[str, str]]:
+    """Paginate through all auth.users in Supabase to build email and ID lookup maps."""
+    headers = {
+        "apikey": service_key,
+        "Authorization": f"Bearer {service_key}",
+        "Content-Type": "application/json",
+    }
+    existing_emails: dict[str, str] = {}
+    existing_ids: dict[str, str] = {}
+    page = 1
+    per_page = 100
 
+    with httpx.Client(timeout=20.0) as client:
+        while True:
+            resp = client.get(
+                f"{supabase_url}/auth/v1/admin/users?page={page}&per_page={per_page}",
+                headers=headers,
+            )
+            if resp.status_code != 200:
+                print(f"[WARN] Could not list auth users page {page} ({resp.status_code}): {resp.text}")
+                break
 
-def sanitize_db_url(url: str) -> str:
-    if not url:
-        return ""
-    clean = url.strip().strip("'").strip('"')
-    if clean.startswith("postgres://"):
-        clean = "postgresql://" + clean[len("postgres://"):]
-    return clean
+            data = resp.json()
+            users = data.get("users", [])
+            for u in users:
+                email = u.get("email")
+                uid = u.get("id")
+                if email and uid:
+                    existing_emails[email] = uid
+                    existing_ids[uid] = email
+
+            if len(users) < per_page:
+                break
+            page += 1
+
+    return existing_emails, existing_ids
 
 
 def sync_users_for_env(env_name: str) -> bool:
-    cfg = ENV_CONFIGS.get(env_name)
-    if not cfg:
-        print(f"[ERROR] Unknown environment: {env_name}")
-        return False
+    cfg = get_supabase_env_config(env_name)
+    db_url = cfg["db_url"]
+    supabase_url = cfg["supabase_url"]
+    service_key = cfg["service_role_key"]
 
     print("\n" + "=" * 65)
     print(f"  SYNCING USERS TO SUPABASE AUTH: {cfg['label']}")
     print("=" * 65)
 
-    db_url = sanitize_db_url(cfg["db_url"])
-    supabase_url = cfg["supabase_url"].rstrip("/")
-    service_key = cfg["service_role_key"]
-
-    if not db_url or not service_key:
-        print(f"[ERROR] Missing database URL or service role key for {env_name}.")
+    if not db_url or not service_key or not supabase_url:
+        print(f"[ERROR] Missing database URL, Supabase URL, or service role key for {env_name}.")
         return False
 
     # 1. Fetch users from public.users
@@ -96,37 +90,23 @@ def sync_users_for_env(env_name: str) -> bool:
 
     print(f"[INFO] Found {len(users)} user(s) in public.users.")
 
-    # 2. Fetch existing auth.users via Supabase Admin API
+    # 2. Paginate all existing auth.users
+    print(f"[INFO] Discovering existing users in Supabase Auth...")
+    existing_auth_emails, existing_auth_ids = fetch_all_supabase_auth_users(supabase_url, service_key)
+    print(f"[INFO] Discovered {len(existing_auth_ids)} existing user(s) in Supabase Auth.")
+
+    # 3. Synchronize users
     headers = {
         "apikey": service_key,
         "Authorization": f"Bearer {service_key}",
         "Content-Type": "application/json",
     }
 
-    existing_auth_emails = {}
-    existing_auth_ids = {}
-
-    try:
-        with httpx.Client(timeout=15.0) as client:
-            list_resp = client.get(f"{supabase_url}/auth/v1/admin/users?per_page=100", headers=headers)
-            if list_resp.status_code == 200:
-                data = list_resp.json()
-                auth_user_list = data.get("users", [])
-                for u in auth_user_list:
-                    existing_auth_emails[u.get("email")] = u.get("id")
-                    existing_auth_ids[u.get("id")] = u.get("email")
-                print(f"[INFO] Found {len(auth_user_list)} existing user(s) in Supabase Auth.")
-            else:
-                print(f"[WARN] Could not list existing auth users ({list_resp.status_code}): {list_resp.text}")
-    except Exception as exc:
-        print(f"[WARN] Error connecting to Supabase Auth API: {exc}")
-
-    # 3. Migrate each user
     created_count = 0
     updated_count = 0
     skipped_count = 0
 
-    with httpx.Client(timeout=15.0) as client:
+    with httpx.Client(timeout=20.0) as client:
         for u in users:
             uid = str(u["id"])
             email = u["email"]
@@ -143,7 +123,7 @@ def sync_users_for_env(env_name: str) -> bool:
             }
 
             if uid in existing_auth_ids:
-                print(f"   [EXISTS] User {email} ({uid}) already in Supabase Auth. Updating metadata...")
+                print(f"   [EXISTS] User {email} ({uid}) exists. Updating metadata...")
                 update_resp = client.put(
                     f"{supabase_url}/auth/v1/admin/users/{uid}",
                     headers=headers,
@@ -154,8 +134,8 @@ def sync_users_for_env(env_name: str) -> bool:
                 else:
                     print(f"   [WARN] Update failed for {email}: {update_resp.text}")
             elif email in existing_auth_emails:
-                print(f"   [NOTICE] User with email {email} exists with different ID ({existing_auth_emails[email]}). Updating metadata...")
                 existing_id = existing_auth_emails[email]
+                print(f"   [NOTICE] User {email} exists with ID {existing_id}. Updating metadata...")
                 update_resp = client.put(
                     f"{supabase_url}/auth/v1/admin/users/{existing_id}",
                     headers=headers,
@@ -164,11 +144,13 @@ def sync_users_for_env(env_name: str) -> bool:
                 if update_resp.status_code == 200:
                     updated_count += 1
             else:
+                # Generate unique, cryptographically strong random password for security
+                random_pass = f"Sf_{secrets.token_urlsafe(16)}!9"
                 print(f"   [CREATE] Creating Supabase Auth user: {email} (ID: {uid})...")
                 payload = {
                     "id": uid,
                     "email": email,
-                    "password": DEFAULT_MIGRATION_PASSWORD,
+                    "password": random_pass,
                     "email_confirm": True,
                     "user_metadata": metadata,
                 }
@@ -192,8 +174,21 @@ def sync_users_for_env(env_name: str) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Sync public.users to Supabase Auth")
-    parser.add_argument("--env", choices=["dev", "prod", "both"], default="both", help="Target environment")
+    parser.add_argument(
+        "--env",
+        choices=["dev", "prod", "both"],
+        default="dev",
+        help="Target environment (defaults to dev)",
+    )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Bypass production confirmation prompt",
+    )
     args = parser.parse_args()
+
+    if args.env in ("prod", "both"):
+        confirm_prod_action("Sync users to Production Supabase Auth", args.yes)
 
     if args.env in ("dev", "both"):
         sync_users_for_env("dev")

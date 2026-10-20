@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy import inspect
 
 revision = "0001_feedback_review"
-down_revision = None
+down_revision = "0000_baseline"
 branch_labels = None
 depends_on = None
 
@@ -47,6 +47,7 @@ def downgrade() -> None:
         op.drop_index("ix_feedback_review_status", table_name="feedback")
 
     existing = {column["name"] for column in inspector.get_columns("feedback")}
-    for column in ("reviewed_at", "reviewer_note", "reviewer_id", "review_decision", "review_status"):
-        if column in existing:
-            op.drop_column("feedback", column)
+    with op.batch_alter_table("feedback") as batch_op:
+        for column in ("reviewed_at", "reviewer_note", "reviewer_id", "review_decision", "review_status"):
+            if column in existing:
+                batch_op.drop_column(column)

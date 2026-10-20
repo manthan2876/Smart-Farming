@@ -1,17 +1,21 @@
 name: Deploy AI Service to Hugging Face Space
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'ai_service/**'
-      - '.github/workflows/deploy_ai_service.yml'
+  workflow_run:
+    workflows: ["Continuous Integration & Verification"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   deploy-to-huggingface:
+    name: Deploy to Hugging Face Space Mirror
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,11 +38,17 @@ jobs:
           git clone --depth 1 https://Maharsh8805:${HF_TOKEN}@huggingface.co/spaces/Maharsh8805/smart-farming-ai hf_mirror
 
           echo "Synchronizing ai_service source files..."
-          for f in app.py requirements.txt README.md config.yaml advisory_kb.json packages.txt; do
+          for f in app.py requirements.txt README.md advisory_kb.json packages.txt; do
             if [ -f "ai_service/$f" ]; then
               cp "ai_service/$f" "hf_mirror/$f"
             fi
           done
+
+          # Only copy config.yaml if it does not already exist on Space, preserving active model promotions
+          if [ ! -f "hf_mirror/config.yaml" ] && [ -f "ai_service/config.yaml" ]; then
+            echo "Initializing config.yaml on Hugging Face Space..."
+            cp "ai_service/config.yaml" "hf_mirror/config.yaml"
+          fi
 
           # Purge unused Dockerfile, obsolete main.py, and any compiled bytecode from Space mirror
           rm -f hf_mirror/Dockerfile hf_mirror/main.py
@@ -75,5 +85,12 @@ jobs:
           git add .
           git commit -m "deploy(ai_service): sync from commit ${{ github.sha }}"
           git push origin main
-          echo "Successfully deployed ai_service to Hugging Face Space!"
+          echo "Successfully pushed ai_service commit to Hugging Face Space!"
 
+      - name: Polling Post-Deployment Health Check
+        run: |
+          echo "Polling Hugging Face Space health endpoint..."
+          sleep 10
+          curl --fail --retry 6 --retry-delay 10 --max-time 30 https://Maharsh8805-smart-farming-ai.hf.space/health || {
+            echo "::warning::Space health check returned non-200 or timed out. Space container may still be building."
+          }

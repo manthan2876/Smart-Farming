@@ -52,7 +52,7 @@ def test_normalize_language_code():
     assert normalize_language_code(None) == "en"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_translate_batch_indictrans_success():
     texts = [
         "Your crop shows signs of leaf blight. Apply copper fungicide.",
@@ -102,14 +102,14 @@ def test_translate_batch_indictrans_sync_success():
             assert mock_post.called
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_translate_batch_indictrans_unconfigured():
     with patch.object(settings, "TRANSLATION_SERVER_URL", ""):
         with pytest.raises(RuntimeError, match="TRANSLATION_SERVER_URL is not configured"):
             await translate_batch_indictrans(["Hello"], "hi")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_translate_batch_fallback_when_server_fails():
     texts = ["Test recommendation text."]
 
@@ -124,7 +124,7 @@ async def test_translate_batch_fallback_when_server_fails():
                 assert result == ["Test recommendation text."]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_translate_recommendation():
     rec = {
         "immediate_action": "Isolate affected plants.",

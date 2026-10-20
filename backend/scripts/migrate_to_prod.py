@@ -50,16 +50,6 @@ backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(backend_dir / "src"))
 
-# Optional local cache fallbacks for standalone execution
-import glob
-for _d in glob.glob("/home/manthan/.cache/uv/archive-v0/*"):
-    try:
-        _items = set(os.listdir(_d))
-        if "tests" not in _items and "numpy" not in _items and "cv2" not in _items:
-            sys.path.append(_d)
-    except OSError:
-        pass
-
 from dotenv import load_dotenv
 
 load_dotenv(backend_dir / ".env")

@@ -6,21 +6,74 @@ on:
       - main
     paths:
       - 'backend/**'
+      - 'ai_service/**'
       - 'frontend/**'
       - 'mobile/**'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  database-migration-test:
+    name: Alembic PostgreSQL Migration & Reversibility Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_smart_farming
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Test Migration Cycle (Upgrade -> Downgrade -> Upgrade)
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_smart_farming
+          PYTHONPATH: backend/src:ai_service
+        run: |
+          cd backend
+          echo "Step 1: Upgrade to head..."
+          alembic upgrade head
+          echo "Step 2: Downgrade to base..."
+          alembic downgrade base
+          echo "Step 3: Re-upgrade to head..."
+          alembic upgrade head
+          echo "Alembic migrations verified successfully!"
+
   backend-tests:
     name: Backend Tests & Rigor
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,6 +95,8 @@ jobs:
           ENVIRONMENT: test
           SECRET_KEY: test-secret-key-32-bytes-long-for-testing-only
           JWT_SECRET_KEY: test-secret-key-32-bytes-long-for-testing-only
+          CRON_SECRET: test-cron-secret-32-chars-long
+          REQUIRE_REDIS: 'false'
         run: |
           pytest \
             backend/tests/test_storage.py \
@@ -55,11 +110,15 @@ jobs:
             backend/tests/test_mlops_export.py \
             backend/tests/test_model_registry_db.py \
             backend/tests/test_golden_benchmark.py \
+            backend/tests/test_internal_cron.py \
+            backend/tests/test_ai_service_client.py \
+            backend/tests/test_agronomic_advisory.py \
             -v
 
   frontend-check:
     name: Frontend Typecheck & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -83,6 +142,7 @@ jobs:
   mobile-analyze:
     name: Mobile Flutter Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: mobile
@@ -104,5 +164,3 @@ jobs:
 
       - name: Run Flutter unit & widget tests
         run: flutter test
-
-

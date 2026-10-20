@@ -11,13 +11,15 @@ on:
         required: false
         default: 'https://smart-farming-backend-kkty.onrender.com'
 
+permissions:
+  issues: write
+  contents: read
+
 jobs:
   check-retrain-thresholds:
     name: Check Drift & Retrain Triggers
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      contents: read
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,79 +29,138 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Pre-flight Render Server Warm-up
+        env:
+          BACKEND_URL: ${{ github.event.inputs.backend_url || vars.BACKEND_URL || 'https://smart-farming-backend-kkty.onrender.com' }}
+        run: |
+          BACKEND="${BACKEND_URL%/}"
+          echo "Pinging $BACKEND/health to warm up instance..."
+          curl --fail --retry 4 --retry-delay 15 --max-time 90 "$BACKEND/health" || {
+            echo "::warning::Warm-up ping timed out. Proceeding to metrics attempt."
+          }
+
       - name: Query Metrics & Evaluate Triggers
         id: evaluate_metrics
         env:
           BACKEND_URL: ${{ github.event.inputs.backend_url || vars.BACKEND_URL || 'https://smart-farming-backend-kkty.onrender.com' }}
           ADMIN_JWT: ${{ secrets.ADMIN_JWT }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY || secrets.METRICS_API_KEY }}
         run: |
           python - << 'EOF'
           import os
           import json
-          import urllib.request
           import sys
+          import urllib.request
+          import urllib.error
 
           backend_url = os.environ.get("BACKEND_URL", "https://smart-farming-backend-kkty.onrender.com").rstrip("/")
           admin_jwt = os.environ.get("ADMIN_JWT", "")
+          admin_api_key = os.environ.get("ADMIN_API_KEY", "")
 
           headers = {"Accept": "application/json"}
           if admin_jwt:
               headers["Authorization"] = f"Bearer {admin_jwt}"
+          elif admin_api_key:
+              headers["X-API-Key"] = admin_api_key
 
           metrics_endpoint = f"{backend_url}/api/v1/admin/metrics"
-          print(f"Querying {metrics_endpoint}...")
+          print(f"Querying production metrics from {metrics_endpoint}...")
+
+          try:
+              req = urllib.request.Request(metrics_endpoint, headers=headers)
+              with urllib.request.urlopen(req, timeout=90) as resp:
+                  if resp.status != 200:
+                      print(f"Error: Metrics endpoint returned HTTP {resp.status}", file=sys.stderr)
+                      sys.exit(1)
+                  data = json.loads(resp.read().decode())
+          except urllib.error.HTTPError as http_err:
+              print(f"Error: Metrics request failed with HTTP {http_err.code}: {http_err.read().decode()}", file=sys.stderr)
+              sys.exit(1)
+          except Exception as exc:
+              print(f"Error: Network or timeout failure connecting to {metrics_endpoint}: {exc}", file=sys.stderr)
+              sys.exit(1)
+
+          drift = data.get("drift", {})
+          total_predictions_7d = drift.get("total_predictions_7d") or data.get("total_predictions_7d", 0)
+
+          # Require minimum statistical sample size to prevent noise-induced alerts
+          MIN_SAMPLES = 50
+          if total_predictions_7d < MIN_SAMPLES:
+              print(f"Sample size ({total_predictions_7d} scans) is below minimum threshold ({MIN_SAMPLES}). Skipping drift alerts.")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("tripped=false\n")
+              sys.exit(0)
+
+          low_conf_pct = drift.get("low_confidence_rate_7d")
+          if low_conf_pct is not None:
+              low_conf_rate = low_conf_pct / 100.0
+          else:
+              low_conf_rate = data.get("low_confidence_rate", 0.0)
+
+          correction_rate = drift.get("expert_correction_rate") or data.get("expert_correction_rate", 0.0)
+          if correction_rate > 1.0:
+              correction_rate = correction_rate / 100.0
+
+          unreviewed_count = (
+              drift.get("retraining_candidates_pending")
+              or data.get("unreviewed_feedback_count")
+              or data.get("expert_metrics", {}).get("pending", 0)
+          )
+
+          print(f"Metrics: samples={total_predictions_7d}, low_conf={low_conf_rate:.2%}, correction={correction_rate:.2%}, unreviewed={unreviewed_count}")
 
           tripped = False
           reasons = []
 
-          try:
-              req = urllib.request.Request(metrics_endpoint, headers=headers)
-              with urllib.request.urlopen(req, timeout=30) as resp:
-                  data = json.loads(resp.read().decode())
-          except Exception as exc:
-              print(f"Warning: Could not fetch production metrics: {exc}")
-              data = {}
-
-          low_conf_rate = data.get("low_confidence_rate", 0.0)
-          correction_rate = data.get("expert_correction_rate", 0.0)
-          unreviewed_count = data.get("unreviewed_feedback_count", 0)
-
-          print(f"Current Metrics: low_conf_rate={low_conf_rate:.2%}, correction_rate={correction_rate:.2%}")
-
           if low_conf_rate > 0.25:
               tripped = True
-              reasons.append(f"- **Low Confidence Rate:** {low_conf_rate:.2%} (Threshold: > 25%)")
+              reasons.append(f"- **Low Confidence Rate (7d):** {low_conf_rate:.2%} (Threshold: > 25%)")
 
           if correction_rate > 0.20:
               tripped = True
               reasons.append(f"- **Expert Correction Rate:** {correction_rate:.2%} (Threshold: > 20%)")
 
+          if unreviewed_count >= 25:
+              reasons.append(f"- **Pending Retraining Candidates:** {unreviewed_count} unreviewed candidates require expert audit.")
+
+          if tripped:
+              issue_body = (
+                  "### Automated Retraining Trigger Alert\n\n"
+                  "The weekly MLOps drift monitor detected that active inference performance has breached safety thresholds:\n\n"
+                  + "\n".join(reasons) + "\n\n"
+                  f"**Sample Size:** {total_predictions_7d} scans in the past 7 days.\n\n"
+                  "#### Recommended Action Plan:\n"
+                  "1. Audit pending candidate scans in the Expert Review Dashboard.\n"
+                  "2. Export verified candidate dataset with 70/30 replay buffer:\n"
+                  "   `POST /api/v1/admin/mlops/export`\n"
+                  "3. Fine-tune on Kaggle or Google Colab GPU:\n"
+                  "   `python ai_service/training/train_eval.py disease --dataset-dir /path/to/export`\n"
+                  "4. Inspect post-calibration temperature scaling ($T$) and macro-F1 in `metrics.json`.\n"
+                  "5. Submit candidate for database promotion:\n"
+                  "   `POST /api/v1/admin/models/promote`\n"
+              )
+              with open("/tmp/drift_alert.md", "w", encoding="utf-8") as f:
+                  f.write(issue_body)
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"tripped={str(tripped).lower()}\n")
-              f.write(f"summary={'; '.join(reasons)}\n")
               f.write(f"low_conf={low_conf_rate:.4f}\n")
               f.write(f"correction_rate={correction_rate:.4f}\n")
           EOF
 
-      - name: Open Retrain Alert Issue
+      - name: Open or Update Retrain Alert Issue
         if: steps.evaluate_metrics.outputs.tripped == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue create \
-            --title "🚨 [MLOps Retrain Trigger] Production Accuracy Drift Detected" \
-            --body "### Automated Retraining Trigger Alert
-
-          The weekly MLOps drift monitor detected that active inference performance has breached safety retraining thresholds:
-
-          ${{ steps.evaluate_metrics.outputs.summary }}
-
-          #### Recommended Action Plan:
-          1. Export verified candidate dataset with 70/30 replay buffer:
-             \`POST /api/v1/admin/mlops/export\`
-          2. Fine-tune on Kaggle / Google Colab GPU:
-             \`python ai_service/training/train_eval.py disease --dataset-dir /path/to/export\`
-          3. Inspect new post-calibration temperature scaling ($T$) and macro-F1 in \`metrics.json\`.
-          4. Submit candidate for database promotion:
-             \`POST /api/v1/admin/models/promote\`"
-
+          EXISTING_ISSUE=$(gh issue list --state open --label mlops-drift --limit 1 --json number --jq '.[0].number')
+          if [ -n "$EXISTING_ISSUE" ]; then
+            echo "Appending alert update to existing open issue #$EXISTING_ISSUE..."
+            gh issue comment "$EXISTING_ISSUE" --body-file /tmp/drift_alert.md
+          else
+            echo "Creating new MLOps drift alert issue..."
+            gh issue create \
+              --title "🚨 [MLOps Retrain Trigger] Production Accuracy Drift Detected" \
+              --label "mlops-drift" \
+              --body-file /tmp/drift_alert.md
+          fi

@@ -7,14 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Optional local cache fallbacks for standalone test runs
-for _d in glob.glob("/home/manthan/.cache/uv/archive-v0/*"):
-    try:
-        _items = set(os.listdir(_d))
-        if "tests" not in _items and "numpy" not in _items and "cv2" not in _items:
-            sys.path.append(_d)
-    except OSError:
-        pass
+
 
 try:
     import pytest

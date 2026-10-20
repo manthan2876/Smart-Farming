@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_TEST_IMAGE = PROJECT_ROOT / "Datasets" / "testing_images" / "aphids_tomato.jpeg"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_pipeline_smoke(monkeypatch):
     async def mock_vision(context, image_bytes, filename="upload.jpg", content_type="image/jpeg"):
         context["crop"] = {"label": "Tomato", "confidence": 0.95}
