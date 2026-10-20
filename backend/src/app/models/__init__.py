@@ -13,12 +13,14 @@ from app.models.translation import EntityTranslation
 from app.models.mlopsRun import MlopsRun
 from app.models.password_reset import PasswordResetToken
 from app.models.email_verification import EmailVerificationToken
+from app.models.refresh_token import RefreshToken
 
 __all__ = [
     "DatasetCandidate",
     "User",
     "PasswordResetToken",
     "EmailVerificationToken",
+    "RefreshToken",
     "Farm",
     "Feedback",
     "Image",

@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
+from typing import Self
 from urllib.parse import urlparse
 
 from pydantic import Field, model_validator
@@ -247,6 +250,27 @@ class Settings(BaseSettings):
                     clean_val = f"{clean_val}{subpath}"
                 setattr(self, field, clean_val)
 
+        return self
+
+    @model_validator(mode="after")
+    def validate_security_config(self) -> Self:
+        """Enforces strong JWT secret keys in production and staging environments."""
+        insecure_keys = {
+            "dev-secret-key-change-me",
+            "change-this-development-secret-key-32-bytes",
+            "replace_with_a_long_random_jwt_secret_key",
+            "generate_strong_64_character_random_hex_key_for_production",
+            "secret",
+            "default",
+        }
+        env = (self.ENVIRONMENT or "development").strip().lower()
+        if env in ("production", "staging"):
+            key = (self.JWT_SECRET_KEY or "").strip()
+            if not key or key in insecure_keys or len(key) < 32:
+                raise ValueError(
+                    f"FATAL: Insecure or default JWT_SECRET_KEY detected in '{env}' environment. "
+                    "A unique random key of at least 32 characters must be configured."
+                )
         return self
 
     model_config = SettingsConfigDict(

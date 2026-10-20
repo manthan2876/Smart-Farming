@@ -13,6 +13,8 @@ class ExpertReview(Base):
     expert_id: Mapped[str | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    claimed_by: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(40), default="pending")
     decision: Mapped[str | None] = mapped_column(String(40), nullable=True)
     corrected_disease: Mapped[str | None] = mapped_column(String(200), nullable=True)

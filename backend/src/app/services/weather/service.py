@@ -33,6 +33,21 @@ def fetch_weather(context: dict, config: dict | None = None) -> dict:
         context["status"]["weather"] = "skipped"
         return context
 
+    # 1. Coordinate grid caching (0.1° cell ~11km) to conserve OpenWeatherMap API quota
+    try:
+        from app.core.redis_rest import redis_rest
+        grid_lat = round(float(lat), 1)
+        grid_lon = round(float(lon), 1)
+        grid_cache_key = f"sf:weather:grid:{grid_lat}_{grid_lon}"
+        cached_weather = redis_rest.get_sync(grid_cache_key)
+        if cached_weather and isinstance(cached_weather, dict) and cached_weather.get("status") == "success":
+            cached_weather["timestamp"] = now_iso
+            context["weather"] = cached_weather
+            context["status"]["weather"] = "completed"
+            return context
+    except Exception:
+        pass
+
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
 
     try:
@@ -40,7 +55,7 @@ def fetch_weather(context: dict, config: dict | None = None) -> dict:
         data = response.json()
 
         if response.status_code == 200:
-            context["weather"] = {
+            weather_payload = {
                 "provider": "OpenWeatherMap",
                 "timestamp": now_iso,
                 "is_degraded": False,
@@ -57,7 +72,15 @@ def fetch_weather(context: dict, config: dict | None = None) -> dict:
                 "description": data["weather"][0]["description"],
                 "status": "success",
             }
+            context["weather"] = weather_payload
             context["status"]["weather"] = "completed"
+
+            # Cache the successful microclimate reading for 30 minutes (1800s)
+            try:
+                from app.core.redis_rest import redis_rest
+                redis_rest.set_sync(grid_cache_key, weather_payload, ex=1800)
+            except Exception:
+                pass
         else:
             context["weather"] = {
                 "provider": "OpenWeatherMap",

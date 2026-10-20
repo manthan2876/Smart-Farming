@@ -112,14 +112,14 @@ async def weather(
             )
 
     target_code = normalize_language_code(language) if language else "en"
+    grid_cache_key = f"sf:weather:grid:{round(lat, 1)}_{round(lon, 1)}"
     cache_key = f"{round(lat, 2)}_{round(lon, 2)}"
-    redis_key = f"weather:{cache_key}"
     now = time.time()
 
     # 1. Try Upstash Redis REST cache (15ms latency, serverless compatible)
     try:
         from app.core.redis_rest import redis_rest
-        cached_data = await redis_rest.get(f"sf:weather:{cache_key}")
+        cached_data = await redis_rest.get(grid_cache_key) or await redis_rest.get(f"sf:weather:{cache_key}")
         if cached_data and isinstance(cached_data, dict):
             translations = cached_data.get("translations") or {}
             if target_code != "en" and target_code not in translations:
@@ -129,7 +129,7 @@ async def weather(
                         translated = await translate_text(base_advisory, target_code)
                         translations[target_code] = translated
                         cached_data["translations"] = translations
-                        await redis_rest.set(f"sf:weather:{cache_key}", cached_data, ex=_CACHE_TTL_SECONDS)
+                        await redis_rest.set(grid_cache_key, cached_data, ex=_CACHE_TTL_SECONDS)
                     except Exception:
                         pass
             cached_data["translated_advisory"] = translations.get(target_code, cached_data.get("advisory", ""))
@@ -237,6 +237,7 @@ async def weather(
     _WEATHER_CACHE[cache_key] = (now, result_payload)
     try:
         from app.core.redis_rest import redis_rest
+        await redis_rest.set(grid_cache_key, _json_safe(result_payload), ex=_CACHE_TTL_SECONDS)
         await redis_rest.set(f"sf:weather:{cache_key}", _json_safe(result_payload), ex=_CACHE_TTL_SECONDS)
     except Exception:
         pass

@@ -44,6 +44,9 @@ from app.core.storage import (
     get_storage,
     reset_storage,
     purge_orphaned_blobs,
+    compress_image_bytes,
+    prune_cached_audio,
+    prune_unflagged_heatmaps,
 )
 
 
@@ -284,6 +287,66 @@ def test_purge_orphaned_blobs_supabase():
             assert res["status"] == "dry_run"
             assert res["cloud_unreferenced_count"] == 2
             assert "uploads/orphan1.jpg" in res["cloud_files"]
+
+
+def test_compress_image_bytes_downscaling():
+    from PIL import Image
+
+    # Create large 2000x1500 test image
+    img = Image.new("RGB", (2000, 1500), color="forestgreen")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=95)
+    raw_data = buf.getvalue()
+
+    compressed, mime = compress_image_bytes(raw_data, max_dim=1280, quality=85)
+    assert mime == "image/jpeg"
+    assert len(compressed) < len(raw_data)
+
+    with Image.open(io.BytesIO(compressed)) as res_img:
+        w, h = res_img.size
+        assert max(w, h) <= 1280
+        assert w == 1280 or h == 1280
+
+
+def test_compress_image_bytes_preserves_small():
+    from PIL import Image
+
+    img = Image.new("RGB", (400, 300), color="blue")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=75)
+    raw_data = buf.getvalue()
+
+    compressed, mime = compress_image_bytes(raw_data, max_dim=1280, quality=85)
+    assert mime == "image/jpeg"
+    with Image.open(io.BytesIO(compressed)) as res_img:
+        assert res_img.size == (400, 300)
+
+
+def test_prune_cached_audio(tmp_path: Path):
+    import time
+
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    old_file = audio_dir / "old_audio.wav"
+    old_file.write_bytes(b"old wav content")
+    new_file = audio_dir / "new_audio.mp3"
+    new_file.write_bytes(b"new mp3 content")
+
+    # Set old_file mtime to 35 days ago
+    old_mtime = time.time() - (35 * 86400)
+    os.utime(old_file, (old_mtime, old_mtime))
+
+    with patch.object(settings, "AUDIO_ROOT", audio_dir), patch.object(settings, "DATA_ROOT", tmp_path):
+        # Dry run
+        dry_res = prune_cached_audio(dry_run=True, max_age_days=30)
+        assert dry_res["local_pruned"] == 1
+        assert old_file.exists()
+
+        # Actual run
+        run_res = prune_cached_audio(dry_run=False, max_age_days=30)
+        assert run_res["local_pruned"] == 1
+        assert not old_file.exists()
+        assert new_file.exists()
 
 
 if __name__ == "__main__":

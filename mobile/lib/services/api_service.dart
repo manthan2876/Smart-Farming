@@ -56,8 +56,8 @@ class ApiService {
 
   Future<http.Response> _sendWithRetry(
     Future<http.Response> Function() requestFn, {
-    int maxRetries = 1,
-    Duration timeout = const Duration(seconds: 30),
+    int maxRetries = 2,
+    Duration timeout = const Duration(seconds: 45),
   }) async {
     int attempts = 0;
     while (true) {
@@ -72,22 +72,22 @@ class ApiService {
             bodyLower.contains('upstream connect error');
 
         if (isColdStartTimeout && attempts <= maxRetries) {
-          AppLogger.warn('ApiService', 'Server cold start / timeout ($status). Retrying in 1.5s (attempt $attempts)...');
-          await Future.delayed(const Duration(milliseconds: 1500));
+          AppLogger.warn('ApiService', 'Server cold start / waking up ($status). Retrying in 2s (attempt $attempts)...');
+          await Future.delayed(const Duration(milliseconds: 2000));
           continue;
         }
         return response;
       } on TimeoutException {
         if (attempts <= maxRetries) {
-          AppLogger.warn('ApiService', 'Request timed out on attempt $attempts. Retrying in 1.5s...');
-          await Future.delayed(const Duration(milliseconds: 1500));
+          AppLogger.warn('ApiService', 'Request timed out on attempt $attempts (server cold start). Retrying in 2s...');
+          await Future.delayed(const Duration(milliseconds: 2000));
           continue;
         }
-        throw Exception('Server is taking too long to respond. Please try again.');
+        throw Exception('Server is waking up from sleep or taking too long to respond. Please try again in a few moments.');
       } catch (e) {
         if (e is SocketException && attempts <= maxRetries) {
-          AppLogger.warn('ApiService', 'SocketException on attempt $attempts. Retrying in 1.5s...');
-          await Future.delayed(const Duration(milliseconds: 1500));
+          AppLogger.warn('ApiService', 'SocketException on attempt $attempts. Retrying in 2s...');
+          await Future.delayed(const Duration(milliseconds: 2000));
           continue;
         }
         rethrow;
@@ -462,13 +462,17 @@ class ApiService {
       'lon': lon.toString(),
       if (plotId != null) 'plot_id': plotId.toString(),
     });
-    final response = await request.send();
-    final resString = await response.stream.bytesToString();
-    final body = jsonDecode(resString) as Map<String, dynamic>;
-    if (response.statusCode >= 400) {
-      throw Exception(body['detail'] ?? 'Prediction failed (${response.statusCode})');
+    try {
+      final response = await request.send().timeout(const Duration(seconds: 45));
+      final resString = await response.stream.bytesToString();
+      final body = jsonDecode(resString) as Map<String, dynamic>;
+      if (response.statusCode >= 400) {
+        throw Exception(body['detail'] ?? 'Prediction failed (${response.statusCode})');
+      }
+      return body;
+    } on TimeoutException {
+      throw Exception('Prediction timed out. Server or AI model may be waking up, please retry.');
     }
-    return body;
   }
 
   Future<Prediction> getPrediction(int id) async {

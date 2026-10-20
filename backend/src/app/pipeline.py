@@ -111,8 +111,8 @@ def build_provenance(context: dict, total_duration_ms: int) -> dict[str, Any]:
             "timestamp": weather.get("timestamp"),
         },
         "recommendation_provider": {
-            "provider": recommendation.get("provider", "Colab / Qwen3-4B (4-bit)"),
-            "model": recommendation.get("model", "Qwen/Qwen3-4B"),
+            "provider": recommendation.get("provider", "ai_service_advisory"),
+            "model": recommendation.get("model", "icar_knowledge_base_v2"),
             "prompt_version": recommendation.get("prompt_version", "v3.0"),
             "is_fallback": recommendation.get("is_fallback", False),
             "fallback_reason": recommendation.get("fallback_reason"),

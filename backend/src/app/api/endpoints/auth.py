@@ -30,6 +30,11 @@ from app.schemas import (
     ResendVerificationEmailRequest,
     SetupFirstTimePasswordRequest,
 )
+from app.crud.refresh_token import (
+    store_refresh_token,
+    rotate_refresh_token,
+    revoke_refresh_token,
+)
 from app.crud import (
     create_user,
     find_user_by_identifier,
@@ -486,6 +491,8 @@ async def register(
         }
     else:
         tokens = create_token_pair(user.id)
+        store_refresh_token(session, user.id, tokens["refresh_token"])
+        session.commit()
         cookie_opts = _cookie_settings(request)
         response.set_cookie(
             key="refresh_token",
@@ -570,6 +577,9 @@ async def login(
         supabase_tokens = await _fetch_supabase_tokens(user.email, payload.password)
 
     tokens = supabase_tokens or create_token_pair(user.id)
+    if not supabase_tokens and tokens.get("refresh_token"):
+        store_refresh_token(session, user.id, tokens["refresh_token"])
+        session.commit()
     cookie_opts = _cookie_settings(request)
     response.set_cookie(
         key="refresh_token",
@@ -936,6 +946,9 @@ async def setup_first_time_password(
     supabase_tokens = await _fetch_supabase_tokens(user.email, payload.new_password)
 
     tokens = supabase_tokens or create_token_pair(user.id)
+    if not supabase_tokens and tokens.get("refresh_token"):
+        store_refresh_token(session, user.id, tokens["refresh_token"])
+        session.commit()
     cookie_opts = _cookie_settings(request)
     response.set_cookie(
         key="refresh_token",
@@ -952,16 +965,28 @@ async def setup_first_time_password(
 
 
 @router.post("/refresh", response_model=dict[str, str | int])
-async def refresh(request: Request, response: Response) -> dict[str, str | int]:
-    refresh_token = request.cookies.get("refresh_token")
+async def refresh(
+    request: Request,
+    response: Response,
+    payload: RefreshRequest | None = None,
+    session: Session = Depends(get_session),
+) -> dict[str, str | int]:
+    refresh_token = (payload.refresh_token if payload else None) or request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=401, detail="Missing refresh token.")
     try:
         user_id = decode_token(refresh_token, expected_type="refresh")
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
-        
+
     tokens = create_token_pair(user_id)
+    # Perform rotation & reuse detection in database
+    rotated = rotate_refresh_token(session, refresh_token, tokens["refresh_token"])
+    if not rotated:
+        # If token was not found in DB (e.g. issued prior to migration), store the newly generated one
+        store_refresh_token(session, user_id, tokens["refresh_token"])
+        session.commit()
+
     cookie_opts = _cookie_settings(request)
     response.set_cookie(
         key="refresh_token",
@@ -975,7 +1000,16 @@ async def refresh(request: Request, response: Response) -> dict[str, str | int]:
 
 
 @router.post("/logout", response_model=dict[str, str])
-async def logout(request: Request, response: Response) -> dict[str, str]:
+async def logout(
+    request: Request,
+    response: Response,
+    payload: RefreshRequest | None = None,
+    session: Session = Depends(get_session),
+) -> dict[str, str]:
+    refresh_token = (payload.refresh_token if payload else None) or request.cookies.get("refresh_token")
+    if refresh_token:
+        revoke_refresh_token(session, refresh_token)
+
     cookie_opts = _cookie_settings(request)
     response.delete_cookie(
         "refresh_token",

@@ -662,6 +662,9 @@ The severity estimator is a deterministic, calibrated foliar image processing pi
 | `bucket` | `str` | Standardized tier: `"Healthy"`, `"Low"`, `"Medium"`, or `"High"` |
 | `processed_image_path` | `str` | Path to JET heatmap lesion mask artifact |
 
+> [!NOTE]
+> **Agronomic Scope & Methodology:** The computed severity percentage reflects **indicative foliar lesion surface area** on the single scanned leaf image via adaptive HSV contour segmentation. It serves as an immediate visual triage proxy rather than whole-field incidence. Whole-field crop protection decisions should combine individual leaf scans with field-wide walking and scouting.
+
 ---
 
 ## 5. Recommendation Engine (ICAR/KVK Knowledge Base + LLM)

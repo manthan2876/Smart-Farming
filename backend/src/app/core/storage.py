@@ -477,3 +477,226 @@ def purge_orphaned_blobs(
         "cloud_error": cloud_error,
     }
 
+
+def compress_image_bytes(
+    image_bytes: bytes,
+    max_dim: int = 1280,
+    quality: int = 85,
+) -> tuple[bytes, str]:
+    """Downscale and compress image bytes if dimensions exceed max_dim or to optimize storage size.
+
+    - Preserves aspect ratio when downscaling.
+    - Applies EXIF orientation tags before processing.
+    - Converts RGBA/transparency to RGB on a white background.
+    - Saves as optimized JPEG (quality=85).
+    - Returns (compressed_bytes, "image/jpeg") if successfully processed and smaller or resized,
+      otherwise returns the original bytes and content type.
+    """
+    try:
+        from PIL import Image as PILImage, ImageOps
+
+        with PILImage.open(io.BytesIO(image_bytes)) as img:
+            img = ImageOps.exif_transpose(img)
+            width, height = img.size
+            needs_resize = width > max_dim or height > max_dim
+            if needs_resize:
+                img.thumbnail((max_dim, max_dim), PILImage.Resampling.LANCZOS)
+
+            if img.mode in ("RGBA", "LA", "P"):
+                background = PILImage.new("RGB", img.size, (255, 255, 255))
+                if img.mode == "P":
+                    img = img.convert("RGBA")
+                alpha = img.split()[-1] if img.mode == "RGBA" else None
+                background.paste(img, mask=alpha)
+                out_img = background
+            elif img.mode != "RGB":
+                out_img = img.convert("RGB")
+            else:
+                out_img = img
+
+            buffer = io.BytesIO()
+            out_img.save(buffer, format="JPEG", quality=quality, optimize=True)
+            compressed = buffer.getvalue()
+            if len(compressed) < len(image_bytes) or needs_resize:
+                return compressed, "image/jpeg"
+    except Exception as exc:
+        logger.warning("Image compression skipped or failed: %s", exc)
+    return image_bytes, "image/jpeg"
+
+
+def prune_cached_audio(
+    dry_run: bool = False,
+    max_age_days: int = 30,
+) -> dict[str, Any]:
+    """Prune cached TTS audio files (.mp3, .wav) older than max_age_days from local disk and Supabase storage."""
+    cutoff_seconds = max_age_days * 86400
+    now = time.time()
+    local_deleted = 0
+    cloud_deleted = 0
+    cloud_error = None
+
+    # 1. Local pruning
+    unique_dirs = {p.resolve() for p in (settings.AUDIO_ROOT, settings.DATA_ROOT / "audio") if p}
+    for resolved in unique_dirs:
+        try:
+            if not resolved.exists():
+                continue
+            for file_path in resolved.rglob("*"):
+                if file_path.is_file() and file_path.suffix.lower() in (".mp3", ".wav"):
+                    try:
+                        if (now - file_path.stat().st_mtime) > cutoff_seconds:
+                            if not dry_run:
+                                file_path.unlink()
+                            local_deleted += 1
+                    except Exception as exc:
+                        logger.warning("Failed to delete expired audio %s: %s", file_path, exc)
+        except Exception:
+            pass
+
+    # 2. Supabase storage pruning
+    target_bucket = getattr(settings, "SUPABASE_BUCKET", None) or getattr(settings, "AWS_S3_BUCKET", None)
+    if target_bucket and (settings.STORAGE_BACKEND or "local").lower() in ("supabase", "s3"):
+        try:
+            cloud_backend = SupabaseStorageBackend()
+            import httpx
+
+            url = f"{cloud_backend.supabase_url}/storage/v1/object/list/{cloud_backend.bucket_name}"
+            headers = cloud_backend._get_headers()
+            headers["Content-Type"] = "application/json"
+            offset = 0
+            limit = 100
+            expired_keys: list[str] = []
+
+            with httpx.Client(timeout=30.0) as client:
+                while True:
+                    payload = {"prefix": "audio", "limit": limit, "offset": offset}
+                    resp = client.post(url, headers=headers, json=payload)
+                    if resp.status_code != 200:
+                        break
+                    items = resp.json()
+                    if not items:
+                        break
+                    for item in items:
+                        name = item.get("name")
+                        if not name:
+                            continue
+                        created_str = item.get("created_at") or item.get("updated_at")
+                        if created_str:
+                            try:
+                                dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                                age = (datetime.now(timezone.utc) - dt).total_seconds()
+                                if age > cutoff_seconds:
+                                    expired_keys.append(f"audio/{name}")
+                            except Exception:
+                                pass
+                    if len(items) < limit:
+                        break
+                    offset += limit
+
+            for key in expired_keys:
+                if dry_run:
+                    cloud_deleted += 1
+                else:
+                    if cloud_backend.delete(key):
+                        cloud_deleted += 1
+        except Exception as exc:
+            logger.warning("Supabase audio pruning failed: %s", exc)
+            cloud_error = str(exc)
+
+    return {
+        "status": "dry_run" if dry_run else "success",
+        "local_pruned": local_deleted,
+        "cloud_pruned": cloud_deleted,
+        "total_pruned": local_deleted + cloud_deleted,
+        "cloud_error": cloud_error,
+    }
+
+
+def prune_unflagged_heatmaps(
+    session: Any,
+    dry_run: bool = False,
+    max_age_days: int = 7,
+) -> dict[str, Any]:
+    """Prune processed heatmaps for scans older than max_age_days that have no expert reviews,
+    dataset candidate inclusion, or negative feedback. Missing heatmaps will self-heal on demand if viewed."""
+    from datetime import timedelta
+    from app.models import Prediction, DatasetCandidate
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+    pruned_count = 0
+    storage = get_storage()
+
+    try:
+        candidates = (
+            session.query(Prediction)
+            .filter(
+                Prediction.created_at < cutoff,
+                Prediction.processed_path.isnot(None),
+            )
+            .all()
+        )
+
+        for pred in candidates:
+            # Skip if pending review or flagged
+            if pred.status in ("pending_expert_review", "flagged"):
+                continue
+            # Skip if has expert review
+            if pred.expert_review is not None:
+                continue
+            # Skip if user reported incorrect feedback
+            if any(fb.rating and fb.rating <= 2 for fb in (pred.feedback or [])):
+                continue
+            if any(fb.feedback_type == "incorrect" for fb in (pred.feedback or [])):
+                continue
+            # Skip if marked as retraining candidate
+            cand = session.query(DatasetCandidate).filter(DatasetCandidate.prediction_id == pred.id).first()
+            if cand is not None:
+                continue
+
+            old_proc = pred.processed_path
+            if not old_proc:
+                continue
+
+            norm_key = old_proc.replace("\\", "/").strip("/")
+            rel_key = norm_key[5:] if norm_key.startswith("data/") else norm_key
+
+            if not dry_run:
+                # 1. Remove local file
+                local_file = settings.DATA_ROOT / rel_key
+                if local_file.is_file():
+                    try:
+                        local_file.unlink()
+                    except Exception as err:
+                        logger.warning("Could not delete local heatmap %s: %s", local_file, err)
+
+                # 2. Remove cloud file
+                try:
+                    storage.delete(rel_key)
+                except Exception as err:
+                    logger.warning("Could not delete cloud heatmap %s: %s", rel_key, err)
+
+                # 3. Update DB
+                pred.processed_path = None
+                if isinstance(pred.result, dict):
+                    res = dict(pred.result)
+                    if "image" in res and isinstance(res["image"], dict):
+                        res["image"]["processed_path"] = None
+                    pred.result = res
+                if pred.image:
+                    pred.image.processed_path = None
+
+            pruned_count += 1
+
+        if not dry_run and pruned_count > 0:
+            session.commit()
+
+    except Exception as exc:
+        logger.error("Error during heatmap pruning: %s", exc)
+        return {"status": "error", "error": str(exc), "heatmaps_pruned": pruned_count}
+
+    return {
+        "status": "dry_run" if dry_run else "success",
+        "heatmaps_pruned": pruned_count,
+        "max_age_days": max_age_days,
+    }
+

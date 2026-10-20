@@ -268,8 +268,8 @@ def _safe_float(val: Any, default: float = 0.0) -> float:
 def generate_recommendation(context: dict, config: dict[str, Any] | None = None) -> dict:
     """
     Pipeline Stage 8: Generate agronomic recommendation.
-    Invokes the remote Colab Qwen advisory service if available,
-    otherwise falling back safely to deterministic agronomic rules.
+    Invokes the unified AI microservice advisory stage (/advisory/advise) if available,
+    otherwise falling back safely to deterministic ICAR agronomic rules.
     """
     if config is None:
         config = {}
@@ -370,8 +370,8 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
             )
             rec_dict = validated.model_dump()
             rec_dict.update({
-                "provider": "Colab / Qwen3-4B (4-bit)",
-                "model": "Qwen/Qwen3-4B",
+                "provider": remote_resp.get("provider", "ai_service_advisory"),
+                "model": remote_resp.get("model", "icar_knowledge_base_v2"),
                 "prompt_version": "v3.0",
                 "is_fallback": False,
                 "fallback_reason": None,
@@ -384,7 +384,7 @@ def generate_recommendation(context: dict, config: dict[str, Any] | None = None)
             })
             context["recommendation"] = rec_dict
             context["status"]["recommendation"] = "completed"
-            logger.info("Advisory generated successfully from Colab Qwen service.")
+            logger.info("Advisory generated successfully from AI advisory microservice.")
             return context
         except ValidationError as ve:
             logger.warning("Advisory server response failed validation: %s", ve)

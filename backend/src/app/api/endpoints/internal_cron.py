@@ -130,26 +130,38 @@ async def trigger_purge_blobs(
     verified: bool = Depends(verify_qstash_signature),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
-    """Triggered exclusively by Upstash QStash weekly on Sunday (0 3 * * 0).
+    """Triggered by Upstash QStash weekly on Sunday (0 3 * * 0) or manually via CRON_SECRET.
 
-    Purges unreferenced images and audio files older than 1 hour.
+    Executes 3-stage free-tier storage hygiene:
+    1. Purges unreferenced raw/processed images older than 1 hour grace period.
+    2. Prunes cached TTS audio files older than 30 days.
+    3. Prunes processed heatmaps for unflagged historical scans older than 7 days (self-heals on demand).
     """
-    logger.info("Executing QStash-scheduled orphaned blob purge...")
-    from app.core.storage import purge_orphaned_blobs
+    logger.info("Executing QStash-scheduled storage cleanup & blob purge...")
+    from app.core.storage import (
+        purge_orphaned_blobs,
+        prune_cached_audio,
+        prune_unflagged_heatmaps,
+    )
 
     try:
-        res = purge_orphaned_blobs(session, dry_run=False, grace_seconds=3600)
+        orphaned_res = purge_orphaned_blobs(session, dry_run=False, grace_seconds=3600)
+        audio_res = prune_cached_audio(dry_run=False, max_age_days=30)
+        heatmaps_res = prune_unflagged_heatmaps(session, dry_run=False, max_age_days=7)
+
         return {
             "status": "success",
-            "message": "Orphaned blob purge completed.",
-            "result": res,
+            "message": "Storage cleanup and blob purge completed successfully.",
+            "orphaned_blobs": orphaned_res,
+            "pruned_audio": audio_res,
+            "pruned_heatmaps": heatmaps_res,
             "timestamp": time.time(),
         }
     except Exception as exc:
-        logger.error("Orphaned blob purge failed: %s", exc, exc_info=True)
+        logger.error("Storage purge job failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Blob purge error: {exc}",
+            detail=f"Storage purge error: {exc}",
         )
 
 

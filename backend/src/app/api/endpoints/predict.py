@@ -319,6 +319,12 @@ async def predict(
                 detail="The uploaded file is not a valid or readable image.",
             )
 
+        # Free-tier storage optimization: compress & downscale oversized uploads
+        from app.core.storage import compress_image_bytes
+        image_bytes, out_mime = compress_image_bytes(image_bytes, max_dim=1280, quality=85)
+        if out_mime == "image/jpeg":
+            suffix = ".jpg"
+
         hash_val = hashlib.sha256(image_bytes).hexdigest()
         filename = f"{hash_val}{suffix}"
         upload_path = _UPLOAD_DIR / filename
@@ -862,21 +868,42 @@ async def rescan_prediction(
         suffix = ".jpg" if file.content_type == "image/jpeg" else ".png"
 
     ensure_storage_directories()
-    filename = f"{uuid.uuid4().hex}{suffix}"
-    upload_path = _UPLOAD_DIR / filename
-    relative_image_path = storage_relative_path(upload_path)
 
-    size = 0
     try:
-        with upload_path.open("wb") as destination:
-            while chunk := await file.read(1024 * 1024):
-                size += len(chunk)
-                if size > _MAX_UPLOAD_BYTES:
-                    raise HTTPException(
-                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                        detail="Image exceeds the 10 MB upload limit.",
-                    )
-                destination.write(chunk)
+        raw_upload = await file.read()
+        if len(raw_upload) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Image exceeds the 10 MB upload limit.",
+            )
+
+        import io
+        from PIL import Image as PILImage
+        try:
+            with PILImage.open(io.BytesIO(raw_upload)) as img_check:
+                img_check.verify()
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The uploaded file is not a valid or readable image.",
+            )
+
+        from app.core.storage import compress_image_bytes, get_storage
+        image_bytes, out_mime = compress_image_bytes(raw_upload, max_dim=1280, quality=85)
+        if out_mime == "image/jpeg":
+            suffix = ".jpg"
+
+        filename = f"{uuid.uuid4().hex}{suffix}"
+        upload_path = _UPLOAD_DIR / filename
+        relative_image_path = storage_relative_path(upload_path)
+        upload_path.write_bytes(image_bytes)
+
+        # Save to object storage if configured
+        try:
+            storage = get_storage()
+            storage.save(image_bytes, f"uploads/{filename}", content_type=out_mime)
+        except Exception as exc:
+            logger.warning("Object storage upload failed for follow-up (%s), relying on local disk copy", exc)
 
         old_res = dict(old_prediction.result or {})
         old_user = old_res.get("user", {}) or {}

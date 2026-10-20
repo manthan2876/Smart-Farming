@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 import jwt
@@ -18,8 +19,15 @@ from app.core.config import settings
 
 def _secret_key() -> str:
     key = getattr(settings, "JWT_SECRET_KEY", None) or os.getenv("JWT_SECRET_KEY", "change-this-development-secret-key-32-bytes")
-    if getattr(settings, "ENVIRONMENT", "development") == "production" and key in ("change-this-development-secret-key-32-bytes", "dev-secret-key-change-me"):
-        raise RuntimeError("FATAL: Insecure default JWT_SECRET_KEY detected in production environment.")
+    env = getattr(settings, "ENVIRONMENT", "development").strip().lower()
+    insecure_keys = (
+        "change-this-development-secret-key-32-bytes",
+        "dev-secret-key-change-me",
+        "replace_with_a_long_random_jwt_secret_key",
+        "generate_strong_64_character_random_hex_key_for_production",
+    )
+    if env in ("production", "staging") and (key in insecure_keys or len(key) < 32):
+        raise RuntimeError("FATAL: Insecure or default JWT_SECRET_KEY detected in production/staging environment.")
     return key
 
 
@@ -38,6 +46,7 @@ def create_token(user_id: str, token_type: str, expires_delta: timedelta) -> str
         "type": token_type,
         "iat": now,
         "exp": now + expires_delta,
+        "jti": uuid.uuid4().hex,
     }
     return jwt.encode(payload, _secret_key(), algorithm=_ALGORITHM)
 
@@ -144,15 +153,26 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_BEARER),
     x_user_id: str | None = Header(default=None),
 ) -> str:
-    """Resolve a JWT user, retaining X-User-ID only as an explicit development fallback."""
+    """Resolve a JWT user, strictly rejecting X-User-ID in production and staging."""
     if credentials is not None:
         try:
             return decode_token(credentials.credentials)
         except ValueError as exc:
             raise HTTPException(status_code=401, detail=str(exc)) from exc
-    if getattr(settings, "ENVIRONMENT", "development") == "development" and getattr(settings, "DEBUG", True):
+
+    env = getattr(settings, "ENVIRONMENT", "development").strip().lower()
+    if env in ("production", "staging") and x_user_id:
+        logger.error("SECURITY: Rejected X-User-ID header attempt in production/staging environment.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Header-based user impersonation (X-User-ID) is strictly forbidden in production.",
+        )
+
+    if env in ("development", "test") and getattr(settings, "DEBUG", True):
         if x_user_id and x_user_id.strip():
+            logger.warning("AUTH: Bypassing JWT auth via X-User-ID header for user '%s' (allowed in development/test only)", x_user_id.strip())
             return x_user_id.strip()
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="A valid bearer access token is required.",

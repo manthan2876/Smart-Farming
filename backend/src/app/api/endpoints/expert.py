@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
@@ -41,6 +41,8 @@ async def get_expert_queue(
             "disease": disease,
             "disease_conf": disease_conf,
             "severity_pct": severity_pct,
+            "claimed_by": r.claimed_by,
+            "claimed_at": r.claimed_at.isoformat() if r.claimed_at else None,
             "created_at": r.created_at.isoformat() if r.created_at else None
         })
     return results
@@ -105,6 +107,63 @@ async def get_expert_review(
 
 from sqlalchemy.orm.attributes import flag_modified
 
+@router.post("/expert/reviews/{review_id}/claim")
+async def claim_expert_review(
+    review_id: int,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(require_expert_role),
+):
+    """Atomically claims a review item for 15 minutes to prevent expert collisions."""
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(minutes=15)
+
+    review = session.get(ExpertReview, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.status != "pending":
+        raise HTTPException(status_code=409, detail="Review is already verified and finalized.")
+
+    # Check if another expert has an active non-expired claim
+    claimed_dt = review.claimed_at
+    if claimed_dt and claimed_dt.tzinfo is None:
+        claimed_dt = claimed_dt.replace(tzinfo=timezone.utc)
+
+    if review.claimed_by and review.claimed_by != user_id:
+        if claimed_dt and claimed_dt > cutoff:
+            remaining_secs = int(900 - (now - claimed_dt).total_seconds())
+            raise HTTPException(
+                status_code=409,
+                detail=f"Review is currently claimed by another expert ({review.claimed_by}). Lease expires in {remaining_secs}s.",
+            )
+
+    review.claimed_by = user_id
+    review.claimed_at = now
+    session.commit()
+    return {
+        "status": "claimed",
+        "review_id": review_id,
+        "claimed_by": user_id,
+        "lease_expires_in_seconds": 900,
+    }
+
+
+@router.post("/expert/reviews/{review_id}/release")
+async def release_expert_review(
+    review_id: int,
+    session: Session = Depends(get_session),
+    user_id: str = Depends(require_expert_role),
+):
+    """Releases a claimed review item back to the shared queue."""
+    review = session.get(ExpertReview, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.claimed_by == user_id:
+        review.claimed_by = None
+        review.claimed_at = None
+        session.commit()
+    return {"status": "released", "review_id": review_id}
+
+
 @router.post("/expert/reviews/{review_id}")
 async def post_expert_review(
     review_id: int,
@@ -123,10 +182,26 @@ async def post_expert_review(
             detail="Conflict: This review has already been verified and finalized.",
         )
 
+    # Concurrency Lock: verify claim lease
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(minutes=15)
+    claimed_dt = review.claimed_at
+    if claimed_dt and claimed_dt.tzinfo is None:
+        claimed_dt = claimed_dt.replace(tzinfo=timezone.utc)
+
+    if review.claimed_by and review.claimed_by != user_id:
+        if claimed_dt and claimed_dt > cutoff:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Conflict: This review is currently claimed by another expert ({review.claimed_by}).",
+            )
+
     action = payload.get("action") or payload.get("decision") or "Confirm AI Findings"
     review.decision = action
     review.status = "verified"
     review.expert_id = user_id
+    review.claimed_by = None
+    review.claimed_at = None
     
     if action in ("Override / Correct Findings", "corrected", "override", "Override") or payload.get("corrected_disease"):
         review.corrected_disease = payload.get("corrected_disease")

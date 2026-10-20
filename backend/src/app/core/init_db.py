@@ -144,6 +144,8 @@ def initialize_database() -> None:
             _ensure_column(connection, inspector, "expert_reviews", "corrected_severity", "VARCHAR(50)", is_sqlite, cols_cache)
             _ensure_column(connection, inspector, "expert_reviews", "farmer_guidance", "TEXT", is_sqlite, cols_cache)
             _ensure_column(connection, inspector, "expert_reviews", "internal_note", "TEXT", is_sqlite, cols_cache)
+            _ensure_column(connection, inspector, "expert_reviews", "claimed_by", "VARCHAR(128)", is_sqlite, cols_cache)
+            _ensure_column(connection, inspector, "expert_reviews", "claimed_at", ts_type, is_sqlite, cols_cache)
 
             # MLOps runs
             _ensure_column(connection, inspector, "mlops_runs", "dataset_export_config", json_type, is_sqlite, cols_cache)
@@ -159,6 +161,7 @@ def initialize_database() -> None:
                     ("alerts", "alerts_user_id_fkey", "user_id", "users(id)", "CASCADE"),
                     ("password_reset_tokens", "password_reset_tokens_user_id_fkey", "user_id", "users(id)", "CASCADE"),
                     ("email_verification_tokens", "email_verification_tokens_user_id_fkey", "user_id", "users(id)", "CASCADE"),
+                    ("refresh_tokens", "refresh_tokens_user_id_fkey", "user_id", "users(id)", "CASCADE"),
                     ("expert_reviews", "expert_reviews_expert_id_fkey", "expert_id", "users(id)", "SET NULL"),
                     ("feedback", "feedback_reviewer_id_fkey", "reviewer_id", "users(id)", "SET NULL"),
                 ]
