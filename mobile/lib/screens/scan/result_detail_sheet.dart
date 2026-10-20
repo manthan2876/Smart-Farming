@@ -4,8 +4,10 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/prediction.dart';
 import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/image_compressor.dart';
 import '../../services/tts_service.dart';
 import '../../theme/app_theme.dart';
+import 'rescan_comparison_sheet.dart';
 
 class ResultDetailSheet extends StatefulWidget {
   const ResultDetailSheet({
@@ -156,20 +158,37 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
   Future<void> _handleRescan(ImageSource source) async {
     final picker = ImagePicker();
     try {
-      final picked = await picker.pickImage(source: source, imageQuality: 85, maxWidth: 1600);
+      final picked = await picker.pickImage(
+        source: source,
+        imageQuality: ImageCompressor.targetQuality,
+        maxWidth: ImageCompressor.targetMaxDimension.toDouble(),
+        maxHeight: ImageCompressor.targetMaxDimension.toDouble(),
+      );
       if (picked == null) return;
       setState(() => _isRescanning = true);
       final bytes = await picked.readAsBytes();
       final res = await widget.api.rescanBytes(_pred.id, bytes, picked.name);
       final updated = Prediction.fromJson(res);
+      final prev = _pred;
       setState(() {
         _pred = updated;
         _visualTab = 1; // switch to heatmap view
       });
       widget.onFeedbackSubmitted();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Follow-up scan completed and updated!')),
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppColors.cardBg,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          builder: (ctx) => RescanComparisonSheet(
+            initialPrediction: prev,
+            rescanPrediction: updated,
+            api: widget.api,
+            onRequestExpert: _requestExpert,
+          ),
         );
       }
     } catch (e) {
@@ -197,6 +216,8 @@ ${context.tr('actionPlan')}:
 1. ${context.tr('immediate')}: ${_pred.localizedImmediateAction(langCode) ?? context.tr('standardPrecautions')}
 2. ${context.tr('treatment')}: ${_pred.localizedTreatment(langCode) ?? context.tr('referLocalGuidelines')}
 3. ${context.tr('prevention')}: ${_pred.localizedPrevention(langCode) ?? context.tr('maintainFieldHygiene')}
+
+${context.tr('statutoryDisclaimer')}
 
 ${context.tr('reportGeneratedBy')}
 ''';
@@ -356,13 +377,46 @@ ${context.tr('reportGeneratedBy')}
             spacing: 8,
             runSpacing: 8,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(8)),
-                child: Text(
-                  '${context.tr('modelConfidence')}: ${(_pred.confidence * 100).round()}%',
-                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
-                ),
+              Builder(
+                builder: (context) {
+                  final pct = (_pred.confidence * 100).round();
+                  final Color bg;
+                  final Color textCol;
+                  final String label;
+                  if (pct >= 85) {
+                    bg = const Color(0xffdcfce7);
+                    textCol = const Color(0xff15803d);
+                    label = context.tr('highConfidence');
+                  } else if (pct >= 70) {
+                    bg = const Color(0xfffef3c7);
+                    textCol = const Color(0xffb45309);
+                    label = context.tr('mediumConfidence');
+                  } else {
+                    bg = const Color(0xfffee2e2);
+                    textCol = const Color(0xffb91c1c);
+                    label = context.tr('lowConfidence');
+                  }
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          pct >= 85 ? Icons.verified : (pct >= 70 ? Icons.info_outline : Icons.warning_amber_rounded),
+                          size: 14,
+                          color: textCol,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$label ($pct%)',
+                          style: TextStyle(color: textCol, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -860,23 +914,33 @@ ${context.tr('reportGeneratedBy')}
           ),
           const SizedBox(height: 16),
 
-          // ── Agricultural Safety Disclaimer ──────────────────────────────────
+          // ── Agricultural Safety & Statutory Disclaimer ─────────────────────
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xffffebee),
+              color: const Color(0xfffff7ed),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xffffcdd2)),
+              border: Border.all(color: const Color(0xfffed7aa)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline, color: Colors.red, size: 18),
+                const Icon(Icons.shield_outlined, color: Color(0xffc2410c), size: 18),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    context.tr('safetyDisclaimer'),
-                    style: const TextStyle(color: Color(0xffc62828), fontSize: 11, height: 1.35),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.tr('statutoryDisclaimer'),
+                        style: const TextStyle(color: Color(0xff9a3412), fontSize: 11.5, fontWeight: FontWeight.bold, height: 1.35),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        context.tr('safetyDisclaimer'),
+                        style: const TextStyle(color: Color(0xffc2410c), fontSize: 10.5, height: 1.35),
+                      ),
+                    ],
                   ),
                 ),
               ],

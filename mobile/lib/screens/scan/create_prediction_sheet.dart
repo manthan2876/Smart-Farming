@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/image_compressor.dart';
 import '../../services/sync_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -64,9 +65,19 @@ class _CreatePredictionSheetState extends State<CreatePredictionSheet> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final picked = await _picker.pickImage(source: source, imageQuality: 85, maxWidth: 1600);
+      final picked = await _picker.pickImage(
+        source: source,
+        imageQuality: ImageCompressor.targetQuality,
+        maxWidth: ImageCompressor.targetMaxDimension.toDouble(),
+        maxHeight: ImageCompressor.targetMaxDimension.toDouble(),
+      );
       if (picked == null) return;
       final bytes = await picked.readAsBytes();
+      final qualityCheck = ImageCompressor.evaluateQuality(bytes);
+      if (!qualityCheck.isValid) {
+        setState(() => _error = qualityCheck.reason);
+        return;
+      }
       setState(() {
         _bytes = bytes;
         _fileName = picked.name.isNotEmpty ? picked.name : 'leaf.jpg';

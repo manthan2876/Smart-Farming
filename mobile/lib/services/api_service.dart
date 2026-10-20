@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import '../models/prediction.dart';
 import '../utils/app_logger.dart';
 import 'remote_config_service.dart';
+import 'token_storage.dart';
 
 class ApiService {
   static String? customBaseUrl;
@@ -38,7 +39,7 @@ class ApiService {
       : baseUrl = baseUrl ?? customBaseUrl ?? '';
 
   final String baseUrl;
-  final String? accessToken;
+  String? accessToken;
   String? languageCode;
 
   String getAssetUrl(String? path) {
@@ -54,6 +55,37 @@ class ApiService {
         'Accept': 'application/json',
       };
 
+  Future<bool> _tryRefreshToken() async {
+    try {
+      final refreshToken = await TokenStorage.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) return false;
+      AppLogger.info('ApiService', 'Attempting transparent token refresh on 401...');
+      final refreshRes = await http.post(
+        Uri.parse('$baseUrl/auth/refresh'),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({'refresh_token': refreshToken}),
+      ).timeout(const Duration(seconds: 15));
+
+      if (refreshRes.statusCode == 200) {
+        final data = jsonDecode(refreshRes.body) as Map<String, dynamic>;
+        final newAccess = data['access_token']?.toString();
+        final newRefresh = data['refresh_token']?.toString() ?? refreshToken;
+        if (newAccess != null && newAccess.isNotEmpty) {
+          accessToken = newAccess;
+          await TokenStorage.saveTokens(accessToken: newAccess, refreshToken: newRefresh);
+          AppLogger.info('ApiService', 'Token refreshed and securely stored successfully.');
+          return true;
+        }
+      } else {
+        AppLogger.warn('ApiService', 'Refresh token invalid/expired (HTTP ${refreshRes.statusCode}). Clearing session.');
+        await TokenStorage.clearToken();
+      }
+    } catch (e) {
+      AppLogger.warn('ApiService', 'Failed to refresh token: $e');
+    }
+    return false;
+  }
+
   Future<http.Response> _sendWithRetry(
     Future<http.Response> Function() requestFn, {
     int maxRetries = 2,
@@ -65,6 +97,15 @@ class ApiService {
       try {
         final response = await requestFn().timeout(timeout);
         final status = response.statusCode;
+
+        // Auto-refresh token on HTTP 401 Unauthorized
+        if (status == 401 && accessToken != null && attempts == 1) {
+          final refreshed = await _tryRefreshToken();
+          if (refreshed) {
+            continue; // Re-attempt the request with new accessToken
+          }
+        }
+
         final bodyLower = response.body.toLowerCase();
         final isColdStartTimeout = status == 504 ||
             status == 502 ||
@@ -162,6 +203,50 @@ class ApiService {
       throw Exception('Access restricted: This mobile app is exclusively for farmers.');
     }
 
+    final tokens = body['tokens'] as Map<String, dynamic>?;
+    if (tokens != null) {
+      final access = tokens['access_token']?.toString();
+      final refresh = tokens['refresh_token']?.toString();
+      if (access != null) {
+        accessToken = access;
+        if (refresh != null) {
+          await TokenStorage.saveTokens(accessToken: access, refreshToken: refresh);
+        } else {
+          await TokenStorage.saveToken(access);
+        }
+      }
+    }
+
+    return body;
+  }
+
+  Future<Map<String, dynamic>> guestLogin() async {
+    final response = await _sendWithRetry(() => http.post(
+      Uri.parse('$baseUrl/auth/guest'),
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    ));
+    final body = _parseJsonResponse(response, fallbackError: 'Guest login failed');
+
+    final user = body['user'] as Map<String, dynamic>?;
+    final role = user?['role']?.toString().toLowerCase();
+    if (role != null && role != 'farmer') {
+      throw Exception('Access restricted: This mobile app is exclusively for farmers.');
+    }
+
+    final tokens = body['tokens'] as Map<String, dynamic>?;
+    if (tokens != null) {
+      final access = tokens['access_token']?.toString();
+      final refresh = tokens['refresh_token']?.toString();
+      if (access != null) {
+        accessToken = access;
+        if (refresh != null) {
+          await TokenStorage.saveTokens(accessToken: access, refreshToken: refresh);
+        } else {
+          await TokenStorage.saveToken(access);
+        }
+      }
+    }
+
     return body;
   }
 
@@ -191,7 +276,21 @@ class ApiService {
         if (farmAreaAcres != null) 'farm_area_acres': farmAreaAcres,
       }),
     ));
-    return _parseJsonResponse(response, fallbackError: 'Registration failed');
+    final body = _parseJsonResponse(response, fallbackError: 'Registration failed');
+    final tokens = body['tokens'] as Map<String, dynamic>?;
+    if (tokens != null) {
+      final access = tokens['access_token']?.toString();
+      final refresh = tokens['refresh_token']?.toString();
+      if (access != null) {
+        accessToken = access;
+        if (refresh != null) {
+          await TokenStorage.saveTokens(accessToken: access, refreshToken: refresh);
+        } else {
+          await TokenStorage.saveToken(access);
+        }
+      }
+    }
+    return body;
   }
 
   Future<Map<String, dynamic>> getProfile({String? lang}) async {

@@ -17,6 +17,7 @@ class TodayScreen extends StatelessWidget {
     required this.onSeeTrail,
     required this.onLogout,
     this.onOpenSettings,
+    this.onOpenWeather,
   });
 
   final Map<String, dynamic> userProfile;
@@ -29,33 +30,38 @@ class TodayScreen extends StatelessWidget {
   final VoidCallback onSeeTrail;
   final VoidCallback onLogout;
   final VoidCallback? onOpenSettings;
+  final VoidCallback? onOpenWeather;
 
-  Widget _stat(String value, String label) => Expanded(
-        child: Container(
-          margin: const EdgeInsets.only(right: 7),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppColors.cardBg,
-            border: Border.all(color: AppColors.cardBorder),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
-              ),
-            ],
+  Widget _stat(String value, String label, {VoidCallback? onTap}) => Expanded(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            margin: const EdgeInsets.only(right: 7),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+            decoration: BoxDecoration(
+              color: AppColors.cardBg,
+              border: Border.all(color: AppColors.cardBorder),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -220,7 +226,50 @@ class TodayScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
+        if (userProfile['is_guest'] == true || (userProfile['id']?.toString().startsWith('guest_') ?? false)) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF59E0B)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Color(0xFFB45309), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    context.tr('guestBannerNotice'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF92400E),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onLogout,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    context.tr('registerBtn'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFFB45309),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -266,7 +315,7 @@ class TodayScreen extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            _stat(temp, cond),
+            _stat(temp, cond, onTap: onOpenWeather),
             _stat(hum, context.tr('humidity')),
             _stat(
               pendingCount > 0 ? '$pendingCount' : context.tr('syncStatus'),

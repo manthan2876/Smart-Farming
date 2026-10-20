@@ -595,6 +595,41 @@ async def login(
     )
 
 
+@router.post("/guest", response_model=AuthResponse)
+@limiter.limit("10/minute")
+async def guest_login(
+    request: Request,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> AuthResponse:
+    """Provides a seamless 1-tap anonymous guest session for mobile farmers."""
+    guest_id = f"guest_{uuid.uuid4().hex[:16]}"
+    user = create_user(
+        session,
+        user_id=guest_id,
+        name="Guest Farmer",
+        language="English",
+        location="Field Guest",
+    )
+    tokens = create_token_pair(guest_id)
+    if tokens.get("refresh_token"):
+        store_refresh_token(session, guest_id, tokens["refresh_token"])
+        session.commit()
+    cookie_opts = _cookie_settings(request)
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens["refresh_token"],
+        httponly=True,
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
+        max_age=7 * 24 * 60 * 60,
+    )
+    return AuthResponse(
+        tokens=tokens,
+        user=_profile(user, session=session, req_lang=request.headers.get("accept-language")),
+    )
+
+
 @router.post("/request-email-update", response_model=MessageResponse, status_code=200)
 @limiter.limit("5/minute")
 async def request_email_update(

@@ -15,7 +15,7 @@ class OfflineQueueDb {
 
   static const String tableName = 'offline_scans';
   static const String _legacyQueueKey = 'pending_leaf_scans';
-  static const int maxRetries = 10;
+  static const int maxRetries = 5;
 
   Database? _database;
   bool _initialized = false;
@@ -199,7 +199,7 @@ class OfflineQueueDb {
       return _fallbackQueue.where((i) {
         if (i.status == 'syncing' || i.status == 'failed_permanent') return false;
         if (i.retryCount > 0 && i.lastAttemptAt != null) {
-          final backoffSec = min(300, pow(2, i.retryCount).toInt() * 5);
+          final backoffSec = min(60, pow(2, i.retryCount).toInt());
           if (now.difference(i.lastAttemptAt!).inSeconds < backoffSec) {
             return false;
           }
@@ -218,7 +218,7 @@ class OfflineQueueDb {
     final items = rows.map((r) => SyncQueueItem.fromDbMap(r)).toList();
     return items.where((i) {
       if (i.retryCount > 0 && i.lastAttemptAt != null) {
-        final backoffSec = min(300, pow(2, i.retryCount).toInt() * 5);
+        final backoffSec = min(60, pow(2, i.retryCount).toInt());
         if (now.difference(i.lastAttemptAt!).inSeconds < backoffSec) {
           return false;
         }

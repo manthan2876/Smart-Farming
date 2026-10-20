@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../providers/locale_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/token_storage.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_logger.dart';
 import '../shell/farmer_shell.dart';
+import '../splash/language_splash_screen.dart';
 import 'login_screen.dart';
 
 class AuthWrapper extends StatefulWidget {
@@ -16,6 +18,7 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _loading = true;
+  bool _languageConfirmed = false;
   String? _token;
   Map<String, dynamic>? _user;
 
@@ -28,7 +31,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
     final savedToken = await TokenStorage.getToken();
-    final savedLocale = prefs.getString('app_locale');
+    final savedLocale = prefs.getString('smart_farm_lang') ?? prefs.getString('app_locale');
+    if (savedLocale != null && savedLocale.isNotEmpty) {
+      _languageConfirmed = true;
+    }
+
     if (savedToken != null && savedToken.isNotEmpty) {
       AppLogger.info('AuthWrapper', 'Found securely stored auth token. Validating user session...');
       final api = ApiService(accessToken: savedToken, languageCode: savedLocale);
@@ -66,12 +73,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _onLoggedIn(String token, Map<String, dynamic> user) async {
-    AppLogger.info('AuthWrapper', 'Farmer logged in successfully: ${user['name']} (${user['email'] ?? user['phone']})');
+    AppLogger.info('AuthWrapper', 'Farmer logged in successfully: ${user['name']} (${user['email'] ?? user['phone'] ?? user['id']})');
     await TokenStorage.saveToken(token);
     if (mounted) {
       setState(() {
         _token = token;
         _user = user;
+        _languageConfirmed = true;
       });
     }
   }
@@ -96,6 +104,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
         ),
       );
     }
+
+    // Pre-auth splash if language has never been selected
+    if (!_languageConfirmed && !context.loc.hasSavedLanguage) {
+      return LanguageSplashScreen(
+        onLanguageConfirmed: () {
+          setState(() {
+            _languageConfirmed = true;
+          });
+        },
+      );
+    }
+
     if (_token != null && _user != null) {
       return FarmerShell(
         token: _token!,

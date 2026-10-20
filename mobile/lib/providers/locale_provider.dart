@@ -12,10 +12,14 @@ class LocaleProvider extends ChangeNotifier {
   static const String _unitKey = 'smart_farm_units';
   String _currentLanguage = 'English';
   String _currentUnit = 'Metric';
+  bool _hasSavedLanguage = false;
+  bool _isInitialized = false;
 
   String get currentLanguage => _currentLanguage;
   String get currentUnit => _currentUnit;
   String get languageCode => DomainTranslations.normalizeLang(_currentLanguage);
+  bool get hasSavedLanguage => _hasSavedLanguage;
+  bool get isInitialized => _isInitialized;
 
   Future<void> _loadSavedLanguage() async {
     try {
@@ -23,18 +27,21 @@ class LocaleProvider extends ChangeNotifier {
       final saved = prefs.getString(_prefKey);
       if (saved != null && (saved == 'English' || saved == 'Hindi' || saved == 'Gujarati')) {
         _currentLanguage = saved;
+        _hasSavedLanguage = true;
       }
       final savedUnit = prefs.getString(_unitKey);
       if (savedUnit != null && (savedUnit == 'Metric' || savedUnit == 'Imperial')) {
         _currentUnit = savedUnit;
       }
+    } catch (_) {} finally {
+      _isInitialized = true;
       notifyListeners();
-    } catch (_) {}
+    }
   }
 
   Future<void> setLanguage(String newLang) async {
-    if (_currentLanguage == newLang) return;
     _currentLanguage = newLang;
+    _hasSavedLanguage = true;
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();

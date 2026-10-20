@@ -102,3 +102,7 @@ jobs:
       - name: Analyze Flutter codebase
         run: flutter analyze --no-fatal-infos
 
+      - name: Run Flutter unit & widget tests
+        run: flutter test
+
+

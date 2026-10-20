@@ -279,6 +279,57 @@ class _FarmerShellState extends State<FarmerShell> {
     );
   }
 
+  void _openWeather() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WeatherScreen(
+          weather: _weather,
+          api: _api,
+          onRefresh: _loadWeather,
+        ),
+      ),
+    );
+  }
+
+  int _navIndexFromStack(int stackIndex) {
+    switch (stackIndex) {
+      case 0:
+        return 0; // Today
+      case 1:
+        return 1; // Farm
+      case 2:
+        return 3; // Alerts
+      case 3:
+        return 4; // History
+      default:
+        return 0;
+    }
+  }
+
+  void _onNavDestinationSelected(int navIndex) {
+    if (navIndex == 2) {
+      // Center Hero Scan Button: trigger camera capture immediately
+      _openCreatePredictionModal();
+      return;
+    }
+    setState(() {
+      switch (navIndex) {
+        case 0:
+          _tab = 0; // Today
+          break;
+        case 1:
+          _tab = 1; // Farm
+          break;
+        case 3:
+          _tab = 2; // Alerts
+          break;
+        case 4:
+          _tab = 3; // History
+          break;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         body: SafeArea(
@@ -293,19 +344,10 @@ class _FarmerShellState extends State<FarmerShell> {
                 photoBytes: _photoBytes,
                 onScanLeaf: _openCreatePredictionModal,
                 onSelectPrediction: _showResultSheet,
-                onSeeTrail: () => setState(() => _tab = 1),
+                onSeeTrail: () => setState(() => _tab = 3),
                 onLogout: widget.onLogout,
                 onOpenSettings: _openSettings,
-              ),
-              HistoryScreen(
-                history: _history,
-                onSelectPrediction: _showResultSheet,
-                onRefresh: _loadHistory,
-              ),
-              WeatherScreen(
-                weather: _weather,
-                api: _api,
-                onRefresh: _loadWeather,
+                onOpenWeather: _openWeather,
               ),
               FarmScreen(
                 farm: _farm,
@@ -318,13 +360,19 @@ class _FarmerShellState extends State<FarmerShell> {
                 api: _api,
                 onRefresh: _loadAlerts,
               ),
+              HistoryScreen(
+                history: _history,
+                onSelectPrediction: _showResultSheet,
+                onRefresh: _loadHistory,
+              ),
             ],
           ),
         ),
         bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab,
-          onDestinationSelected: (index) => setState(() => _tab = index),
+          selectedIndex: _navIndexFromStack(_tab),
+          onDestinationSelected: _onNavDestinationSelected,
           backgroundColor: AppColors.cardBg,
+          elevation: 4,
           destinations: [
             NavigationDestination(
               icon: const Icon(Icons.wb_sunny_outlined),
@@ -332,19 +380,35 @@ class _FarmerShellState extends State<FarmerShell> {
               label: context.tr('navToday'),
             ),
             NavigationDestination(
-              icon: const Icon(Icons.timeline_outlined),
-              selectedIcon: const Icon(Icons.timeline),
-              label: context.tr('navHistory'),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.cloud_outlined),
-              selectedIcon: const Icon(Icons.cloud),
-              label: context.tr('navWeather'),
-            ),
-            NavigationDestination(
               icon: const Icon(Icons.yard_outlined),
               selectedIcon: const Icon(Icons.yard),
               label: context.tr('navFarm'),
+            ),
+            NavigationDestination(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
+              ),
+              selectedIcon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
+              ),
+              label: context.tr('navScan'),
             ),
             NavigationDestination(
               icon: Badge(
@@ -354,6 +418,11 @@ class _FarmerShellState extends State<FarmerShell> {
               ),
               selectedIcon: const Icon(Icons.notifications),
               label: context.tr('navAlerts'),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.timeline_outlined),
+              selectedIcon: const Icon(Icons.timeline),
+              label: context.tr('navHistory'),
             ),
           ],
         ),
