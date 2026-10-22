@@ -908,7 +908,13 @@ async def rescan_prediction(
         old_res = dict(old_prediction.result or {})
         old_user = old_res.get("user", {}) or {}
         location = old_user.get("location", old_res.get("location", "Unknown"))
-        lat = old_user.get("lat") or getattr(settings, "DEFAULT_LAT", 21.7645)
+        lat = old_user.get("lat")
+        if lat is None:
+            lat = getattr(settings, "DEFAULT_LAT", 21.7645)
+        lon = old_user.get("lon")
+        if lon is None:
+            lon = getattr(settings, "DEFAULT_LON", 72.1519)
+        language = old_user.get("language") or old_res.get("language") or "English"
         # Enrich farm and plot context
         effective_plot_id = plot_id or old_prediction.plot_id
         farm_info = {}

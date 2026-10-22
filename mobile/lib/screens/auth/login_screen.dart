@@ -197,8 +197,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: emailCtrl,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email Address',
+                      decoration: InputDecoration(
+                        labelText: context.tr('emailAddressLabel'),
                         prefixIcon: Icon(Icons.email_outlined),
                         border: OutlineInputBorder(),
                       ),
@@ -210,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           : () async {
                               final email = emailCtrl.text.trim();
                               if (email.isEmpty || !email.contains('@')) {
-                                setSheetState(() => recoveryError = 'Please enter a valid email address');
+                                setSheetState(() => recoveryError = context.tr('validEmailRequired'));
                                 return;
                               }
                               setSheetState(() {
@@ -246,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => setSheetState(() => sentEmail = true),
-                      child: const Text('Already have a reset token? Enter it here'),
+                      child: Text(context.tr('resetTokenPrompt')),
                     ),
                   ] else ...[
                     // Step 2: Reset password using token
@@ -301,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               final confP = confirmPasswordCtrl.text;
 
                               if (token.isEmpty) {
-                                setSheetState(() => recoveryError = 'Please enter the reset token.');
+                                setSheetState(() => recoveryError = context.tr('resetTokenRequired'));
                                 return;
                               }
                               if (newP.length < 8) {
@@ -360,7 +360,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => setSheetState(() => sentEmail = false),
-                      child: const Text('Back to request token'),
+                      child: Text(context.tr('backToRequestToken')),
                     ),
                   ],
                 ],
@@ -519,7 +519,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          _isRegister ? 'OR REGISTER' : 'OR SIGN IN',
+                          _isRegister ? context.tr('orRegister') : context.tr('orSignIn'),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,

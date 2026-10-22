@@ -53,10 +53,23 @@ def test_health_and_crops() -> None:
     client = TestClient(app)
 
     assert client.get("/health").json()["status"] == "ok"
+    assert client.get("/api/v1/health").json()["status"] == "ok"
     response = client.get("/crops")
 
     assert response.status_code == 200
     assert "Tomato" in response.json()["crops"]
+    versioned_response = client.get("/api/v1/crops")
+    assert versioned_response.status_code == 200
+    assert versioned_response.json() == response.json()
+
+
+def test_openapi_documents_only_versioned_routes() -> None:
+    schema = app.openapi()
+
+    assert "/api/v1/health" in schema["paths"]
+    assert "/api/v1/predict" in schema["paths"]
+    assert "/health" not in schema["paths"]
+    assert "/predict" not in schema["paths"]
 
 
 def test_public_result_serialization() -> None:
@@ -127,6 +140,5 @@ def test_admin_metrics_endpoint() -> None:
     assert "processing_duration" in data
     assert "failures" in data
     assert "expert_metrics" in data
-
 
 

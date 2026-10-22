@@ -9,6 +9,7 @@ on:
       - 'ai_service/**'
       - 'frontend/**'
       - 'mobile/**'
+      - 'Docs/**'
       - '.github/workflows/**'
   pull_request:
     branches:
@@ -99,6 +100,19 @@ jobs:
             --requirement "$RUNNER_TEMP/backend-requirements.txt" \
             --require-hashes --disable-pip --progress-spinner off
 
+      - name: Lint Python code
+        run: |
+          uv run --project backend --locked --extra dev ruff check \
+            --config backend/pyproject.toml \
+            backend/src backend/tests ai_service
+
+      - name: Type-check focused backend and AI modules
+        run: |
+          uv run --project backend --locked --extra dev mypy \
+            --config-file backend/pyproject.toml \
+            backend/src/app/core/paths.py \
+            ai_service/vision_engine/stages/confidence.py
+
       - name: Run Pytest Suite
         env:
           PYTHONPATH: .:backend/src:ai_service
@@ -124,6 +138,8 @@ jobs:
             backend/tests/test_ai_service_client.py \
             backend/tests/test_agronomic_advisory.py \
             backend/tests/test_image_validation.py \
+            backend/tests/test_paths.py \
+            ai_service/tests/test_confidence.py \
             -v
 
   frontend-check:
@@ -152,6 +168,76 @@ jobs:
 
       - name: Type check and production build
         run: npm run build
+
+  api-contract:
+    name: OpenAPI Snapshot & TypeScript Contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv==0.13.0
+
+      - name: Install locked backend runtime
+        run: uv sync --project backend --locked --no-dev
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            tools/openapi-codegen/package-lock.json
+
+      - name: Install locked OpenAPI code generator
+        run: npm ci --prefix tools/openapi-codegen
+
+      - name: Audit OpenAPI code generator dependencies
+        run: npm audit --prefix tools/openapi-codegen --audit-level=high
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Regenerate OpenAPI and TypeScript contracts
+        env:
+          PYTHONPATH: backend/src:ai_service
+          ENVIRONMENT: test
+          SECRET_KEY: openapi-schema-generation-secret-key
+          JWT_SECRET_KEY: openapi-schema-generation-jwt-secret
+          CRON_SECRET: openapi-schema-generation-cron-secret
+          REQUIRE_REDIS: 'false'
+        run: |
+          uv run --project backend --locked --no-dev \
+            python backend/scripts/export_openapi.py
+          npm --prefix frontend run api:types
+          git diff --exit-code -- Docs/openapi.json frontend/src/api/generated/openapi.d.ts
+
+  secret-scan:
+    name: Scan Repository for Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for leaked credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   mobile-analyze:
     name: Mobile Flutter Analysis

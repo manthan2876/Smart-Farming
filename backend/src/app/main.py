@@ -114,8 +114,6 @@ app = FastAPI(
 )
 
 from app.core.limiter import limiter
-from slowapi.errors import RateLimitExceeded
-from slowapi import _rate_limit_exceeded_handler
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -164,25 +162,30 @@ app.add_middleware(
     expose_headers=["X-Request-ID", "X-Total-Count", "X-Offset", "X-Limit"],
 )
 
-# Include all modular routers
-app.include_router(tts_router)
-app.include_router(mlops_router)
-app.include_router(model_registry_router)
-app.include_router(translation_router)
-app.include_router(auth_router)
-app.include_router(profile_router)
-app.include_router(farm_router)
-app.include_router(predict_router)
-app.include_router(history_router)
-app.include_router(feedback_router)
-app.include_router(weather_router)
-app.include_router(crops_router)
-app.include_router(health_router)
-app.include_router(alerts_router)
-app.include_router(admin_router)
-app.include_router(expert_router)
-app.include_router(internal_cron_router)
-app.include_router(internal_cron_router, prefix="/api/v1")
+api_routers = (
+    tts_router,
+    mlops_router,
+    model_registry_router,
+    translation_router,
+    auth_router,
+    profile_router,
+    farm_router,
+    predict_router,
+    history_router,
+    feedback_router,
+    weather_router,
+    crops_router,
+    health_router,
+    alerts_router,
+    admin_router,
+    expert_router,
+    internal_cron_router,
+)
+
+# Keep existing unversioned clients working while documenting the versioned contract.
+for api_router in api_routers:
+    app.include_router(api_router, include_in_schema=False)
+    app.include_router(api_router, prefix="/api/v1")
 
 # Mount static storage directories for uploaded and processed images
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent

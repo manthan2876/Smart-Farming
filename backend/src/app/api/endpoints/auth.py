@@ -1,6 +1,7 @@
 import logging
 import secrets
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
@@ -1149,4 +1150,3 @@ async def sync_session(
         tokens=tokens,
         user=_profile(user, session=session, req_lang=request.headers.get("accept-language")),
     )
-

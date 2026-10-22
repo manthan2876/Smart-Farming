@@ -1,0 +1,11 @@
+{
+  "name": "smart-farming-openapi-codegen",
+  "private": true,
+  "scripts": {
+    "generate": "openapi-typescript ../../Docs/openapi.json -o ../../frontend/src/api/generated/openapi.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.8.0",
+    "typescript": "5.9.3"
+  }
+}

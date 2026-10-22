@@ -215,6 +215,8 @@ Registers 17 modular endpoint routers:
 - `/mlops` — Retraining pipeline trigger and dataset candidate curation (spatial split, 70/30 replay)
 - `/model-registry` — Model performance telemetry, calibrated temperature $T$, and version promotion
 
+All HTTP routers are exposed under canonical `/api/v1` paths for new consumers and OpenAPI generation. Existing unversioned paths remain hidden compatibility aliases to avoid breaking deployed clients; retire them only after an announced sunset and a mobile-client compatibility review.
+
 ---
 
 ### 4.2 AI Microservice Gateway & Auto-Derivation

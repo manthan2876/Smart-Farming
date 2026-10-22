@@ -13,6 +13,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
@@ -359,8 +360,8 @@ def export_dataset_post(
                 f"- Test: {split_counts['test']} images ({payload.split.test}%)\n\n"
                 f"## Class Distribution\n"
                 + "\n".join(f"- {cls}: {cnt}" for cls, cnt in class_counts.items())
-                + (f"\n\n## Warnings\n" + "\n".join(f"- {w}" for w in class_warnings) if class_warnings else "")
-                + f"\n\nSee `metadata.json` for full candidate provenance.\n"
+                + ("\n\n## Warnings\n" + "\n".join(f"- {w}" for w in class_warnings) if class_warnings else "")
+                + "\n\nSee `metadata.json` for full candidate provenance.\n"
             )
             archive.writestr("README.md", readme_content)
 

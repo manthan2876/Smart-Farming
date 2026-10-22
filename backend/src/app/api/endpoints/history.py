@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Request, Response
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Request, Response
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -202,4 +202,3 @@ def history(
                     pass
 
     return results
-

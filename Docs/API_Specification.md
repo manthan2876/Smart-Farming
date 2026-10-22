@@ -36,6 +36,13 @@
 
 The Smart Farming backend is an AI-powered crop disease detection and agronomic intelligence platform. It exposes a comprehensive REST API consumed by React web and Flutter mobile clients. The platform operates in two modes:
 
+### API Versioning and Compatibility
+
+- `/api/v1` is the canonical, documented API prefix. The OpenAPI contract describes this version only.
+- Existing unversioned routes remain available as compatibility aliases for current web, mobile, and deployment clients. They are not removed by introducing `/api/v1`.
+- New API consumers should use `/api/v1`. A future breaking API change requires a new version prefix and a published migration/deprecation window; no unversioned alias is removed without an announced sunset and a compatibility review of supported mobile releases.
+- The generated OpenAPI snapshot is `Docs/openapi.json`; regenerate it with `uv run --project backend python backend/scripts/export_openapi.py`. The TypeScript schema bindings are generated into `frontend/src/api/generated/openapi.d.ts` with `npm --prefix frontend run api:types`. The generator and its TypeScript 5.9 peer are isolated and locked in `tools/openapi-codegen`, separate from the frontend TypeScript 7 toolchain; CI fails if either snapshot is stale.
+
 - **Production Cloud Architecture (Render & Hugging Face Spaces):** The API Gateway runs on Render (`smart-farming-backend` via `render.yaml`). Prediction requests run synchronously (`REQUIRE_REDIS=False`) to provide low latency and high availability. Image deduplication (`sf:dedup:{hash}`), phrase translations (`sf:trans:{lang}:{hash}`), and weather responses (`sf:weather:{lat}:{lon}`) are cached via Upstash Serverless Redis REST. All heavy ML inference, regional translation, LLM advisory, and speech synthesis are offloaded to the unified AI microservice on Hugging Face Spaces (`https://maharsh8805-smart-farming-ai.hf.space`, port `7860`).
 - **Asynchronous Task Queue (Local Dev / Dedicated Host):** `REQUIRE_REDIS=True` enqueues prediction jobs into ARQ, publishing real-time stage progress over WebSocket (`/ws/predictions/{id}`).
 

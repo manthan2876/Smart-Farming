@@ -150,7 +150,7 @@ def test_model_cards_contain_per_class_metrics_and_field_sets():
     
     # 2. Disease Classifiers Evidence
     for crop_name in ["Cotton", "Groundnut", "Pepper Bell", "Potato", "Tomato"]:
-        assert f"### 2" in content
+        assert "### 2" in content
         assert crop_name in content
         assert "Per-Class Metrics" in content
         assert "Confidence Calibration" in content
@@ -248,4 +248,3 @@ def test_predict_disease_with_temperature_scaling():
     assert res["disease"]["is_calibrated"] is True
     assert res["disease"]["temperature"] == 1.12
     assert 0.0 < res["disease"]["confidence"] <= 1.0
-

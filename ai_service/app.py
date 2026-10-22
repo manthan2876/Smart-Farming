@@ -138,7 +138,9 @@ def warmup_service():
     t0 = time.perf_counter()
     warmed = []
     try:
+        import torch
         from vision_engine.loader import load_efficientnet
+
         res = load_efficientnet("models/crop_identifier_v1.pth", "models/labels_crop.json", "efficientnet_b0")
         if res:
             model, _ = res

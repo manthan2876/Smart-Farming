@@ -91,7 +91,7 @@ export default function LoginPage() {
       setPhoneStep("enter_otp");
       startCooldown();
     } catch (err: any) {
-      setError(err.message || "Failed to send verification code. Please check your number.");
+      setError(err.message || t("loginPhoneCodeSendFailed"));
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export default function LoginPage() {
       await sendPhoneOtp(phone.trim(), true);
       startCooldown();
     } catch (err: any) {
-      setError(err.message || "Failed to resend code.");
+      setError(err.message || t("loginCodeResendFailed"));
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function LoginPage() {
       const targetRoute = getDefaultRouteForRole(loggedUser.role);
       navigate(targetRoute, { replace: true });
     } catch (err: any) {
-      setError(err.message || "Invalid verification code.");
+      setError(err.message || t("loginCodeInvalid"));
     } finally {
       setLoading(false);
     }
@@ -163,7 +163,7 @@ export default function LoginPage() {
             await sendPhoneOtp(rawPhone, false);
             startCooldown();
           } catch (otpErr: any) {
-            setError(otpErr.message || "Failed to dispatch verification code to registered phone.");
+            setError(otpErr.message || t("loginEmailCodeSendFailed"));
           }
         }
         return;
@@ -172,11 +172,11 @@ export default function LoginPage() {
       // Check if email is unverified
       if (err?.status === 403 && err?.message?.toLowerCase().includes("not verified")) {
         setUnverifiedEmail(identifier.trim());
-        setError(err.message || "Your email address is not verified yet. Please check your inbox for the link.");
+        setError(err.message || t("loginEmailUnverified"));
         return;
       }
 
-      setError(err.message || "Failed to login. Please check your credentials.");
+      setError(err.message || t("loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -196,7 +196,7 @@ export default function LoginPage() {
       // OTP verified successfully! Advance to password creation
       setEmailStep("create_password");
     } catch (err: any) {
-      setError(err.message || "Invalid verification code.");
+      setError(err.message || t("loginCodeInvalid"));
     } finally {
       setLoading(false);
     }
@@ -211,7 +211,7 @@ export default function LoginPage() {
       await sendPhoneOtp(challengePhone, false);
       startCooldown();
     } catch (err: any) {
-      setError(err.message || "Failed to resend code.");
+      setError(err.message || t("loginCodeResendFailed"));
     } finally {
       setLoading(false);
     }
@@ -222,11 +222,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setError(t("loginPasswordMinLength"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match. Please re-enter.");
+      setError(t("loginPasswordMismatch"));
       return;
     }
     setLoading(true);
@@ -239,7 +239,7 @@ export default function LoginPage() {
       const targetRoute = getDefaultRouteForRole(loggedUser.role);
       navigate(targetRoute, { replace: true });
     } catch (err: any) {
-      setError(err.message || "Failed to set password.");
+      setError(err.message || t("loginPasswordSetupFailed"));
     } finally {
       setLoading(false);
     }
@@ -255,7 +255,7 @@ export default function LoginPage() {
       const res = await resendVerificationEmail(unverifiedEmail);
       setResendSuccess(res.message || `Verification link resent to ${unverifiedEmail}.`);
     } catch (err: any) {
-      setError(err.message || "Failed to resend verification link.");
+      setError(err.message || t("loginVerificationResendFailed"));
     } finally {
       setLoading(false);
     }
@@ -288,7 +288,7 @@ export default function LoginPage() {
           {verifiedSuccess && (
             <div className="mt-6 flex items-center gap-2 rounded-sm border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
               <CheckCircle2 size={18} className="shrink-0 text-green-600 dark:text-green-400" />
-              <span>Email verified successfully! You can now sign in with your credentials.</span>
+              <span>{t("loginEmailVerifiedSuccess")}</span>
             </div>
           )}
 
@@ -310,7 +310,7 @@ export default function LoginPage() {
                     disabled={loading}
                     className="text-xs font-semibold text-farmer-700 underline hover:text-farmer-800 dark:text-farmer-300"
                   >
-                    {loading ? "Sending..." : "Resend Verification Email"}
+                    {loading ? t("loginSending") : t("loginResendVerificationEmail")}
                   </button>
                 </div>
               )}
@@ -451,7 +451,7 @@ export default function LoginPage() {
                             {t("resendOtpIn")} <span className="font-bold text-ink">{countdown}{t("seconds")}</span>
                           </>
                         ) : (
-                          "Didn't receive the SMS code?"
+                          t("loginDidNotReceiveSmsCode")
                         )}
                       </span>
                       <button
@@ -487,11 +487,11 @@ export default function LoginPage() {
                 >
                   <Input 
                     id="login-identifier" 
-                    label="Email Address or Mobile Phone"
+                    label={t("loginEmailOrPhone")}
                     type="text" 
                     value={identifier} 
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="farmer@example.com or 99999 99999"
+                    placeholder={t("loginEmailOrPhonePlaceholder")}
                     required 
                   />
                   <div className="space-y-1">
@@ -534,11 +534,11 @@ export default function LoginPage() {
                   <div className="rounded-lg border border-farmer-200/80 bg-farmer-50/70 p-4 text-xs text-farmer-950 dark:border-farmer-900/40 dark:bg-farmer-950/30 dark:text-farmer-200">
                     <div className="font-semibold text-sm mb-1 text-farmer-800 dark:text-farmer-300 flex items-center gap-1.5">
                       <Smartphone size={16} />
-                      <span>First-Time Email Sign In</span>
+                      <span>{t("loginFirstTimeEmailSignIn")}</span>
                     </div>
                     <div className="leading-relaxed">
-                      This is your first time signing in with <strong className="text-ink">{challengeEmail}</strong>.
-                      For security, we sent a 6-digit verification code to your registered mobile number:{" "}
+                      {t("loginFirstTimeEmailPrefix")} <strong className="text-ink">{challengeEmail}</strong>.
+                      {" "}{t("loginFirstTimeEmailCode")}{" "}
                       <span className="font-semibold underline">{challengeMaskedPhone}</span>.
                     </div>
                   </div>
@@ -561,7 +561,7 @@ export default function LoginPage() {
 
                   <Button type="submit" disabled={loading || challengeOtp.length < 6} className="w-full">
                     <LogIn size={17} />
-                    {loading ? t("verifying") : "Verify Code & Continue"}
+                    {loading ? t("verifying") : t("loginVerifyCodeContinue")}
                   </Button>
 
                   <div className="flex items-center justify-between text-xs pt-1">
@@ -574,7 +574,7 @@ export default function LoginPage() {
                       className="flex items-center gap-1 font-semibold text-muted hover:text-ink transition-colors"
                     >
                       <ArrowLeft size={13} />
-                      Back to Email Login
+                      {t("loginBackToEmail")}
                     </button>
 
                     <button
@@ -605,32 +605,33 @@ export default function LoginPage() {
                   <div className="rounded-lg border border-farmer-200/80 bg-farmer-50/70 p-4 text-xs text-farmer-950 dark:border-farmer-900/40 dark:bg-farmer-950/30 dark:text-farmer-200">
                     <div className="font-semibold text-sm mb-1 text-farmer-800 dark:text-farmer-300 flex items-center gap-1.5">
                       <CheckCircle2 size={16} />
-                      <span>Mobile Number Verified!</span>
+                      <span>{t("loginMobileNumberVerified")}</span>
                     </div>
                     <div className="leading-relaxed">
-                      Now set a password for <strong className="text-ink">{challengeEmail}</strong>. You will use this password whenever you log in with your email in the future. <strong>No OTP will be required again.</strong>
+                      {t("loginSetPasswordPrefix")} <strong className="text-ink">{challengeEmail}</strong>.{" "}
+                      {t("loginSetPasswordSuffix")}
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <Input
                       id="challenge-new-password"
-                      label="Create Password"
+                      label={t("loginCreatePassword")}
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="At least 8 characters"
+                      placeholder={t("loginPasswordLengthPlaceholder")}
                       required
                       minLength={8}
                     />
 
                     <Input
                       id="challenge-confirm-password"
-                      label="Confirm Password"
+                      label={t("loginConfirmPassword")}
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter password"
+                      placeholder={t("loginReenterPassword")}
                       required
                       minLength={8}
                     />
@@ -638,7 +639,7 @@ export default function LoginPage() {
 
                   <Button type="submit" disabled={loading || newPassword.length < 8 || !confirmPassword} className="w-full">
                     <CheckCircle2 size={17} />
-                    {loading ? "Saving Password..." : "Save Password & Sign In"}
+                    {loading ? t("loginSavingPassword") : t("loginSavePasswordSignIn")}
                   </Button>
                 </motion.form>
               )}
