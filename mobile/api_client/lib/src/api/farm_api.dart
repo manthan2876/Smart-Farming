@@ -20,7 +20,7 @@ class FarmApi {
   const FarmApi(this._dio);
 
   /// Create Plot
-  ///
+  /// Add a new crop plot inside the verified farm boundary.
   ///
   /// Parameters:
   /// * [plotRequest]
@@ -114,7 +114,7 @@ class FarmApi {
   }
 
   /// Delete Plot
-  ///
+  /// Delete a plot from the farm.
   ///
   /// Parameters:
   /// * [plotId]
@@ -168,7 +168,7 @@ class FarmApi {
   }
 
   /// Get Farmer Farm
-  ///
+  /// Retrieve farmer farm details, plots, and boundaries with localized overlays.
   ///
   /// Parameters:
   /// * [lang]
@@ -250,7 +250,7 @@ class FarmApi {
   }
 
   /// Save Farmer Farm
-  ///
+  /// Configure or update farm metadata and boundary polygon.
   ///
   /// Parameters:
   /// * [farmRequest]
@@ -344,7 +344,7 @@ class FarmApi {
   }
 
   /// Update Plot
-  ///
+  /// Update plot metadata, assigned crop, or plot boundaries.
   ///
   /// Parameters:
   /// * [plotId]

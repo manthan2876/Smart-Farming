@@ -506,9 +506,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Farmer Farm */
+        /**
+         * Get Farmer Farm
+         * @description Retrieve farmer farm details, plots, and boundaries with localized overlays.
+         */
         get: operations["get_farmer_farm_api_v1_farm_get"];
-        /** Save Farmer Farm */
+        /**
+         * Save Farmer Farm
+         * @description Configure or update farm metadata and boundary polygon.
+         */
         put: operations["save_farmer_farm_api_v1_farm_put"];
         post?: never;
         delete?: never;
@@ -526,7 +532,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create Plot */
+        /**
+         * Create Plot
+         * @description Add a new crop plot inside the verified farm boundary.
+         */
         post: operations["create_plot_api_v1_farm_plots_post"];
         delete?: never;
         options?: never;
@@ -542,10 +551,16 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update Plot */
+        /**
+         * Update Plot
+         * @description Update plot metadata, assigned crop, or plot boundaries.
+         */
         put: operations["update_plot_api_v1_farm_plots__plot_id__put"];
         post?: never;
-        /** Delete Plot */
+        /**
+         * Delete Plot
+         * @description Delete a plot from the farm.
+         */
         delete: operations["delete_plot_api_v1_farm_plots__plot_id__delete"];
         options?: never;
         head?: never;
@@ -745,7 +760,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Feedback */
+        /**
+         * Feedback
+         * @description Submit farmer feedback on a diagnostic prediction.
+         */
         post: operations["feedback_api_v1_feedback_post"];
         delete?: never;
         options?: never;
@@ -782,7 +800,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Review Feedback */
+        /**
+         * Review Feedback
+         * @description Expert adjudication on farmer feedback with optional diagnosis correction.
+         */
         post: operations["review_feedback_api_v1_feedback__feedback_id__review_post"];
         delete?: never;
         options?: never;
@@ -867,6 +888,46 @@ export interface paths {
         };
         /** Readiness */
         get: operations["readiness_api_v1_ready_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/queue-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Queue Health
+         * @description Queue health inspection endpoint for worker status and queue saturation.
+         */
+        get: operations["queue_health_api_v1_queue_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Metrics
+         * @description Expose Prometheus-formatted operational and business metrics (Phase 5 observability).
+         */
+        get: operations["metrics_api_v1_metrics_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1085,7 +1146,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Expert Queue */
+        /**
+         * Get Expert Queue
+         * @description Retrieve pending scans escalated for human agronomist review.
+         */
         get: operations["get_expert_queue_api_v1_expert_queue_get"];
         put?: never;
         post?: never;
@@ -1102,10 +1166,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Expert Review */
+        /**
+         * Get Expert Review
+         * @description Retrieve detailed metadata, imagery, and advisory info for a specific scan review.
+         */
         get: operations["get_expert_review_api_v1_expert_reviews__review_id__get"];
         put?: never;
-        /** Post Expert Review */
+        /**
+         * Post Expert Review
+         * @description Submit an expert diagnostic decision, alert the farmer, and optionally flag for model retraining.
+         */
         post: operations["post_expert_review_api_v1_expert_reviews__review_id__post"];
         delete?: never;
         options?: never;
@@ -2372,6 +2442,31 @@ export interface components {
              */
             min_class_recall: number | null;
         };
+        /** QueueHealthResponse */
+        QueueHealthResponse: {
+            /** Status */
+            status: string;
+            /** Service */
+            service: string;
+            /** Mode */
+            mode: string;
+            /** Redis Connected */
+            redis_connected: boolean;
+            /**
+             * Pending Jobs
+             * @default 0
+             */
+            pending_jobs: number;
+            /**
+             * Worker Healthy
+             * @default true
+             */
+            worker_healthy: boolean;
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            };
+        };
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
@@ -3571,7 +3666,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4282,6 +4377,46 @@ export interface operations {
             };
         };
     };
+    queue_health_api_v1_queue_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueHealthResponse"];
+                };
+            };
+        };
+    };
+    metrics_api_v1_metrics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     get_alerts_api_v1_alerts_get: {
         parameters: {
             query?: {
@@ -4812,7 +4947,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -4845,7 +4982,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

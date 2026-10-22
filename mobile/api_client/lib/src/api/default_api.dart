@@ -95,7 +95,7 @@ class DefaultApi {
   }
 
   /// Feedback
-  ///
+  /// Submit farmer feedback on a diagnostic prediction.
   ///
   /// Parameters:
   /// * [feedbackRequest]

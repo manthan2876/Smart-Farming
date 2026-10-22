@@ -1512,6 +1512,7 @@
           "farm"
         ],
         "summary": "Get Farmer Farm",
+        "description": "Retrieve farmer farm details, plots, and boundaries with localized overlays.",
         "operationId": "get_farmer_farm_api_v1_farm_get",
         "security": [
           {
@@ -1580,6 +1581,7 @@
           "farm"
         ],
         "summary": "Save Farmer Farm",
+        "description": "Configure or update farm metadata and boundary polygon.",
         "operationId": "save_farmer_farm_api_v1_farm_put",
         "security": [
           {
@@ -1644,6 +1646,7 @@
           "farm"
         ],
         "summary": "Create Plot",
+        "description": "Add a new crop plot inside the verified farm boundary.",
         "operationId": "create_plot_api_v1_farm_plots_post",
         "security": [
           {
@@ -1679,7 +1682,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -1708,6 +1711,7 @@
           "farm"
         ],
         "summary": "Update Plot",
+        "description": "Update plot metadata, assigned crop, or plot boundaries.",
         "operationId": "update_plot_api_v1_farm_plots__plot_id__put",
         "security": [
           {
@@ -1779,6 +1783,7 @@
           "farm"
         ],
         "summary": "Delete Plot",
+        "description": "Delete a plot from the farm.",
         "operationId": "delete_plot_api_v1_farm_plots__plot_id__delete",
         "security": [
           {
@@ -2650,6 +2655,7 @@
     "/api/v1/feedback": {
       "post": {
         "summary": "Feedback",
+        "description": "Submit farmer feedback on a diagnostic prediction.",
         "operationId": "feedback_api_v1_feedback_post",
         "security": [
           {
@@ -2782,6 +2788,7 @@
     "/api/v1/feedback/{feedback_id}/review": {
       "post": {
         "summary": "Review Feedback",
+        "description": "Expert adjudication on farmer feedback with optional diagnosis correction.",
         "operationId": "review_feedback_api_v1_feedback__feedback_id__review_post",
         "security": [
           {
@@ -3063,6 +3070,42 @@
                 "schema": {
                   "$ref": "#/components/schemas/HealthResponse"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/queue-health": {
+      "get": {
+        "summary": "Queue Health",
+        "description": "Queue health inspection endpoint for worker status and queue saturation.",
+        "operationId": "queue_health_api_v1_queue_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueHealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Expose Prometheus-formatted operational and business metrics (Phase 5 observability).",
+        "operationId": "metrics_api_v1_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -3934,6 +3977,7 @@
           "expert"
         ],
         "summary": "Get Expert Queue",
+        "description": "Retrieve pending scans escalated for human agronomist review.",
         "operationId": "get_expert_queue_api_v1_expert_queue_get",
         "security": [
           {
@@ -3992,6 +4036,7 @@
           "expert"
         ],
         "summary": "Get Expert Review",
+        "description": "Retrieve detailed metadata, imagery, and advisory info for a specific scan review.",
         "operationId": "get_expert_review_api_v1_expert_reviews__review_id__get",
         "security": [
           {
@@ -4069,6 +4114,7 @@
           "expert"
         ],
         "summary": "Post Expert Review",
+        "description": "Submit an expert diagnostic decision, alert the farmer, and optionally flag for model retraining.",
         "operationId": "post_expert_review_api_v1_expert_reviews__review_id__post",
         "security": [
           {
@@ -4181,7 +4227,11 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Claim Expert Review Api V1 Expert Reviews  Review Id  Claim Post"
+                }
               }
             }
           },
@@ -4243,7 +4293,11 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Release Expert Review Api V1 Expert Reviews  Review Id  Release Post"
+                }
               }
             }
           },
@@ -8557,6 +8611,49 @@
           "version"
         ],
         "title": "PromoteRequest"
+      },
+      "QueueHealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "redis_connected": {
+            "type": "boolean",
+            "title": "Redis Connected"
+          },
+          "pending_jobs": {
+            "type": "integer",
+            "title": "Pending Jobs",
+            "default": 0
+          },
+          "worker_healthy": {
+            "type": "boolean",
+            "title": "Worker Healthy",
+            "default": true
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "mode",
+          "redis_connected"
+        ],
+        "title": "QueueHealthResponse"
       },
       "RefreshRequest": {
         "properties": {

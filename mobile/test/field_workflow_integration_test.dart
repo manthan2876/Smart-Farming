@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smart_farming_mobile/models/sync_queue_item.dart';
 import 'package:smart_farming_mobile/services/api_service.dart';
 import 'package:smart_farming_mobile/services/offline_queue_db.dart';
 import 'package:smart_farming_mobile/services/sync_service.dart';
