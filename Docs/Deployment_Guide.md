@@ -1,8 +1,8 @@
 # Smart Farming — Deployment Guide
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.1 (Monorepo & Cloud Production Architecture)  
-**Date:** 19 October 2026  
+**Version:** 2.2 (Monorepo, Cloud Production Architecture & Vercel Analytics)  
+**Date:** 22 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -408,6 +408,11 @@ bash deploy.sh
    }
    ```
 
+4. **Enable Vercel Web Analytics:**
+   - In the Vercel Dashboard, select your project and click the **Analytics** tab in the header.
+   - Click **Enable**.
+   - The React frontend is pre-wired with `@vercel/analytics/react` in `frontend/src/App.tsx` and custom domain event dispatching in `frontend/src/lib/analytics.ts` — zero additional environment variables or external script tags are required.
+
 ---
 
 ### 5.6 Automated External Keepalive via `cron-jobs.org`
@@ -501,6 +506,7 @@ For private on-premise deployments or air-gapped field servers:
 - [ ] Hugging Face Space binds strictly to port `7860`.
 - [ ] Render build filter correctly monitors `backend/**`.
 - [ ] `CORS_ORIGINS` includes the production Vercel frontend URL.
+- [ ] Vercel Web Analytics enabled under Project Settings → Analytics tab.
 - [ ] `cron-jobs.org` pings active and returning `200 OK`.
 - [ ] Alembic migrations at `head` (`alembic current`).
 
@@ -526,4 +532,4 @@ For private on-premise deployments or air-gapped field servers:
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 22 October 2026*

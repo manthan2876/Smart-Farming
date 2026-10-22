@@ -1150,6 +1150,35 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 
 ---
 
+### 5.5 Web Analytics & Telemetry (Vercel Web Analytics)
+
+**Status: Implemented**
+
+**What works:**
+
+- `@vercel/analytics` integrated into the React SPA with `<Analytics />` mounted at root level inside `frontend/src/App.tsx`.
+- Automatic edge tracking for page views, unique visitors, browser/device types, and client-side route transitions without cookies or third-party trackers.
+- Dedicated type-safe telemetry module in `frontend/src/lib/analytics.ts`.
+- Domain event instrumentation:
+  - `scan_initiated` (leaf photo upload attempt, offline state, plot presence, language).
+  - `offline_sync_completed` (count of offline scans uploaded).
+  - `prediction_viewed` (crop, disease, confidence percentage).
+  - `feedback_submitted` (farmer thumbs-up/down vote, crop, disease).
+  - `expert_review_requested` (triage escalation to human experts).
+  - `language_changed` (interface localization switches).
+  - `auth_action` (login, register, logout).
+- Strict zero-PII data privacy design (no passwords, emails, phones, or exact coordinates).
+
+**Relevant code:**
+
+- [frontend/src/App.tsx](../frontend/src/App.tsx)
+- [frontend/src/lib/analytics.ts](../frontend/src/lib/analytics.ts)
+- [frontend/src/pages/ScanPage.tsx](../frontend/src/pages/ScanPage.tsx)
+- [frontend/src/pages/PredictionResultPage.tsx](../frontend/src/pages/PredictionResultPage.tsx)
+- [frontend/src/context/AuthContext.tsx](../frontend/src/context/AuthContext.tsx)
+
+---
+
 ## 6. Mobile Application
 
 ### 6.1 Entry point and authentication flow

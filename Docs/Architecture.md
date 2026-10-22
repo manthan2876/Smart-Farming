@@ -1,8 +1,8 @@
 # Architecture & System Design Document
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.2 (Hardened Monorepo, Gated CI/CD & Cloud Architecture)  
-**Date:** 20 October 2026  
+**Version:** 2.3 (Hardened Monorepo, Gated CI/CD & Vercel Analytics)  
+**Date:** 22 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -54,7 +54,7 @@ The system is architected around five core tenets:
 ```mermaid
 flowchart TD
     subgraph CLIENTS["Client Layer"]
-        SPA["React 18 + TypeScript SPA (Vercel Edge)\nVite 6 · Tailwind CSS · Anti-Vibecoded\nCustom SVG Icons · Trilingual (EN/HI/GU)\nRoles: Farmer · Expert · Admin"]
+        SPA["React 18 + TypeScript SPA (Vercel Edge)\nVite 6 · Tailwind CSS · Anti-Vibecoded\nCustom SVG Icons · Trilingual (EN/HI/GU)\nVercel Web Analytics & Custom Events\nRoles: Farmer · Expert · Admin"]
         MOB["Flutter Mobile App (Farmer-Only Persona)\nRegional Language Splash (EN/HI/GU)\nPhone-First + 1-Tap Guest Mode\n5-Tab FarmerShell · Center FAB · Offline SQLite Queue\nOn-device 1024px Compression · Dual TTS Engine"]
     end
 
@@ -481,6 +481,12 @@ flowchart LR
 | `/admin/expert/:id`| `ExpertReviewPage` | Expert+ | Side-by-side diagnostic validation and override interface |
 | `/admin/metrics` | `AdminMetricsPage` | Admin only | System-wide ML telemetry, drift monitoring, active models |
 | `/admin/users` | `AdminUsersPage` | Admin only | User directory and role management with safety locks |
+
+### Frontend Telemetry & Vercel Web Analytics
+The web application integrates `@vercel/analytics` (`frontend/src/lib/analytics.ts` and `<Analytics />` in `App.tsx`) for privacy-preserving client-side observability:
+- **Automatic Route Tracking:** Tracks SPA page transitions (`react-router-dom`) without requiring custom routing hooks.
+- **Custom Event Telemetry:** Dispatches type-safe events for critical user actions (`scan_initiated`, `offline_sync_completed`, `prediction_viewed`, `feedback_submitted`, `expert_review_requested`, `language_changed`, `auth_action`).
+- **Zero-Cookie & Zero-PII:** Operates without tracking cookies, never logging personal data (passwords, emails, phone numbers, or exact coordinates).
 
 ### Mobile Architecture (Flutter)
 The mobile app is strictly tailored to the **Farmer persona**:

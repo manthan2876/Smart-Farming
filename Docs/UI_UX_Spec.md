@@ -1,13 +1,13 @@
 # UI/UX Specification — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.2  
-**Date:** 20 October 2026  
+**Version:** 2.3  
+**Date:** 22 October 2026  
 **Status:** Active / Production Reference  
 
 ---
 
-This document is the canonical design reference for the frontend implementation. It documents the anti-vibecoded design system, Tailwind CSS architecture, trilingual localization (EN, GU, HI), and Vercel edge deployment.
+This document is the canonical design reference for the frontend implementation. It documents the anti-vibecoded design system, Tailwind CSS architecture, trilingual localization (EN, GU, HI), Vercel Web Analytics, and Vercel edge deployment.
 
 ## Table of Contents
 
@@ -19,6 +19,7 @@ This document is the canonical design reference for the frontend implementation.
 6. [i18n & Localization Strategy](#6-i18n--localization-strategy)
 7. [Design Principles](#7-design-principles)
 8. [Mobile Application UI (Flutter)](#8-mobile-application-ui-flutter)
+9. [Frontend Telemetry & Vercel Web Analytics](#9-frontend-telemetry--vercel-web-analytics)
 
 ---
 
@@ -30,11 +31,12 @@ This document is the canonical design reference for the frontend implementation.
 | Build Tool | Vite 6 | Fast HMR and optimized production bundle |
 | Styling | Tailwind CSS | Utility-first with custom farmer-green and warm-neutral theme |
 | Iconography | Custom SVG Icon Set (`src/components/icons/`) | Purpose-built SVG icons; third-party icon packages replaced |
-| Routing | React Router v6 | Client-side routing with role-aware protected route guards |
+| Routing | React Router v7 | Client-side routing with role-aware protected route guards |
 | State | React Context (`AuthContext`, `ThemeContext`) | Authentication state, user profile, theme, and language state |
-| HTTP Client | Axios | JWT bearer token interceptor with automatic 401 refresh |
+| HTTP Client | Axios / Fetch Wrapper | JWT bearer token interceptor with automatic 401 refresh |
 | Internationalization | `src/i18n/` | 670+ translation keys with 100% compile-time parity across EN, GU, HI |
 | Real-time | WebSocket | Live diagnostic pipeline stage progress tracker |
+| Telemetry & Analytics | `@vercel/analytics` (v2.0+) | Privacy-preserving pageview, client-side route, and custom event tracking |
 
 ---
 
@@ -584,8 +586,43 @@ Activated when tapping "Draw Boundary" for a farm or plot in `FarmScreen`.
 
 ---
 
+## 9. Frontend Telemetry & Vercel Web Analytics
+
+### 9.1 Overview & Architecture
+
+The web dashboard integrates `@vercel/analytics` (v2.0+) to provide privacy-first, zero-cookie observability into real-world application performance, usage hotspots, and drop-off points.
+
+```
+User Action / Route Change ──► <Analytics /> or trackEvent() ──► Vercel Edge Ingestion (/_vercel/insights/*) ──► Analytics Dashboard
+```
+
+- **Client-Side SPA Route Tracking:** The `<Analytics />` component is mounted at the root of `frontend/src/App.tsx` within `<BrowserRouter>`, automatically tracking route transitions across all public and authenticated paths.
+- **Zero Third-Party Cookies:** Operates entirely without cross-site tracking cookies, honoring user privacy and data protection standards.
+- **Environment Isolation:** In development (`NODE_ENV === 'development'`), events are logged to the browser console and excluded from production datasets.
+
+### 9.2 Custom Domain Event Architecture (`src/lib/analytics.ts`)
+
+High-value diagnostic milestones are tracked through the typed helper module `frontend/src/lib/analytics.ts`:
+
+| Event Name | Trigger Location | Tracked Parameters | Purpose |
+|---|---|---|---|
+| `scan_initiated` | `ScanPage.tsx` | `has_plot`, `language`, `is_offline` | Measure scan volume, offline scan prevalence, and language distribution |
+| `offline_sync_completed` | `ScanPage.tsx` | `count` | Measure effectiveness of offline queue syncing upon reconnect |
+| `prediction_viewed` | `PredictionResultPage.tsx` | `crop`, `disease`, `confidence_pct` | Identify most frequently diagnosed crop diseases and low-confidence clusters |
+| `feedback_submitted` | `PredictionResultPage.tsx` | `vote` (`up` \| `down`), `crop`, `disease` | Track farmer diagnostic satisfaction by disease category |
+| `expert_review_requested` | `PredictionResultPage.tsx` | `crop`, `disease` | Monitor edge-case escalation rate to extension experts |
+| `language_changed` | `AuthContext.tsx` | `language` | Measure UI localization adoption across EN, GU, HI |
+| `auth_action` | `AuthContext.tsx` | `action` (`login` \| `register` \| `guest_login` \| `logout`) | Track onboarding conversion and session churn |
+
+### 9.3 Privacy & Data Governance Guards
+
+- **Strict PII Exclusion:** No passwords, email addresses, phone numbers, individual user IDs, or exact latitude/longitude coordinates are attached to analytics events.
+- **Safe Fallback:** All tracking invocations are wrapped in non-blocking try-catch blocks to ensure that ad-blockers or network hiccups never interrupt application execution or diagnostic flows.
+
+---
+
 *AI-Powered Smart Farming — UI/UX Specification Reference*  
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 20 October 2026*
+*Last Updated: 22 October 2026*
