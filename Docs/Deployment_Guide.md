@@ -280,9 +280,9 @@ The backend is configured as a Render Blueprint service.
          runtime: python
          rootDir: backend
          plan: free
-         buildCommand: pip install -r requirements.txt
-         startCommand: uvicorn src.app.main:app --host 0.0.0.0 --port $PORT
-         healthCheckPath: /health
+         buildCommand: pip install uv==0.13.0 && uv sync --locked --system --no-dev --no-install-project
+         startCommand: gunicorn app.main:app --workers ${WEB_CONCURRENCY:-1} --worker-class uvicorn_worker.UvicornWorker --bind 0.0.0.0:$PORT --chdir src --timeout 150 --access-logfile - --error-logfile -
+         healthCheckPath: /ready
          buildFilter:
            paths:
              - backend/**

@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     SUPABASE_BUCKET: str = Field(default="smart-farming-data-dev")
     SUPABASE_SIGNED_URL_EXPIRY_SECONDS: int = Field(default=900)
 
+    # Observability & Monitoring (Phase 5)
+    SENTRY_DSN: str | None = Field(default=None)
+    SENTRY_ENVIRONMENT: str = Field(default="production")
+    SENTRY_TRACES_SAMPLE_RATE: float = Field(default=0.1)
+    PROMETHEUS_METRICS_ENABLED: bool = Field(default=True)
+
     # Backward compatibility properties
     @property
     def AWS_S3_BUCKET(self) -> str:

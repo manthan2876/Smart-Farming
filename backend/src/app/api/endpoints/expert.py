@@ -1,57 +1,43 @@
 from __future__ import annotations
-from datetime import datetime, timedelta, timezone
+
+import logging
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from app.api.deps import get_current_user, require_expert_role
+
+from app.api.deps import require_expert_role
 from app.core import get_session
-from app.core.config import settings
-from app.models import Prediction, ExpertReview, Alert, DatasetCandidate
 from app.schemas.expert import (
     ExpertQueueItemResponse,
     ExpertReviewDetailResponse,
     ExpertReviewSubmissionRequest,
     ExpertReviewSubmissionResponse,
 )
+from app.services.expert import (
+    get_queue_items,
+    get_review_detail,
+    claim_review_lease,
+    release_review_lease,
+    submit_review_decision,
+)
 
+logger = logging.getLogger("smart-farming.api.expert")
 router = APIRouter(tags=["expert"])
+
 
 @router.get("/expert/queue", response_model=list[ExpertQueueItemResponse])
 def get_expert_queue(
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
-):
-    reviews = list(
-        session.scalars(
-            select(ExpertReview)
-            .where(ExpertReview.status == "pending")
-            .order_by(ExpertReview.created_at.desc())
-        )
-    )
-    results = []
-    for r in reviews:
-        pred = r.prediction
-        result_json = pred.result or {}
-        
-        crop = result_json.get("crop", {}).get("label") or pred.crop
-        disease = result_json.get("disease", {}).get("label") or pred.disease
-        disease_conf = result_json.get("disease", {}).get("confidence") or pred.disease_conf
-        severity_pct = result_json.get("severity", {}).get("percent") or pred.severity_pct
+) -> list[dict[str, Any]]:
+    """Retrieve pending scans escalated for human agronomist review."""
+    try:
+        return get_queue_items(session)
+    except SQLAlchemyError as exc:
+        logger.exception("Database error while loading expert queue")
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
-        results.append({
-            "review_id": r.id,
-            "prediction_id": r.prediction_id,
-            "status": r.status,
-            "crop": crop,
-            "disease": disease,
-            "disease_conf": disease_conf,
-            "severity_pct": severity_pct,
-            "claimed_by": r.claimed_by,
-            "claimed_at": r.claimed_at.isoformat() if r.claimed_at else None,
-            "created_at": r.created_at.isoformat() if r.created_at else None
-        })
-    return results
 
 @router.get(
     "/expert/reviews/{review_id}",
@@ -63,97 +49,33 @@ def get_expert_review(
     lang: str | None = None,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
-):
-    review = session.get(ExpertReview, review_id)
-    if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
-    pred = review.prediction
-    result_json = pred.result or {}
-    
-    crop = result_json.get("crop", {}).get("label") or pred.crop
-    disease = result_json.get("disease", {}).get("label") or pred.disease
-    disease_conf = result_json.get("disease", {}).get("confidence") or pred.disease_conf
-    severity_pct = result_json.get("severity", {}).get("percent") or pred.severity_pct
+) -> dict[str, Any]:
+    """Retrieve detailed metadata, imagery, and advisory info for a specific scan review."""
+    try:
+        accept_lang = request.headers.get("accept-language")
+        return get_review_detail(session, review_id, lang=lang, accept_language=accept_lang)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        logger.exception("Database error while loading review %s", review_id)
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
-    raw_path = pred.raw_path or (pred.image.raw_path if pred.image else None)
-    proc_path = pred.processed_path or (pred.image.processed_path if pred.image else None)
-
-    raw_url = None
-    processed_url = None
-    if getattr(settings, "STORAGE_BACKEND", "local").lower() in ("supabase", "s3"):
-        try:
-            from app.core.storage import get_storage
-            storage = get_storage()
-            if raw_path:
-                raw_url = storage.get_url(raw_path, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
-            if proc_path:
-                processed_url = storage.get_url(proc_path, expires_in=settings.SUPABASE_SIGNED_URL_EXPIRY_SECONDS)
-        except Exception as exc:
-            pass
-
-    data = {
-        "review_id": review.id,
-        "prediction_id": review.prediction_id,
-        "status": review.status,
-        "decision": review.decision,
-        "corrected_disease": review.corrected_disease,
-        "farmer_guidance": review.farmer_guidance,
-        "internal_note": review.internal_note,
-        "raw_path": raw_path,
-        "processed_path": proc_path,
-        "raw_url": raw_url,
-        "processed_url": processed_url,
-        "crop": crop,
-        "disease": disease,
-        "disease_conf": disease_conf,
-        "severity_pct": severity_pct,
-        "created_at": review.created_at.isoformat() if review.created_at else None
-    }
-    req_lang = lang or request.headers.get("accept-language")
-    from app.services.translation.overlay import overlay_dict_translations
-    overlay_dict_translations(session, data, "expert_review", review.id, ["farmer_guidance"], req_lang)
-    return data
-
-from sqlalchemy.orm.attributes import flag_modified
 
 @router.post("/expert/reviews/{review_id}/claim")
 def claim_expert_review(
     review_id: int,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
-):
+) -> dict[str, Any]:
     """Atomically claims a review item for 15 minutes to prevent expert collisions."""
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(minutes=15)
-
-    review = session.get(ExpertReview, review_id)
-    if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
-    if review.status != "pending":
-        raise HTTPException(status_code=409, detail="Review is already verified and finalized.")
-
-    # Check if another expert has an active non-expired claim
-    claimed_dt = review.claimed_at
-    if claimed_dt and claimed_dt.tzinfo is None:
-        claimed_dt = claimed_dt.replace(tzinfo=timezone.utc)
-
-    if review.claimed_by and review.claimed_by != user_id:
-        if claimed_dt and claimed_dt > cutoff:
-            remaining_secs = int(900 - (now - claimed_dt).total_seconds())
-            raise HTTPException(
-                status_code=409,
-                detail=f"Review is currently claimed by another expert ({review.claimed_by}). Lease expires in {remaining_secs}s.",
-            )
-
-    review.claimed_by = user_id
-    review.claimed_at = now
-    session.commit()
-    return {
-        "status": "claimed",
-        "review_id": review_id,
-        "claimed_by": user_id,
-        "lease_expires_in_seconds": 900,
-    }
+    try:
+        return claim_review_lease(session, review_id, user_id)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        session.rollback()
+        logger.exception("Database error claiming review %s", review_id)
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
 @router.post("/expert/reviews/{review_id}/release")
@@ -161,16 +83,16 @@ def release_expert_review(
     review_id: int,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
-):
+) -> dict[str, Any]:
     """Releases a claimed review item back to the shared queue."""
-    review = session.get(ExpertReview, review_id)
-    if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
-    if review.claimed_by == user_id:
-        review.claimed_by = None
-        review.claimed_at = None
-        session.commit()
-    return {"status": "released", "review_id": review_id}
+    try:
+        return release_review_lease(session, review_id, user_id)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        session.rollback()
+        logger.exception("Database error releasing review %s", review_id)
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
 @router.post(
@@ -182,157 +104,33 @@ async def post_expert_review(
     payload: ExpertReviewSubmissionRequest,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
-):
-    review = session.get(ExpertReview, review_id)
-    if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
-
-    # State Machine & Concurrency Lock: only pending reviews can be submitted
-    if review.status != "pending":
-        raise HTTPException(
-            status_code=409,
-            detail="Conflict: This review has already been verified and finalized.",
+) -> dict[str, Any]:
+    """Submit an expert diagnostic decision, alert the farmer, and optionally flag for model retraining."""
+    try:
+        result, new_alert, farmer_guidance = submit_review_decision(
+            session=session,
+            review_id=review_id,
+            user_id=user_id,
+            payload=payload,
         )
 
-    # Concurrency Lock: verify claim lease
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(minutes=15)
-    claimed_dt = review.claimed_at
-    if claimed_dt and claimed_dt.tzinfo is None:
-        claimed_dt = claimed_dt.replace(tzinfo=timezone.utc)
+        # Enqueue background transliteration/translations asynchronously
+        from app.core.arq import enqueue_translation
+        if farmer_guidance:
+            try:
+                await enqueue_translation("expert_review", review_id, {"farmer_guidance": farmer_guidance})
+            except Exception:
+                pass
+        if new_alert and new_alert.id:
+            try:
+                await enqueue_translation("alert", new_alert.id, {"title": new_alert.title, "body": new_alert.body})
+            except Exception:
+                pass
 
-    if review.claimed_by and review.claimed_by != user_id:
-        if claimed_dt and claimed_dt > cutoff:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Conflict: This review is currently claimed by another expert ({review.claimed_by}).",
-            )
-
-    action = payload.action or payload.decision or "Confirm AI Findings"
-    review.decision = action
-    review.status = "verified"
-    review.expert_id = user_id
-    review.claimed_by = None
-    review.claimed_at = None
-    
-    if action in ("Override / Correct Findings", "corrected", "override", "Override") or payload.corrected_disease:
-        review.corrected_disease = payload.corrected_disease
-        raw_sev = payload.corrected_severity
-        if raw_sev is not None:
-            if isinstance(raw_sev, (int, float)):
-                review.corrected_severity = float(raw_sev)
-            elif isinstance(raw_sev, str):
-                import re
-                m = re.search(r"\d+(\.\d+)?", raw_sev)
-                if m:
-                    review.corrected_severity = float(m.group(0))
-    
-    review.farmer_guidance = payload.farmer_guidance
-    review.internal_note = payload.internal_note
-    review.reviewed_at = datetime.now(timezone.utc)
-
-    
-    pred = review.prediction
-    pred.status = "rescan_requested" if action == "Request Rescan" else "verified"
-    
-    # Generate Alert for farmer
-    new_alert = None
-    if not session.query(Alert).filter(
-        Alert.prediction_id == pred.id,
-        Alert.kind == "review_verified",
-    ).first():
-        new_alert = Alert(
-            user_id=pred.user_id,
-            prediction_id=pred.id,
-            kind="review_verified",
-            severity="high",
-            title=f"Expert Review Completed for Scan #{pred.id}",
-            body=f"An agronomist has verified your scan. Conclusion: {action}."
-        )
-        session.add(new_alert)
-    
-    # Dataset flagging
-    if payload.add_to_retraining:
-        orig_disease = pred.result.get("disease", {}).get("label") if pred.result else pred.disease
-        corrected = review.corrected_disease or orig_disease
-        if not session.query(DatasetCandidate).filter(DatasetCandidate.prediction_id == pred.id).first():
-            provenance = (
-                f"Expert {user_id} reviewed prediction #{pred.id} with action '{action}'."
-                + (f" Corrected label: {corrected}." if corrected != orig_disease else "")
-            )
-            session.add(DatasetCandidate(
-                prediction_id=pred.id,
-                source="expert_correction",
-                original_label=orig_disease,
-                corrected_label=corrected,
-                image_path=pred.image.raw_path if pred.image else "",
-                status="pending_review",
-                provenance_note=provenance,
-            ))
-    
-    res = dict(pred.result or {})
-    result_status = dict(res.get("status") or {})
-    
-    if action == "Request Rescan":
-        result_status["expert_review"] = "rescan_requested"
-        result_status["pipeline"] = "rescan_requested"
-        pred.status = "rescan_requested"
-    else:
-        result_status["expert_review"] = "verified"
-        result_status["pipeline"] = "verified"
-        pred.status = "verified"
-        result_status["mask_advisory"] = False
-
-    res["status"] = result_status
-        
-    # Also update the recommendation field inside result if farmer_guidance was provided
-    if review.farmer_guidance:
-        if "recommendation" not in res:
-            res["recommendation"] = {}
-        res["recommendation"]["expert_verified_advisory"] = review.farmer_guidance
-
-    if review.corrected_disease:
-        res.setdefault("disease", {})["label"] = review.corrected_disease
-        res["disease"]["is_uncertain"] = False
-        res["disease"]["confidence_rating"] = "verified"
-        pred.disease = review.corrected_disease
-    elif action == "Confirm AI Findings":
-        res.setdefault("disease", {})["is_uncertain"] = False
-        res["disease"]["confidence_rating"] = "verified"
-
-    if review.corrected_severity is not None:
-        res.setdefault("severity", {})["percent"] = review.corrected_severity
-        sev_bucket = "Severe" if review.corrected_severity > 55 else ("Moderate" if review.corrected_severity >= 25 else "Low")
-        res["severity"]["bucket"] = sev_bucket
-        pred.severity_pct = review.corrected_severity
-        if hasattr(pred, "severity_bucket"):
-            pred.severity_bucket = sev_bucket
-
-    res["expert_review_data"] = {
-        "decision": action,
-        "corrected_disease": review.corrected_disease,
-        "corrected_severity": review.corrected_severity,
-        "farmer_guidance": review.farmer_guidance,
-        "status": "verified",
-        "reviewed_at": review.reviewed_at.isoformat() if review.reviewed_at else None,
-    }
-
-    pred.result = res
-    flag_modified(pred, "result")
-    
-    session.commit()
-
-    # Background write-time translation to Redis
-    from app.core.arq import enqueue_translation
-    if review.farmer_guidance:
-        try:
-            await enqueue_translation("expert_review", review.id, {"farmer_guidance": review.farmer_guidance})
-        except Exception:
-            pass
-    if new_alert and new_alert.id:
-        try:
-            await enqueue_translation("alert", new_alert.id, {"title": new_alert.title, "body": new_alert.body})
-        except Exception:
-            pass
-
-    return {"status": "success", "review_id": review_id}
+        return result
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        session.rollback()
+        logger.exception("Database error submitting review %s", review_id)
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc

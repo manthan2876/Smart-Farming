@@ -1,0 +1,100 @@
+services:
+  backend-staging:
+    build:
+      context: ./backend
+    environment:
+      ENVIRONMENT: staging
+      DEBUG: "false"
+      DATABASE_URL: postgresql://smart_farming_staging:staging_pass@postgres-staging:5432/smart_farming_staging
+      STORAGE_BACKEND: local
+      DATA_ROOT: /app/data
+      UPLOAD_ROOT: /app/data/uploads
+      PROCESSED_ROOT: /app/data/processed
+      AUDIO_ROOT: /app/data/audio
+      REDIS_URL: redis://redis-staging:6379
+      REQUIRE_REDIS: "true"
+      CORS_ORIGINS: http://localhost:8080,https://staging.smartfarming.example.com
+      SECRET_KEY: staging-secret-key-for-test-isolation-only
+      JWT_SECRET_KEY: staging-jwt-secret-for-test-isolation-only
+      CRON_SECRET: staging-cron-secret-for-test-isolation-only
+    ports:
+      - "8000:8080"
+    volumes:
+      - smart-farming-staging-data:/app/data
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/ready"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+  worker-staging:
+    build:
+      context: ./backend
+    command: ["arq", "app.worker.WorkerSettings"]
+    environment:
+      ENVIRONMENT: staging
+      DATABASE_URL: postgresql://smart_farming_staging:staging_pass@postgres-staging:5432/smart_farming_staging
+      REDIS_URL: redis://redis-staging:6379
+      REQUIRE_REDIS: "true"
+      STORAGE_BACKEND: local
+      DATA_ROOT: /app/data
+      UPLOAD_ROOT: /app/data/uploads
+      PROCESSED_ROOT: /app/data/processed
+      AUDIO_ROOT: /app/data/audio
+      SECRET_KEY: staging-secret-key-for-test-isolation-only
+    volumes:
+      - smart-farming-staging-data:/app/data
+    depends_on:
+      backend-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+
+  postgres-staging:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smart_farming_staging
+      POSTGRES_PASSWORD: staging_pass
+      POSTGRES_DB: smart_farming_staging
+    volumes:
+      - smart-farming-staging-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smart_farming_staging -d smart_farming_staging"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis-staging:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - smart-farming-staging-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  frontend-staging:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend-staging:
+        condition: service_healthy
+
+volumes:
+  smart-farming-staging-data:
+  smart-farming-staging-db:
+  smart-farming-staging-redis:
+

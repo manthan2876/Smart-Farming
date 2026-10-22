@@ -18,6 +18,12 @@ export default class AppErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: { componentStack?: string | null }) {
     console.error("Unhandled frontend rendering error", error, info.componentStack);
+    // Phase 5 telemetry integration: forward error to Sentry if initialized
+    if (typeof window !== "undefined" && (window as unknown as { Sentry?: { captureException: (err: unknown, ctx: unknown) => void } }).Sentry?.captureException) {
+      (window as unknown as { Sentry: { captureException: (err: unknown, ctx: unknown) => void } }).Sentry.captureException(error, {
+        extra: { componentStack: info.componentStack },
+      });
+    }
   }
 
   render() {

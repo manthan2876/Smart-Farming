@@ -125,6 +125,8 @@ jobs:
           uv run --project backend --locked --extra dev pytest \
             backend/tests/test_storage.py \
             backend/tests/test_alert_service.py \
+            backend/tests/test_feedback_service.py \
+            backend/tests/test_expert_service.py \
             backend/tests/test_token_rotation.py \
             backend/tests/test_expert_concurrency.py \
             backend/tests/test_auth.py \
@@ -139,6 +141,8 @@ jobs:
             backend/tests/test_ai_service_client.py \
             backend/tests/test_agronomic_advisory.py \
             backend/tests/test_image_validation.py \
+            backend/tests/test_worker_queue.py \
+            backend/tests/test_backup_restore.py \
             backend/tests/test_paths.py \
             ai_service/tests/test_confidence.py \
             -v

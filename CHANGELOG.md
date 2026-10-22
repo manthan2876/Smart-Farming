@@ -30,3 +30,11 @@
 - Added a localization CI check for untranslated UI literals, mobile key references, web catalog parity, rendered language differences, and fallback behavior.
 - Added Flutter tests for localized domain fallbacks and rendered language switching.
 - Extracted alert query/update persistence into CRUD functions behind a service layer; database failures now return explicit service-unavailable responses instead of success-shaped empty results.
+- Extracted expert review queue/leases/decision persistence into dedicated service and CRUD layers (`services/expert.py`, `crud/expert_review.py`) with full state-machine validation and error propagation.
+- Extracted farmer feedback creation, updates, and expert review into dedicated service and CRUD layers (`services/feedback.py`, `crud/feedback.py`).
+- Refactored farm and plot boundaries into dedicated service and CRUD layers (`services/farm.py`, `crud/farm.py`), converting blocking synchronous SQLAlchemy endpoints in `endpoints/farm.py` to threadpool handlers with background tasks to prevent event loop starvation.
+- Added unit test suites `test_expert_service.py` and `test_feedback_service.py` to CI testing.
+- Implemented Phase 4 worker queue health monitoring (`/queue-health`, `/metrics`), worker settings, dead-letter failure recording, and operational guide (`Docs/Worker_Architecture_Runbook.md`).
+- Implemented Phase 5 staging orchestration (`compose.staging.yaml`, `.env.staging.example`), Sentry telemetry hooks in FastAPI and React ErrorBoundary, automated database backup and restore scripts with SHA-256 integrity verification (`scripts/backup_database.sh`, `scripts/restore_database.sh`), `test_backup_restore.py`, `Docs/Backup_Restore_Runbook.md`, and `Docs/Incident_Runbook.md`.
+- Implemented Phase 6 mobile release workflow (`.github/workflows/mobile-release.yml`), obfuscated release script (`mobile/scripts/build_release.sh`), field workflow integration tests (`mobile/test/field_workflow_integration_test.dart`), Terms of Service (`Docs/Terms_of_Service.md`), Privacy Policy (`Docs/Privacy_Policy.md`), and University Publication Scope charter (`Docs/Publication_Scope.md`).
+- Customized repository MIT License (`LICENSE`) citing Charotar University of Science and Technology (CHARUSAT), student authors, and faculty guide.

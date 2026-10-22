@@ -1,6 +1,6 @@
 # src/app/schemas/__init__.py
 from app.schemas.prediction import PredictionRequest, PredictionResponse
-from app.schemas.health import ErrorResponse, HealthResponse
+from app.schemas.health import ErrorResponse, HealthResponse, QueueHealthResponse
 from app.schemas.feedback import FeedbackRequest, FeedbackResponse, FeedbackReviewRequest
 from app.schemas.crop import CropListResponse
 from app.schemas.alert import AlertReadResponse, AlertResponse

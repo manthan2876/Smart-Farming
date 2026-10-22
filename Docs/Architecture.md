@@ -44,7 +44,7 @@ The system is architected around five core tenets:
 | **Diagnostic Accuracy** | 7-stage vision ensemble (OpenCV quality gate, EfficientNet-B0 crop classifier, dedicated per-crop EfficientNet-B2 disease classifiers across 32 conditions, adaptive HSV lesion severity calculation, and Ultralytics YOLOv8-nano pest detection) with automatic uncertainty escalation to human experts |
 | **Decoupled Serverless Scalability** | Lean API gateway hosted on Render web service paired with a consolidated AI microservice deployed on Hugging Face Spaces (running Gradio 5.16+ and FastAPI on port `7860`) |
 | **Complete Traceability** | Every diagnostic inference carries an immutable `provenance` block recording exact model versions, weights hash, latency breakdown, and fallback flags |
-| **Multilingual Experience** | English, Hindi, and Gujarati catalogs plus remote translation and speech services; untranslated inline UI copy remains a known coverage gap |
+| **Multilingual Experience** | Complete trilingual English, Hindi, and Gujarati catalogs across React and Flutter, domain translation lexicons, verified agronomic vocabulary, and neural speech synthesis |
 | **Storage & Data Abstraction** | Production-default Supabase Object Storage with time-bounded signed URLs (15-min expiry), plus local disk for development; legacy `s3` is an alias for Supabase |
 
 ---
@@ -131,12 +131,12 @@ The FastAPI application (`backend/src/app/main.py`) acts as the central orchestr
 
 | Concern | Implementation |
 |---|---|
-| **Hosting & Runtime** | Deployed on **Render** as a web service via [`render.yaml`](file:///home/manthan/Projects/Smart-Farming/render.yaml) (`uvicorn src.app.main:app --host 0.0.0.0 --port $PORT`) |
+| **Hosting & Runtime** | Deployed on **Render** as a web service via [`render.yaml`](file:///home/manthan/Projects/Smart-Farming/render.yaml) using Gunicorn process manager with Uvicorn worker (`gunicorn app.main:app -k uvicorn_worker.UvicornWorker --bind 0.0.0.0:$PORT`) |
 | **Startup & Cold Start** | Async non-blocking startup lifespan (`lifespan`): Database verification is pushed to background tasks in production to guarantee immediate port binding (<1s) and prevent health check timeouts |
 | **Security & Auth** | Dual-token authentication: Short-lived HS256 JWT access tokens (30 min) via `Authorization: Bearer` header, paired with 30-day `HttpOnly` refresh cookies (`SameSite=Strict`). Password hashing via Argon2id (`pwdlib[argon2]`) |
 | **Rate Limiting** | `slowapi` in-memory token bucket per remote client IP (e.g., login capped at 5 req/min, scan at 20 req/min) |
-| **CORS Middleware** | Configurable origins whitelist supporting production Vercel frontends (`allow_origin_regex` for `*.vercel.app` and localhost dev) |
-| **Storage Gateway** | Transparent asset streaming endpoint `/data/{file_path}`: checks local cache first, then seamlessly streams or generates signed URLs from Supabase Object Storage |
+| **CORS Middleware** | Explicit origins whitelist from `CORS_ORIGINS` (exact origin matching; production rejects wildcards) |
+| **Storage Gateway** | Asset streaming: production enforces signed URLs (15-min expiry) from Supabase Object Storage, disabling unauthenticated local media routes; development serves local disk files |
 
 ---
 

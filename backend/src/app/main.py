@@ -64,6 +64,27 @@ def _log_background_task_failure(task: asyncio.Task) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import time
+    app.state.startup_time = time.time()
+
+    # Sentry error tracking initialization (Phase 5 observability)
+    if getattr(settings, "SENTRY_DSN", None):
+        try:
+            import sentry_sdk
+            from sentry_sdk.integrations.fastapi import FastApiIntegration
+            from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+            sentry_sdk.init(
+                dsn=settings.SENTRY_DSN,
+                environment=settings.SENTRY_ENVIRONMENT,
+                traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+                send_default_pii=False,
+                integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+            )
+            logger.info("Sentry error tracking initialized for environment %s", settings.SENTRY_ENVIRONMENT)
+        except Exception as exc:
+            logger.warning("Could not initialize Sentry: %s", exc)
+
     # In local development, ensure tables exist immediately.
     # In production, run schema verification in the background so the HTTP port binds instantly (<1s)
     # and Render/health checks never time out during cold starts.

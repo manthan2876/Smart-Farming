@@ -34,5 +34,42 @@ services:
       backend:
         condition: service_healthy
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - smart-farming-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: ./backend
+    command: ["arq", "app.worker.WorkerSettings"]
+    environment:
+      ENVIRONMENT: development
+      DEBUG: "true"
+      DATABASE_URL: sqlite:////app/data/smart-farming.db
+      REDIS_URL: redis://redis:6379
+      REQUIRE_REDIS: "true"
+      STORAGE_BACKEND: local
+      DATA_ROOT: /app/data
+      UPLOAD_ROOT: /app/data/uploads
+      PROCESSED_ROOT: /app/data/processed
+      AUDIO_ROOT: /app/data/audio
+    volumes:
+      - smart-farming-data:/app/data
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   smart-farming-data:
+  smart-farming-redis:

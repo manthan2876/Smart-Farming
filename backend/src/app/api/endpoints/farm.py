@@ -1,74 +1,61 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+
+import logging
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from app.api.deps import get_current_user
-from app.schemas import FarmRequest, FarmResponse, PlotRequest, PlotResponse
-from app.crud import get_user, save_farm
-from app.core import get_session
-from app.services.translation.overlay import overlay_entity_translations, overlay_dict_translations
 
+from app.api.deps import get_current_user
+from app.core import get_session
+from app.schemas import FarmRequest, FarmResponse, PlotRequest, PlotResponse
+from app.services.farm import (
+    get_farmer_farm_data,
+    update_farmer_farm_data,
+    add_plot_to_farm,
+    modify_plot_in_farm,
+    remove_plot_from_farm,
+    validate_geojson_polygon,
+    plot_inside_farm,
+)
+
+# Backwards compatibility alias
+_validate_geojson_polygon = validate_geojson_polygon
+_plot_inside_farm = plot_inside_farm
+
+logger = logging.getLogger("smart-farming.api.farm")
 router = APIRouter(prefix="/farm", tags=["farm"])
 
 
-import math
-from shapely.geometry import Polygon as ShapelyPolygon
-
-
-def _validate_geojson_polygon(geom: dict | None) -> tuple[bool, str, float | None]:
-    """Validate GeoJSON Polygon for closed rings, valid coordinates, and absence of self-intersections."""
-    if not geom or not isinstance(geom, dict):
-        return True, "No geometry", None
-    if geom.get("type") != "Polygon":
-        return False, "Geometry type must be 'Polygon'.", None
-    coords = geom.get("coordinates")
-    if not coords or not isinstance(coords, list) or len(coords) == 0:
-        return False, "Polygon coordinates missing.", None
-    ring = coords[0]
-    if len(ring) < 4:
-        return False, "Polygon ring must have at least 4 coordinates.", None
-    if ring[0] != ring[-1]:
-        return False, "LinearRing is not closed (first and last coordinate must be identical).", None
-    
-    # Coordinate range validation (-180 <= lon <= 180, -90 <= lat <= 90)
-    for pt in ring:
-        if not isinstance(pt, (list, tuple)) or len(pt) < 2:
-            return False, "Invalid coordinate pair.", None
-        lon, lat = float(pt[0]), float(pt[1])
-        if not (-180.0 <= lon <= 180.0 and -90.0 <= lat <= 90.0):
-            return False, f"Coordinates out of bounds: lon {lon}, lat {lat}.", None
-
+def _enqueue_farm_transliteration(farm_id: int, name: str, location: str) -> None:
+    from app.core.arq import enqueue_translation
+    import asyncio
     try:
-        poly = ShapelyPolygon(ring)
-        if not poly.is_valid:
-            return False, "Polygon has self-intersections or is invalid.", None
-        # Geodesic area calculation approximation in acres
-        mean_lat = math.radians(sum(pt[1] for pt in ring) / len(ring))
-        meters_per_deg_lat = 111132.92
-        meters_per_deg_lon = 111412.84 * math.cos(mean_lat)
-        proj_coords = [(pt[0] * meters_per_deg_lon, pt[1] * meters_per_deg_lat) for pt in ring]
-        proj_poly = ShapelyPolygon(proj_coords)
-        area_acres = round(proj_poly.area / 4046.8564224, 2)
-        return True, "Valid", area_acres
-    except Exception as exc:
-        return False, f"Invalid geometry: {exc}", None
-
-
-def _plot_inside_farm(plot_geom: dict | None, farm_geom: dict | None) -> bool:
-    """Check if plot geometry is contained within farm boundary."""
-    if not plot_geom or not farm_geom:
-        return True
-    try:
-        farm_ring = farm_geom.get("coordinates", [[]])[0]
-        plot_ring = plot_geom.get("coordinates", [[]])[0]
-        if not farm_ring or not plot_ring or len(farm_ring) < 3 or len(plot_ring) < 3:
-            return True
-        farm_poly = ShapelyPolygon(farm_ring)
-        plot_poly = ShapelyPolygon(plot_ring)
-        buffered = farm_poly.buffer(1e-7)
-        return buffered.contains(plot_poly) or buffered.covers(plot_poly)
+        asyncio.run(
+            enqueue_translation(
+                "farm",
+                farm_id,
+                {"name": name, "location": location or ""},
+                name_fields=["name", "location"],
+            )
+        )
     except Exception:
-        return True
+        pass
+
+
+def _enqueue_plot_transliteration(plot_id: int, name: str) -> None:
+    from app.core.arq import enqueue_translation
+    import asyncio
+    try:
+        asyncio.run(
+            enqueue_translation(
+                "plot",
+                plot_id,
+                {"name": name},
+                name_fields=["name"],
+            )
+        )
+    except Exception:
+        pass
 
 
 @router.get("", response_model=FarmResponse)
@@ -78,214 +65,104 @@ def get_farmer_farm(
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> FarmResponse:
+    """Retrieve farmer farm details, plots, and boundaries with localized overlays."""
     try:
-        user = get_user(session, user_id)
+        req_lang = lang or request.headers.get("accept-language")
+        return get_farmer_farm_data(session, user_id, req_lang)
+    except HTTPException:
+        raise
     except SQLAlchemyError as exc:
+        logger.exception("Database error loading farm for user %s", user_id)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
-    if user is None or user.farm is None:
-        raise HTTPException(status_code=404, detail="Farm has not been configured.")
-    farm = user.farm
-    plot_items = [{
-        "id": p.id,
-        "name": p.name,
-        "crop": p.crop,
-        "area_acres": p.area_acres,
-        "status": p.status,
-        "geometry": p.geometry,
-    } for p in farm.plots]
-    req_lang = lang or request.headers.get("accept-language") or user.language
-    overlay_entity_translations(session, plot_items, "plot", lambda x: x["id"], ["name"], req_lang, name_fields=["name"])
-    farm_data = {
-        "id": farm.id,
-        "name": farm.name,
-        "location": farm.location,
-        "area_acres": farm.area_acres,
-        "latitude": farm.latitude,
-        "longitude": farm.longitude,
-        "crop_history": farm.crop_history or [],
-        "boundary": farm.boundary,
-        "plots": plot_items,
-    }
-    overlay_dict_translations(session, farm_data, "farm", farm.id, ["name", "location"], req_lang, name_fields=["name", "location"])
-    return FarmResponse(**farm_data)
+
 
 @router.put("", response_model=FarmResponse)
-async def save_farmer_farm(
+def save_farmer_farm(
     payload: FarmRequest,
+    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> FarmResponse:
+    """Configure or update farm metadata and boundary polygon."""
     try:
-        user = get_user(session, user_id)
-        if user is None:
-            raise HTTPException(status_code=404, detail="Farmer profile not found.")
-
-        data = payload.model_dump()
-        if payload.reset_boundary:
-            data["boundary"] = None
-        elif payload.boundary:
-            valid, msg, calc_acres = _validate_geojson_polygon(payload.boundary)
-            if not valid:
-                raise HTTPException(status_code=422, detail=f"Invalid farm boundary: {msg}")
-            if (data.get("area_acres") is None or data.get("area_acres") == 0) and calc_acres:
-                data["area_acres"] = calc_acres
-
-        farm = save_farm(session, user, data)
-
-        # Enqueue write-time transliteration for farm name and location
-        from app.core.arq import enqueue_translation
-        try:
-            await enqueue_translation(
-                "farm",
-                farm.id,
-                {"name": farm.name, "location": farm.location or ""},
-                name_fields=["name", "location"],
-            )
-        except Exception:
-            pass
+        farm_res, farm_entity = update_farmer_farm_data(session, user_id, payload)
+        background_tasks.add_task(
+            _enqueue_farm_transliteration,
+            farm_entity.id,
+            farm_entity.name or "",
+            farm_entity.location or "",
+        )
+        return farm_res
     except HTTPException:
         raise
     except SQLAlchemyError as exc:
         session.rollback()
+        logger.exception("Database error saving farm for user %s", user_id)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
-    return FarmResponse(
-        id=farm.id,
-        name=farm.name,
-        location=farm.location,
-        area_acres=farm.area_acres,
-        latitude=farm.latitude,
-        longitude=farm.longitude,
-        crop_history=farm.crop_history or [],
-        boundary=farm.boundary,
-        plots=[{
-            "id": p.id,
-            "name": p.name,
-            "crop": p.crop,
-            "area_acres": p.area_acres,
-            "status": p.status,
-            "geometry": p.geometry,
-        } for p in farm.plots]
-    )
 
 
-
-@router.post("/plots", response_model=PlotResponse)
-async def create_plot(
+@router.post("/plots", response_model=PlotResponse, status_code=status.HTTP_201_CREATED)
+def create_plot(
     payload: PlotRequest,
+    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> PlotResponse:
-    from app.models.plot import Plot
+    """Add a new crop plot inside the verified farm boundary."""
     try:
-        user = get_user(session, user_id)
-        if not user or not user.farm:
-            raise HTTPException(status_code=404, detail="Farm not found.")
-        
-        calc_acres = None
-        if payload.geometry:
-            valid, msg, calc_acres = _validate_geojson_polygon(payload.geometry)
-            if not valid:
-                raise HTTPException(status_code=422, detail=f"Invalid plot geometry: {msg}")
-
-        # Check containment inside farm if farm boundary exists
-        if payload.geometry and user.farm.boundary:
-            if not _plot_inside_farm(payload.geometry, user.farm.boundary):
-                raise HTTPException(status_code=400, detail="Plot boundary must be within the saved farm boundary.")
-
-        final_area = payload.area_acres or calc_acres or 0.0
-        new_plot = Plot(
-            farm_id=user.farm.id,
-            name=payload.name,
-            crop=payload.crop,
-            area_acres=final_area,
-            status="healthy",
-            geometry=payload.geometry
+        plot_res, plot_entity = add_plot_to_farm(session, user_id, payload)
+        background_tasks.add_task(
+            _enqueue_plot_transliteration,
+            plot_entity.id,
+            plot_entity.name,
         )
-        session.add(new_plot)
-        session.commit()
-        session.refresh(new_plot)
-
-        # Enqueue write-time transliteration for plot name
-        from app.core.arq import enqueue_translation
-        try:
-            await enqueue_translation("plot", new_plot.id, {"name": new_plot.name}, name_fields=["name"])
-        except Exception:
-            pass
-
-        return new_plot
+        return plot_res
     except HTTPException:
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        raise HTTPException(status_code=503, detail="Database error.") from exc
+        logger.exception("Database error creating plot for user %s", user_id)
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
 @router.put("/plots/{plot_id}", response_model=PlotResponse)
-async def update_plot(
+def update_plot(
     plot_id: int,
     payload: PlotRequest,
+    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> PlotResponse:
-    from app.models.plot import Plot
+    """Update plot metadata, assigned crop, or plot boundaries."""
     try:
-        user = get_user(session, user_id)
-        if not user or not user.farm:
-            raise HTTPException(status_code=404, detail="Farm not found.")
-        plot = session.query(Plot).filter(Plot.id == plot_id, Plot.farm_id == user.farm.id).first()
-        if not plot:
-            raise HTTPException(status_code=404, detail="Plot not found.")
-        
-        plot.name = payload.name
-        if payload.crop is not None:
-            plot.crop = payload.crop
-        if payload.area_acres is not None:
-            plot.area_acres = payload.area_acres
-
-        if payload.reset_geometry:
-            plot.geometry = None
-        elif payload.geometry is not None:
-            valid, msg, calc_acres = _validate_geojson_polygon(payload.geometry)
-            if not valid:
-                raise HTTPException(status_code=422, detail=f"Invalid plot geometry: {msg}")
-            if not _plot_inside_farm(payload.geometry, user.farm.boundary):
-                raise HTTPException(status_code=400, detail="Plot boundary must be inside the saved farm boundary.")
-            plot.geometry = payload.geometry
-            if (payload.area_acres is None or payload.area_acres == 0) and calc_acres:
-                plot.area_acres = calc_acres
-
-        session.commit()
-        session.refresh(plot)
-
-        # Enqueue write-time transliteration for updated plot name
-        from app.core.arq import enqueue_translation
-        try:
-            await enqueue_translation("plot", plot.id, {"name": plot.name}, name_fields=["name"])
-        except Exception:
-            pass
-
-        return plot
+        plot_res, plot_entity = modify_plot_in_farm(session, user_id, plot_id, payload)
+        if payload.name:
+            background_tasks.add_task(
+                _enqueue_plot_transliteration,
+                plot_entity.id,
+                plot_entity.name,
+            )
+        return plot_res
+    except HTTPException:
+        raise
     except SQLAlchemyError as exc:
         session.rollback()
-        raise HTTPException(status_code=503, detail="Database error.") from exc
+        logger.exception("Database error updating plot %s for user %s", plot_id, user_id)
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
+
 
 @router.delete("/plots/{plot_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_plot(
     plot_id: int,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
-):
-    from app.models.plot import Plot
+) -> None:
+    """Delete a plot from the farm."""
     try:
-        user = get_user(session, user_id)
-        if not user or not user.farm:
-            raise HTTPException(status_code=404, detail="Farm not found.")
-        plot = session.query(Plot).filter(Plot.id == plot_id, Plot.farm_id == user.farm.id).first()
-        if not plot:
-            raise HTTPException(status_code=404, detail="Plot not found.")
-        
-        session.delete(plot)
-        session.commit()
+        remove_plot_from_farm(session, user_id, plot_id)
+    except HTTPException:
+        raise
     except SQLAlchemyError as exc:
         session.rollback()
-        raise HTTPException(status_code=503, detail="Database error.") from exc
+        logger.exception("Database error deleting plot %s for user %s", plot_id, user_id)
+        raise HTTPException(status_code=503, detail="Database is unavailable.") from exc

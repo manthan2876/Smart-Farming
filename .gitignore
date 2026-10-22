@@ -12,6 +12,7 @@
 **/.env.*
 !**/.env.example
 !**/.env.production.example
+!**/.env.staging.example
 *.local
 *.jks
 *.keystore
@@ -242,7 +243,9 @@ Thumbs.db
 old_files/
 .agents/
 .fastapicloud/
-/scripts/
+/scripts/*
+!/scripts/backup_database.sh
+!/scripts/restore_database.sh
 start_all.sh
 start_all_with_mobile.sh
 stop_all.sh
