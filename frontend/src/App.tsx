@@ -1,36 +1,56 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
-import AboutPage from "./pages/AboutPage";
-import ServicesPage from "./pages/ServicesPage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import VerifyEmailPage from "./pages/VerifyEmailPage";
-import DashboardPage from "./pages/DashboardPage";
-import ScanPage from "./pages/ScanPage";
-import PredictionResultPage from "./pages/PredictionResultPage";
-import ProcessingPage from "./pages/ProcessingPage";
-import HistoryPage from "./pages/HistoryPage";
-import FarmSettingsPage from "./pages/FarmSettingsPage";
-import SettingsPage from "./pages/SettingsPage";
-import WeatherPage from "./pages/WeatherPage";
-import CropsPage from "./pages/CropsPage";
-import AdminMetricsPage from "./pages/AdminMetricsPage";
-import AdminFeedbackPage from "./pages/AdminFeedbackPage";
-import AdminUsersPage from "./pages/AdminUsersPage";
-import ExpertQueuePage from "./pages/ExpertQueuePage";
-import ExpertReviewPage from "./pages/ExpertReviewPage";
-import AlertsPage from "./pages/AlertsPage";
-import TermsPage from "./pages/TermsPage";
-import PrivacyPage from "./pages/PrivacyPage";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/Appshell";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { useAuth } from "./context/AuthContext";
 import { getApiUrl } from "./api/client";
 import { Analytics } from "@vercel/analytics/react";
+
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ServicesPage = lazy(() => import("./pages/ServicesPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const ScanPage = lazy(() => import("./pages/ScanPage"));
+const PredictionResultPage = lazy(() => import("./pages/PredictionResultPage"));
+const ProcessingPage = lazy(() => import("./pages/ProcessingPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const FarmSettingsPage = lazy(() => import("./pages/FarmSettingsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const WeatherPage = lazy(() => import("./pages/WeatherPage"));
+const CropsPage = lazy(() => import("./pages/CropsPage"));
+const AdminMetricsPage = lazy(() => import("./pages/AdminMetricsPage"));
+const AdminFeedbackPage = lazy(() => import("./pages/AdminFeedbackPage"));
+const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
+const ExpertQueuePage = lazy(() => import("./pages/ExpertQueuePage"));
+const ExpertReviewPage = lazy(() => import("./pages/ExpertReviewPage"));
+const AlertsPage = lazy(() => import("./pages/AlertsPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+
+function AppErrorFallback() {
+  const { t } = useAuth();
+  return (
+    <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 p-6 text-center">
+      <p role="alert">{t("renderErrorMessage")}</p>
+      <button className="rounded-sm border px-4 py-2" onClick={() => window.location.reload()}>
+        {t("retry")}
+      </button>
+    </main>
+  );
+}
+
+function RouteLoadingFallback() {
+  const { t } = useAuth();
+  return <div className="p-6 text-center" role="status">{t("loading")}</div>;
+}
 
 function ExternalRedirect({ to }: { to: string }) {
   window.location.href = to;
@@ -72,7 +92,9 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <AuthHashHandler />
-        <Routes>
+      <AppErrorBoundary fallback={<AppErrorFallback />}>
+      <Suspense fallback={<RouteLoadingFallback />}>
+      <Routes>
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
@@ -110,6 +132,8 @@ export default function App() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+        </Suspense>
+        </AppErrorBoundary>
       <Analytics />
     </AuthProvider>
   </ThemeProvider>

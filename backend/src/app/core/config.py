@@ -109,6 +109,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development")
     DEBUG: bool = Field(default=True)
     JWT_SECRET_KEY: str = Field(default="dev-secret-key-change-me")
+    CORS_ORIGINS: str = Field(default="")
 
     # Email / SMTP Configuration (Managed via Supabase Custom SMTP; local SMTP fields are optional fallbacks)
     SMTP_HOST: str | None = Field(default=None)

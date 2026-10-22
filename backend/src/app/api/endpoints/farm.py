@@ -72,7 +72,7 @@ def _plot_inside_farm(plot_geom: dict | None, farm_geom: dict | None) -> bool:
 
 
 @router.get("", response_model=FarmResponse)
-async def get_farmer_farm(
+def get_farmer_farm(
     request: Request,
     lang: str | None = None,
     user_id: str = Depends(get_current_user),
@@ -270,7 +270,7 @@ async def update_plot(
         raise HTTPException(status_code=503, detail="Database error.") from exc
 
 @router.delete("/plots/{plot_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_plot(
+def delete_plot(
     plot_id: int,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),

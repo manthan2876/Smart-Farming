@@ -211,7 +211,7 @@ async def update_farmer_profile(
 
 
 @router.delete("", status_code=200)
-async def delete_farmer_profile(
+def delete_farmer_profile(
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -231,7 +231,7 @@ async def delete_farmer_profile(
 
 
 @router.get("/export", status_code=200)
-async def export_personal_data(
+def export_personal_data(
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:

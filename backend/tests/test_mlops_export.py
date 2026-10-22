@@ -98,6 +98,7 @@ def test_export_defaults_to_approved_only(client, admin_user, db_session, tmp_pa
     """Test that omitting status filter strictly exports 'added_to_dataset' and ignores 'pending_review'."""
     monkeypatch.setattr("app.core.paths.settings.BACKEND_ROOT", tmp_path)
     monkeypatch.setattr("app.core.paths.settings.DATA_ROOT", tmp_path / "data")
+    monkeypatch.setattr("app.core.paths.settings.UPLOAD_ROOT", tmp_path / "data" / "uploads")
 
     # Create test image file on disk
     img_dir = tmp_path / "data" / "uploads"

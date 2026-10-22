@@ -122,3 +122,18 @@ def test_media_auth_admin_allowed_any(media_setup):
     res = client.get("/predictions/102/media-url/raw")
     assert res.status_code == 200
 
+
+def test_media_stream_auth_stranger_forbidden(media_setup):
+    app.dependency_overrides[get_current_user] = lambda: "farmer-stranger"
+    client = TestClient(app)
+
+    response = client.get("/predictions/101/media/raw")
+    assert response.status_code == 403
+
+
+def test_legacy_media_path_disabled_in_production(monkeypatch):
+    monkeypatch.setattr("app.main.production_mode", True)
+    client = TestClient(app)
+
+    response = client.get("/data/uploads/private-leaf.jpg")
+    assert response.status_code == 404

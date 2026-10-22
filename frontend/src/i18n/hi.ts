@@ -726,6 +726,8 @@ export const hi: Record<keyof typeof en, string> = {
   meteorologicalIntelligence: "मौसम संबंधी जानकारी",
   updating: "अपडेट हो रहा है...",
   loading: "लोड हो रहा है...",
+  renderErrorMessage: "इस पृष्ठ को दिखाते समय समस्या हुई। कृपया फिर से कोशिश करें।",
+  retry: "फिर से कोशिश करें",
   scanReference: "स्कैन संदर्भ",
   privacyTitle: "गोपनीयता नीति",
   termsTitle: "सेवा की शर्तें",
@@ -788,4 +790,3 @@ export const hi: Record<keyof typeof en, string> = {
   verificationCodeSent: "सत्यापन कोड भेजा गया",
   otpCodeInputLabel: "सत्यापन कोड (OTP)",
 };
-

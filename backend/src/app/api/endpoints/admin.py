@@ -94,7 +94,7 @@ def _compute_drift_metrics(session: Session) -> dict[str, Any]:
 
 
 @router.get("/metrics")
-async def get_metrics(
+def get_metrics(
     user_id: str = Depends(require_admin_role), session: Session = Depends(get_session)
 ) -> dict[str, Any]:
     total_users = session.query(func.count(User.id)).scalar() or 0
@@ -198,7 +198,7 @@ class AdminPurgeRequest(BaseModel):
 
 
 @router.delete("/purge")
-async def purge_database(
+def purge_database(
     payload: AdminPurgeRequest | None = Body(None),
     confirmation: str | None = Query(None),
     dry_run: bool = False,
@@ -257,7 +257,7 @@ class AdminUserUpdateRequest(BaseModel):
 
 
 @router.get("/users")
-async def get_users_list(
+def get_users_list(
     skip: int = 0,
     limit: int = 50,
     role: str | None = None,
@@ -300,7 +300,7 @@ async def get_users_list(
 
 
 @router.patch("/users/{target_user_id}/role")
-async def update_user_role(
+def update_user_role(
     target_user_id: str,
     payload: AdminRoleUpdateRequest,
     caller_id: str = Depends(require_admin_role),
@@ -473,7 +473,7 @@ async def trigger_weather_risk_job(caller_id: str = Depends(require_admin_role))
 
 
 @router.get("/feedback")
-async def get_feedback(
+def get_feedback(
     user_id: str = Depends(require_expert_role), session: Session = Depends(get_session)
 ) -> list[dict[str, Any]]:
     feedbacks = session.query(Feedback).order_by(Feedback.created_at.desc()).all()
@@ -519,7 +519,7 @@ def get_config():
         }
 
 @router.get("/config")
-async def read_config(is_admin: bool = Depends(require_admin_role)):
+def read_config(is_admin: bool = Depends(require_admin_role)):
     return get_config()
 
 @router.put("/config")
@@ -564,7 +564,7 @@ async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require
     return get_config()
 
 @router.delete("/blobs")
-async def purge_blobs(
+def purge_blobs(
     dry_run: bool = False,
     is_admin: bool = Depends(require_admin_role),
     session: Session = Depends(get_session)

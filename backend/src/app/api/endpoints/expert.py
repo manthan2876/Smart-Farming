@@ -12,7 +12,7 @@ from app.models import Prediction, ExpertReview, Alert, DatasetCandidate
 router = APIRouter(tags=["expert"])
 
 @router.get("/expert/queue")
-async def get_expert_queue(
+def get_expert_queue(
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
 ):
@@ -48,7 +48,7 @@ async def get_expert_queue(
     return results
 
 @router.get("/expert/reviews/{review_id}")
-async def get_expert_review(
+def get_expert_review(
     request: Request,
     review_id: int,
     lang: str | None = None,
@@ -108,7 +108,7 @@ async def get_expert_review(
 from sqlalchemy.orm.attributes import flag_modified
 
 @router.post("/expert/reviews/{review_id}/claim")
-async def claim_expert_review(
+def claim_expert_review(
     review_id: int,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
@@ -148,7 +148,7 @@ async def claim_expert_review(
 
 
 @router.post("/expert/reviews/{review_id}/release")
-async def release_expert_review(
+def release_expert_review(
     review_id: int,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),

@@ -6,7 +6,7 @@
 **Status:** ⚠️ SUPERSEDED — See [`UI_UX_Spec.md`](UI_UX_Spec.md)  
 
 > [!WARNING]
-> This document is a **legacy design-phase specification** and is no longer the authoritative UI reference. It has been superseded by [`UI_UX_Spec.md`](UI_UX_Spec.md), which documents the current anti-vibecoded Tailwind CSS design system, actual React routes, component API, trilingual i18n system (670+ keys with 100% compile-time parity), custom SVG icons, and role-access matrix as implemented.
+> This document is a **legacy design-phase specification** and is no longer the authoritative UI reference. It has been superseded by [`UI_UX_Spec.md`](UI_UX_Spec.md), which documents the current Tailwind CSS design system, actual React routes, component API, translation catalogs, Lucide React icons, and role-access matrix.
 >
 > Notable discrepancies vs. current implementation:
 > - Routes use `/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/reset-password`
@@ -16,7 +16,7 @@
 > - Farm settings route is `/farm/settings` (not `/farm`)
 > - Expert pages are at `/admin/expert` and `/admin/expert/:id`
 > - Admin-only: `/admin/metrics`, `/admin/users`; Expert+Admin: `/admin/feedback`, `/admin/expert`
-> - Design system uses sharp border radii (`rounded-sm`), tonal borders, no Lucide icons (custom SVG set in `src/components/icons/`), no emojis, and `LanguageToggle` with Globe + 2-letter uppercase language code (`EN`/`GU`/`HI`)
+> - Design system uses sharp border radii (`rounded-sm`), tonal borders, Lucide React icons, no emojis, and `LanguageToggle` with Globe + 2-letter uppercase language code (`EN`/`GU`/`HI`)
 >
 > This file is kept for historical reference only.
 

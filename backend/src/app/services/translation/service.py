@@ -422,10 +422,9 @@ def resolve_agronomic_translation(text: str, target_code: str) -> str | None:
 
 
 async def translate_batch_indictrans(texts: list[str], target_lang: str) -> list[str]:
-    """Translate multiple texts via dedicated IndicTrans2 FastAPI server (e.g., Colab / HF Space).
+    """Translate multiple texts via the configured IndicTrans2 FastAPI service.
 
     Splits paragraphs into sentence-level chunks, translates in batch, and reassembles them.
-    Bypasses ngrok free-tier warning screen using ngrok-skip-browser-warning.
     """
     if not texts:
         return []
@@ -857,4 +856,3 @@ def translate_recommendation_sync(recommendation: dict[str, Any], target_lang: s
             translated_dict[k] = trans
 
     return translated_dict
-

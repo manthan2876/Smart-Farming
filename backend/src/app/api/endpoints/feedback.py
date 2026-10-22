@@ -21,7 +21,7 @@ router = APIRouter()
 _LOGGER = logging.getLogger("smart-farming.api")
 
 @router.post("/feedback", response_model=FeedbackResponse, status_code=201)
-async def feedback(
+def feedback(
     payload: FeedbackRequest,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
@@ -58,7 +58,7 @@ async def feedback(
 
 
 @router.put("/feedback/{feedback_id}", response_model=FeedbackResponse)
-async def update_feedback(
+def update_feedback(
     feedback_id: int,
     payload: FeedbackRequest,
     user_id: str = Depends(get_current_user),
@@ -85,7 +85,7 @@ async def update_feedback(
 
 
 @router.post("/feedback/{feedback_id}/review", status_code=200)
-async def review_feedback(
+def review_feedback(
     feedback_id: int,
     payload: FeedbackReviewRequest,
     user_id: str = Depends(require_expert_role),

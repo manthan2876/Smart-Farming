@@ -14,26 +14,27 @@
     "@types/leaflet": "^1.9.22",
     "@vercel/analytics": "^2.0.1",
     "@vis.gl/react-google-maps": "^1.10.0",
-    "@vitejs/plugin-react": "latest",
     "browser-image-compression": "^2.0.2",
     "es-toolkit": "^1.52.0",
     "idb-keyval": "^6.3.0",
     "leaflet": "^1.9.4",
-    "lucide-react": "latest",
+    "lucide-react": "1.34.0",
     "motion": "^13.1.1",
-    "react": "latest",
-    "react-dom": "latest",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.2",
-    "recharts": "^3.10.1",
-    "vite": "latest"
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
-    "typescript": "latest"
+    "tailwindcss": "^4.3.3",
+    "typescript": "7.0.2",
+    "vite": "^8.3.5"
   }
 }

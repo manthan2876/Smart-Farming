@@ -34,7 +34,7 @@ The core AI diagnosis pipeline supports two execution modes controlled by `REQUI
 
 1. The user uploads a JPEG, PNG, or WebP leaf image via `POST /predict`.
 2. The backend validates the content-type and extension, verifies the file bytes with PIL `Image.verify()` (binary magic-byte check), hashes the image, and checks the Upstash Redis REST dedup cache (`sf:dedup:{hash}`, 24 h TTL). A cached completed result is returned immediately (<20ms).
-3. The image is saved to the active storage backend (**Supabase Object Storage** `smart-farming-data-dev` with 15-minute signed URLs in production, or AWS S3 / local disk).
+3. The image is saved to the active storage backend (Supabase Object Storage with signed URLs in production, or local disk for development).
 4. `run_pipeline()` is called **synchronously** in the request: calls the consolidated AI microservice on Hugging Face Spaces (`https://maharsh8805-smart-farming-ai.hf.space`, port 7860), runs the 7-stage vision pipeline (OpenCV quality gate & preprocessing → EfficientNet-B0 crop classifier → decision router → dedicated per-crop EfficientNet-B2 disease diagnosis across 32 conditions → adaptive HSV severity estimation & YOLOv8-nano pest detection → ICAR/KVK grounded agronomic advisory → zero-hang translation & Edge-TTS neural speech synthesis), then persists findings to Supabase Managed PostgreSQL.
 5. Live ambient weather is enriched via OpenWeatherMap (cached for 30 minutes in Upstash under `sf:weather:{lat}:{lon}`).
 6. An agronomic advisory recommendation is generated via the grounded deterministic ICAR/KVK knowledge base (`advisory_kb.json` v2, 56 conditions across 5 crops & pests with zero-latency CPU execution) or Groq Llama-3.3-70B cloud acceleration.
@@ -751,7 +751,7 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 **What works:**
 
 - `GET /expert/queue` returns all pending `ExpertReview` records with crop, disease, confidence, severity, and timestamps. Ordered by most recent.
-- `GET /expert/reviews/{review_id}` returns full review details including raw/processed presigned S3 image URLs and all prediction fields. Accepts a `lang` query parameter — if provided, `farmer_guidance` is translated via the `entity_translations` overlay before returning.
+- `GET /expert/reviews/{review_id}` returns full review details including raw/processed Supabase signed image URLs and all prediction fields. Accepts a `lang` query parameter — if provided, `farmer_guidance` is translated via the `entity_translations` overlay before returning.
 - `POST /expert/reviews/{review_id}` processes a review:
   - Accepts three `action` values: `'Override / Correct Findings'`, `'Request Rescan'`, or approve (any other value).
   - Persists: `decision`, `status="verified"`, `expert_id`, `farmer_guidance`, `internal_note`, `corrected_disease`, `corrected_severity`.
@@ -1023,7 +1023,7 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 
 - Public routes: Landing (`/`), About (`/about`), Services (`/services`), Crops (`/crops`), Terms (`/terms`), Privacy (`/privacy`), Login (`/auth/login`), Register (`/auth/register`), Forgot Password (`/auth/forgot-password`), Reset Password (`/auth/reset-password`).
 - Protected routes (wrapped in `AppShell` + `ProtectedRoute`): Dashboard, Scan, Processing, Result, History, Settings, Weather, Alerts, Farm Settings, Expert Queue, Expert Review, Admin Metrics, Admin Feedback, Admin Users.
-- Anti-vibecoded design system: complete UI redesign featuring custom SVG icon set in `src/components/icons/` (replacing Lucide), sharp border radii (`rounded-sm`), border depth instead of drop shadows, authentic agricultural color palette, real interactive diagnostic pipeline demo with Grad-CAM visualization, and skeleton loading states for asynchronous views.
+- Current visual system uses Lucide React icons, sharp border radii (`rounded-sm`), border depth instead of drop shadows, an agricultural color palette, a diagnostic pipeline demo with Grad-CAM visualization, and skeleton loading states for asynchronous views.
 - Terms of Service (`/terms`) and Privacy Policy (`/privacy`) pages fully integrated and linked in public footer.
 - `ProtectedRoute` accepts two optional boolean props that gate routes by role:
   - `adminOnly` — allows `admin` **or** `expert` roles. Used for: `/admin/feedback`, `/admin/expert`, `/admin/expert/:id`.
@@ -1119,7 +1119,7 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 
 **What works:**
 
-- Full UI translation dictionaries in English, Hindi (`hi`), and Gujarati (`gu`) (`i18n/en.ts`, `hi.ts`, `gu.ts`) with **670+ keys each**, providing 100% localization coverage across all 24 page components.
+- English, Hindi (`hi`), and Gujarati (`gu`) catalogs (`i18n/en.ts`, `hi.ts`, `gu.ts`) are checked for key parity. Static UI localization remains incomplete because many page strings are inline.
 - Strict compile-time key parity: `gu.ts` and `hi.ts` are typed as `Record<keyof typeof en, string>`, causing `tsc` to fail if any key is missing or mismatched.
 - Redesigned `LanguageToggle` component supporting dropdown (Globe + 2-letter uppercase code `EN`/`GU`/`HI`), segmented pill, and icon-only variants with tooltips. Embedded in PublicNav, Sidebar, Footer, and all auth pages.
 - Curated agricultural domain lexicon for crops, diseases, pests, severity levels, weather conditions, and alert titles (`i18n/domain.ts`) with runtime translation helpers (`translateCrop`, `translateDisease`, `translatePest`, `translateSeverityBucket`, `translateWeather`, `translateAlertTitle`).
@@ -1453,8 +1453,8 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 - Modular storage backend abstraction (`core/storage.py`):
   - `SupabaseStorageBackend`: Production default object storage client managing buckets on Supabase (`smart-farming-data-dev`) with time-bounded signed URLs (15-min expiry).
   - `LocalStorageBackend`: Local filesystem storage with direct file I/O and relative URL serving for offline development.
-  - `S3StorageBackend`: Object storage client supporting AWS S3 with AES-256 server-side encryption and SigV4 authentication.
-  - `get_storage()` factory instantiates the active backend based on `STORAGE_BACKEND` (`"supabase"`, `"local"`, `"s3"`).
+  - `S3StorageBackend`: Deprecated compatibility alias for `SupabaseStorageBackend`; it does not implement AWS S3.
+  - `get_storage()` factory selects Supabase Object Storage (`"supabase"`; legacy alias `"s3"`) or local disk (`"local"`).
   - Presigned URL generation for secure client media access (`storage.get_url(...)` with configurable expiration).
   - Orphaned blob purge utility (`purge_orphaned_blobs`) supporting `dry_run` previews and configurable grace periods.
 
@@ -1516,7 +1516,7 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 | `test_pipeline.py` | Full pipeline smoke test (skipped when test image is absent); also runnable as a standalone script to print detailed per-stage output. |
 | `test_hf_recommendation.py` | HuggingFace recommendation service live integration (skipped when `HF_TOKEN` is absent; gracefully skips on 402 Payment Required). |
 | `test_observability.py` | Context stage initialization; weather degraded-state handling; recommendation rule-based fallback tagging; confidence rating and uncertainty flags; pest detector unavailable tagging; pipeline provenance and schema-version assertions. |
-| `test_storage.py` | `LocalStorageBackend` save/read/URL/delete round-trip; `S3StorageBackend` instantiation; `get_storage()` factory. |
+| `test_storage.py` | Local storage save/read/URL/delete round-trip; Supabase storage client behavior; `get_storage()` factory. |
 | `test_admin_users.py` | `GET /admin/users` list; `PATCH /admin/users/{id}/role` success, invalid role (422), self-demotion guard (400), last-admin demotion guard (400). |
 | `test_media_auth.py` | `GET /predictions/{id}/media-url/raw` — owner allowed; stranger forbidden (403); expert allowed only when status is `pending_expert_review`; admin allowed for any scan. |
 | `test_features_extended.py` | GeoJSON polygon validation: valid polygon, unclosed polygon rejected, out-of-bounds coordinates rejected; expert severity regex parsing for various string formats. |

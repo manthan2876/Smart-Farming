@@ -321,7 +321,7 @@ async def change_password(
 
 @router.post("/forgot-password", response_model=MessageResponse, status_code=200)
 @limiter.limit("3/minute")
-async def forgot_password(
+def forgot_password(
     request: Request,
     payload: ForgotPasswordRequest,
     background_tasks: BackgroundTasks,
@@ -597,7 +597,7 @@ async def login(
 
 @router.post("/guest", response_model=AuthResponse)
 @limiter.limit("10/minute")
-async def guest_login(
+def guest_login(
     request: Request,
     response: Response,
     session: Session = Depends(get_session),
@@ -632,7 +632,7 @@ async def guest_login(
 
 @router.post("/request-email-update", response_model=MessageResponse, status_code=200)
 @limiter.limit("5/minute")
-async def request_email_update(
+def request_email_update(
     request: Request,
     payload: RequestEmailUpdateRequest,
     background_tasks: BackgroundTasks,
@@ -693,7 +693,7 @@ async def request_email_update(
 
 @router.post("/request-phone-update", response_model=MessageResponse, status_code=200)
 @limiter.limit("5/minute")
-async def request_phone_update(
+def request_phone_update(
     request: Request,
     payload: RequestPhoneUpdateRequest,
     user_id: str = Depends(get_current_user),
@@ -903,7 +903,7 @@ async def verify_email(
 
 @router.post("/resend-verification-email", response_model=MessageResponse, status_code=200)
 @limiter.limit("3/minute")
-async def resend_verification_email(
+def resend_verification_email(
     request: Request,
     payload: ResendVerificationEmailRequest,
     background_tasks: BackgroundTasks,
@@ -1000,7 +1000,7 @@ async def setup_first_time_password(
 
 
 @router.post("/refresh", response_model=dict[str, str | int])
-async def refresh(
+def refresh(
     request: Request,
     response: Response,
     payload: RefreshRequest | None = None,
@@ -1035,7 +1035,7 @@ async def refresh(
 
 
 @router.post("/logout", response_model=dict[str, str])
-async def logout(
+def logout(
     request: Request,
     response: Response,
     payload: RefreshRequest | None = None,

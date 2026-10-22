@@ -12,64 +12,40 @@ class TokenStorage {
 
   /// Reads auth access token securely, seamlessly migrating any legacy SharedPreferences token.
   static Future<String?> getToken() async {
-    try {
-      final secureToken = await _storage.read(key: _tokenKey);
-      if (secureToken != null && secureToken.isNotEmpty) {
-        return secureToken;
-      }
-    } catch (_) {}
+    final secureToken = await _storage.read(key: _tokenKey);
+    if (secureToken != null && secureToken.isNotEmpty) {
+      return secureToken;
+    }
 
-    // Fallback & Migration: Check legacy SharedPreferences
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final legacyToken = prefs.getString(_tokenKey);
-      if (legacyToken != null && legacyToken.isNotEmpty) {
-        await saveToken(legacyToken);
-        await prefs.remove(_tokenKey);
-        return legacyToken;
-      }
-    } catch (_) {}
+    final prefs = await SharedPreferences.getInstance();
+    final legacyToken = prefs.getString(_tokenKey);
+    if (legacyToken != null && legacyToken.isNotEmpty) {
+      await saveToken(legacyToken);
+      await prefs.remove(_tokenKey);
+      return legacyToken;
+    }
 
     return null;
   }
 
   /// Reads refresh token securely.
-  static Future<String?> getRefreshToken() async {
-    try {
-      final refreshToken = await _storage.read(key: _refreshTokenKey);
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        return refreshToken;
-      }
-    } catch (_) {}
-    return null;
-  }
+  static Future<String?> getRefreshToken() => _storage.read(key: _refreshTokenKey);
 
   /// Saves the access token securely.
-  static Future<void> saveToken(String token) async {
-    try {
-      await _storage.write(key: _tokenKey, value: token);
-    } catch (_) {}
-  }
+  static Future<void> saveToken(String token) => _storage.write(key: _tokenKey, value: token);
 
   /// Saves both access and refresh tokens securely.
   static Future<void> saveTokens({required String accessToken, required String refreshToken}) async {
-    try {
-      await _storage.write(key: _tokenKey, value: accessToken);
-      await _storage.write(key: _refreshTokenKey, value: refreshToken);
-    } catch (_) {}
+    await _storage.write(key: _tokenKey, value: accessToken);
+    await _storage.write(key: _refreshTokenKey, value: refreshToken);
   }
 
   /// Clears both auth & refresh tokens from secure storage and legacy preferences.
   static Future<void> clearToken() async {
-    try {
-      await _storage.delete(key: _tokenKey);
-      await _storage.delete(key: _refreshTokenKey);
-    } catch (_) {}
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_tokenKey);
-      await prefs.remove(_refreshTokenKey);
-    } catch (_) {}
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _refreshTokenKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_refreshTokenKey);
   }
 }
-

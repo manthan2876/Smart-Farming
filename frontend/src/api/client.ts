@@ -13,14 +13,7 @@ export function getApiUrl() {
 
 export function getAssetUrl(path: string | null | undefined): string {
   if (!path) return "";
-  // If the path is a direct Supabase signed or public storage URL, route it through the backend proxy
-  // (/data/{path}) to prevent third-party Cloudflare __cf_bm cookie rejection warnings in browsers.
-  if (path.includes(".supabase.co/")) {
-    const match = path.match(/\/(?:storage\/v1\/)?object\/(?:sign|authenticated|public)\/[^/]+\/(.+?)(?:\?|$)/);
-    if (match && match[1]) {
-      return `${API_URL}/data/${match[1]}`;
-    }
-  }
+  // Keep signed object-storage URLs intact; replacing them with /data would bypass media authorization.
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }

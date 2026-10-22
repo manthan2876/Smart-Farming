@@ -1060,7 +1060,7 @@ async def get_job_status(request: Request, job_id: str):
 
 @router.post("/predictions/{prediction_id}/request-expert")
 @limiter.limit('5/minute')
-async def request_expert_review(
+def request_expert_review(
     request: Request,
     prediction_id: int,
     user_id: str = Depends(get_current_user),
@@ -1194,7 +1194,7 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
 # Media Authorization Gateway & ARQ Job Status
 # --------------------------------------------------------------------------------------
 @router.get("/predictions/{prediction_id}/media-url/{media_type}")
-async def get_prediction_media_url(
+def get_prediction_media_url(
     prediction_id: int,
     media_type: str,
     user_id: str = Depends(get_current_user),
@@ -1257,7 +1257,7 @@ async def get_prediction_media_url(
 
 
 @router.get("/predictions/{prediction_id}/media/{media_type}")
-async def get_prediction_media_stream(
+def get_prediction_media_stream(
     prediction_id: int,
     media_type: str,
     user_id: str = Depends(get_current_user),
@@ -1316,7 +1316,11 @@ async def get_prediction_media_stream(
 
     try:
         content = storage.get(key)
-        return Response(content=content, media_type=mime)
+        return Response(
+            content=content,
+            media_type=mime,
+            headers={"Cache-Control": "private, no-store"},
+        )
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Media file not found.")
 

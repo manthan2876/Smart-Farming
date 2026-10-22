@@ -105,7 +105,7 @@ def _resolve_model_path(relative_path: str | None) -> Path | None:
 
 
 @router.get("")
-async def list_models(
+def list_models(
     is_admin: str = Depends(require_admin_role),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
@@ -145,7 +145,7 @@ async def list_models(
 
 
 @router.get("/health")
-async def model_health(is_admin: str = Depends(require_admin_role)) -> dict[str, Any]:
+def model_health(is_admin: str = Depends(require_admin_role)) -> dict[str, Any]:
     """Check which configured models are loadable (file exists on disk)."""
     config = _load_config()
     registry = _load_registry()
@@ -226,7 +226,7 @@ class PromoteRequest(BaseModel):
 
 
 @router.post("/promote")
-async def promote_model(
+def promote_model(
     payload: PromoteRequest,
     is_admin: str = Depends(require_admin_role),
     session: Session = Depends(get_session),
@@ -443,7 +443,7 @@ class RollbackRequest(BaseModel):
 
 
 @router.post("/rollback")
-async def rollback_model(
+def rollback_model(
     payload: RollbackRequest,
     is_admin: str = Depends(require_admin_role),
     session: Session = Depends(get_session),

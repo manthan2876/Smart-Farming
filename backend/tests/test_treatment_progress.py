@@ -175,7 +175,7 @@ def test_fallback_recommendation_scales_to_plot_area():
         "farm": farm,
         "plot": plot,
     }
-    with patch("app.services.recommendation.service._get_hf_client", side_effect=RuntimeError("HF offline for test")):
+    with patch("app.services.recommendation.service.call_remote_advisory_server", return_value=None):
         res_ctx = generate_recommendation(context)
     rec = res_ctx.get("recommendation", {})
     assert rec.get("is_fallback") is True

@@ -127,7 +127,7 @@ async def trigger_weather_risks(
 
 
 @router.post("/purge-blobs")
-async def trigger_purge_blobs(
+def trigger_purge_blobs(
     verified: bool = Depends(verify_qstash_signature),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:

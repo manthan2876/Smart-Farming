@@ -79,9 +79,10 @@ async def test_translate_batch_indictrans_success():
             assert result[0] == "आपकी फसल में पत्ती झुलसा के लक्षण दिख रहे हैं। कॉपर फफूंदनाशी का प्रयोग करें।"
             assert result[1] == "पौधों के बीच उचित दूरी बनाए रखें।"
 
-            # Verify request headers and payload
+            # Verify the API request contract without depending on a tunnel-specific header.
             call_kwargs = mock_post.call_args
-            assert call_kwargs.kwargs["headers"]["ngrok-skip-browser-warning"] == "69420"
+            assert call_kwargs.kwargs["headers"]["Content-Type"] == "application/json"
+            assert call_kwargs.kwargs["headers"]["User-Agent"] == "SmartFarmingBackend/2.0"
             assert call_kwargs.kwargs["json"]["target"] == "hi"
             assert len(call_kwargs.kwargs["json"]["texts"]) == 3
 
@@ -235,6 +236,5 @@ def test_translate_prediction_endpoint_success():
         app.dependency_overrides.pop(get_current_user, None)
         session.close()
         Base.metadata.drop_all(bind=test_engine)
-
 
 

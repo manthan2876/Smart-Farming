@@ -164,7 +164,7 @@ The production pipeline automates drift detection via GitHub Actions (`.github/w
 ### 4.1 Python Environment
 
 ```bash
-# Create a virtual environment (Python 3.10+)
+# Create a virtual environment (Python 3.11+)
 python -m venv .venv
 
 # Activate
@@ -491,7 +491,7 @@ Use this checklist every time you run a training cycle. Store it alongside the r
 
 ## 13. Storage Backend (Supabase Storage / Production)
 
-In production, images and dataset candidate assets are stored in Supabase Object Storage (with AWS S3 and local disk available as fallbacks):
+In production, images and dataset candidate assets are stored in Supabase Object Storage; local disk is supported for development. The legacy `s3` backend name is an alias for Supabase storage, not an AWS S3 implementation:
 
 ```bash
 # Configure Supabase Object Storage in .env:

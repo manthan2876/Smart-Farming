@@ -1,85 +1,69 @@
-﻿import sys
 import os
-from pathlib import Path
+import sys
 import uuid
+from pathlib import Path
 
-# Add backend/src to path
-sys.path.append(str(Path("src").resolve()))
+BACKEND_ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(BACKEND_ROOT / "src"))
 
-from sqlalchemy.orm import Session
-from app.core.database import SessionLocal, engine
-from app.models.user import User
-from app.models.farm import Farm
 from app.api.deps import hash_password
+from app.core.database import SessionLocal
+from app.models.farm import Farm
+from app.models.user import User
 
-def seed_users():
+SEED_USERS = (
+    ("admin@smartfarming.com", "Admin User", "admin", "SEED_ADMIN_PASSWORD", "+10000000001"),
+    ("expert@smartfarming.com", "Expert Agronomist", "expert", "SEED_EXPERT_PASSWORD", "+10000000002"),
+    ("farmer@smartfarming.com", "Farmer John", "farmer", "SEED_FARMER_PASSWORD", "+10000000003"),
+)
+
+
+def seed_users() -> None:
+    passwords = {env_key: os.getenv(env_key, "") for _, _, _, env_key, _ in SEED_USERS}
+    missing = [key for key, value in passwords.items() if not value]
+    if missing:
+        raise RuntimeError(f"Set these environment variables before seeding: {', '.join(missing)}")
+
     session = SessionLocal()
     try:
-        users = [
-            {
-                "email": "admin@smartfarming.com",
-                "name": "Admin User",
-                "role": "admin",
-                "password": "password123",
-                "phone": "+10000000001"
-            },
-            {
-                "email": "expert@smartfarming.com",
-                "name": "Expert Agronomist",
-                "role": "expert",
-                "password": "password123",
-                "phone": "+10000000002"
-            },
-            {
-                "email": "farmer@smartfarming.com",
-                "name": "Farmer John",
-                "role": "farmer",
-                "password": "password123",
-                "phone": "+10000000003"
-            }
-        ]
+        for email, name, role, env_key, phone in SEED_USERS:
+            if session.query(User).filter(User.email == email).first():
+                print(f"User {email} already exists; leaving it unchanged.")
+                continue
 
-        for u in users:
-            existing = session.query(User).filter(User.email == u["email"]).first()
-            if existing:
-                print(f"User {u['email']} already exists. Updating role...")
-                existing.role = u["role"]
-                existing.password_hash = hash_password(u["password"])
-                existing.name = u["name"]
-            else:
-                print(f"Creating user {u['email']}...")
-                user_id = str(uuid.uuid4())
-                new_user = User(
+            user_id = str(uuid.uuid4())
+            session.add(
+                User(
                     id=user_id,
-                    name=u["name"],
-                    email=u["email"],
-                    phone=u["phone"],
-                    password_hash=hash_password(u["password"]),
-                    role=u["role"],
-                    language="English"
+                    name=name,
+                    email=email,
+                    phone=phone,
+                    password_hash=hash_password(passwords[env_key]),
+                    role=role,
+                    language="English",
+                    is_email_verified=True,
                 )
-                
-                # Add a dummy farm so profile doesn't crash if farm is expected
-                dummy_farm = Farm(
+            )
+            session.add(
+                Farm(
                     user_id=user_id,
                     location="Test Farm Location",
                     latitude=0.0,
                     longitude=0.0,
                     crop_history=["Tomato", "Potato"],
-                    name=f"{u['name']}'s Farm",
-                    area_acres=10.0
+                    name=f"{name}'s Farm",
+                    area_acres=10.0,
                 )
-                session.add(new_user)
-                session.add(dummy_farm)
-                
-        session.commit()
-        print("Seeding completed successfully.")
+            )
 
-    except Exception as e:
-        print(f"Error seeding users: {e}")
+        session.commit()
+    except Exception:
         session.rollback()
+        raise
     finally:
         session.close()
 
+
 if __name__ == "__main__":
     seed_users()
+    print("Seeding completed successfully.")

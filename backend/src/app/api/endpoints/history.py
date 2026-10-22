@@ -22,7 +22,7 @@ from app.models import Prediction
 
 
 @router.get("/history")
-async def history(
+def history(
     request: Request,
     response: Response,
     offset: int = 0,

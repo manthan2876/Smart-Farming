@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "backend"
 version = "0.1.0"
 description = "FastAPI backend for the Smart Farming diagnostic pipeline"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.24.0",
     "pyyaml>=6.0",
@@ -15,21 +15,25 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.22.0",
+    "gunicorn>=23.0.0",
+    "uvicorn-worker>=0.3.0",
+    "certifi>=2026.10.19",
     "python-multipart>=0.0.6",
     "httpx>=0.25.0",
     "requests>=2.31.0",
+    "urllib3>=2.8.0",
     "slowapi>=0.1.9",
     "sqlalchemy>=2.0.0",
     "alembic>=1.14.0",
     "psycopg2-binary>=2.9.0",
     "psycopg[binary]>=3.1.0",
-    "PyJWT>=2.8.0",
+    "PyJWT>=2.15.0",
     "pwdlib[argon2]>=0.2.0",
     "passlib[bcrypt]>=1.7.4",
     "apscheduler>=3.10.0",
     "redis>=5.0.0",
     "arq>=0.26.0",
-    "pillow>=10.2.0",
+    "pillow>=13.0.0",
     "shapely>=2.0.0",
 ]
 
@@ -37,6 +41,9 @@ dependencies = [
 dev = [
     "httpx>=0.28.0",
     "pytest>=8.0.0",
+    "pytest-mock>=3.14.0",
+    "pip-audit>=2.10.0,<3.0.0",
+    "opencv-python-headless>=4.10.0,<4.13",
 ]
 
 [tool.fastapi]

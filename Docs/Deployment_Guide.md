@@ -1,9 +1,9 @@
 # Smart Farming — Deployment Guide
 
-**Project:** AI-Powered Smart Farming  
-**Version:** 2.2 (Monorepo, Cloud Production Architecture & Vercel Analytics)  
-**Date:** 22 October 2026  
-**Status:** Active / Production Reference  
+- **Project:** AI-Powered Smart Farming
+- **Version:** 2.2 (Monorepo, Cloud Production Architecture & Vercel Analytics)
+- **Date:** 22 October 2026
+- **Status:** Active / Operator reference; verify provider settings before production deployment
 
 ---
 
@@ -57,7 +57,7 @@ A modern, highly decoupled, and cost-effective multi-cloud architecture:
                                         │ HTTPS REST / WebSocket
                             ┌───────────▼────────────────────────┐
                             │   Render Web Service (Backend)     │
-                            │   (Python 3.11 · render.yaml)      │
+                            │   (Python 3.12 · Gunicorn/Uvicorn) │
                             │   REQUIRE_REDIS=False (Sync Exec)  │
                             └──┬───────────┬───────────┬─────────┤
             AI_SERVICE_URL     │           │ Signed    │ SSL     │ HTTPS REST
@@ -72,10 +72,10 @@ A modern, highly decoupled, and cost-effective multi-cloud architecture:
 
 | Component | Provider / Platform | Specifications | Public URL / Access |
 |---|---|---|---|
-| **API Gateway & Backend** | **Render** Web Service | Python 3.11, Uvicorn, Render Blueprint ([`render.yaml`](file:///home/manthan/Projects/Smart-Farming/render.yaml)) | `https://smart-farming-backend.onrender.com` |
+| **API Gateway & Backend** | **Render** Web Service | Python 3.12, Gunicorn + Uvicorn worker, Render Blueprint (`render.yaml`) | `https://smart-farming-backend.onrender.com` |
 | **Unified AI Microservice** | **Hugging Face Spaces** | ZeroGPU / CPU, FastAPI + Gradio 5.16+, Port `7860` | `https://maharsh8805-smart-farming-ai.hf.space` |
-| **Web Dashboard** | **Vercel** Edge Network | React 18 + Vite SPA, Tailwind CSS | `https://smart-farming-dashboard.vercel.app` |
-| **Mobile Application** | **Flutter** (Android/iOS) | Dart, BLoC, SQLite offline cache | Standalone native APK / IPA |
+| **Web Dashboard** | **Vercel** Edge Network | React 19 + Vite 8 SPA, Tailwind CSS 4 | `https://smart-farming-dashboard.vercel.app` |
+| **Mobile Application** | **Flutter** (Android/iOS) | Dart, ChangeNotifier/InheritedNotifier state, SQLite offline queue | Standalone native APK / IPA |
 | **Relational Database** | **Supabase** Managed PostgreSQL | PostgreSQL 15+ via Session Pooler (port `5432`, SSL require) | `db.<project-ref>.supabase.co:5432` |
 | **Object Storage** | **Supabase** Object Storage | S3-compatible bucket (`smart-farming-data-dev`), 15-min signed URLs | Supabase REST Storage API |
 | **Serverless Redis** | **Upstash** Redis REST | Serverless Redis (HTTPS Token Auth, `sf:*` namespace) | `https://<db>.upstash.io` |
@@ -86,16 +86,14 @@ A modern, highly decoupled, and cost-effective multi-cloud architecture:
 
 ### 1.2 Target B: Self-Hosted Docker Compose (Local Dev / Single VM)
 
-A consolidated single-server deployment using Docker Compose:
+A local two-service development stack using the repository's `compose.yaml`:
 
 | Container | Technology | Host Port | Purpose |
 |---|---|---|---|
-| `backend` | FastAPI + Uvicorn | `8000` | API Gateway & Sync Pipeline |
-| `worker` | Python ARQ Worker | — | Async queue processor (when `REQUIRE_REDIS=True`) |
-| `frontend`| Nginx + Built React SPA | `80`, `443` | Reverse proxy and static web hosting |
-| `postgres`| PostgreSQL 15 Alpine | `5432` | Local relational database |
-| `redis` | Redis 7 Alpine | `6379` | Local job queue and pub/sub broker |
-| `minio` | MinIO S3-Compatible Storage | `9000`, `9001` | Local object storage server |
+| `backend` | FastAPI + Gunicorn/Uvicorn worker | `8000` | API and SQLite-backed local development |
+| `frontend` | Non-root Nginx + built React SPA | `8080` | Static web hosting |
+
+The Compose stack does not provision PostgreSQL, Redis, an ARQ worker, or MinIO. Configure those services separately when validating production-like integrations.
 
 ---
 
@@ -307,7 +305,7 @@ The backend is configured as a Render Blueprint service.
    JWT_SECRET_KEY=<SECURE_RANDOM_SECRET>
    OPENWEATHER_API=<OPENWEATHERMAP_API_KEY>
    GROQ_API_KEY=<GROQ_API_KEY>
-   CORS_ORIGINS=https://smart-farming-dashboard.vercel.app,http://localhost:5173
+   CORS_ORIGINS=https://smart-farming-dashboard.vercel.app
    ```
 
 ---
@@ -472,14 +470,14 @@ All maintenance utilities live in `backend/scripts/` and adhere to strict produc
 
 ---
 
-## 7. Self-Hosted Docker Compose Stack
+## 7. Local Docker Compose Development Stack
 
-For private on-premise deployments or air-gapped field servers:
+The Compose file provides a local frontend and API with SQLite and a persistent local-media volume. It is not a complete production stack and does not provision PostgreSQL, Redis, an ARQ worker, or the AI service.
 
 1. **Directory Structure:**
    ```
    Smart-Farming/
-   ├── docker-compose.yml
+   ├── compose.yaml
    ├── backend/
    ├── frontend/
    └── ai_service/
@@ -487,7 +485,7 @@ For private on-premise deployments or air-gapped field servers:
 
 2. **Launch Stack:**
    ```bash
-   docker compose up -d --build
+   docker compose up --build
    ```
 
 3. **Verify running containers:**

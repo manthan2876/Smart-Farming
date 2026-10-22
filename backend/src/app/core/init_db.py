@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 import logging
-import uuid
-from datetime import datetime, timezone
-from sqlalchemy import create_engine, inspect, text
-from sqlalchemy.orm import Session
+from sqlalchemy import inspect, text
 
 from app.core import Base, database_url
 from app.core.session import create_app_engine
@@ -284,77 +281,7 @@ def initialize_database() -> None:
     except Exception as exc:
         print(f"[InitDB] Note on schema migrations: {exc}")
 
-    # 3. Seed initial users if database is empty
-    try:
-        from app.models.user import User
-        from app.models.farm import Farm
-        from app.api.deps import hash_password
-
-        with Session(engine) as session:
-            user_count = session.query(User).count()
-            if user_count == 0:
-                print("[InitDB] Database is empty. Seeding initial platform accounts...")
-
-                admin_user = User(
-                    id=str(uuid.uuid4()),
-                    name="Admin User",
-                    email="admin@smartfarming.com",
-                    is_email_verified=True,
-                    email_verified_at=datetime.now(timezone.utc),
-                    phone="+10000000001",
-                    role="admin",
-                    language="English",
-                    password_hash=hash_password("admin123"),
-                    created_at=datetime.now(timezone.utc),
-                )
-                session.add(admin_user)
-
-                expert_user = User(
-                    id=str(uuid.uuid4()),
-                    name="Expert Agronomist",
-                    email="expert@smartfarming.com",
-                    is_email_verified=True,
-                    email_verified_at=datetime.now(timezone.utc),
-                    phone="+10000000002",
-                    role="expert",
-                    language="English",
-                    password_hash=hash_password("expert123"),
-                    created_at=datetime.now(timezone.utc),
-                )
-                session.add(expert_user)
-
-                farmer_user = User(
-                    id=str(uuid.uuid4()),
-                    name="Farmer John",
-                    email="farmer@smartfarming.com",
-                    is_email_verified=True,
-                    email_verified_at=datetime.now(timezone.utc),
-                    phone="+10000000003",
-                    role="farmer",
-                    language="English",
-                    password_hash=hash_password("farmer123"),
-                    created_at=datetime.now(timezone.utc),
-                )
-                session.add(farmer_user)
-                session.flush()
-
-                # Seed sample farm for the farmer
-                sample_farm = Farm(
-                    user_id=farmer_user.id,
-                    name="Green Valley Farms",
-                    location="Bhavnagar, Gujarat",
-                    area_acres=25.0,
-                    latitude=21.7645,
-                    longitude=72.1519,
-                    crop_history=["Tomato", "Cotton"],
-                )
-                session.add(sample_farm)
-                session.commit()
-                print("[InitDB] Seeded initial accounts: admin@smartfarming.com, expert@smartfarming.com, farmer@smartfarming.com (password: admin123 / expert123 / farmer123)")
-    except Exception as exc:
-        print(f"[InitDB] Note on user seeding: {exc}")
-
-    # 4. Run Alembic upgrade if configured
+    # 3. Run Alembic upgrade if configured
     try:
         from alembic import command
         from alembic.config import Config

@@ -1,6 +1,8 @@
-import os
+import logging
+import re
+import uuid
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -46,6 +48,20 @@ from app.core.config import settings
 from app.core.arq import init_arq, close_arq
 from app.core.init_db import initialize_database
 
+logger = logging.getLogger("smart-farming.api")
+
+
+def _log_background_task_failure(task: asyncio.Task) -> None:
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.error(
+            "Background startup task failed",
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # In local development, ensure tables exist immediately.
@@ -54,7 +70,11 @@ async def lifespan(app: FastAPI):
     if getattr(settings, "ENVIRONMENT", "development") != "production":
         initialize_database()
     else:
-        asyncio.create_task(asyncio.to_thread(initialize_database))
+        db_task = asyncio.create_task(
+            asyncio.to_thread(initialize_database),
+            name="initialize-database",
+        )
+        db_task.add_done_callback(_log_background_task_failure)
 
     # Initialize ARQ pool only if Redis worker queue is explicitly required
     if getattr(settings, "REQUIRE_REDIS", False):
@@ -62,12 +82,13 @@ async def lifespan(app: FastAPI):
     else:
         app.state.arq_pool = None
 
-    # Offload audio storage sync to a background task so it doesn't block port binding
-    try:
-        from app.api.endpoints.tts import sync_existing_audio_to_storage
-        asyncio.create_task(asyncio.to_thread(sync_existing_audio_to_storage))
-    except Exception:
-        pass
+    from app.api.endpoints.tts import sync_existing_audio_to_storage
+
+    audio_task = asyncio.create_task(
+        asyncio.to_thread(sync_existing_audio_to_storage),
+        name="sync-audio-storage",
+    )
+    audio_task.add_done_callback(_log_background_task_failure)
 
     yield
 
@@ -75,15 +96,21 @@ async def lifespan(app: FastAPI):
         from app.core.redis_rest import redis_rest
         await redis_rest.aclose()
     except Exception:
-        pass
-    await close_arq()
+        logger.exception("Failed to close Redis REST client during shutdown")
+    try:
+        await close_arq()
+    except Exception:
+        logger.exception("Failed to close ARQ pool during shutdown")
 
-
+production_mode = settings.ENVIRONMENT.strip().lower() in {"production", "staging"}
 app = FastAPI(
     title="Smart Farming API",
     version="0.1.0",
     description="HTTP delivery layer for the Smart Farming diagnostic pipeline.",
-    lifespan=lifespan
+    docs_url=None if production_mode else "/docs",
+    redoc_url=None if production_mode else "/redoc",
+    openapi_url=None if production_mode else "/openapi.json",
+    lifespan=lifespan,
 )
 
 from app.core.limiter import limiter
@@ -95,38 +122,46 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    import traceback
-    traceback.print_exc()
-    origin = request.headers.get("origin")
-    response = JSONResponse(
-        status_code=500,
-        content={"detail": f"Internal server error: {exc}"},
+    request_id = getattr(request.state, "request_id", "unavailable")
+    logger.exception(
+        "Unhandled request error (request_id=%s, path=%s)",
+        request_id,
+        request.url.path,
     )
-    if origin:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error.", "request_id": request_id},
+    )
 
+
+@app.middleware("http")
+async def add_request_id_and_security_headers(request: Request, call_next):
+    incoming_id = request.headers.get("X-Request-ID", "")
+    request_id = incoming_id if re.fullmatch(r"[A-Za-z0-9._-]{1,64}", incoming_id) else uuid.uuid4().hex
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 
 allowed_origins = [
     origin.strip().rstrip("/")
-    for origin in os.getenv(
-        "CORS_ORIGINS",
-        "http://127.0.0.1:5173,http://localhost:5173,http://localhost:3000,http://127.0.0.1:3000",
-    ).split(",")
+    for origin in settings.CORS_ORIGINS.split(",")
     if origin.strip()
 ]
+if production_mode and not allowed_origins:
+    raise RuntimeError("CORS_ORIGINS must contain the production frontend origin.")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins if allowed_origins else ["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.vercel\.app)$",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Accept-Language", "X-User-ID", "X-Request-ID"],
+    expose_headers=["X-Request-ID", "X-Total-Count", "X-Offset", "X-Limit"],
 )
 
 # Include all modular routers
@@ -153,14 +188,17 @@ app.include_router(internal_cron_router, prefix="/api/v1")
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 _DATA_DIR = _BACKEND_DIR / "data"
 
-print(f"-> Serving static files from: {_DATA_DIR.resolve()}")
+logger.info("Serving local media from %s", _DATA_DIR.resolve())
 _DATA_DIR.mkdir(parents=True, exist_ok=True)
 (_DATA_DIR / "uploads").mkdir(parents=True, exist_ok=True)
 (_DATA_DIR / "processed").mkdir(parents=True, exist_ok=True)
 
 @app.get("/data/{file_path:path}", include_in_schema=False)
-async def serve_data_file(file_path: str):
+def serve_data_file(file_path: str, request: Request):
     """Serve static asset from local disk or stream from Supabase Object Storage."""
+    if production_mode:
+        raise HTTPException(status_code=404, detail="File not found.")
+
     clean_subpath = file_path.replace("\\", "/").strip("/")
     if clean_subpath.startswith("data/"):
         clean_subpath = clean_subpath[5:]
@@ -172,7 +210,7 @@ async def serve_data_file(file_path: str):
     except ValueError:
         pass
 
-    backend_type = (os.getenv("STORAGE_BACKEND") or getattr(settings, "STORAGE_BACKEND", "local") or "local").lower()
+    backend_type = (settings.STORAGE_BACKEND or "local").lower()
     if backend_type in ("supabase", "s3"):
         try:
             from app.core.storage import get_storage
@@ -194,13 +232,18 @@ async def serve_data_file(file_path: str):
                     "Access-Control-Allow-Origin": "*",
                 },
             )
+        except FileNotFoundError:
+            return JSONResponse(status_code=404, content={"detail": "File not found"})
         except Exception:
-            pass
+            logger.exception("Failed to retrieve stored media (request_id=%s)", getattr(request.state, "request_id", "unavailable"))
+            return JSONResponse(status_code=503, content={"detail": "Stored media is temporarily unavailable."})
 
     return JSONResponse(status_code=404, content={"detail": "File not found"})
 
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return {"message": "Smart Farming API", "docs": "/docs"}
-
+    response = {"message": "Smart Farming API"}
+    if not production_mode:
+        response["docs"] = "/docs"
+    return response

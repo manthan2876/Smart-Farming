@@ -1,32 +1,46 @@
-FROM python:3.11-slim
+FROM ghcr.io/astral-sh/uv:0.13.0 AS uv
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8080
+FROM python:3.12-slim AS builder
 
-WORKDIR /app
+ENV VIRTUAL_ENV=/opt/venv
+ENV UV_PROJECT_ENVIRONMENT=${VIRTUAL_ENV}
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    libpq-dev \
-    gcc \
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+COPY --from=uv /uv /bin/uv
+WORKDIR /build
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --no-install-project --python /usr/local/bin/python
 
-# Copy application source code, migrations, and configuration
-COPY src/ ./src/
-COPY alembic/ ./alembic/
-COPY alembic.ini .
-COPY config.yaml .
-COPY model_registry.json .
+FROM python:3.12-slim AS runtime
 
-# Cloud Run exposes port via $PORT
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV ENVIRONMENT=production
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y curl libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 10001 --create-home appuser \
+    && mkdir -p /app/data \
+    && chown appuser:appuser /app/data
+
+WORKDIR /app
+COPY --from=builder --chown=appuser:appuser "${VIRTUAL_ENV}" "${VIRTUAL_ENV}"
+COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser alembic.ini ./
+COPY --chown=appuser:appuser alembic/ ./alembic/
+COPY --chown=appuser:appuser config.yaml ./
+COPY --chown=appuser:appuser model_registry.json ./
+
+USER appuser
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl --fail --silent http://127.0.0.1:${PORT:-8080}/ready || exit 1
 
-# Start FastAPI app
-CMD exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --app-dir src
+CMD ["sh", "-c", "exec gunicorn app.main:app --workers ${WEB_CONCURRENCY:-1} --worker-class uvicorn_worker.UvicornWorker --bind 0.0.0.0:${PORT:-8080} --chdir /app/src --timeout 150 --access-logfile - --error-logfile -"]

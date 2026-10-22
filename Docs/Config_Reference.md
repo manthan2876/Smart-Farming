@@ -1,9 +1,9 @@
 # Configuration Reference — AI-Powered Smart Farming
 
-**Project:** AI-Powered Smart Farming  
-**Version:** 2.1 (Monorepo & Cloud Architecture)  
-**Date:** 19 October 2026  
-**Status:** Active / Production Reference  
+- **Project:** AI-Powered Smart Farming
+- **Version:** 2.2 (Monorepo & Cloud Architecture)
+- **Date:** 22 October 2026
+- **Status:** Active / Production Reference
 
 ---
 
@@ -112,13 +112,13 @@ One entry per supported crop: `Cotton`, `Groundnut`, `Pepper_Bell`, `Potato`, `T
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `SECRET_KEY` | string | `dev-secret-key-change-me` | Primary JWT signing key (HS256). **Must be changed in production.** |
-| `JWT_SECRET_KEY` | string | `dev-secret-key-change-me` | Alias for `SECRET_KEY`. |
+| `SECRET_KEY` | string | `dev-secret-key-change-me` | Legacy key field; auth token creation uses `JWT_SECRET_KEY`. |
+| `JWT_SECRET_KEY` | string | `dev-secret-key-change-me` | HS256 signing key. A unique random key of at least 32 characters is required in production/staging. |
 | `ALGORITHM` | string | `HS256` | JWT signing algorithm. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | int | `30` | Access token lifetime in minutes. |
 | `ENVIRONMENT` | string | `development` | Deployment mode: `development` or `production`. In production, enforces strict security policies. |
 | `DEBUG` | bool | `True` | When `True`, enables `X-User-ID` header bypass for local dev. **Must be `False` in production.** |
-| `CORS_ORIGINS` | string | `http://localhost:5173,...` | Whitelist of frontend origins (comma-separated). Supports regex matching for `*.vercel.app`. |
+| `CORS_ORIGINS` | string | empty | Exact, comma-separated allowed origins. Must include the deployed frontend origin in production/staging; wildcard/regex matching is not used. |
 
 ### Database
 
@@ -149,7 +149,7 @@ All AI, computer vision, translation, LLM advisory, and speech capabilities are 
 
 ### Storage & Media Assets (Supabase Default)
 
-The backend features a unified storage abstraction layer (`backend/src/app/core/storage.py`) supporting Supabase Object Storage as the primary cloud default, with pluggable support for AWS S3 and local disk.
+The backend features a unified storage abstraction layer (`backend/src/app/core/storage.py`) supporting Supabase Object Storage and local disk. The legacy `s3` value is an alias for the Supabase-compatible implementation, not a separately configured AWS S3 driver.
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
@@ -165,10 +165,10 @@ The backend features a unified storage abstraction layer (`backend/src/app/core/
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `AWS_ACCESS_KEY_ID` | string | `""` | AWS IAM access key ID. |
-| `AWS_SECRET_ACCESS_KEY` | string | `""` | AWS IAM secret access key. |
-| `AWS_REGION` | string | `us-east-1` | AWS region name. |
-| `AWS_S3_BUCKET` | string | Alias to `SUPABASE_BUCKET` | AWS S3 bucket name. |
+| `AWS_ACCESS_KEY_ID` | string | unused | Not consumed by the current storage backend. |
+| `AWS_SECRET_ACCESS_KEY` | string | unused | Not consumed by the current storage backend. |
+| `AWS_REGION` | string | unused | Not consumed by the current storage backend. |
+| `AWS_S3_BUCKET` | string | Legacy alias to `SUPABASE_BUCKET` | Compatibility setting; this does not configure an AWS S3 client. |
 | `S3_PRESIGNED_EXPIRY_SECONDS` | int | `900` | Alias to `SUPABASE_SIGNED_URL_EXPIRY_SECONDS`. |
 
 ### Redis, Caching & Task Queues
@@ -253,7 +253,7 @@ When client GPS coordinates are omitted or unavailable, the backend uses these a
 
 | Variable | Type | Example | Description |
 |---|---|---|---|
-| `VITE_API_URL` | string | `https://smart-farming-backend.onrender.com` | Backend API base URL consumed by Axios in `frontend/src/api/client.ts`. |
+| `VITE_API_URL` | string | `https://smart-farming-backend.onrender.com` | Backend API base URL consumed by the Fetch wrapper in `frontend/src/api/client.ts`. |
 | `VITE_GOOGLE_MAPS_API_KEY` | string | `<API_KEY>` | Google Maps API key for farm boundary geo-tagging and satellite imagery. |
 | `VITE_GOOGLE_MAPS_MAP_ID` | string | `<MAP_ID>` | Map ID for vector styling. |
 

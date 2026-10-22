@@ -27,14 +27,14 @@ This document is the canonical design reference for the frontend implementation.
 
 | Concern | Technology | Details |
 |---|---|---|
-| Framework | React 18 + TypeScript 5.6 | Strict typing across components and translation keys |
-| Build Tool | Vite 6 | Fast HMR and optimized production bundle |
-| Styling | Tailwind CSS | Utility-first with custom farmer-green and warm-neutral theme |
-| Iconography | Custom SVG Icon Set (`src/components/icons/`) | Purpose-built SVG icons; third-party icon packages replaced |
+| Framework | React 19 + TypeScript 7 | Strict typing across components and translation catalogs |
+| Build Tool | Vite 8 | Fast HMR and optimized production bundle |
+| Styling | Tailwind CSS 4 | Utility-first with custom farmer-green and warm-neutral theme |
+| Iconography | Lucide React | Consistent, tree-shakable icon components |
 | Routing | React Router v7 | Client-side routing with role-aware protected route guards |
 | State | React Context (`AuthContext`, `ThemeContext`) | Authentication state, user profile, theme, and language state |
-| HTTP Client | Axios / Fetch Wrapper | JWT bearer token interceptor with automatic 401 refresh |
-| Internationalization | `src/i18n/` | 670+ translation keys with 100% compile-time parity across EN, GU, HI |
+| HTTP Client | Centralized fetch client (`src/api/client.ts`) | Shared API URL, authentication, and error handling |
+| Internationalization | `src/i18n/` | EN/GU/HI catalogs are checked for key parity; some UI copy remains inline and untranslated |
 | Real-time | WebSocket | Live diagnostic pipeline stage progress tracker |
 | Telemetry & Analytics | `@vercel/analytics` (v2.0+) | Privacy-preserving pageview, client-side route, and custom event tracking |
 
@@ -91,7 +91,7 @@ This document is the canonical design reference for the frontend implementation.
 
 ## 3. Design System — Anti-Vibecoded Component Reference
 
-All shared UI primitives live in **`src/components/ui/`** and **`src/components/icons/`**.
+Shared UI primitives live in **`src/components/ui/`**; icons use Lucide React.
 
 ### Design Philosophy
 The design avoids AI-generated styling patterns:
@@ -99,7 +99,7 @@ The design avoids AI-generated styling patterns:
 - **No drop shadows:** Depth is achieved using clean borders (`border border-neutral-200 dark:border-neutral-800`) and tonal contrast.
 - **No bubbly, oversized corner radii:** Controlled sharp radius system (`rounded-sm` to `rounded-md`) applied consistently.
 - **No glassmorphism:** Surfaces use solid, high-contrast backgrounds (`bg-neutral-50`, `bg-neutral-900`) for legibility in outdoor agricultural conditions.
-- **No Lucide or generic icons:** Replaced with a unified custom SVG icon library in `src/components/icons/`.
+- **Iconography:** Lucide React provides consistent icon components.
 - **No decorative emojis in copy or UI:** Clean, concrete agronomic terminology.
 - **No em dashes in copy:** Commas, periods, or colons are used throughout.
 
@@ -426,7 +426,7 @@ The Flutter mobile app mirrors the web translation architecture via `mobile/lib/
 | **Anti-Vibecoded Visuals** | Flat colors or subtle single-hue tints only. No harsh gradients, glowing blobs, dot grids, or glassmorphism. |
 | **Authentic Agronomic Palette** | Deep agricultural greens (`#15803d`), warm neutrals, and crisp contrast. No purple-and-black or neon colors. |
 | **Sharp Radius System** | Deliberate, sharp corner radius system (`rounded-sm` / `rounded-xs`). No bubbly oversized curves. |
-| **Custom SVG Iconography** | Fully custom SVG icons in `src/components/icons/`. Zero reliance on generic third-party icon libraries. |
+| **Iconography** | Lucide React icon components. |
 | **No Emojis or Em Dashes** | Clean, professional copy without decorative emojis. Punctuated with commas, colons, or periods. |
 | **Real Product Demonstration** | The landing page features a real interactive diagnostic pipeline demo with Grad-CAM visualization. |
 | **Complete Transparency** | Full Terms of Service (`/terms`) and Privacy Policy (`/privacy`) pages, linked in the public footer. |

@@ -100,7 +100,7 @@ def _clean_image_without_exif(image_path: Path) -> bytes:
 
 
 @router.get("/summary")
-async def get_dataset_summary(
+def get_dataset_summary(
     is_admin: str = Depends(require_admin_role),
     session: Session = Depends(get_session),
 ):
@@ -146,7 +146,7 @@ async def get_dataset_summary(
 
 
 @router.post("/export")
-async def export_dataset_post(
+def export_dataset_post(
     payload: DatasetExportRequest,
     download: bool = Query(default=False, description="If true, returns file directly instead of Supabase URL"),
     is_admin: str = Depends(require_admin_role),

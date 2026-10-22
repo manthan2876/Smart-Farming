@@ -11,7 +11,7 @@ from app.services.translation.overlay import overlay_entity_translations
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 @router.get("")
-async def get_alerts(
+def get_alerts(
     request: Request,
     offset: int = 0,
     limit: int = 20,
@@ -55,7 +55,7 @@ async def get_alerts(
 
 
 @router.post("/{alert_id}/read")
-async def mark_read(
+def mark_read(
     alert_id: int, user_id: str = Depends(get_current_user), session: Session = Depends(get_session)
 ) -> dict[str, str]:
     alert = session.query(Alert).filter(Alert.id == alert_id, Alert.user_id == user_id).first()

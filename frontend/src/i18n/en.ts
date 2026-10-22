@@ -724,6 +724,8 @@ export const en = {
   meteorologicalIntelligence: "Meteorological Intelligence",
   updating: "Updating...",
   loading: "Loading...",
+  renderErrorMessage: "Something went wrong while displaying this page.",
+  retry: "Try again",
   scanReference: "Scan Reference",
   privacyTitle: "Privacy Policy",
   termsTitle: "Terms of Service",
@@ -786,4 +788,3 @@ export const en = {
   verificationCodeSent: "Verification code sent to",
   otpCodeInputLabel: "Verification Code (OTP)",
 };
-

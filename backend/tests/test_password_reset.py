@@ -62,6 +62,7 @@ def sample_user(db_session):
         name="Test Farmer",
         email="farmer@example.com",
         phone="+919876543210",
+        is_email_verified=True,
         password_hash=hash_password("OldPassword123"),
         language="English",
         role="farmer",

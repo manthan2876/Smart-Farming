@@ -276,7 +276,7 @@ def test_near_tie_disease_detection():
     Verify that a near-tie condition (runner-up confidence within margin of top 1)
     sets is_near_tie, could_also_be, and confidence_rating='near_tie'.
     """
-    from ai_service.vision_engine.stages.disease_classifier import evaluate_disease_prediction
+    from ai_service.vision_engine.stages.confidence import evaluate_disease_prediction
 
     classes = ["Early Blight", "Late Blight", "Healthy"]
     probs = np.array([0.48, 0.42, 0.10], dtype=np.float32)

@@ -4,21 +4,21 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript)](https://typescriptlang.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript)](https://typescriptlang.org)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.6%20CPU-EE4C2C?logo=pytorch)](https://pytorch.org)
 [![YOLOv8](https://img.shields.io/badge/YOLO-v8-00FFFF?logo=ultralytics)](https://ultralytics.com)
-[![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Cloud%20Run-4285F4?logo=googlecloud)](https://cloud.google.com/run)
+[![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render)](https://render.com)
 [![Supabase](https://img.shields.io/badge/Prod%20DB-Supabase%20PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
 [![Aiven](https://img.shields.io/badge/Dev%20DB-Aiven%20PostgreSQL-FF3554?logo=aiven)](https://aiven.io)
 [![Upstash](https://img.shields.io/badge/Queue%20%26%20Cache-Upstash%20Redis%20%26%20QStash-00E599?logo=redis)](https://upstash.com)
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
 
-**Project:** AI-Powered Smart Farming  
-**Version:** 2.4  
-**Date:** 06 October 2026  
-**Status:** Active / Production Ready  
+- **Project:** AI-Powered Smart Farming
+- **Version:** 2.4
+- **Date:** 22 October 2026
+- **Status:** Active / Production hardening in progress
 
 ---
 
@@ -74,28 +74,28 @@ The platform operates as a decoupled microservices architecture designed for fau
 ```
                                   ┌────────────────────────────────────────┐
                                   │           Vercel CDN Edge              │
-                                  │      React 18 + Vite SPA Frontend      │
+                                  │      React 19 + Vite SPA Frontend      │
                                   └──────────────────┬─────────────────────┘
                                                      │ HTTPS / REST
                                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 Google Cloud Run: smart-farming-backend                                 │
+│                                      Render: smart-farming-backend                                      │
 │                                         (FastAPI API Gateway)                                           │
 │                                                                                                         │
 │  ├── JWT Authentication (Argon2id + Password Reset Tokens with SMTP)                                    │
 │  ├── Weather Service (OpenWeather API)                                                                  │
 │  ├── LLM Advisory Engine (Google Gemini 2.5 Flash / Hugging Face Qwen Fallback)                         │
-│  ├── Google Cloud Translation (Write-time async translation) & Google Cloud TTS Audio                   │
-│  ├── Storage Abstraction (AWS S3 with 15-minute Presigned URLs)                                         │
+│  ├── AI-service translation and speech synthesis                                                      │
+│  ├── Storage Abstraction (Supabase signed URLs with 15-minute expiry)                                  │
 │  ├── ARQ Job Enqueuer & In-process Serverless Fallback                                                  │
 │  └── Notifications & Triage Alerts Engine (Auto-mark read on scan navigation)                           │
 └───┬───────────────────────────────┬────────────────────────────────┬───────────────────────────────┬────┘
-    │ HTTP / Multipart              │ Database Connection            │ Redis Protocol (TLS)          │ AWS S3 API
+    │ HTTP / Multipart              │ Database Connection            │ Redis Protocol (TLS)          │ Supabase Storage API
     ▼                               ▼                                ▼                               ▼
 ┌─────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐
-│ Google Cloud Run        │   │ Cloud PostgreSQL          │   │ Upstash Cloud Redis       │   │ AWS S3 Object Storage     │
+│ Hugging Face Spaces    │   │ Supabase PostgreSQL       │   │ Upstash Redis             │   │ Supabase Object Storage   │
 │ inference-service       │   │                           │   │ & Serverless QStash       │   │ Bucket: smart-farming-data│
-│ (Port 8001)             │   │ • Prod: Supabase Cloud    │   │                           │   │                           │
+│ (HF Space, Port 7860)   │   │ • Prod: Supabase Cloud    │   │                           │   │                           │
 │                         │   │   (Session Pooler: 5432)  │   │ • ARQ Job Queue           │   │ • uploads/ (Raw Leaf)     │
 │ • OpenCV Preprocessor   │   │ • Dev: Aiven Cloud        │   │ • Sub-15ms REST Cache     │   │ • processed/ (Grad-CAM)   │
 │ • EfficientNet-B0 Crop  │   │   (SSL Mode: Require)     │   │ • Scheduled Cron Webhooks │   │ • audio/ (TTS Narration)  │
@@ -132,19 +132,19 @@ Smart Farming maintains strict separation between Development and Production env
 
 | Layer | Technologies & Services | Details |
 |---|---|---|
-| **Frontend (Web)** | React 18, TypeScript 5.6, Vite 6, Tailwind CSS, Custom SVG Icon Set | High-performance dashboard, interactive Grad-CAM viewer, multilingual UI (EN/HI/GU, 670+ translation keys) |
+| **Frontend (Web)** | React 19, TypeScript 7, Vite 8, Tailwind CSS 4, Lucide React | Dashboard, interactive Grad-CAM viewer, EN/HI/GU catalogs; some inline UI strings remain untranslated |
 | **Mobile App** | Flutter 3.x (Dart), `flutter_map`, `latlong2`, `shared_preferences`, `flutter_tts` | Farmer-only native Android app with center-crosshair GIS boundary drawing, Supabase Remote Config, JWT auth, offline scan queue |
-| **Backend Gateway** | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic | RESTful API gateway, RBAC, background job orchestration |
+| **Backend Gateway** | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic | RESTful API gateway, RBAC, background job orchestration |
 | **Model Microservice** | PyTorch 2.6 (CPU-optimised), timm, Ultralytics YOLOv8, OpenCV | Pure inference server, in-memory model pre-warming, Grad-CAM generation |
 | **Job Queue & Scheduling** | ARQ, Upstash Redis (TLS `rediss://`), Upstash QStash | Asynchronous translation workers, pipeline tasks, serverless cron jobs |
 | **Database** | Aiven PostgreSQL (Dev) & Supabase PostgreSQL (Prod) | Managed cloud PostgreSQL instances with connection pooling & SSL |
 | **Remote Config** | Supabase `public.app_config` table via PostgREST | Farmer app backend URL discovery without app rebuilds; read-only via anon RLS policy |
 | **Caching & Dedup** | Upstash Serverless Redis REST | Sub-15ms translation hit caching, SHA-256 image deduplication, rate limiting |
-| **Object Storage** | AWS S3 Object Storage | Raw leaves, Grad-CAM heatmaps, TTS audio narration with presigned URLs |
+| **Object Storage** | Supabase Object Storage | Raw leaves, Grad-CAM heatmaps, TTS audio narration with signed URLs |
 | **Generative AI** | Google Gemini 2.5 Flash (`google-genai`), Qwen3-4B-Instruct | Context-aware agronomic advisory generation |
-| **Translation & TTS** | Google Cloud Translation API, Google Cloud Text-to-Speech | Dynamic Hindi (`hi`) and Gujarati (`gu`) translations and voice generation |
+| **Translation & TTS** | AI-service translation and speech APIs; Flutter `flutter_tts` fallback | Hindi (`hi`) and Gujarati (`gu`) translation and narration |
 | **Email Service** | SMTP / TLS (Gmail / SendGrid compatible) | Password reset email tokens and security notifications |
-| **Hosting & CI/CD** | Google Cloud Run, Vercel, GitHub Actions | Containerized microservices, edge frontend, gated migration workflows |
+| **Hosting & CI/CD** | Render, Hugging Face Spaces, Vercel, GitHub Actions | Backend API, AI service, edge frontend, and migration workflows |
 
 ---
 
@@ -199,32 +199,24 @@ Smart-Farming/
 │   │   ├── verify_qstash_and_events.py     # Validates QStash webhook event delivery
 │   │   ├── verify_upstash_features.py      # Tests Upstash Redis connection & caching
 │   │   ├── test_smtp.py                    # Validates email sending & SMTP credentials
-│   │   └── verify_s3_storage.py            # Validates AWS S3 connectivity, upload & URLs
 │   ├── alembic/                            # Versioned database migrations
-│   ├── seed_users.py                       # Seeds initial Admin, Expert, and Farmer accounts
+│   ├── seed_users.py                       # Explicitly seeds users using required environment passwords
 │   ├── requirements.txt                    # Backend dependencies
-│   └── Dockerfile                          # Cloud Run container definition for backend
+│   └── Dockerfile                          # Non-root multi-stage backend image
 │
-├── model_service/                          # Dedicated Vision Inference Microservice (Server 2)
-│   ├── src/
-│   │   ├── loader.py                       # Model checkpoint loader with defensive fallbacks
-│   │   ├── pipeline.py                     # Multi-stage computer vision orchestrator
-│   │   └── stages/                         # Discrete vision pipeline stages
-│   │       ├── preprocessing.py            # Laplacian blur, brightness, leaf detection
-│   │       ├── crop_identifier.py          # EfficientNet-B0 crop classifier
-│   │       ├── decision_router.py          # Dynamic routing to crop-specific disease model
-│   │       ├── disease_classifier.py       # EfficientNet-B2 disease diagnosis
-│   │       ├── severity.py                 # HSV mask affected-area estimation
-│   │       └── pest_detector.py            # YOLOv8 pest detection stage
-│   ├── models/                             # Pretrained PyTorch & YOLO weight checkpoints
-│   ├── config.yaml                         # Confidence thresholds & model architecture specs
-│   ├── main.py                             # Inference server with in-memory model pre-warming
-│   ├── requirements.txt
-│   └── Dockerfile                          # CPU-optimised Cloud Run container definition
+├── ai_service/                             # Unified inference, translation, advisory, and TTS service
+│   ├── app.py                              # FastAPI/Gradio service entrypoint
+│   ├── core/                               # Service configuration and shared runtime
+│   ├── routers/                            # Vision, translation, advisory, and TTS APIs
+│   ├── vision_engine/                      # Image analysis pipeline and model loading
+│   ├── training/                           # Training and evaluation utilities
+│   ├── models/                             # Model metadata and optional weights
+│   ├── config.yaml                         # AI service model and threshold configuration
+│   └── requirements.txt
 │
-├── frontend/                               # React 18 + Vite Web Application (Server 3)
+├── frontend/                               # React 19 + Vite Web Application (Server 3)
 │   ├── src/
-│   │   ├── pages/                          # Application pages (all fully localized)
+│   │   ├── pages/                          # Application pages; remaining inline UI copy is tracked for localization
 │   │   │   ├── LandingPage.tsx             # Public marketing page with live diagnostic demo
 │   │   │   ├── AboutPage.tsx               # Project background and mission
 │   │   │   ├── ServicesPage.tsx            # Feature showcase
@@ -363,18 +355,19 @@ Smart-Farming/
 
 ### Trilingual Localization (EN / GU / HI)
 
-The platform provides complete trilingual localization across all 24 web pages and the Flutter mobile client:
+The platform provides English, Hindi, and Gujarati translation catalogs and domain-term translation helpers; full UI localization is not complete:
 
-- **670+ Translation Keys**: Complete UI localization coverage across navigation, authentication, diagnostics, triage desks, admin telemetry, legal terms, and notifications.
+- **Translation Catalogs**: English is the web catalog source of truth; Gujarati and Hindi catalogs are checked for key parity during TypeScript builds.
 - **Compile-Time Parity Enforcement**: In the web application (`frontend/src/i18n`), `gu.ts` and `hi.ts` are strictly typed as `Record<keyof typeof en, string>`. Any missing key or typo triggers a TypeScript compile error during `npm run build`.
 - **Runtime Domain Translators**: Dynamic server responses are localized at runtime via `frontend/src/i18n/domain.ts` and `mobile/lib/i18n/domain_translations.dart` for crops, diseases, pests, severity tiers, weather conditions, and alert titles.
-- **Language Selection**: Powered by `LanguageToggle.tsx`, which displays a Globe icon with an uppercase 2-letter language code (`EN`, `GU`, `HI`). Supports dropdown, segmented pill, and icon-only variants with tooltips. Embedded in public navigation, sidebar, footer, and authentication screens.
+- **Known Gap**: Many static web and mobile UI strings are still inline and display in English. Catalog parity alone does not indicate complete localization coverage.
+- **Language Selection**: Powered by `LanguageToggle.tsx`, which displays a Globe icon with an uppercase 2-letter language code (`EN`, `GU`, `HI`). Supports dropdown, segmented pill, and icon-only variants with tooltips.
 
 ### Anti-Vibecoded Design System
 
 The frontend interface was built from the ground up to eliminate generic AI design artifacts:
 
-- **Iconography**: Fully custom SVG icon set in `frontend/src/components/icons/` (zero dependencies on generic icon packages like Lucide).
+- **Iconography**: Lucide React icons.
 - **Color Architecture**: Single agricultural green primary (`#15803d` / `green-700`) paired with a warm neutral scale. No neon colors, no purple-and-black schemes, and no multi-color or liquid gradients.
 - **Elevation and Depth**: Tonal borders (`border-neutral-200 dark:border-neutral-800`) and spatial contrast provide structural depth instead of default drop shadows.
 - **Radius System**: Controlled sharp corner radii (`rounded-sm` to `rounded-md`). No bubbly, oversized pill containers.
@@ -580,17 +573,11 @@ Configure these parameters in `backend/.env` (see [`backend/.env.example`](backe
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash REST Bearer token | `[YOUR-TOKEN]` |
 | `QSTASH_URL` | Upstash QStash API endpoint | `https://qstash-us-east-1.upstash.io/v2` |
 | `QSTASH_TOKEN` | Upstash QStash authentication token | `[YOUR-QSTASH-TOKEN]` |
-| `MODEL_SERVER_URL` | URL of dedicated Model Inference Microservice | `http://127.0.0.1:8001` or Cloud Run URL |
+| `MODEL_SERVER_URL` | URL of the vision inference route | Derived from `AI_SERVICE_URL` |
 | `MODEL_SERVER_TIMEOUT` | Read timeout for vision inference (seconds) | `120` |
-| `STORAGE_BACKEND` | Active object storage provider | `gcs`, `s3`, or `local` |
-| `AWS_ACCESS_KEY_ID` | GCS HMAC Access Key or AWS S3 Key | `GOOG1E...` |
-| `AWS_SECRET_ACCESS_KEY` | GCS HMAC Secret Key or AWS S3 Secret | `[YOUR-SECRET-KEY]` |
-| `AWS_ENDPOINT_URL` | Custom S3 endpoint (for GCS compatibility) | `https://storage.googleapis.com` |
-| `AWS_S3_BUCKET` | Cloud bucket name | `smart-farming-data` |
+| `STORAGE_BACKEND` | Active object storage provider | `supabase` or `local` (`s3` is a legacy alias) |
 | `GEMINI_API_KEY` | Google Gemini API key for treatment advisories | `[YOUR-GEMINI-KEY]` |
 | `OPENWEATHER_API` | OpenWeather API key for meteorological metrics | `[YOUR-OPENWEATHER-KEY]` |
-| `GOOGLE_TTS_API_KEY` | Google Cloud Text-to-Speech API key | `[YOUR-TTS-KEY]` |
-| `GOOGLE_TRANSLATION_API_KEY` | Google Cloud Translation API key | `[YOUR-TRANSLATE-KEY]` |
 | `SMTP_HOST` | SMTP server for password reset emails | `smtp.gmail.com` |
 | `SMTP_PORT` | SMTP port | `587` |
 | `SMTP_USER` | SMTP username / sender email | `your_email@gmail.com` |
@@ -661,7 +648,7 @@ Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at b
 - Flags problematic samples to the dataset retraining candidate pool for continuous model improvement.
 
 ### Administrator
-- Monitors real-time pipeline telemetry, throughput, and error rates via Cloud Run logs.
+- Monitors real-time pipeline telemetry, throughput, and error rates via Render logs.
 - Manages user accounts and role assignments.
 - Audits expert review turnaround times and agreement rates.
 - Triggers MLOps dataset candidate exports for offline training cycles.
@@ -677,11 +664,11 @@ Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at b
 - **Opt-In Reference Sync**: Manual `workflow_dispatch` trigger allows optionally syncing safe allow-listed reference tables.
 
 ### Hosting Services:
-- **API Gateway**: Google Cloud Run (`us-central1`) via Cloud Build.
-- **Vision Microservice**: Google Cloud Run (`us-central1`) with CPU optimization.
+- **API Gateway**: Render Web Service, configured by `render.yaml`.
+- **AI Microservice**: Hugging Face Space, deployed by `.github/workflows/deploy_ai_service.yml`.
 - **Frontend Dashboard**: Vercel Edge Network.
 - **Database**: Supabase Cloud PostgreSQL.
-- **Storage**: AWS S3 (`smart-farming-data`).
+- **Storage**: Supabase Object Storage.
 
 ---
 
@@ -715,15 +702,16 @@ Comprehensive documentation is available in the [`Docs/`](Docs/) directory:
 
 - [Architecture & System Design](Docs/Architecture.md) — Technical specification of all layers, contracts, and services.
 - [API Specification](Docs/API_Specification.md) — OpenAPI / REST endpoint schemas, request parameters, and response structures.
-- [Deployment Guide](Docs/Deployment_Guide.md) — Cloud Run, Vercel, Supabase, and Upstash deployment runbooks.
+- [Deployment Guide](Docs/Deployment_Guide.md) — Render, Hugging Face Spaces, Vercel, Supabase, and Upstash deployment runbooks.
 - [Configuration Reference](Docs/Config_Reference.md) — Complete environment variable and `config.yaml` dictionary, including mobile Flutter variables.
 - [Authentication & Roles](Docs/Auth_Roles.md) — RBAC matrix, token lifecycle, and session security models.
 - [Model Cards](Docs/Model_Cards.md) — Model metrics, architecture benchmarks, datasets, and limitations.
 - [MLOps & Retraining Loop](Docs/MLOps_Retraining.md) — Feedback ingestion, dataset candidate curation, and model promotion.
 - [UI / UX Design System](Docs/UI_UX_Spec.md) — Design tokens, component states, mobile boundary drawing UI, and accessibility standards.
 - [Functionality Status](Docs/functionality-status.md) — Implementation status, gap analysis, and improvement roadmap.
+- [Production Readiness Audit](Docs/Production_Readiness_Audit.md) — Review findings, hardening changes, validation results, and remaining risks.
 
 ---
 
 *AI-Powered Smart Farming Platform*  
-*Last Updated: 06 October 2026*
+*Last Updated: 22 October 2026*

@@ -4,6 +4,7 @@ __pycache__
 *.pyc
 *.pyo
 *.pyd
+*.py[cod]
 .env
 .env.*
 !.env.example
@@ -12,6 +13,7 @@ __pycache__
 data/
 tests/
 .pytest_cache
+.mypy_cache
+.ruff_cache
 *.log
 dev_database.db
-

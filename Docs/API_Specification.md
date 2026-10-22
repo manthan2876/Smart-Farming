@@ -1,9 +1,9 @@
 # Smart Farming — Backend API Specification
 
-**Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
-**Status:** Active / Production Reference  
+- **Project:** AI-Powered Smart Farming
+- **Version:** 2.1
+- **Date:** 22 October 2026
+- **Status:** Active / Operator reference; confirm runtime behavior before production use
 
 ---
 
@@ -51,7 +51,7 @@ The Smart Farming backend is an AI-powered crop disease detection and agronomic 
 | **Scheduled Crons** | QStash & cron-jobs.org | Upstash QStash webhooks (`/api/v1/internal-cron`) & external keepalive pings |
 | **Relational Database** | PostgreSQL 15+ | Supabase Managed PostgreSQL via Session Pooler (port `5432`, `sslmode=require`) |
 | **Entity Translations** | Supabase PostgreSQL table | Pre-computed multilingual advisory translations (`entity_translations`) |
-| **Object Storage** | Supabase Object Storage | Bucket `smart-farming-data-dev` with 15-min signed URLs (fallback: AWS S3 / Local) |
+| **Object Storage** | Supabase Object Storage | Bucket `smart-farming-data-dev` with 15-min signed URLs; local disk is for development |
 | **Real-time Streaming** | WebSocket | `/ws/predictions/{id}` |
 | **Vision Diagnostics** | EfficientNet-B0, Dedicated EfficientNet-B2 (5 crops, 32 conditions), Adaptive HSV, YOLOv8-nano | 7-stage vision pipeline in `ai_service/vision_engine` |
 | **Text-to-Speech** | Microsoft Edge-TTS Neural | High-fidelity voice synthesis (`hi-IN-Swara`, `gu-IN-Dhwani`, `en-IN-Neerja`) with full 4-point advisory narration |
@@ -903,7 +903,7 @@ Streams the media file directly or redirects to the presigned URL. Suitable for 
 
 Response is either:
 - `200 OK` with the binary file stream, or
-- `302 Found` redirect to the presigned URL.
+- `307 Temporary Redirect` to the signed URL.
 
 ---
 
@@ -2093,18 +2093,16 @@ Flexible schema supporting `texts`, `target`, `target_lang`, and `language`:
 
 ---
 
-### 16.3 Static & Cloud Media Streaming
+### 16.3 Legacy Media Path (Development Only)
 
 ```
 GET /data/{file_path:path}
 ```
 
-Public asset streaming endpoint for uploaded scans, Grad-CAM heatmaps, HSV severity masks, and audio files.
+This legacy path is available only outside production/staging. It is intentionally disabled in production/staging because it has no prediction-level authorization. Use the authenticated `/predictions/{prediction_id}/media/{media_type}` endpoint instead.
 
 **Behavior:**
-1. Checks local cache (`backend/data/{file_path}`). If present, serves immediately via `FileResponse`.
-2. If not found on local disk and `STORAGE_BACKEND="supabase"`, securely streams binary content from Supabase Object Storage with appropriate `Content-Type` headers (`image/jpeg`, `image/png`, `image/webp`, `audio/mpeg`, `audio/wav`) and `Cache-Control: public, max-age=86400`.
-3. Returns `404 Not Found` if the asset does not exist in any configured storage backend.
+In development, checks local media and the configured storage backend. Production/staging returns `404 Not Found` for every request to this route.
 
 ---
 

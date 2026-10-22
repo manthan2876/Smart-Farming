@@ -167,6 +167,7 @@ def test_ai_service_legacy_tunnel_sanitization():
 def test_ai_service_url_suffix_normalization():
     from app.core.config import Settings
     s = Settings(
+        AI_SERVICE_URL="https://maharsh8805-smart-farming-ai.hf.space",
         MODEL_SERVER_URL="https://maharsh8805-smart-farming-ai.hf.space/vision/predict",
         TRANSLATION_SERVER_URL="https://maharsh8805-smart-farming-ai.hf.space/translation/translate",
         ADVISORY_SERVER_URL="https://maharsh8805-smart-farming-ai.hf.space/advisory/advise",

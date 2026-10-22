@@ -1,5 +1,6 @@
 # Smart Farming Backend — Production Dependencies
 # Lightweight runtime (CV/DL/NLP models run on separate ai_service)
+# Requires Python 3.11+.
 
 # Core & Config
 numpy>=1.24.0
@@ -11,9 +12,13 @@ python-dotenv>=1.0.0
 # Web Framework & Server
 fastapi>=0.115.0
 uvicorn[standard]>=0.22.0
+gunicorn>=23.0.0
+uvicorn-worker>=0.3.0
+certifi>=2026.10.19
 python-multipart>=0.0.6
 httpx>=0.25.0
 requests>=2.31.0
+urllib3>=2.8.0
 slowapi>=0.1.9
 
 # Database & Migrations
@@ -23,7 +28,7 @@ psycopg2-binary>=2.9.0
 psycopg[binary]>=3.1.0
 
 # Authentication & Security
-PyJWT>=2.8.0
+PyJWT>=2.15.0
 pwdlib[argon2]>=0.2.0
 passlib[bcrypt]>=1.7.4
 
@@ -33,5 +38,5 @@ redis>=5.0.0
 arq>=0.26.0
 
 # Image & Geospatial Utilities
-pillow>=10.2.0
+pillow>=13.0.0
 shapely>=2.0.0

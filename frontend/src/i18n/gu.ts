@@ -726,6 +726,8 @@ export const gu: Record<keyof typeof en, string> = {
   meteorologicalIntelligence: "હવામાન સંબંધિત માહિતી",
   updating: "અપડેટ થઈ રહ્યું છે...",
   loading: "લોડ થઈ રહ્યું છે...",
+  renderErrorMessage: "આ પૃષ્ઠ બતાવતી વખતે સમસ્યા આવી. કૃપા કરીને ફરી પ્રયાસ કરો.",
+  retry: "ફરી પ્રયાસ કરો",
   scanReference: "સ્કેન સંદર્ભ",
   privacyTitle: "ગોપનીયતા નીતિ",
   termsTitle: "સેવાની શરતો",
@@ -788,4 +790,3 @@ export const gu: Record<keyof typeof en, string> = {
   verificationCodeSent: "ચકાસણી કોડ મોકલ્યો",
   otpCodeInputLabel: "ચકાસણી કોડ (OTP)",
 };
-

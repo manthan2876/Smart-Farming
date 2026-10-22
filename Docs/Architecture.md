@@ -44,8 +44,8 @@ The system is architected around five core tenets:
 | **Diagnostic Accuracy** | 7-stage vision ensemble (OpenCV quality gate, EfficientNet-B0 crop classifier, dedicated per-crop EfficientNet-B2 disease classifiers across 32 conditions, adaptive HSV lesion severity calculation, and Ultralytics YOLOv8-nano pest detection) with automatic uncertainty escalation to human experts |
 | **Decoupled Serverless Scalability** | Lean API gateway hosted on Render web service paired with a consolidated AI microservice deployed on Hugging Face Spaces (running Gradio 5.16+ and FastAPI on port `7860`) |
 | **Complete Traceability** | Every diagnostic inference carries an immutable `provenance` block recording exact model versions, weights hash, latency breakdown, and fallback flags |
-| **Multilingual Native Experience** | Trilingual end-to-end interface: UI dictionaries (670+ keys), zero-hang IndicTrans2 translation (pre-warmed 400+ phrase cache), and Microsoft Edge-TTS neural speech synthesis (Dhwani, Swara, Neerja) with full 4-point advisory narration |
-| **Storage & Data Abstraction** | Production-default Supabase Object Storage with time-bounded signed URLs (15-min expiry) alongside pluggable S3 and local disk backends |
+| **Multilingual Experience** | English, Hindi, and Gujarati catalogs plus remote translation and speech services; untranslated inline UI copy remains a known coverage gap |
+| **Storage & Data Abstraction** | Production-default Supabase Object Storage with time-bounded signed URLs (15-min expiry), plus local disk for development; legacy `s3` is an alias for Supabase |
 
 ---
 
@@ -54,12 +54,12 @@ The system is architected around five core tenets:
 ```mermaid
 flowchart TD
     subgraph CLIENTS["Client Layer"]
-        SPA["React 18 + TypeScript SPA (Vercel Edge)\nVite 6 · Tailwind CSS · Anti-Vibecoded\nCustom SVG Icons · Trilingual (EN/HI/GU)\nVercel Web Analytics & Custom Events\nRoles: Farmer · Expert · Admin"]
+        SPA["React 19 + TypeScript SPA (Vercel Edge)\nVite 8 · Tailwind CSS\nCustom SVG Icons · EN/HI/GU catalogs\nVercel Web Analytics & Custom Events\nRoles: Farmer · Expert · Admin"]
         MOB["Flutter Mobile App (Farmer-Only Persona)\nRegional Language Splash (EN/HI/GU)\nPhone-First + 1-Tap Guest Mode\n5-Tab FarmerShell · Center FAB · Offline SQLite Queue\nOn-device 1024px Compression · Dual TTS Engine"]
     end
 
     subgraph BACKEND_HOST["Backend Service (Render)"]
-        API["FastAPI 0.115+ · Uvicorn (Python 3.12)\nrender.yaml Blueprint · Port $PORT\nCORS · Slowapi Rate Limiting\nJWT HS256 + DB-Backed Refresh Token Rotation\n1-Tap Guest Mode (/api/v1/auth/guest)\nStorage Router: Supabase / S3 / Local\nREQUIRE_REDIS=False → Synchronous\nREQUIRE_REDIS=True → ARQ Worker"]
+        API["FastAPI · Gunicorn + Uvicorn worker\nrender.yaml Blueprint · Port $PORT\nExplicit CORS · Slowapi Rate Limiting\nJWT HS256 + DB-Backed Refresh Token Rotation\nStorage Router: Supabase / Local\nSync SQLAlchemy sessions in threadpool routes\nREQUIRE_REDIS=True → ARQ Worker"]
     end
 
     subgraph AI_MICROSERVICE["Unified AI Microservice (Hugging Face Spaces)"]
@@ -79,7 +79,7 @@ flowchart TD
 
     subgraph PERSISTENCE["Persistence & Storage Layer"]
         DB["Supabase Managed PostgreSQL 15+\nSession Pooler (Port 5432) · SSL (require)\nAlembic Versioned Migrations (0000 to 0003)\nHardened auth.users trigger (search_path='', farmer-only)\nentity_translations · app_config · refresh_tokens"]
-        OBJ["Supabase Object Storage\nBucket: smart-farming-data-dev\n15-min Time-Bounded Signed URLs\n(Fallback: AWS S3 / Local Disk)"]
+        OBJ["Supabase Object Storage\nBucket: smart-farming-data-dev\n15-min Time-Bounded Signed URLs\n(Local disk for development)"]
         UPSTASH["Upstash Serverless Redis REST\nHTTPS Bearer Auth · sf:* Namespace\n• Translation Cache (sf:trans:*)\n• Image Dedup (sf:dedup:*)\n• Grid Weather Cache (0.1° ~11km)\n• Dynamic Threshold Sync (sf:config:*)"]
     end
 
@@ -93,7 +93,7 @@ flowchart TD
     MOB -- "HTTPS REST" --> API
     API -- "HTTP REST (AI_SERVICE_URL)" --> HF_SPACE
     API -- "REST API / Signed URLs" --> OBJ
-    API -- "SQLAlchemy / asyncpg (SSL)" --> DB
+    API -- "SQLAlchemy synchronous sessions / psycopg (SSL)" --> DB
     API -- "REST (Bearer HTTPS)" --> UPSTASH
     API -- "REST" --> OWM
     QSTASH -- "Webhook POST (Upstash-Signature / CRON_SECRET)" --> API
@@ -110,16 +110,16 @@ flowchart TD
 The client tier comprises two dedicated frontends:
 
 #### 1. React Web Dashboard (`frontend/`)
-- **Framework:** React 18 + TypeScript 5.6 bundled via Vite 6.
+- **Framework:** React 19 + TypeScript 7 bundled via Vite 8 (versions are resolved by `frontend/package-lock.json`).
 - **Styling:** Tailwind CSS with a distinctive anti-vibecoded aesthetic: sharp corners (`rounded-sm`), subtle border elevations, high-contrast farmer-green and warm neutral palettes.
-- **Iconography:** Custom hand-crafted SVG icon suite (`src/components/icons/`) without heavy third-party icon libraries.
-- **Routing:** React Router v6 featuring role-guarded route trees (`farmer`, `expert`, `admin`).
-- **State & Communication:** `AuthContext` (JWT session, profile data, active language), `ThemeContext`, Axios HTTP client with automatic 401 token refresh interceptors, and native WebSocket connectivity for live pipeline progress.
-- **i18n & Localization:** Full trilingual coverage (**English, Hindi, Gujarati**) with 670+ translation keys and 100% compile-time TypeScript type parity (`gu.ts` and `hi.ts` typed against `Record<keyof typeof en, string>`), alongside runtime domain translators (`domain.ts`).
+- **Iconography:** Lucide React icon components.
+- **Routing:** React Router v7 featuring role-guarded route trees (`farmer`, `expert`, `admin`) with lazy-loaded pages.
+- **State & Communication:** `AuthContext` (JWT session, profile data, active language), `ThemeContext`, a centralized Fetch API client with automatic 401 token refresh, TanStack Query for server state, and native WebSocket connectivity for live pipeline progress.
+- **i18n & Localization:** English, Hindi, and Gujarati catalogs have compile-time key parity, alongside runtime domain translators (`domain.ts`). Not all static UI copy is routed through the catalogs yet.
 
 #### 2. Flutter Mobile Application (`mobile/`)
 - **Framework:** Flutter 3.x / Dart.
-- **Architecture:** BLoC / Provider-driven state management with a unified 5-tab bottom navigation shell (`FarmerShell`).
+- **Architecture:** A custom `ChangeNotifier`/`InheritedNotifier` locale state provider with a unified 5-tab bottom navigation shell (`FarmerShell`).
 - **Dynamic Discovery:** Reads backend endpoint dynamically from the Supabase `public.app_config` table (`key='api_base_url'`) via `RemoteConfigService`, eliminating hardcoded URLs in app builds.
 - **Field GIS & Offline Capability:** Center-crosshair GIS polygon field boundary drawing screen with magnetic snapping, and local SQLite/SharedPreferences offline queue for low-connectivity rural field scouting.
 
@@ -183,7 +183,7 @@ All heavy machine learning and generative AI workloads are consolidated into a s
 | Store | Purpose | Technology & Specifications |
 |---|---|---|
 | **Relational Database** | User accounts, farms, plots, predictions, expert reviews, feedback, alerts, dataset candidates, MLOps runs | **Supabase Managed PostgreSQL 15+** connected via Session Pooler (port `5432`) with mandatory SSL (`sslmode=require`). Versioned with Alembic migrations. |
-| **Object Storage** | Raw leaf uploads, processed Grad-CAM heatmaps, HSV severity masks, synthesized WAV/MP3 speech | **Supabase Object Storage** (default bucket: `smart-farming-data-dev`). Access managed via time-bounded signed URLs (default 900s / 15 min). Backed by `SupabaseStorageBackend` with automatic fallback to AWS S3 and local disk. |
+| **Object Storage** | Raw leaf uploads, processed Grad-CAM heatmaps, and audio | **Supabase Object Storage** (default bucket: `smart-farming-data-dev`). Access managed via time-bounded signed URLs (default 900s / 15 min); local disk is used for development. The `s3` backend value is a legacy alias, not a separate AWS implementation. |
 | **Serverless Redis REST** | Sub-20ms translation caching, prediction image deduplication, dynamic ML threshold sync, weather caching, cron locking | **Upstash Serverless Redis REST** (`sf:*` namespace). Communicates purely over HTTPS token-authenticated REST calls; zero persistent TCP sockets required. |
 | **Entity Translations** | Structured table for pre-translated multilingual entity fields (advisory, expert guidance) | **Supabase PostgreSQL `entity_translations` table** — indexed by `(entity_type, entity_id, field_name, language)`. |
 | **Remote App Config** | Dynamic mobile backend discovery | **Supabase PostgreSQL `public.app_config` table** with PostgREST read-only access for client applications. |
@@ -281,7 +281,7 @@ class StorageBackend(ABC):
 
 - **`SupabaseStorageBackend` (Default in Production):** Uploads via Supabase Storage REST API with `x-upsert: true` and generates signed URLs with 15-minute expiration.
 - **`LocalStorageBackend`:** Stores files under `backend/data/` for local offline development.
-- **`S3StorageBackend`:** Retains full AWS S3 and MinIO compatibility using boto3 SigV4.
+- **`S3StorageBackend`:** Legacy alias for the Supabase-compatible storage implementation.
 
 ---
 

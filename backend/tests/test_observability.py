@@ -59,10 +59,10 @@ def test_recommendation_fallback_tagging(monkeypatch) -> None:
     context["disease"] = {"label": "Early Blight", "confidence": 0.90}
     context["severity"] = {"percent": 45.0, "bucket": "moderate"}
 
-    def mock_fail_client():
-        raise RuntimeError("Inference quota exceeded")
+    def mock_unavailable(_payload):
+        return None
 
-    monkeypatch.setattr("app.services.recommendation.service._get_hf_client", mock_fail_client)
+    monkeypatch.setattr("app.services.recommendation.service.call_remote_advisory_server", mock_unavailable)
 
     res = generate_recommendation(context, {})
     rec = res["recommendation"]

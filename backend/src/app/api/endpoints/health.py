@@ -1,18 +1,25 @@
 from __future__ import annotations
 
-import logging
-from pathlib import Path
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.core import get_session
 from app.schemas import HealthResponse
 
 router = APIRouter()
 
-_BACKEND_DIR = Path(__file__).resolve().parents[1]
-_UPLOAD_DIR = _BACKEND_DIR / "data" / "uploads"
-_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-_ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
-_LOGGER = logging.getLogger("smart-farming.api")
 
 @router.get("/health", response_model=HealthResponse)
-async def health() -> HealthResponse:
+def health() -> HealthResponse:
+    return HealthResponse(status="ok", service="smart-farming-backend")
+
+
+@router.get("/ready", response_model=HealthResponse)
+def readiness(session: Session = Depends(get_session)) -> HealthResponse:
+    try:
+        session.execute(text("SELECT 1"))
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Database is not ready.") from exc
     return HealthResponse(status="ok", service="smart-farming-backend")
