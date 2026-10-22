@@ -40,7 +40,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to mark all alerts as read: $e')),
+          SnackBar(content: Text('${context.tr('failedMarkAlertsRead')}: $e')),
         );
       }
     } finally {
@@ -89,7 +89,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not load diagnosis: $e')),
+          SnackBar(content: Text('${context.tr('failedLoadDiagnosis')}: $e')),
         );
       }
     } finally {
@@ -314,9 +314,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                             color: AppColors.warning,
                                             borderRadius: BorderRadius.circular(4),
                                           ),
-                                          child: const Text(
-                                            'NEW',
-                                            style: TextStyle(
+                                          child: Text(
+                                            context.tr('newBadge'),
+                                            style: const TextStyle(
                                               fontSize: 9,
                                               fontWeight: FontWeight.bold,
                                               color: Colors.white,

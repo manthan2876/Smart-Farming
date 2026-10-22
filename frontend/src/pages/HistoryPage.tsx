@@ -151,8 +151,8 @@ export default function HistoryPage() {
             </thead>
             <tbody>
               {filteredScans.map((scan, index) => {
-                const cropName = scan.crop?.label || "Unknown Crop";
-                const diseaseName = scan.disease?.label || "Unidentified Condition";
+                const cropName = scan.crop?.label;
+                const diseaseName = scan.disease?.label;
                 
                 const rawSeverity = scan.severity;
                 const severityText = rawSeverity?.bucket || "Unknown";
@@ -178,7 +178,7 @@ export default function HistoryPage() {
                         {translateSeverityBucket(severityText, language)}
                       </Badge>
                     </td>
-                    <td className="px-5 py-4 text-xs text-muted">{scan.request_id ? `ID: ${scan.request_id.slice(0, 8)}` : "N/A"}</td>
+                    <td className="px-5 py-4 text-xs text-muted">{scan.request_id ? `${t("requestIdLabel")}: ${scan.request_id.slice(0, 8)}` : t("notAvailable")}</td>
                     <td className="px-5 py-4">
                       {recordId ? (
                         <Link to={`/predictions/${recordId}`} className="inline-flex items-center gap-1 text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200 transition-colors">

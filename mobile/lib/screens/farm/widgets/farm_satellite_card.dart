@@ -182,7 +182,10 @@ class FarmSatelliteCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${plotPolygons.length} of ${plots.length} Mapped',
+                      context
+                          .tr('farmSatelliteMappedCount')
+                          .replaceFirst('{mapped}', '${plotPolygons.length}')
+                          .replaceFirst('{total}', '${plots.length}'),
                       style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -201,7 +204,7 @@ class FarmSatelliteCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
-                      'Trace your property fence line first to establish the farm perimeter. All plots will be kept within this boundary.',
+                      context.tr('farmBoundaryInstruction'),
                       style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.3),
                     ),
                   ),

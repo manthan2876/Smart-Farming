@@ -2,9 +2,11 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { Menu } from "./icons";
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 export default function AppShell() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { t } = useAuth();
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
@@ -12,7 +14,7 @@ export default function AppShell() {
         type="button"
         className="fixed left-4 top-4 z-40 inline-flex min-h-10 min-w-10 items-center justify-center rounded-sm border border-line bg-surface text-ink lg:hidden"
         onClick={() => setIsSidebarOpen(true)}
-        aria-label="Open navigation"
+        aria-label={t("openNavigation")}
         aria-expanded={isSidebarOpen}
       >
         <Menu size={18} />

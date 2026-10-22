@@ -3,9 +3,15 @@ import PublicNav from "../components/PublicNav";
 import Footer from "../components/Footer";
 import { ScanSearch, Map, Activity, ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
+import { translateCrop, translateDisease } from "../i18n";
 
 export default function ServicesPage() {
-  const { t } = useAuth();
+  const { t, language } = useAuth();
+  const cropDiseaseGroups = [
+    { crop: "Tomato", diseases: ["Early Blight", "Late Blight", "Septoria Leaf Spot", "Yellow Leaf Curl Virus", "Bacterial Spot"] },
+    { crop: "Potato", diseases: ["Early Blight", "Late Blight", "Blackleg", "Mosaic Virus"] },
+    { crop: "Cotton", diseases: ["Bacterial Blight", "Alternaria Leaf Spot", "Grey Mildew", "Leaf Curl"] },
+  ];
 
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col">
@@ -48,20 +54,20 @@ export default function ServicesPage() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("serviceSpecsBadge")}</h3>
             <div className="space-y-3 text-xs">
               <div className="border-b border-line pb-2.5">
-                <span className="font-semibold text-ink">Tomato:</span>
-                <span className="text-muted ml-2">Early Blight, Late Blight, Septoria Leaf Spot, Yellow Leaf Curl Virus, Bacterial Spot</span>
+                <span className="font-semibold text-ink">{translateCrop("Tomato", language)}:</span>
+                <span className="text-muted ml-2">{cropDiseaseGroups[0].diseases.map((disease) => translateDisease(disease, language)).join(", ")}</span>
               </div>
               <div className="border-b border-line pb-2.5">
-                <span className="font-semibold text-ink">Potato:</span>
-                <span className="text-muted ml-2">Early Blight, Late Blight, Blackleg, Mosaic Virus</span>
+                <span className="font-semibold text-ink">{translateCrop("Potato", language)}:</span>
+                <span className="text-muted ml-2">{cropDiseaseGroups[1].diseases.map((disease) => translateDisease(disease, language)).join(", ")}</span>
               </div>
               <div className="border-b border-line pb-2.5">
-                <span className="font-semibold text-ink">Cotton:</span>
-                <span className="text-muted ml-2">Bacterial Blight, Alternaria Leaf Spot, Grey Mildew, Leaf Curl</span>
+                <span className="font-semibold text-ink">{translateCrop("Cotton", language)}:</span>
+                <span className="text-muted ml-2">{cropDiseaseGroups[2].diseases.map((disease) => translateDisease(disease, language)).join(", ")}</span>
               </div>
               <div>
-                <span className="font-semibold text-ink">Additional Crops:</span>
-                <span className="text-muted ml-2">Groundnut, Pepper Bell, Corn, Rice, Wheat</span>
+                <span className="font-semibold text-ink">{t("additionalCrops")}:</span>
+                <span className="text-muted ml-2">{["Groundnut", "Pepper Bell", "Corn", "Rice", "Wheat"].map((crop) => translateCrop(crop, language)).join(", ")}</span>
               </div>
             </div>
           </div>
@@ -105,8 +111,8 @@ export default function ServicesPage() {
               {t("service3Desc")}
             </p>
             <div className="border-t border-line pt-4 text-xs text-muted space-y-1.5">
-              <div>Telemetry: Open-Meteo hourly temperature, humidity, wind velocity, precipitation index</div>
-              <div>Languages: English, Hindi, and Gujarati with transliterated botanical names</div>
+              <div>{t("serviceTelemetry")}</div>
+              <div>{t("serviceLanguages")}</div>
             </div>
           </div>
 
@@ -114,15 +120,15 @@ export default function ServicesPage() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">{t("serviceWeatherRulesTitle")}</h3>
             <div className="space-y-3 text-xs leading-6 text-ink/90">
               <div className="border-b border-line pb-2.5">
-                <span className="font-semibold text-ink">Relative Humidity &gt; 85%:</span>
+                <span className="font-semibold text-ink">{t("relativeHumidityThreshold")}</span>
                 <span className="text-muted ml-2">{t("serviceWeatherRule1")}</span>
               </div>
               <div className="border-b border-line pb-2.5">
-                <span className="font-semibold text-ink">Wind Speed &gt; 15 km/h:</span>
+                <span className="font-semibold text-ink">{t("windSpeedThreshold")}</span>
                 <span className="text-muted ml-2">{t("serviceWeatherRule2")}</span>
               </div>
               <div>
-                <span className="font-semibold text-ink">Ambient Temp &gt; 35°C:</span>
+                <span className="font-semibold text-ink">{t("ambientTemperatureThreshold")}</span>
                 <span className="text-muted ml-2">{t("serviceWeatherRule3")}</span>
               </div>
             </div>
@@ -145,7 +151,7 @@ export default function ServicesPage() {
                 {t("serviceTopology1Desc")}
               </p>
               <div className="pt-2 text-xs font-semibold text-farmer-800 dark:text-farmer-300">
-                Core: Offline sync queue &amp; quantized models
+                {t("serviceCoreOffline")}
               </div>
             </div>
 
@@ -155,7 +161,7 @@ export default function ServicesPage() {
                 {t("serviceTopology2Desc")}
               </p>
               <div className="pt-2 text-xs font-semibold text-farmer-800 dark:text-farmer-300">
-                Core: Cooperative cloud cluster &amp; MLOps
+                {t("serviceCoreCloud")}
               </div>
             </div>
           </div>

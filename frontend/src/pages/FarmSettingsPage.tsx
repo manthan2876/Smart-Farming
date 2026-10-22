@@ -298,7 +298,7 @@ export default function FarmSettingsPage() {
   // GPS Locate Me handler
   const handleLocate = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      alert(t("geolocationUnsupported"));
       return;
     }
     setIsLocating(true);
@@ -313,7 +313,7 @@ export default function FarmSettingsPage() {
       },
       (err) => {
         console.error("Geolocation error:", err);
-        alert("Could not get your location. Please allow location access in your browser.");
+        alert(t("locationUnavailable"));
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -379,7 +379,7 @@ export default function FarmSettingsPage() {
 
   const openBoundaryDialog = (boundary: "farm" | "plot") => {
     if (boundary === "plot" && farmBoundary.length < 3) {
-      alert("Save a farm boundary before creating a plot boundary.");
+      alert(t("saveFarmBoundaryFirst"));
       return;
     }
     setBoundaryDialog(boundary);
@@ -402,11 +402,11 @@ export default function FarmSettingsPage() {
 
   const savePlot = () => {
     if (farmBoundary.length < 3) {
-      alert("Draw and save the farm boundary before adding a plot.");
+      alert(t("drawFarmBoundaryFirst"));
       return;
     }
     if (newPlotGeometry.length < 3 || newPlotGeometry.some((point) => !pointInsideOrOnPolygon(point, farmBoundary))) {
-      alert("Draw at least three plot points inside the farm boundary.");
+      alert(t("minimumPlotBoundaryPoints"));
       return;
     }
 
@@ -432,7 +432,7 @@ export default function FarmSettingsPage() {
 
   const saveFarmBoundary = () => {
     if (farmBoundary.length < 3) {
-      alert("Add at least three farm boundary points before saving.");
+      alert(t("minimumFarmBoundaryPoints"));
       return;
     }
     mutation.mutate({
@@ -452,13 +452,13 @@ export default function FarmSettingsPage() {
     setIsDeleting(true);
     try {
       await purgeDatabase(token!);
-      alert("Database has been wiped successfully.");
+      alert(t("databaseWiped"));
       setShowDeleteModal(false);
       setDeleteConfirmText("");
       queryClient.clear();
       window.location.reload();
     } catch (err: any) {
-      alert("Failed to delete database: " + err.message);
+      alert(`${t("databaseDeleteFailed")}: ${err.message}`);
     } finally {
       setIsDeleting(false);
     }
@@ -503,7 +503,7 @@ export default function FarmSettingsPage() {
         <div className="space-y-5">
         <Input label={t("farmName")} leadingIcon={<Sprout size={16} />} type="text" value={farmName} onChange={(e) => setFarmName(e.target.value)} required />
 
-        <Input label={t("locationRegion")} leadingIcon={<MapPin size={16} />} type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Bhavnagar, Gujarat" required />
+        <Input label={t("locationRegion")} leadingIcon={<MapPin size={16} />} type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("farmLocationPlaceholder")} required />
 
         <Input label={t("totalFarmArea")} type="number" step="any" value={area} onChange={(e) => setArea(Number(e.target.value))} required />
 
@@ -512,7 +512,7 @@ export default function FarmSettingsPage() {
           <Input label={t("gpsLongitude")} leadingIcon={<MapPin size={16} />} type="number" step="any" value={lon} onChange={(e) => setLon(Number(e.target.value))} required />
         </div>
 
-        <Input label={t("cropHistory")} type="text" value={cropHistory} onChange={(e) => setCropHistory(e.target.value)} placeholder="e.g. Cotton, Groundnut, Wheat" />
+        <Input label={t("cropHistory")} type="text" value={cropHistory} onChange={(e) => setCropHistory(e.target.value)} placeholder={t("cropHistoryPlaceholder")} />
 
         <div className="rounded-sm border border-farmer-200 bg-farmer-50 p-4 dark:border-farmer-800 dark:bg-farmer-900/60">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -551,7 +551,7 @@ export default function FarmSettingsPage() {
               <div>
                 <strong className="block text-base font-semibold text-ink">{plot.name}</strong>
                 <span className="mt-1 block text-xs text-muted">
-                  {t("crop")}: {translateCrop(plot.crop, language)} &bull; {t("areaLabel")}: {plot.area_acres ? `${plot.area_acres} ${t("areaUnit")}` : t("unknown")}
+                  {t("crop")}: {translateCrop(plot.crop, language)} · {t("areaLabel")}: {plot.area_acres ? `${plot.area_acres} ${t("areaUnit")}` : t("unknown")}
                 </span>
               </div>
               <button 
@@ -577,9 +577,9 @@ export default function FarmSettingsPage() {
         <form onSubmit={handleCreatePlot} className="mt-8 rounded-sm border border-dashed border-farmer-300 bg-farmer-50 dark:border-farmer-700 dark:bg-farmer-900/40 p-5">
           <h3 className="font-display text-xl text-farmer-800 dark:text-farmer-200">{t("addNewPlot")}</h3>
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
-            <Input label={t("plotName")} type="text" value={newPlotName} onChange={e => setNewPlotName(e.target.value)} placeholder="e.g. North Field" required />
-            <Input label={t("currentCrop")} type="text" value={newPlotCrop} onChange={e => setNewPlotCrop(e.target.value)} placeholder="e.g. Cotton" />
-            <Input label={t("plotArea")} type="number" step="any" value={newPlotArea} onChange={e => setNewPlotArea(e.target.value ? Number(e.target.value) : "")} placeholder="Optional" />
+            <Input label={t("plotName")} type="text" value={newPlotName} onChange={e => setNewPlotName(e.target.value)} placeholder={t("plotNamePlaceholder")} required />
+            <Input label={t("currentCrop")} type="text" value={newPlotCrop} onChange={e => setNewPlotCrop(e.target.value)} placeholder={t("cropExamplePlaceholder")} />
+            <Input label={t("plotArea")} type="number" step="any" value={newPlotArea} onChange={e => setNewPlotArea(e.target.value ? Number(e.target.value) : "")} placeholder={t("optionalPlaceholder")} />
           </div>
           <div className="mt-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -643,12 +643,12 @@ export default function FarmSettingsPage() {
       </div>
 
       {boundaryDialog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-label={`${boundaryDialog === "farm" ? "Farm" : "Plot"} boundary editor`}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-label={`${t(boundaryDialog === "farm" ? "farm" : "plotOrdinal")} ${t("boundaryEditor")}`}>
           <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
               <div>
                 <h2 className="font-display text-2xl text-ink">{boundaryDialog === "farm" ? t("farmBoundary") : t("plotBoundary")}</h2>
-                <p className="mt-1 text-xs text-muted">{isEditingBoundary ? "Edit mode: click to add, drag to move, double-click to delete, or click a line to insert." : "Map mode: pan and zoom normally. Click Edit boundary to change points."}</p>
+                <p className="mt-1 text-xs text-muted">{isEditingBoundary ? t("boundaryEditInstructions") : t("boundaryMapInstructions")}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => setIsEditingBoundary((editing) => !editing)} className={`rounded-sm px-3 py-2 text-xs font-semibold ${isEditingBoundary ? "bg-farmer-700 text-white dark:bg-farmer-600" : "border border-line bg-surface text-ink"}`}>
@@ -702,7 +702,7 @@ export default function FarmSettingsPage() {
       )}
 
       {showBoundaryOverview && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-label="Farm and plot boundaries">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true"         aria-label={t("farmPlotMapLabel")}>
           <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
             <div className="flex items-center justify-between gap-3 border-b border-line p-4">
               <div>
@@ -733,10 +733,10 @@ export default function FarmSettingsPage() {
                 />
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-muted">
-                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-teal-700 bg-teal-300/40" /> Farm boundary</span>
-                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-blue-600 bg-blue-400/60" /> Plot 1</span>
-                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-red-600 bg-red-400/60" /> Plot 2</span>
-                <span className="text-muted">Additional plots use different colors.</span>
+                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-teal-700 bg-teal-300/40" /> {t("farmBoundary")}</span>
+                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-blue-600 bg-blue-400/60" /> {t("plotOrdinal")} 1</span>
+                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border-2 border-red-600 bg-red-400/60" /> {t("plotOrdinal")} 2</span>
+                <span className="text-muted">{t("additionalPlotsLegend")}</span>
               </div>
             </div>
           </div>

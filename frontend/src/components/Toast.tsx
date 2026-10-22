@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { CheckCircle, XCircle, X } from "./icons";
 import type { ToastState } from "../hooks/useToast";
+import { useAuth } from "../context/AuthContext";
 
 interface ToastProps {
   toast: ToastState | null;
@@ -8,6 +9,7 @@ interface ToastProps {
 }
 
 export default function Toast({ toast, onDismiss }: ToastProps) {
+  const { t } = useAuth();
   return (
     <div className="pointer-events-none fixed bottom-6 right-6 z-[1000] flex max-w-[calc(100vw-3rem)] flex-col gap-3">
       <AnimatePresence>
@@ -34,7 +36,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
               <button
                 onClick={onDismiss}
                 className="ml-auto flex p-0.5 text-muted hover:text-ink transition-colors"
-                aria-label="Dismiss"
+                aria-label={t("dismiss")}
               >
                 <X size={14} />
               </button>

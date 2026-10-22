@@ -14,16 +14,20 @@ const cropsMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
   groundnut: { en: "Groundnut", hi: "मूंगफली", gu: "મગફળી" },
   "pepper bell": { en: "Pepper Bell", hi: "शिमला मिर्च", gu: "કેપ્સિકમ" },
   pepper_bell: { en: "Pepper Bell", hi: "शिमला मिर्च", gu: "કેપ્સિકમ" },
+  corn: { en: "Corn", hi: "मक्का", gu: "મકાઈ" },
   potato: { en: "Potato", hi: "आलू", gu: "બટાકા" },
+  rice: { en: "Rice", hi: "चावल", gu: "ચોખા" },
   tomato: { en: "Tomato", hi: "टमाटर", gu: "ટામેટા" },
+  wheat: { en: "Wheat", hi: "गेहूँ", gu: "ઘઉં" },
   "unsupported crop": { en: "Unsupported Crop", hi: "असमर्थित फसल", gu: "બિન-સપોર્ટેડ પાક" },
   "unsupported crop / indeterminate": { en: "Unsupported Crop / Indeterminate", hi: "असमर्थित फसल / अस्पष्ट", gu: "બિન-સપોર્ટેડ પાક / અનિર્ધારિત" },
   indeterminate: { en: "Indeterminate Crop", hi: "अस्पष्ट फसल", gu: "અનિર્ધારિત પાક" },
+  "unknown crop": { en: "Unknown Crop", hi: "अज्ञात फसल", gu: "અજ્ઞાત પાક" },
 };
 
 export function translateCrop(crop?: string | null, lang?: string): string {
-  if (!crop) return "Unknown Crop";
   const code = normalizeLangCode(lang);
+  if (!crop) return cropsMap["unknown crop"][code];
   const key = crop.trim().toLowerCase();
   return cropsMap[key]?.[code] || crop;
 }
@@ -34,6 +38,7 @@ const diseasesMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
   "althernaria leaf spot": { en: "Alternaria Leaf Spot", hi: "अल्टरनेरिया पत्ती धब्बा", gu: "અલ્ટરનેરિયા પાન ટપકાં" },
   "bacterial blight": { en: "Bacterial Blight", hi: "जीवाणु झुलसा", gu: "જીવાણુજન્ય સુકારો" },
   "bacterial spot": { en: "Bacterial Spot", hi: "जीवाणु धब्बा रोग", gu: "જીવાણુજન્ય ટપકાં" },
+  blackleg: { en: "Blackleg", hi: "ब्लैकलेग रोग", gu: "બ્લેકલેગ રોગ" },
   bacteria: { en: "Bacterial Infection", hi: "जीवाणु संक्रमण", gu: "જીવાણુજન્ય ચેપ" },
   "cercospora leaf spot": { en: "Cercospora Leaf Spot", hi: "सर्कोस्पोरा पत्ती धब्बा", gu: "સર્કોસ્પોરા પાન ટપકાં" },
   "curl virus": { en: "Curl Virus", hi: "पर्ण कुंचन विषाणु", gu: "પાન વળવું (કોકડવા)" },
@@ -41,6 +46,7 @@ const diseasesMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
   edema: { en: "Edema", hi: "एडेमा (जलभराव विकार)", gu: "એડીમા" },
   fungi: { en: "Fungal Infection", hi: "फफूंद संक्रमण", gu: "ફૂગજન્ય ચેપ" },
   "fusarium wilt": { en: "Fusarium Wilt", hi: "उकठा (फ्यूजेरियम विल्ट)", gu: "સુકારો (ફ્યુઝેરિયમ વિલ્ટ)" },
+  "grey mildew": { en: "Grey Mildew", hi: "ग्रे मिल्ड्यू", gu: "ગ્રે મિલ્ડ્યુ" },
   healthy: { en: "Healthy Leaf", hi: "स्वस्थ पत्ती", gu: "તંદુરસ્ત પાન" },
   "late blight": { en: "Late Blight", hi: "पछेती झुलसा", gu: "પછેતી સુકારો" },
   "leaf curl": { en: "Leaf Curl", hi: "पत्ती मरोड़ (लीफ कर्ल)", gu: "પાન વળવાનો રોગ" },
@@ -61,11 +67,14 @@ const diseasesMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
   "unsupported crop": { en: "Unsupported Crop", hi: "असमर्थित फसल", gu: "બિન-સપોર્ટેડ પાક" },
   "unsupported crop / indeterminate": { en: "Unsupported Crop / Indeterminate", hi: "असमर्थित फसल / अस्पष्ट", gu: "બિન-સપોર્ટેડ પાક / અનિર્ધારિત" },
   "no model available": { en: "No Model Available", hi: "कोई मॉडल उपलब्ध नहीं", gu: "કોઈ મોડેલ ઉપલબ્ધ નથી" },
+  "undetermined condition": { en: "Undetermined Condition", hi: "अनिर्धारित स्थिति", gu: "અનિર્ધારિત સ્થિતિ" },
+  "unidentified condition": { en: "Unidentified Condition", hi: "अज्ञात स्थिति", gu: "અજ્ઞાત સ્થિતિ" },
+  "unknown condition": { en: "Unknown Condition", hi: "अज्ञात स्थिति", gu: "અજ્ઞાત સ્થિતિ" },
 };
 
 export function translateDisease(disease?: string | null, lang?: string): string {
-  if (!disease) return "Undetermined Condition";
   const code = normalizeLangCode(lang);
+  if (!disease) return diseasesMap["undetermined condition"][code];
   const key = disease.trim().toLowerCase();
   return diseasesMap[key]?.[code] || disease;
 }
@@ -83,8 +92,8 @@ const pestsMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
 };
 
 export function translatePest(pest?: string | null, lang?: string): string {
-  if (!pest) return "Pest";
   const code = normalizeLangCode(lang);
+  if (!pest) return code === "hi" ? "कीट" : code === "gu" ? "જીવાત" : "Pest";
   const key = pest.trim().toLowerCase();
   return pestsMap[key]?.[code] || pest;
 }
@@ -100,11 +109,12 @@ const severityMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
   severe: { en: "Severe", hi: "गंभीर", gu: "ગંભીર" },
   "n/a": { en: "N/A", hi: "लागू नहीं", gu: "લાગુ પડતું નથી" },
   na: { en: "N/A", hi: "लागू नहीं", gu: "લાગુ પડતું નથી" },
+  unknown: { en: "Unknown", hi: "अज्ञात", gu: "અજ્ઞાત" },
 };
 
 export function translateSeverityBucket(severity?: string | null, lang?: string): string {
-  if (!severity) return "N/A";
   const code = normalizeLangCode(lang);
+  if (!severity) return severityMap["n/a"][code];
   const key = severity.trim().toLowerCase();
   return severityMap[key]?.[code] || severity;
 }
@@ -126,8 +136,8 @@ const weatherMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
 };
 
 export function translateWeather(weather?: string | null, lang?: string): string {
-  if (!weather) return "Clear";
   const code = normalizeLangCode(lang);
+  if (!weather) return weatherMap.clear[code];
   const key = weather.trim().toLowerCase();
   return weatherMap[key]?.[code] || weather;
 }
@@ -149,8 +159,8 @@ const alertTitlesMap: Record<string, Record<"en" | "hi" | "gu", string>> = {
 };
 
 export function translateAlertTitle(title?: string | null, lang?: string): string {
-  if (!title) return "Alert";
   const code = normalizeLangCode(lang);
+  if (!title) return code === "hi" ? "चेतावनी" : code === "gu" ? "ચેતવણી" : "Alert";
   const key = title.trim().toLowerCase();
   const directMatch = alertTitlesMap[key]?.[code];
   if (directMatch) return directMatch;
@@ -181,4 +191,3 @@ export function translateAlertTitle(title?: string | null, lang?: string): strin
 
   return title;
 }
-

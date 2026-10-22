@@ -146,8 +146,8 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
       final distToLast = GeoMath.distanceMeters(pointToAdd, _points.last);
       if (distToLast < 1.5) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pan the map away from the last point before adding another corner.'),
+          SnackBar(
+            content: Text(context.tr('panMapToAddCorner')),
             duration: Duration(seconds: 1),
           ),
         );
@@ -205,7 +205,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red.shade700,
-          content: Text(selfIntersectErr ?? containmentErr ?? 'Invalid location for this corner.'),
+          content: Text(selfIntersectErr ?? containmentErr ?? context.tr('invalidCornerLocation')),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -224,7 +224,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
         backgroundColor: wasSnapped ? const Color(0xfff57f17) : AppColors.primary,
         content: Text(wasSnapped
             ? context.tr('cornerSnappedAndSaved')
-            : 'Corner location updated.'),
+            : context.tr('cornerLocationUpdated')),
         duration: const Duration(seconds: 1),
       ),
     );
@@ -255,7 +255,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Deleted corner #${index + 1}'),
+        content: Text(context.tr('deleteCornerNumber').replaceFirst('{index}', '${index + 1}')),
         duration: const Duration(seconds: 1),
       ),
     );
@@ -275,7 +275,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red.shade700,
-          content: Text(selfIntersectErr ?? containmentErr ?? 'Please adjust boundary corners to resolve errors.'),
+          content: Text(selfIntersectErr ?? containmentErr ?? context.tr('adjustBoundaryCorners')),
         ),
       );
       return;
@@ -287,9 +287,9 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         backgroundColor: AppColors.primary,
-        content: Text('Boundary closed successfully! You can fine-tune corners or save.'),
+        content: Text(context.tr('boundaryClosedMessage')),
         duration: Duration(seconds: 2),
       ),
     );
@@ -324,11 +324,9 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(isFarm ? 'Delete Farm Boundary?' : 'Delete Plot Boundary?'),
+        title: Text(context.tr(isFarm ? 'deleteFarmBoundaryTitle' : 'deletePlotBoundaryTitle')),
         content: Text(
-          isFarm
-              ? 'Removing the farm boundary resets the property fence line. Existing plots will remain, but spatial containment checks will be disabled until a new farm boundary is drawn.'
-              : 'Are you sure you want to delete the boundary coordinates for this plot? The plot record will remain as unmapped.',
+          context.tr(isFarm ? 'deleteFarmBoundaryConfirm' : 'deletePlotBoundaryConfirm'),
         ),
         actions: [
           TextButton(
@@ -350,7 +348,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
               }
               Navigator.pop(context, result);
             },
-            child: const Text('Delete Boundary'),
+            child: Text(context.tr('deleteBoundary')),
           ),
         ],
       ),
@@ -391,8 +389,8 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
     final canComplete = effective.length >= 3 && !hasErrors;
 
     final defaultTitle = isPlot
-        ? (widget.initialPoints.isNotEmpty ? 'Edit Plot Boundary' : 'Draw Plot Boundary')
-        : (widget.initialPoints.isNotEmpty ? 'Edit Farm Boundary' : 'Draw Farm Boundary');
+        ? (widget.initialPoints.isNotEmpty ? context.tr('editPlotBoundary') : context.tr('drawPlotBoundary'))
+        : (widget.initialPoints.isNotEmpty ? context.tr('editFarmBoundary') : context.tr('drawFarmBoundary'));
     final screenTitle = widget.title ?? defaultTitle;
 
     // Crosshair state evaluation
@@ -424,7 +422,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
           if (widget.initialPoints.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
-              tooltip: 'Delete Boundary',
+              tooltip: context.tr('deleteBoundary'),
               onPressed: _showDeleteBoundaryDialog,
             ),
         ],
@@ -794,9 +792,9 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                               ),
                             ],
                           ),
-                          const Text(
-                            'Perimeter',
-                            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                          Text(
+                            context.tr('perimeter'),
+                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                           ),
                         ],
                       ),
@@ -808,7 +806,10 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                         children: [
                           if (effective.length < 3)
                             Text(
-                              '${3 - effective.length} pts needed',
+                              context.tr('boundaryPointsNeeded').replaceFirst(
+                                '{count}',
+                                '${3 - effective.length}',
+                              ),
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -816,9 +817,9 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                               ),
                             )
                           else if (hasErrors)
-                            const Text(
-                              'Violation',
-                              style: TextStyle(
+                            Text(
+                              context.tr('boundaryViolation'),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.red,
@@ -830,7 +831,11 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                                 const Icon(Icons.check_circle, size: 14, color: Colors.green),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _isClosed ? 'Closed' : (isPlot ? 'In Farm' : 'Valid'),
+                                  context.tr(
+                                    _isClosed
+                                        ? 'boundaryClosed'
+                                        : (isPlot ? 'boundaryInFarm' : 'boundaryValid'),
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -840,7 +845,10 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                               ],
                             ),
                           Text(
-                            '${effective.length} corners',
+                            context.tr('boundaryCornerCount').replaceFirst(
+                              '{count}',
+                              '${effective.length}',
+                            ),
                             style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                           ),
                         ],
@@ -862,7 +870,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                   heroTag: 'map_layer_toggle',
                   backgroundColor: Colors.white,
                   onPressed: () => setState(() => _isSatellite = !_isSatellite),
-                  tooltip: _isSatellite ? 'Roads View' : 'Satellite View',
+                  tooltip: context.tr(_isSatellite ? 'roadsView' : 'satelliteView'),
                   child: Icon(
                     _isSatellite ? Icons.map_outlined : Icons.satellite_alt_outlined,
                     color: AppColors.primary,
@@ -873,7 +881,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                   heroTag: 'map_recenter',
                   backgroundColor: Colors.white,
                   onPressed: () => _mapController.move(_getInitialCenter(), 17.5),
-                  tooltip: 'Re-center Map',
+                  tooltip: context.tr('recenterMap'),
                   child: const Icon(Icons.my_location, color: AppColors.primary),
                 ),
                 const SizedBox(height: 8),
@@ -928,7 +936,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
             OutlinedButton.icon(
               onPressed: _cancelMovingPoint,
               icon: const Icon(Icons.close, size: 18),
-              label: const Text('Cancel'),
+              label: Text(context.tr('cancel')),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -940,7 +948,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                 onPressed: hasErrors ? null : _commitMovedPoint,
                 icon: const Icon(Icons.check, size: 20),
                 label: Text(
-                  _isSnappingToFarm ? 'Snap & Set Location' : 'Set New Location',
+                  context.tr(_isSnappingToFarm ? 'snapSetLocation' : 'setNewLocation'),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: FilledButton.styleFrom(
@@ -975,7 +983,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
             IconButton.filledTonal(
               onPressed: () => _deletePoint(idx),
               icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-              tooltip: 'Delete Corner #${idx + 1}',
+              tooltip: context.tr('deleteCorner').replaceFirst('{index}', '${idx + 1}'),
             ),
             const SizedBox(width: 8),
 
@@ -983,7 +991,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
             IconButton.filledTonal(
               onPressed: () => _startMovingPoint(idx),
               icon: const Icon(Icons.open_with, color: Colors.blueAccent, size: 20),
-              tooltip: 'Move Corner #${idx + 1}',
+              tooltip: context.tr('moveCorner').replaceFirst('{index}', '${idx + 1}'),
             ),
             const SizedBox(width: 10),
 
@@ -993,7 +1001,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                   ? FilledButton.icon(
                       onPressed: hasErrors ? null : _completeBoundary,
                       icon: const Icon(Icons.check_circle, size: 20),
-                      label: const Text('Close Boundary', style: TextStyle(fontWeight: FontWeight.bold)),
+                      label: Text(context.tr('closeBoundary'), style: const TextStyle(fontWeight: FontWeight.bold)),
                       style: FilledButton.styleFrom(
                         backgroundColor: hasErrors ? Colors.grey : const Color(0xff00c853),
                         padding: const EdgeInsets.symmetric(vertical: 13),
@@ -1003,7 +1011,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
                   : OutlinedButton.icon(
                       onPressed: () => setState(() => _hoveredPointIndex = null),
                       icon: const Icon(Icons.arrow_forward, size: 16),
-                      label: Text('Pan Away from #${idx + 1}', style: const TextStyle(fontSize: 12)),
+                      label: Text(context.tr('panAwayFromCorner').replaceFirst('{index}', '${idx + 1}'), style: const TextStyle(fontSize: 12)),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1029,7 +1037,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
             OutlinedButton.icon(
               onPressed: () => setState(() => _isClosed = false),
               icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Edit Shape'),
+              label: Text(context.tr('editShape')),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1040,7 +1048,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
               child: FilledButton.icon(
                 onPressed: _saveBoundaryAndExit,
                 icon: const Icon(Icons.save_outlined, size: 20),
-                label: const Text('Save Boundary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                label: Text(context.tr('saveBoundary'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 13),
@@ -1068,7 +1076,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
           IconButton.filledTonal(
             onPressed: _points.isNotEmpty ? _undo : null,
             icon: const Icon(Icons.undo, size: 20),
-            tooltip: 'Undo Last Corner',
+            tooltip: context.tr('undoLastCorner'),
           ),
 
           // Big prominent Center (+) Add Point Button
@@ -1076,9 +1084,9 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
             onPressed: _addPointAtCrosshair,
             icon: Icon(_isSnappingToFarm ? Icons.flash_on : Icons.add, size: 24),
             label: Text(
-              _isSnappingToFarm
-                  ? 'Snap to Farm'
-                  : (_points.isEmpty ? 'Start Point' : 'Add Corner'),
+              context.tr(_isSnappingToFarm
+                  ? 'snapToFarm'
+                  : (_points.isEmpty ? 'startPoint' : 'addCorner')),
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             style: FilledButton.styleFrom(
@@ -1094,7 +1102,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
             IconButton.filled(
               onPressed: _completeBoundary,
               icon: const Icon(Icons.check_circle_outline, size: 22),
-              tooltip: 'Complete Boundary',
+              tooltip: context.tr('completeBoundary'),
               style: IconButton.styleFrom(
                 backgroundColor: const Color(0xff00c853),
                 foregroundColor: Colors.white,
@@ -1104,7 +1112,7 @@ class _FieldBoundaryScreenState extends State<FieldBoundaryScreen> {
             IconButton.filledTonal(
               onPressed: _points.isNotEmpty ? _clear : null,
               icon: const Icon(Icons.clear_all, size: 20),
-              tooltip: 'Clear All Points',
+              tooltip: context.tr('clearAllPoints'),
             ),
         ],
       ),

@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, adminOnly = false, strictAdminOnly = false }: ProtectedRouteProps) {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading, t } = useAuth();
 
   // Show a loading state while checking token/session status
   if (isLoading) {
@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, adminOnly = false, strictAdmi
       <div className="flex min-h-screen items-center justify-center bg-canvas px-4 text-muted">
         <div className="flex items-center gap-3 rounded-sm border border-line bg-surface px-5 py-4">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" />
-          <p className="text-sm font-semibold">Loading session...</p>
+          <p className="text-sm font-semibold">{t("loadingSession")}</p>
         </div>
       </div>
     );

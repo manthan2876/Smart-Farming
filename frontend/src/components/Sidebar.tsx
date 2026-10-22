@@ -171,7 +171,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                           }}
                           className="text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200"
                         >
-                          {t("viewScan") || "View Scan"}
+                          {t("viewScan")}
                         </Link>
                       )}
                       {!alert.is_read && (

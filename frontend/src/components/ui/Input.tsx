@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { Eye, EyeOff } from "../icons";
+import { useAuth } from "../../context/AuthContext";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -21,6 +22,7 @@ export default function Input({
   id,
   ...props
 }: InputProps) {
+  const { t } = useAuth();
   const isPassword = type === "password";
   const enableToggle = showPasswordToggle ?? isPassword;
   const [showPassword, setShowPassword] = useState(false);
@@ -53,7 +55,7 @@ export default function Input({
               setShowPassword((prev) => !prev);
             }}
             className="absolute inset-y-0 right-3 flex items-center text-muted hover:text-ink focus:outline-none"
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={t(showPassword ? "hidePassword" : "showPassword")}
             tabIndex={-1}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

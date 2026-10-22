@@ -119,8 +119,8 @@ export default function AboutPage() {
       <section className="border-t border-line bg-canvas">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Academic Credentials</span>
-            <h2 className="mt-2 font-display text-3xl text-ink">Project Guidance &amp; Contributors</h2>
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("academicCredentials")}</span>
+            <h2 className="mt-2 font-display text-3xl text-ink">{t("projectGuidanceContributors")}</h2>
             <p className="mt-2 text-sm text-muted">{t("aboutAttributionDesc")}</p>
           </div>
 
@@ -130,8 +130,8 @@ export default function AboutPage() {
                 <User size={24} />
               </div>
               <h3 className="mt-4 font-display text-lg text-ink">Prof. Rajnik Katariya</h3>
-              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">Project Guide &amp; Faculty</p>
-              <p className="mt-2 text-xs text-muted">Department of Information Technology, BVM</p>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">{t("projectGuideFaculty")}</p>
+              <p className="mt-2 text-xs text-muted">{t("departmentInformationTechnology")}</p>
             </div>
 
             <div className="rounded-sm border border-line bg-surface p-6 text-center">
@@ -139,8 +139,8 @@ export default function AboutPage() {
                 <User size={24} />
               </div>
               <h3 className="mt-4 font-display text-lg text-ink">Kunj Lunagariya</h3>
-              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">Core Contributor</p>
-              <p className="mt-2 text-xs text-muted">Computer Vision &amp; Backend Engineering</p>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">{t("coreContributor")}</p>
+              <p className="mt-2 text-xs text-muted">{t("computerVisionBackendEngineering")}</p>
             </div>
 
             <div className="rounded-sm border border-line bg-surface p-6 text-center">
@@ -148,8 +148,8 @@ export default function AboutPage() {
                 <User size={24} />
               </div>
               <h3 className="mt-4 font-display text-lg text-ink">Manthan Kuvadiya</h3>
-              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">Core Contributor</p>
-              <p className="mt-2 text-xs text-muted">Full-Stack Development &amp; MLOps</p>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider mt-0.5">{t("coreContributor")}</p>
+              <p className="mt-2 text-xs text-muted">{t("fullStackDevelopmentMlops")}</p>
             </div>
           </div>
         </div>

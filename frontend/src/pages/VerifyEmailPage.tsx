@@ -14,7 +14,7 @@ export default function VerifyEmailPage() {
   const queryToken = searchParams.get("token");
   const code = searchParams.get("code");
   const navigate = useNavigate();
-  const { isAuthenticated, refreshProfile, user } = useAuth();
+  const { isAuthenticated, refreshProfile, user, t } = useAuth();
 
   const [loading, setLoading] = useState<boolean>(true);
   const [success, setSuccess] = useState<boolean>(false);
@@ -68,7 +68,7 @@ export default function VerifyEmailPage() {
       if (!activeToken && !activeSession && !hash.includes("access_token")) {
         if (isMounted) {
           setLoading(false);
-          setError("No verification token was provided in the link.");
+          setError(t("verificationTokenMissing"));
         }
         return;
       }
@@ -77,7 +77,7 @@ export default function VerifyEmailPage() {
         const res = await verifyEmail(activeToken);
         if (isMounted) {
           setSuccess(true);
-          setMessage(res.message || "Your email address has been verified successfully!");
+          setMessage(res.message || t("emailVerifiedSuccess"));
           await refreshProfile().catch(() => {});
         }
       } catch (err: any) {
@@ -85,14 +85,14 @@ export default function VerifyEmailPage() {
         if (activeSession?.user?.email_confirmed_at || activeSession?.user?.email) {
           if (isMounted) {
             setSuccess(true);
-            setMessage("Your email address has been verified successfully!");
+            setMessage(t("emailVerifiedSuccess"));
             await refreshProfile().catch(() => {});
           }
         } else {
           if (isMounted) {
             setError(
               err.message ||
-                "Verification link is invalid or has expired. Please request a new verification link."
+                t("verificationLinkInvalid")
             );
           }
         }
@@ -112,7 +112,7 @@ export default function VerifyEmailPage() {
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim()) {
-      setResendStatus({ type: "error", text: "Please enter your email address." });
+      setResendStatus({ type: "error", text: t("enterEmailAddress") });
       return;
     }
     setResending(true);
@@ -121,12 +121,12 @@ export default function VerifyEmailPage() {
       const res = await resendVerificationEmail(emailInput.trim());
       setResendStatus({
         type: "success",
-        text: res.message || "A fresh verification email has been sent. Please check your inbox.",
+        text: res.message || t("freshVerificationEmailSent"),
       });
     } catch (err: any) {
       setResendStatus({
         type: "error",
-        text: err.message || "Failed to resend email. Please verify the address and try again.",
+        text: err.message || t("verificationEmailResendFailed"),
       });
     } finally {
       setResending(false);
@@ -136,7 +136,7 @@ export default function VerifyEmailPage() {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim() || !otpInput.trim()) {
-      setResendStatus({ type: "error", text: "Please enter both email and 6-digit confirmation code." });
+      setResendStatus({ type: "error", text: t("enterEmailAndConfirmationCode") });
       return;
     }
     setVerifyingOtp(true);
@@ -145,12 +145,12 @@ export default function VerifyEmailPage() {
       const res = await verifyEmailOtp(emailInput.trim(), otpInput.trim());
       setSuccess(true);
       setError("");
-      setMessage(res.message || "Email verified successfully!");
+      setMessage(res.message || t("emailVerifiedSuccess"));
       await refreshProfile().catch(() => {});
     } catch (err: any) {
       setResendStatus({
         type: "error",
-        text: err.message || "Invalid or expired confirmation code. Please request a fresh one.",
+        text: err.message || t("confirmationCodeInvalid"),
       });
     } finally {
       setVerifyingOtp(false);
@@ -172,7 +172,7 @@ export default function VerifyEmailPage() {
         <div className="mb-6 text-center">
           <Link to="/" className="inline-flex items-center gap-2 font-display text-2xl font-bold text-ink">
             <Sprout size={32} className="text-farmer-700 dark:text-farmer-300" />
-            <span>Smart Farming</span>
+            <span>{t("brandName")}</span>
           </Link>
         </div>
 
@@ -180,9 +180,9 @@ export default function VerifyEmailPage() {
           {loading && (
             <div className="py-8 space-y-4">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-farmer-200 border-t-farmer-600 dark:border-farmer-900 dark:border-t-farmer-400" />
-              <h2 className="font-display text-xl text-ink">Verifying Email...</h2>
+              <h2 className="font-display text-xl text-ink">{t("verifyingEmail")}</h2>
               <p className="text-sm text-muted">
-                Please wait while we confirm your email address.
+                {t("pleaseWaitConfirmEmail")}
               </p>
             </div>
           )}
@@ -193,7 +193,7 @@ export default function VerifyEmailPage() {
                 <CheckCircle2 size={36} />
               </div>
               <div>
-                <h2 className="font-display text-2xl text-ink">Email Verified!</h2>
+                <h2 className="font-display text-2xl text-ink">{t("emailVerifiedHeading")}</h2>
                 <p className="mt-2 text-sm text-muted">
                   {message}
                 </p>
@@ -205,7 +205,7 @@ export default function VerifyEmailPage() {
                     onClick={() => navigate("/settings")}
                     className="w-full flex items-center justify-center gap-2"
                   >
-                    <span>Return to Settings</span>
+                    <span>{t("returnToSettings")}</span>
                     <ArrowRight size={16} />
                   </Button>
                 ) : (
@@ -213,7 +213,7 @@ export default function VerifyEmailPage() {
                     onClick={() => navigate("/auth/login?verified=true")}
                     className="w-full flex items-center justify-center gap-2"
                   >
-                    <span>Proceed to Login</span>
+                    <span>{t("proceedToLogin")}</span>
                     <ArrowRight size={16} />
                   </Button>
                 )}
@@ -227,14 +227,14 @@ export default function VerifyEmailPage() {
                 <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-danger dark:bg-red-950 dark:text-red-400">
                   <AlertTriangle size={32} />
                 </div>
-                <h2 className="font-display text-2xl font-bold text-ink">Link Invalid or Expired</h2>
+                <h2 className="font-display text-2xl font-bold text-ink">{t("verificationLinkInvalidHeading")}</h2>
                 <p className="mt-2 text-sm text-danger dark:text-red-300 font-medium">
                   {error}
                 </p>
               </div>
 
               <div className="rounded-lg bg-surface border border-slate-200 dark:border-slate-800 p-3.5 text-xs text-muted leading-relaxed">
-                💡 <strong>Why this happens:</strong> Supabase invalidates earlier verification links whenever a newer email is requested, or after the token expiry window.
+                💡 <strong>{t("whyVerificationLinkInvalid")}</strong> {t("verificationLinkExpiryExplanation")}
               </div>
 
               {resendStatus && (
@@ -252,11 +252,11 @@ export default function VerifyEmailPage() {
               {/* Option 1: 6-Digit OTP */}
               <form onSubmit={handleVerifyOtp} className="space-y-3 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <p className="text-xs font-semibold text-ink uppercase tracking-wider">
-                  Option 1: Enter 6-Digit Code from Email
+                  {t("enterEmailCodeOption")}
                 </p>
                 <Input
                   type="email"
-                  placeholder="your-email@example.com"
+                  placeholder={t("emailPlaceholder")}
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   leadingIcon={<Mail size={16} />}
@@ -266,7 +266,7 @@ export default function VerifyEmailPage() {
                   <Input
                     type="text"
                     maxLength={6}
-                    placeholder="e.g. 529183"
+                    placeholder={t("verificationCodeExample")}
                     value={otpInput}
                     onChange={(e) => setOtpInput(e.target.value)}
                     className="text-center font-mono tracking-widest text-lg"
@@ -277,7 +277,7 @@ export default function VerifyEmailPage() {
                     disabled={verifyingOtp || !otpInput.trim()}
                     className="whitespace-nowrap px-4"
                   >
-                    {verifyingOtp ? "Verifying..." : "Verify"}
+                    {verifyingOtp ? t("verifying") : t("verify")}
                   </Button>
                 </div>
               </form>
@@ -285,7 +285,7 @@ export default function VerifyEmailPage() {
               {/* Option 2: Resend Fresh Link */}
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <p className="text-xs font-semibold text-ink uppercase tracking-wider">
-                  Option 2: Send a Fresh Verification Link
+                  {t("sendFreshVerificationLinkOption")}
                 </p>
                 <Button
                   onClick={handleResend}
@@ -294,7 +294,7 @@ export default function VerifyEmailPage() {
                   className="w-full flex items-center justify-center gap-2"
                 >
                   <RefreshCw size={14} className={resending ? "animate-spin" : ""} />
-                  <span>{resending ? "Sending New Link..." : "Resend Verification Link"}</span>
+                  <span>{resending ? t("sendingNewLink") : t("resendVerificationLink")}</span>
                 </Button>
               </div>
 
@@ -304,7 +304,7 @@ export default function VerifyEmailPage() {
                   variant="ghost"
                   className="text-xs text-muted hover:text-ink"
                 >
-                  Return to Login
+                  {t("backToLogin")}
                 </Button>
               </div>
             </div>

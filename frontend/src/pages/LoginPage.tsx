@@ -253,7 +253,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await resendVerificationEmail(unverifiedEmail);
-      setResendSuccess(res.message || `Verification link resent to ${unverifiedEmail}.`);
+      setResendSuccess(res.message || `${t("loginVerificationResentTo")} ${unverifiedEmail}.`);
     } catch (err: any) {
       setError(err.message || t("loginVerificationResendFailed"));
     } finally {

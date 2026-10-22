@@ -127,7 +127,7 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Feedback error: $e')),
+          SnackBar(content: Text('${context.tr('feedbackError')}: $e')),
         );
       }
     } finally {
@@ -149,7 +149,7 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to request expert review: $e')),
+          SnackBar(content: Text('${context.tr('expertReviewRequestFailed')}: $e')),
         );
       }
     }
@@ -194,7 +194,7 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Rescan error: $e')),
+          SnackBar(content: Text('${context.tr('rescanFailed')}: $e')),
         );
       }
     } finally {
@@ -439,12 +439,12 @@ ${context.tr('reportGeneratedBy')}
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(color: const Color(0xffe8eaf6), borderRadius: BorderRadius.circular(8)),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.hourglass_top, size: 14, color: Color(0xff3f51b5)),
                       SizedBox(width: 4),
-                      Text('Review Pending', style: TextStyle(color: Color(0xff3f51b5), fontWeight: FontWeight.bold, fontSize: 11)),
+                      Text(context.tr('reviewPending'), style: const TextStyle(color: Color(0xff3f51b5), fontWeight: FontWeight.bold, fontSize: 11)),
                     ],
                   ),
                 ),
@@ -696,12 +696,12 @@ ${context.tr('reportGeneratedBy')}
                                 color: Colors.black54,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.zoom_in, color: Colors.white, size: 14),
                                   SizedBox(width: 4),
-                                  Text('Tap to zoom', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                  Text(context.tr('tapToZoom'), style: const TextStyle(color: Colors.white, fontSize: 10)),
                                 ],
                               ),
                             ),
@@ -1020,7 +1020,7 @@ ${context.tr('reportGeneratedBy')}
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('Latest Scan', style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                          Text(context.tr('latestScan'), style: const TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 2),
                           Text('${context.tr('severity')}: ${_pred.severity}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
                         ],
@@ -1042,10 +1042,10 @@ ${context.tr('reportGeneratedBy')}
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  Text('Model: ${_pred.modelUsed ?? "EfficientNet"}', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                  Text('${context.tr('modelLabel')}: ${_pred.modelUsed ?? "EfficientNet"}', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
                   if (_pred.durationMs != null)
-                    Text('Latency: ${_pred.durationMs}ms', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                  Text('Schema: v${_pred.schemaVersion ?? "2.0"}', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                    Text('${context.tr('latencyLabel')}: ${_pred.durationMs}ms', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                  Text('${context.tr('schemaLabel')}: v${_pred.schemaVersion ?? "2.0"}', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
                 ],
               ),
             ),

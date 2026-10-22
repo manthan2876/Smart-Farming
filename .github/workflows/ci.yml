@@ -167,6 +167,9 @@ jobs:
       - name: Audit dependency vulnerabilities
         run: npm audit --audit-level=high
 
+      - name: Check localization coverage and rendered languages
+        run: npm run localization:check
+
       - name: Type check and production build
         run: npm run build
 

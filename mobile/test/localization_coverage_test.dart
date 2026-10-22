@@ -20,6 +20,64 @@ void main() {
     }
   });
 
+  test('unknown and unsupported translations fall back to English or the key', () {
+    expect(AppTranslations.get('scanHistoryTitle', 'French'), 'Diagnosis History');
+    expect(
+      AppTranslations.get('missingLocalizationKey', 'Hindi'),
+      'missingLocalizationKey',
+    );
+  });
+
+  test('domain fallback labels follow the selected language', () async {
+    final locale = LocaleProvider();
+    await locale.setLanguage('Gujarati');
+    expect(locale.crop(null), 'અજ્ઞાત પાક');
+    expect(locale.crop('Unknown crop'), 'અજ્ઞાત પાક');
+    expect(locale.disease(null), 'અનિર્ધારિત સ્થિતિ');
+    expect(locale.disease('Unidentified Condition'), 'અજ્ઞાત સ્થિતિ');
+    expect(locale.pest(null), 'જીવાત');
+    expect(locale.severity(null), 'લાગુ પડતું નથી');
+    expect(locale.weather(null), 'વર્તમાન પરિસ્થિતિઓ');
+    expect(locale.alertTitle(null), 'ચેતવણી');
+
+    await locale.setLanguage('Hindi');
+    expect(locale.crop(null), 'अज्ञात फसल');
+    expect(locale.disease(null), 'अनिर्धारित स्थिति');
+    expect(locale.pest(null), 'कीट');
+    expect(locale.severity(null), 'लागू नहीं');
+    expect(locale.weather(null), 'वर्तमान स्थितियाँ');
+    expect(locale.alertTitle(null), 'चेतावनी');
+  });
+
+  testWidgets('history screen updates when the selected language changes',
+      (tester) async {
+    final locale = LocaleProvider();
+    await locale.setLanguage('English');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LocaleScope(
+            notifier: locale,
+            child: const HistoryScreen(
+              history: [],
+              onSelectPrediction: _ignorePrediction,
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Diagnosis History'), findsOneWidget);
+
+    await locale.setLanguage('Gujarati');
+    await tester.pumpAndSettle();
+    expect(find.text('નિદાન ઇતિહાસ'), findsOneWidget);
+
+    await locale.setLanguage('Hindi');
+    await tester.pumpAndSettle();
+    expect(find.text('निदान इतिहास'), findsOneWidget);
+  });
+
   testWidgets('history filter feedback renders in the selected language',
       (tester) async {
     final locale = LocaleProvider();
@@ -55,3 +113,5 @@ void main() {
     expect(find.text('फ़िल्टर हटाएं'), findsOneWidget);
   });
 }
+
+void _ignorePrediction(Prediction _) {}

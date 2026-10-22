@@ -26,4 +26,7 @@
 - Localized the web account settings email/phone verification flow and mobile settings labels.
 - Localized additional web account settings validation and verification feedback in English, Gujarati, and Hindi.
 - Added mobile catalog completeness checks and a rendered Hindi history localization test.
+- Completed EN/GU/HI localization for remaining web and mobile UI surfaces, including admin/farm-boundary/scan copy, accessibility labels, and unknown-domain fallback labels.
+- Added a localization CI check for untranslated UI literals, mobile key references, web catalog parity, rendered language differences, and fallback behavior.
+- Added Flutter tests for localized domain fallbacks and rendered language switching.
 - Extracted alert query/update persistence into CRUD functions behind a service layer; database failures now return explicit service-unavailable responses instead of success-shaped empty results.

@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
       }, 1200);
     },
     onError: (err: any) => {
-      setActionError(err?.message || "Failed to update user profile.");
+      setActionError(err?.message || t("adminUserUpdateFailed"));
     },
   });
 
@@ -100,7 +100,7 @@ export default function AdminUsersPage() {
     e.preventDefault();
     if (!selectedUser) return;
     if (selectedUser.id === currentUser?.id && newRole !== "admin") {
-      setActionError("Security Guard: Administrators cannot demote their own account.");
+      setActionError(t("adminSelfDemoteForbidden"));
       return;
     }
 
@@ -399,7 +399,7 @@ export default function AdminUsersPage() {
             <div>
               <label className="mb-1 block text-xs font-semibold text-ink">{t("mobilePhone")}</label>
               <Input
-                placeholder="e.g. 9999999999 or +919999999999"
+                placeholder={t("phoneExamplePlaceholder")}
                 value={userPhone}
                 onChange={(e) => setUserPhone(e.target.value)}
                 leadingIcon={<Phone size={15} />}

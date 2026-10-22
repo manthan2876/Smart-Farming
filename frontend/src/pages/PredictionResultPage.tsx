@@ -145,7 +145,7 @@ export default function PredictionResultPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error(error);
-      alert("Failed to upload new photo.");
+      alert(t("failedUploadPhoto"));
     } finally {
       setIsUploading(false);
       setSelectedFile(null);
@@ -206,11 +206,11 @@ export default function PredictionResultPage() {
         prediction?.crop?.label ?? undefined,
         prediction?.disease?.label ?? undefined,
       );
-      alert("Expert review requested successfully!");
+      alert(t("expertReviewRequestedSuccess"));
       refetch();
     } catch (error) {
       console.error(error);
-      alert("Failed to request expert review.");
+      alert(t("expertReviewRequestFailed"));
     }
   };
 
@@ -229,7 +229,7 @@ export default function PredictionResultPage() {
   };
 
   if (isLoading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-farmer-700 dark:text-farmer-300" size={36} /></div>;
-  if (isError || !prediction) return <Card className="text-danger dark:text-red-400">Failed to load prediction details.</Card>;
+  if (isError || !prediction) return <Card className="text-danger dark:text-red-400">{t("failedLoadPredictionDetails")}</Card>;
 
   const primary = prediction.follow_up || prediction;
   const original = prediction.follow_up ? prediction : null;
@@ -370,8 +370,8 @@ export default function PredictionResultPage() {
         <div className="mt-3 inline-flex items-center gap-2 rounded bg-farmer-800/80 px-3 py-1.5 text-xs text-farmer-200 border border-farmer-700">
           <Sprout size={14} className="text-emerald-400" />
           <span>
-            <strong>{t("calibratedForPlot")}:</strong> {predictionData.plot?.name || recommendation.plot_name || "Plot"}
-            {(predictionData.plot?.area_acres || recommendation.plot_area_acres) && ` (${predictionData.plot?.area_acres || recommendation.plot_area_acres} acres)`}
+            <strong>{t("calibratedForPlot")}:</strong> {predictionData.plot?.name || recommendation.plot_name || t("plotOrdinal")}
+            {(predictionData.plot?.area_acres || recommendation.plot_area_acres) && ` (${predictionData.plot?.area_acres || recommendation.plot_area_acres} ${t("areaUnit")})`}
             {` — ${t("plotScaleAdvice")}`}
           </span>
         </div>
@@ -431,13 +431,13 @@ export default function PredictionResultPage() {
           {[[t("originalUpload"), rawImage, "", predictionData.image?.raw_url || predictionData.raw_url], [t("gradcamHeatmap"), processedImage, "bg-ink text-farmer-200", predictionData.image?.processed_url || predictionData.processed_url]].map(([label, image, labelClass, directFallback]) => (
             <div key={label || "analysis"}>
               <span className={`mb-2 block rounded-sm px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-muted ${labelClass || ""}`}>
-                {label || "Analysis"}
+                {label || t("analysis")}
               </span>
               {image ? (
                 <img
                   className="aspect-square w-full rounded-sm border border-line object-cover"
                   src={image}
-                  alt={label || "Analysis image"}
+                  alt={label || t("analysisImageAlt")}
                   onError={(e) => {
                     if (directFallback && e.currentTarget.src !== directFallback) {
                       e.currentTarget.src = directFallback as string;
@@ -477,7 +477,7 @@ export default function PredictionResultPage() {
                 {t("correctedBySpecialist")}: {translateDisease(predictionData.expert_review_data.corrected_disease, language)}
               </p>
             )}
-            <p className="mt-1 text-sm text-muted">{t("modelConfidence")}: {diseaseConfidence.toFixed(1)}% (Threshold: 60%)</p>
+            <p className="mt-1 text-sm text-muted">{t("modelConfidence")}: {diseaseConfidence.toFixed(1)}% ({t("threshold")}: 60%)</p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
               <div className={`h-full ${isLowConfidence ? "bg-amber-500" : "bg-farmer-700 dark:bg-farmer-500"}`} style={{ width: `${diseaseConfidence}%` }} />
             </div>
@@ -507,9 +507,9 @@ export default function PredictionResultPage() {
             <p><strong>{t("weather")} {t("context")}:</strong> {weatherDegraded ? <span className="italic text-amber-600">{t("unavailableDuringScan")}</span> : `${predictionData.weather?.temperature_celsius}°C, ${predictionData.weather?.humidity_percent}% ${t("humidity").toLowerCase()} (${translateWeather(predictionData.weather?.condition, language)})`}</p>
           </div>
           <div className="flex flex-wrap items-center justify-between border-t border-line pt-3 text-[11px] text-muted">
-            <span>Model: {predictionData.provenance?.models?.disease?.name || predictionData.disease?.model_used || "EfficientNet-B2"}</span>
-            {predictionData.total_duration_ms && <span>Processing Latency: {predictionData.total_duration_ms} ms</span>}
-            <span>Schema: v{predictionData.schema_version || "2.0"}</span>
+            <span>{t("model")}: {predictionData.provenance?.models?.disease?.name || predictionData.disease?.model_used || "EfficientNet-B2"}</span>
+            {predictionData.total_duration_ms && <span>{t("processingLatency")}: {predictionData.total_duration_ms} ms</span>}
+            <span>{t("schemaVersion")}: v{predictionData.schema_version || "2.0"}</span>
           </div>
         </div>
       </Card>
@@ -534,12 +534,12 @@ export default function PredictionResultPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("diagnosticReportTitle")}</h1>
               <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                {t("scanReference")}: #{primary.prediction_id || id} | Generated: {new Date().toLocaleString()}
+                {t("scanReference")}: #{primary.prediction_id || id} | {t("generated")}: {new Date().toLocaleString()}
               </p>
             </div>
             <div className="text-right">
-              <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Smart Farming Platform</span>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Agri-tech Field Intelligence</p>
+              <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300">{t("smartFarmingPlatform")}</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("agriTechFieldIntelligence")}</p>
             </div>
           </div>
         </div>
@@ -547,10 +547,10 @@ export default function PredictionResultPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <Link to="/history" className="no-print text-xs font-bold uppercase tracking-wide text-muted hover:text-farmer-700 dark:hover:text-farmer-300">
-              &larr; {t("backToHistory")}
+              ← {t("backToHistory")}
             </Link>
             <h1 className="mt-2 font-display text-3xl text-ink sm:text-4xl">
-              {t("scanDiagnosis")} #{primary.prediction_id || id} {original && <Badge className="ml-2 align-middle" tone="info">Follow-up</Badge>}
+              {t("scanDiagnosis")} #{primary.prediction_id || id} {original && <Badge className="ml-2 align-middle" tone="info">{t("followUp")}</Badge>}
             </h1>
           </div>
           <Button
@@ -578,7 +578,7 @@ export default function PredictionResultPage() {
             <h3 className="font-display text-xl text-ink">{t("diagnosticStatus")}</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge tone={status?.pipeline === "completed" || status?.pipeline === "verified" ? "success" : "warning"}>
-                Pipeline: {status?.pipeline || "Unknown"}
+                {t("pipeline")}: {status?.pipeline || t("unknown")}
               </Badge>
               {status?.expert_review === "verified" || status?.pipeline === "verified" ? (
                 <Badge tone="success" className="inline-flex items-center gap-1">
@@ -586,7 +586,7 @@ export default function PredictionResultPage() {
                 </Badge>
               ) : (
                 <Badge tone={status?.expert_review === "pending" ? "warning" : "neutral"}>
-                  Expert Review: {status?.expert_review || "Not Requested"}
+                  {t("expertReview")}: {status?.expert_review || t("notRequested")}
                 </Badge>
               )}
             </div>

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../providers/locale_provider.dart';
 import '../services/image_compressor.dart';
 import '../widgets/camera_guide_overlay.dart';
 
@@ -66,7 +67,7 @@ class _CameraScreenState extends State<CameraScreen> {
                         color: Colors.white,
                         icon: const Icon(Icons.photo_library_outlined),
                         onPressed: () => _capture(ImageSource.gallery),
-                        tooltip: 'Select from Gallery',
+                        tooltip: context.tr('cameraSelectGallery'),
                       ),
                     ),
 
@@ -92,7 +93,7 @@ class _CameraScreenState extends State<CameraScreen> {
                         color: Colors.white,
                         icon: const Icon(Icons.refresh_rounded),
                         onPressed: () => setState(() => _qualityWarning = null),
-                        tooltip: 'Reset Camera Guidance',
+                        tooltip: context.tr('cameraResetGuidance'),
                       ),
                     ),
                   ],

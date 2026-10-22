@@ -116,7 +116,7 @@ export default function ResetPasswordPage() {
                 <AlertTriangle size={32} />
               </div>
               <h2 className="mt-5 font-display text-2xl text-ink">
-                Invalid Reset Link
+                {t("invalidResetLink")}
               </h2>
               <p className="mt-3 text-sm text-muted">
                 {t("missingResetToken")}
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
                 <CheckCircle2 size={32} />
               </div>
               <h2 className="mt-5 font-display text-2xl text-ink">
-                Password Reset Complete
+                {t("passwordResetComplete")}
               </h2>
               <p className="mt-3 text-sm text-muted">
                 {t("passwordResetSuccess")}
@@ -178,7 +178,7 @@ export default function ResetPasswordPage() {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t("passwordPlaceholder")}
                   leadingIcon={<KeyRound size={16} />}
                   required
                 />
@@ -188,7 +188,7 @@ export default function ResetPasswordPage() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t("passwordPlaceholder")}
                   leadingIcon={<Lock size={16} />}
                   required
                 />

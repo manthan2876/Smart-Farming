@@ -35,7 +35,7 @@ export default function DashboardPage() {
         <div>
           <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("farmStatus")}</span>
           <h1 className="mt-1 font-display text-2xl sm:text-3xl text-ink">
-            {t("greeting")}, {user?.name || "Farmer"}
+            {t("greeting")}, {user?.name || t("roleFarmer")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{t("scanCtaCopy")}</p>
         </div>
@@ -104,7 +104,7 @@ export default function DashboardPage() {
             </div>
             <div className="rounded-xs border border-line bg-canvas p-4">
               <span className="block text-xs font-semibold uppercase tracking-wider text-muted">{t("crop")}</span>
-              <div className="mt-1.5 font-semibold text-ink text-sm">{user?.crop_history?.length || 0} active plots</div>
+              <div className="mt-1.5 font-semibold text-ink text-sm">{user?.crop_history?.length || 0} {t("activePlots")}</div>
             </div>
           </div>
         </div>

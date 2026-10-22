@@ -207,10 +207,10 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <h3 className="font-display text-2xl text-ink">Check Your Email</h3>
+                <h3 className="font-display text-2xl text-ink">{t("checkYourEmail")}</h3>
                 <p className="mt-2 text-sm text-muted max-w-md mx-auto leading-relaxed">
-                  We sent an account activation link to <strong className="text-ink">{registeredEmail}</strong>.
-                  Please open your inbox and click the verification link to activate your account.
+                  {t("accountActivationEmailSent")} <strong className="text-ink">{registeredEmail}</strong>.
+                  {" "}{t("openInboxToActivate")}
                 </p>
               </div>
 
@@ -226,7 +226,7 @@ export default function RegisterPage() {
                   onClick={() => navigate("/auth/login")}
                   className="w-full sm:w-auto"
                 >
-                  Proceed to Login
+                  {t("proceedToLogin")}
                 </Button>
                 <Button
                   variant="secondary"
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                     setLoading(true);
                     try {
                       const res = await resendVerificationEmail(registeredEmail);
-                      setResendSuccess(res.message || "Verification email resent!");
+                      setResendSuccess(res.message || t("verificationEmailResent"));
                       setTimeout(() => setResendSuccess(""), 6000);
                     } catch (err: any) {
                       setError(err.message || "Failed to resend.");
@@ -245,7 +245,7 @@ export default function RegisterPage() {
                   }}
                   className="w-full sm:w-auto"
                 >
-                  {loading ? "Sending..." : "Resend Link"}
+                  {loading ? t("loginSending") : t("resendVerificationLink")}
                 </Button>
               </div>
             </motion.div>
@@ -329,7 +329,7 @@ export default function RegisterPage() {
                         />
                       </div>
                       <p className="mt-1 text-xs text-muted">
-                        A 6-digit verification code will be sent via SMS to verify your ownership.
+                        {t("smsOwnershipVerification")}
                       </p>
                     </div>
 
@@ -429,7 +429,7 @@ export default function RegisterPage() {
                             {t("resendOtpIn")} <span className="font-bold text-ink">{countdown}{t("seconds")}</span>
                           </>
                         ) : (
-                          "Didn't receive the SMS code?"
+                          t("loginDidNotReceiveSmsCode")
                         )}
                       </span>
                       <button

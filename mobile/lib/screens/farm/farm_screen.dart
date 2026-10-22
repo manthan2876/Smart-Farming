@@ -68,14 +68,14 @@ class _FarmScreenState extends State<FarmScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: AppColors.primary,
-              content: Text(result.deleted ? 'Farm boundary deleted.' : 'Farm boundary saved successfully.'),
+              content: Text(context.tr(result.deleted ? 'farmBoundaryDeleted' : 'farmBoundarySaved')),
             ),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(backgroundColor: Colors.red.shade700, content: Text('Failed to update farm boundary: $e')),
+            SnackBar(backgroundColor: Colors.red.shade700, content: Text('${context.tr('farmBoundaryUpdateFailed')}: $e')),
           );
         }
       }
@@ -89,9 +89,9 @@ class _FarmScreenState extends State<FarmScreen> {
     if (farmPts.length < 3) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             backgroundColor: AppColors.warning,
-            content: Text('Please trace your farm boundary first. All plot boundaries must be contained inside the farm.'),
+            content: Text(context.tr('boundaryTraceFarmFirst')),
           ),
         );
       }
@@ -115,7 +115,7 @@ class _FarmScreenState extends State<FarmScreen> {
             initialPoints: existingPts,
             farmBoundary: farmPts,
             existingPlots: otherPlots,
-            title: 'Edit: ${existingPlot['name']}',
+            title: context.tr('plotTitleEdit').replaceFirst('{name}', existingPlot['name']?.toString() ?? ''),
             crop: existingPlot['crop']?.toString(),
           ),
         ),
@@ -143,14 +143,14 @@ class _FarmScreenState extends State<FarmScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 backgroundColor: AppColors.primary,
-                content: Text(result.deleted ? 'Plot boundary cleared.' : 'Plot boundary saved successfully.'),
+                content: Text(context.tr(result.deleted ? 'plotBoundaryCleared' : 'plotBoundarySaved')),
               ),
             );
           }
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(backgroundColor: Colors.red.shade700, content: Text('Failed to update plot: $e')),
+              SnackBar(backgroundColor: Colors.red.shade700, content: Text('${context.tr('plotUpdateFailed')}: $e')),
             );
           }
         }
@@ -163,7 +163,7 @@ class _FarmScreenState extends State<FarmScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('New Plot Setup'),
+          title: Text(context.tr('newPlotSetup')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -186,7 +186,7 @@ class _FarmScreenState extends State<FarmScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('cancel'))),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Open Map Drawer')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('openMapDrawer'))),
           ],
         ),
       );
@@ -204,7 +204,7 @@ class _FarmScreenState extends State<FarmScreen> {
             type: BoundaryType.plot,
             farmBoundary: farmPts,
             existingPlots: plotsList,
-            title: 'Draw: $plotName',
+            title: context.tr('plotTitleDraw').replaceFirst('{name}', plotName),
             crop: plotCrop,
           ),
         ),
@@ -223,13 +223,13 @@ class _FarmScreenState extends State<FarmScreen> {
           await widget.onFarmUpdated();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(backgroundColor: AppColors.primary, content: Text('Plot created with boundary successfully!')),
+              SnackBar(backgroundColor: AppColors.primary, content: Text(context.tr('plotCreatedWithBoundary'))),
             );
           }
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(backgroundColor: Colors.red.shade700, content: Text('Failed to save plot: $e')),
+              SnackBar(backgroundColor: Colors.red.shade700, content: Text('${context.tr('plotSaveFailed')}: $e')),
             );
           }
         }
@@ -321,7 +321,7 @@ class _FarmScreenState extends State<FarmScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Calculated Field Area', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                        Text(context.tr('calculatedFieldArea'), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                         Text('$areaAcres ac ($areaHectares ha)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
                       ],
                     ),
@@ -329,28 +329,28 @@ class _FarmScreenState extends State<FarmScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Field Perimeter', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                        Text('$perimeterM meters', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(context.tr('fieldPerimeter'), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                        Text('$perimeterM ${context.tr('metersUnit')}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Boundary Corners', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                        Text('${pts.length} points', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(context.tr('boundaryCorners'), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                        Text('${pts.length} ${context.tr('pointsUnit')}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Farm Containment', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                        Text(context.tr('farmContainment'), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                         Row(
                           children: [
                             Icon(Icons.check_circle, size: 14, color: Colors.green),
                             SizedBox(width: 4),
-                            Text('Inside Property', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green)),
+                            Text(context.tr('insideProperty'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green)),
                           ],
                         ),
                       ],
@@ -367,7 +367,7 @@ class _FarmScreenState extends State<FarmScreen> {
                 _openDrawPlotFlow(plot);
               },
               icon: Icon(hasBoundary ? Icons.edit_location_alt : Icons.draw),
-              label: Text(hasBoundary ? 'Edit Field Boundary' : 'Draw Boundary on Satellite Map'),
+              label: Text(context.tr(hasBoundary ? 'editFieldBoundary' : 'drawBoundarySatellite')),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -383,7 +383,7 @@ class _FarmScreenState extends State<FarmScreen> {
                   _confirmClearPlotBoundary(plot);
                 },
                 icon: const Icon(Icons.layers_clear, size: 16, color: Colors.orange),
-                label: const Text('Clear Boundary Only (Keep Plot)', style: TextStyle(color: Colors.orange)),
+                label: Text(context.tr('clearBoundaryKeepPlot'), style: const TextStyle(color: Colors.orange)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -399,7 +399,7 @@ class _FarmScreenState extends State<FarmScreen> {
                 _confirmDeletePlot(plot);
               },
               icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-              label: const Text('Delete Plot Permanently', style: TextStyle(color: Colors.red)),
+              label: Text(context.tr('deletePlotPermanent'), style: const TextStyle(color: Colors.red)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -414,14 +414,14 @@ class _FarmScreenState extends State<FarmScreen> {
 
   void _confirmClearPlotBoundary(Map<String, dynamic> plot) {
     final plotId = int.tryParse(plot['id']?.toString() ?? '') ?? 0;
-    final plotName = plot['name']?.toString() ?? 'Plot';
+    final plotName = plot['name']?.toString() ?? context.tr('plotEntity');
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear Plot Boundary?'),
-        content: Text('Remove satellite boundary coordinates for "$plotName"? The plot and its crop history will be kept as unmapped.'),
+        title: Text(context.tr('clearPlotBoundaryTitle')),
+        content: Text(context.tr('clearPlotBoundaryConfirm').replaceFirst('{name}', plotName)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('cancel'))),
           FilledButton(
@@ -432,25 +432,25 @@ class _FarmScreenState extends State<FarmScreen> {
                 await widget.api.updatePlot(
                   plotId,
                   name: plotName,
-                  crop: plot['crop']?.toString() ?? 'Crop',
+                  crop: plot['crop']?.toString() ?? context.tr('cropEntity'),
                   areaAcres: (plot['area_acres'] as num?)?.toDouble() ?? 1.0,
                   resetGeometry: true,
                 );
                 await widget.onFarmUpdated();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Boundary cleared for "$plotName".')),
+                    SnackBar(content: Text(context.tr('boundaryClearedForPlot').replaceFirst('{name}', plotName))),
                   );
                 }
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to clear boundary: $e')),
+                    SnackBar(content: Text('${context.tr('boundaryClearFailed')}: $e')),
                   );
                 }
               }
             },
-            child: const Text('Clear Boundary'),
+            child: Text(context.tr('clearBoundary')),
           ),
         ],
       ),
@@ -508,7 +508,7 @@ class _FarmScreenState extends State<FarmScreen> {
               _openDrawPlotFlow();
             },
             icon: const Icon(Icons.satellite_alt, size: 16),
-            label: const Text('Draw on Map'),
+            label: Text(context.tr('drawOnMap')),
           ),
           FilledButton(
             onPressed: () async {
@@ -523,7 +523,7 @@ class _FarmScreenState extends State<FarmScreen> {
                 await widget.onFarmUpdated();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Plot created successfully')),
+                    SnackBar(content: Text(context.tr('plotCreated'))),
                   );
                 }
               } catch (e) {
@@ -609,16 +609,16 @@ class _FarmScreenState extends State<FarmScreen> {
                 const SizedBox(height: 18),
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Farm Name',
+                  decoration: InputDecoration(
+                    labelText: context.tr('farmNameLabel'),
                     prefixIcon: Icon(Icons.business_outlined),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: locCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Location / Region',
+                  decoration: InputDecoration(
+                    labelText: context.tr('locationRegionLabel'),
                     prefixIcon: Icon(Icons.place_outlined),
                   ),
                 ),
@@ -627,7 +627,7 @@ class _FarmScreenState extends State<FarmScreen> {
                   controller: areaCtrl,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    labelText: 'Total Farm Area (${context.tr('acres')})',
+                    labelText: '${context.tr('totalFarmAreaLabel')} (${context.tr('acres')})',
                     prefixIcon: const Icon(Icons.aspect_ratio_outlined),
                   ),
                 ),
@@ -638,8 +638,8 @@ class _FarmScreenState extends State<FarmScreen> {
                       child: TextField(
                         controller: latCtrl,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          labelText: 'Latitude',
+                        decoration: InputDecoration(
+                          labelText: context.tr('latitudeLabel'),
                           prefixIcon: Icon(Icons.navigation_outlined),
                         ),
                       ),
@@ -649,8 +649,8 @@ class _FarmScreenState extends State<FarmScreen> {
                       child: TextField(
                         controller: lonCtrl,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          labelText: 'Longitude',
+                        decoration: InputDecoration(
+                          labelText: context.tr('longitudeLabel'),
                           prefixIcon: Icon(Icons.explore_outlined),
                         ),
                       ),
@@ -663,7 +663,7 @@ class _FarmScreenState extends State<FarmScreen> {
                   decoration: InputDecoration(
                     labelText: context.tr('cropHistory'),
                     prefixIcon: const Icon(Icons.history_edu_outlined),
-                    helperText: 'Comma separated list of previous crops',
+                    helperText: context.tr('previousCropsHelper'),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -713,7 +713,7 @@ class _FarmScreenState extends State<FarmScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   backgroundColor: Colors.red.shade700,
-                                  content: Text('Failed to update farm: $e'),
+                                  content: Text('${context.tr('farmUpdateFailed')}: $e'),
                                 ),
                               );
                             }
@@ -746,7 +746,7 @@ class _FarmScreenState extends State<FarmScreen> {
   void _confirmDeletePlot(Map<String, dynamic> plot) {
     final plotId = int.tryParse(plot['id']?.toString() ?? '');
     if (plotId == null) return;
-    final plotName = plot['name']?.toString() ?? 'Plot';
+    final plotName = plot['name']?.toString() ?? context.tr('plotEntity');
 
     showDialog(
       context: context,
@@ -769,13 +769,13 @@ class _FarmScreenState extends State<FarmScreen> {
                 await widget.onFarmUpdated();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Plot "$plotName" deleted.')),
+                    SnackBar(content: Text('${context.tr('plotEntity')} "$plotName" ${context.tr('deletedSuffix')}')),
                   );
                 }
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete plot: $e')),
+                    SnackBar(content: Text('${context.tr('plotDeleteFailed')}: $e')),
                   );
                 }
               } finally {
@@ -861,7 +861,7 @@ class _FarmScreenState extends State<FarmScreen> {
                           if (lat != null && lon != null) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'GPS: $lat, $lon',
+                              '${context.tr('farmGpsPrefix')}: $lat, $lon',
                               style: const TextStyle(fontSize: 11, color: AppColors.textSubtle),
                             ),
                           ],
@@ -1006,14 +1006,14 @@ class _FarmScreenState extends State<FarmScreen> {
                                           color: AppColors.primaryLight,
                                           borderRadius: BorderRadius.circular(6),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(Icons.check_circle, size: 10, color: AppColors.primary),
                                             SizedBox(width: 3),
                                             Text(
-                                              'Mapped',
-                                              style: TextStyle(
+                                              context.tr('mapped'),
+                                              style: const TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
                                                 color: AppColors.primary,

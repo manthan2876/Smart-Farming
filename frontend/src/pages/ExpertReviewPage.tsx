@@ -78,7 +78,7 @@ export default function ExpertReviewPage() {
                 <img
                   className="h-full w-full object-contain"
                   src={rawImage}
-                  alt="Raw leaf"
+                  alt={t("rawLeafAlt")}
                   onError={(e) => {
                     if (review.raw_url && e.currentTarget.src !== review.raw_url) {
                       e.currentTarget.src = review.raw_url;
@@ -91,7 +91,7 @@ export default function ExpertReviewPage() {
                 <img
                   className="h-full w-full object-contain"
                   src={processedImage}
-                  alt="Heatmap base"
+                  alt={t("heatmapBaseAlt")}
                   onError={(e) => {
                     if (review.processed_url && e.currentTarget.src !== review.processed_url) {
                       e.currentTarget.src = review.processed_url;
@@ -109,7 +109,7 @@ export default function ExpertReviewPage() {
             <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("modelTelemetryContext")}</h3>
             <div className="mt-5 grid gap-6 sm:grid-cols-2">
               <ul className="space-y-3 text-sm text-ink"><li><strong>{t("crop")}:</strong> {crop}</li><li><strong>{t("identifiedCondition")}:</strong> {disease} ({(diseaseConfidence * 100).toFixed(0)}%)</li><li><strong>{t("severity")}:</strong> {severityPercent.toFixed(0)}% {t("affectedArea")}</li><li><strong>{t("pests")}:</strong> {t("noPests")}</li></ul>
-              <ul className="space-y-3 text-sm text-ink"><li><CloudSun size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("weather")}:</strong> Current conditions available in prediction</li><li><MapPin size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("location")}:</strong> Prediction location</li><li><History size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("history")}:</strong> Review prediction history</li></ul>
+              <ul className="space-y-3 text-sm text-ink"><li><CloudSun size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("weather")}:</strong> {t("currentConditionsInPrediction")}</li><li><MapPin size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("location")}:</strong> {t("predictionLocation")}</li><li><History size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("history")}:</strong> {t("reviewPredictionHistory")}</li></ul>
             </div>
           </Card>
         </div>

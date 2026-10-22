@@ -53,7 +53,7 @@ export default function AdminMetricsPage() {
 
   const handleExportMLOps = async () => {
     if (exportTrain + exportVal + exportTest !== 100) {
-      alert("Split percentages must total 100");
+      alert(t("adminSplitPercentagesTotal"));
       return;
     }
     setExporting(true);
@@ -77,14 +77,14 @@ export default function AdminMetricsPage() {
       window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error(e);
-      alert("Export failed. No candidates may match the selected filters.");
+      alert(t("adminExportFailed"));
     } finally {
       setExporting(false);
     }
   };
 
   if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><Loader2 className="animate-spin text-admin-500 dark:text-amber-400" /></div>;
-  if (!data) return <div className="rounded-md border border-red-100 bg-red-50 p-6 text-danger dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">Failed to load metrics.</div>;
+  if (!data) return <div className="rounded-md border border-red-100 bg-red-50 p-6 text-danger dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">{t("adminMetricsLoadFailed")}</div>;
 
   const localizedDiseaseDist = (data?.disease_distribution || []).map((entry: any) => ({
     ...entry,
@@ -283,7 +283,7 @@ export default function AdminMetricsPage() {
                       <span className={`inline-flex items-center rounded-xs px-2 py-0.5 text-xs font-medium border ${
                         m.status === "ok" ? "bg-farmer-100 text-farmer-800 border-farmer-300 dark:bg-farmer-900/60 dark:text-farmer-200 dark:border-farmer-700" : "bg-red-50 text-red-900 border-red-300 dark:bg-red-950/40 dark:text-red-200 dark:border-red-800"
                       }`}>
-                        {m.status === "ok" ? "Ready" : "Missing"}
+                        {m.status === "ok" ? t("modelReady") : t("modelMissing")}
                       </span>
                     </td>
                     <td className="py-2 pr-4 text-muted">{m.val_acc != null ? `${(m.val_acc * 100).toFixed(1)}%` : "N/A"}</td>
@@ -305,8 +305,8 @@ export default function AdminMetricsPage() {
               {datasetSummary
                 ? `${datasetSummary.total} ${t("totalCandidates")} · ${datasetSummary.by_status?.pending_review ?? 0} ${t("pendingReview")}`
                 : datasetSummaryError
-                ? "Dataset candidate summary temporarily unavailable"
-                : "Loading summary…"}
+                ? t("datasetSummaryUnavailable")
+                : t("loadingSummary")}
             </p>
           </div>
         </div>

@@ -106,9 +106,9 @@ const handleSubmit = async (e: React.FormEvent) => {
       if (err.message === "Failed to fetch") {
         const offlineData = { id: Date.now(), file, location, plotId, lat, lon, language };
         await update('offline_scans', (val: any) => val ? [...val, offlineData] : [offlineData]);
-        alert("Network error. Scan saved locally and will sync when you regain connection.");
+        alert(t("offlineScanSaved"));
       } else {
-        setError(err.message || "An unexpected error occurred during analysis.");
+        setError(err.message || t("unexpectedAnalysisError"));
       }
       setLoading(false);
     }
@@ -118,7 +118,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     const handleOnline = async () => {
       const scans = await get('offline_scans') || [];
       if (scans.length > 0) {
-        alert(`Syncing ${scans.length} offline scans...`);
+        alert(`${t("syncingOfflineScans")} ${scans.length}...`);
         for (const scan of scans) {
           try {
             await predict(scan.file, {
@@ -134,7 +134,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         }
         await set('offline_scans', []);
         analytics.offlineSyncCompleted(scans.length);
-        alert("Offline scans synchronized successfully!");
+        alert(t("offlineScansSynced"));
         navigate("/history");
       }
     };
@@ -168,7 +168,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             <label className={`flex min-h-[25rem] cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-farmer-700 bg-farmer-50 text-center transition hover:border-farmer-500 hover:bg-farmer-100 dark:border-farmer-600/70 dark:bg-farmer-950/60 dark:hover:border-farmer-400 dark:hover:bg-farmer-900/60 ${previewUrl ? "p-0" : "p-8"}`}>
               {previewUrl ? (
                 <div className="group relative h-full min-h-[25rem] w-full">
-                  <img src={previewUrl} alt="Leaf Preview" className="h-full min-h-[25rem] w-full object-contain" />
+                  <img src={previewUrl} alt={t("leafPreview")} className="h-full min-h-[25rem] w-full object-contain" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 text-white opacity-0 transition-opacity group-hover:opacity-100">
                     <Camera size={24} />
                     <span className="mt-2 text-sm font-semibold">{t("replaceImage")}</span>

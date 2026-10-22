@@ -149,7 +149,7 @@ class RescanComparisonSheet extends StatelessWidget {
                     const SizedBox(height: 6),
                     Center(
                       child: Text(
-                        'Severity: $initSev%',
+                        '${context.tr('severity')}: $initSev%',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ),
@@ -187,7 +187,7 @@ class RescanComparisonSheet extends StatelessWidget {
                     const SizedBox(height: 6),
                     Center(
                       child: Text(
-                        'Severity: $newSev%',
+                        '${context.tr('severity')}: $newSev%',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
                       ),
                     ),
@@ -256,7 +256,7 @@ class RescanComparisonSheet extends StatelessWidget {
                 onRequestExpert!();
               },
               icon: const Icon(Icons.support_agent),
-              label: const Text('Consult Agronomist on this Follow-up'),
+              label: Text(context.tr('consultAgronomistFollowup')),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -268,4 +268,3 @@ class RescanComparisonSheet extends StatelessWidget {
     );
   }
 }
-

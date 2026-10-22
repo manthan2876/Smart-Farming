@@ -24,9 +24,20 @@ class DomainTranslations {
     'unsupported crop / indeterminate': {'en': 'Unsupported Crop / Indeterminate', 'hi': 'असमर्थित फसल / अस्पष्ट', 'gu': 'બિન-સપોર્ટેડ પાક / અનિર્ધારિત'},
   };
 
+  static const Map<String, Map<String, String>> _fallbackLabels = {
+    'unknownCrop': {'en': 'Unknown Crop', 'hi': 'अज्ञात फसल', 'gu': 'અજ્ઞાત પાક'},
+    'undeterminedCondition': {'en': 'Undetermined Condition', 'hi': 'अनिर्धारित स्थिति', 'gu': 'અનિર્ધારિત સ્થિતિ'},
+    'unknownCondition': {'en': 'Unknown Condition', 'hi': 'अज्ञात स्थिति', 'gu': 'અજ્ઞાત સ્થિતિ'},
+    'pest': {'en': 'Pest', 'hi': 'कीट', 'gu': 'જીવાત'},
+    'currentConditions': {'en': 'Current Conditions', 'hi': 'वर्तमान स्थितियाँ', 'gu': 'વર્તમાન પરિસ્થિતિઓ'},
+    'alert': {'en': 'Alert', 'hi': 'चेतावनी', 'gu': 'ચેતવણી'},
+  };
+
   static String translateCrop(String? crop, String lang) {
-    if (crop == null || crop.isEmpty) return 'Unknown Crop';
     final code = normalizeLang(lang);
+    if (crop == null || crop.trim().isEmpty || crop.trim().toLowerCase() == 'unknown crop') {
+      return _fallbackLabels['unknownCrop']![code]!;
+    }
     final key = crop.trim().toLowerCase();
     final entry = _crops[key];
     if (entry != null && entry[code] != null) return entry[code]!;
@@ -69,8 +80,14 @@ class DomainTranslations {
   };
 
   static String translateDisease(String? disease, String lang) {
-    if (disease == null || disease.isEmpty) return 'Undetermined Condition';
     final code = normalizeLang(lang);
+    if (disease == null || disease.trim().isEmpty || disease.trim().toLowerCase() == 'undetermined condition') {
+      return _fallbackLabels['undeterminedCondition']![code]!;
+    }
+    if (disease.trim().toLowerCase() == 'unknown condition' ||
+        disease.trim().toLowerCase() == 'unidentified condition') {
+      return _fallbackLabels['unknownCondition']![code]!;
+    }
     final key = disease.trim().toLowerCase();
     final entry = _diseases[key];
     if (entry != null && entry[code] != null) return entry[code]!;
@@ -90,8 +107,8 @@ class DomainTranslations {
   };
 
   static String translatePest(String? pest, String lang) {
-    if (pest == null || pest.isEmpty) return 'Pest';
     final code = normalizeLang(lang);
+    if (pest == null || pest.trim().isEmpty) return _fallbackLabels['pest']![code]!;
     final key = pest.trim().toLowerCase();
     final entry = _pests[key];
     if (entry != null && entry[code] != null) return entry[code]!;
@@ -112,8 +129,8 @@ class DomainTranslations {
   };
 
   static String translateSeverityBucket(String? bucket, String lang) {
-    if (bucket == null || bucket.isEmpty) return '';
     final code = normalizeLang(lang);
+    if (bucket == null || bucket.trim().isEmpty) return _severity['n/a']![code]!;
     final key = bucket.trim().toLowerCase();
     final entry = _severity[key];
     if (entry != null && entry[code] != null) return entry[code]!;
@@ -141,8 +158,8 @@ class DomainTranslations {
   };
 
   static String translateWeather(String? condition, String lang) {
-    if (condition == null || condition.isEmpty) return 'Current Conditions';
     final code = normalizeLang(lang);
+    if (condition == null || condition.trim().isEmpty) return _fallbackLabels['currentConditions']![code]!;
     final key = condition.trim().toLowerCase();
     final entry = _weather[key];
     if (entry != null && entry[code] != null) return entry[code]!;
@@ -166,8 +183,8 @@ class DomainTranslations {
   };
 
   static String translateAlertTitle(String? title, String lang) {
-    if (title == null || title.isEmpty) return 'Alert';
     final code = normalizeLang(lang);
+    if (title == null || title.trim().isEmpty) return _fallbackLabels['alert']![code]!;
     final key = title.trim().toLowerCase();
     final entry = _alertTitles[key];
     if (entry != null && entry[code] != null) return entry[code]!;

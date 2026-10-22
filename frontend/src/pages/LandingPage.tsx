@@ -233,7 +233,7 @@ export default function LandingPage() {
         <div className="mt-8 rounded-sm border border-line bg-surface p-6 sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted">Specimen:</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("specimenLabel")}</span>
               <span className="font-display text-lg text-ink">
                 {translateCrop(activeSample.crop, language)} : {translateDisease(activeSample.condition, language)}
               </span>
@@ -285,7 +285,7 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div>
                   <span className="text-xs uppercase tracking-wider text-muted">{t("spatialTelemetry")}</span>
-                  <h3 className="font-display text-2xl text-ink mt-1">OpenCV Vegetation Segmentation</h3>
+                  <h3 className="font-display text-2xl text-ink mt-1">{t("openCvVegetationSegmentation")}</h3>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-xs border border-line bg-canvas p-4 space-y-1 text-xs">
@@ -386,7 +386,7 @@ export default function LandingPage() {
 
             <div className="lg:col-span-2 space-y-6">
               <div className="border-b border-line pb-6">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted">01: Preprocessing Rejection</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted">{t("landingMethod1Badge")}</div>
                 <h3 className="font-display text-xl text-ink mt-1">{t("landingMethod1Title")}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">
                   {t("landingMethod1Desc")}
@@ -394,7 +394,7 @@ export default function LandingPage() {
               </div>
 
               <div className="border-b border-line pb-6">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted">02: Multi-Model Routing</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted">{t("landingMethod2Badge")}</div>
                 <h3 className="font-display text-xl text-ink mt-1">{t("landingMethod2Title")}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">
                   {t("landingMethod2Desc")}
@@ -402,7 +402,7 @@ export default function LandingPage() {
               </div>
 
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted">03: Human-in-the-Loop Safety</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted">{t("landingMethod3Badge")}</div>
                 <h3 className="font-display text-xl text-ink mt-1">{t("landingMethod3Title")}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">
                   {t("landingMethod3Desc")}

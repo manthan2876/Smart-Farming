@@ -318,25 +318,30 @@ export default function SettingsPage() {
     setIsDeleting(true);
     try {
       await purgeDatabase(token!);
-      alert("Database wiped.");
+      alert(t("databaseWiped"));
       setShowDeleteModal(false);
       window.location.reload();
     } catch (err: any) {
-      alert("Failed: " + err.message);
+      alert(`${t("operationFailed")}: ${err.message}`);
     } finally {
       setIsDeleting(false);
     }
   };
 
   const handlePurgeBlobs = async () => {
-    if (!confirm("Delete all orphaned image blobs?")) return;
+    if (!confirm(t("confirmDeleteOrphanedBlobs"))) return;
     try {
       const res = await purgeBlobs(token!);
       const localCount = res.local_deleted ?? 0;
       const cloudCount = res.supabase_deleted ?? res.cloud_deleted ?? res.s3_deleted ?? 0;
-      alert(`Success! Deleted ${res.deleted_files ?? (localCount + cloudCount)} orphaned files (Local: ${localCount}, Supabase: ${cloudCount}).`);
+      alert(
+        t("orphanedBlobsDeleted")
+          .replace("{deleted}", String(res.deleted_files ?? (localCount + cloudCount)))
+          .replace("{local}", String(localCount))
+          .replace("{cloud}", String(cloudCount)),
+      );
     } catch (err: any) {
-      alert("Failed: " + err.message);
+      alert(`${t("operationFailed")}: ${err.message}`);
     }
   };
 
@@ -364,7 +369,7 @@ export default function SettingsPage() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert("Export error.");
+      alert(t("exportError"));
     } finally {
       setIsExporting(false);
     }
@@ -754,7 +759,7 @@ export default function SettingsPage() {
               setConfirmPwd("");
               setTimeout(() => setPwdSuccess(false), 4000);
             } catch (err: any) {
-              setPwdError(err.message || "Failed to change password. Please check your current password.");
+              setPwdError(err.message || t("settingsPasswordChangeFailed"));
             } finally {
               setPwdLoading(false);
             }
@@ -768,7 +773,7 @@ export default function SettingsPage() {
               type="password"
               value={currentPwd}
               onChange={(e) => setCurrentPwd(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t("passwordPlaceholder")}
               required
             />
             <Input
@@ -777,7 +782,7 @@ export default function SettingsPage() {
               type="password"
               value={newPwd}
               onChange={(e) => setNewPwd(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t("passwordPlaceholder")}
               required
             />
             <Input
@@ -786,7 +791,7 @@ export default function SettingsPage() {
               type="password"
               value={confirmPwd}
               onChange={(e) => setConfirmPwd(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t("passwordPlaceholder")}
               required
             />
           </div>
