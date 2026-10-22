@@ -10,14 +10,11 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.paths import ensure_storage_directories
 from app.core.storage import get_storage
+from app.schemas.client import TTSRequest, TTSResponse
 
 logger = logging.getLogger("smart-farming.tts")
 
 router = APIRouter(tags=["tts"])
-
-class TTSRequest(BaseModel):
-    text: str
-    language: str | None = "English"
 
 AUDIO_CACHE_DIR = settings.AUDIO_ROOT
 ensure_storage_directories()
@@ -65,7 +62,7 @@ def sync_existing_audio_to_storage() -> dict[str, int]:
     return {"synced": synced, "skipped": skipped}
 
 
-@router.post("/tts")
+@router.post("/tts", response_model=TTSResponse)
 async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_user)):
     AUDIO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     storage = get_storage()

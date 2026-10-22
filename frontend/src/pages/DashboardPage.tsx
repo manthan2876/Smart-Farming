@@ -2,42 +2,26 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
 import { CloudSun, Activity, Scan, ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
-import { request } from "../api/client";
+import { history as getHistory, weather as fetchWeather } from "../api/predictions";
 import { Badge, Button, Card, Skeleton } from "../components/ui";
 import { formatTemperature, formatWindSpeed } from "../lib/format";
 import { translateCrop, translateDisease, translateSeverityBucket, translateWeather } from "../i18n/domain";
 
-interface ScanItem {
-  id?: number;
-  prediction_id?: number;
-  crop?: { label?: string };
-  disease?: { label?: string };
-  severity?: { bucket?: string };
-  created_at?: string;
-}
-
-interface WeatherData {
-  temperature_celsius?: number;
-  humidity_percent?: number;
-  condition?: string;
-  wind_speed_mps?: number;
-}
-
 export default function DashboardPage() {
   const { user, token, units, language, t } = useAuth();
 
-  const { data: history = [], isLoading: isHistoryLoading } = useQuery<ScanItem[]>({
+  const { data: history = [], isLoading: isHistoryLoading } = useQuery({
     queryKey: ["scanHistorySummary"],
-    queryFn: () => request<ScanItem[]>("/history?limit=3", {}, token!),
+    queryFn: () => getHistory(token!, 3, 0),
     enabled: !!token,
   });
 
   const lat = user?.latitude || 22.2587;
   const lon = user?.longitude || 71.1924;
 
-  const { data: weather, isLoading: isWeatherLoading } = useQuery<WeatherData>({
+  const { data: weather, isLoading: isWeatherLoading } = useQuery({
     queryKey: ["dashboardWeather", lat, lon],
-    queryFn: () => request<WeatherData>(`/weather?lat=${lat}&lon=${lon}`, {}, token!),
+    queryFn: () => fetchWeather(lat, lon, token!, language),
     enabled: !!token,
   });
 

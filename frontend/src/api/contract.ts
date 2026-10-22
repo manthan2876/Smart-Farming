@@ -1,5 +1,5 @@
 import type { paths } from "./generated/openapi";
-import { request } from "./client";
+import { request, requestBlob, requestWithMeta } from "./client";
 
 type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 type MethodForPath<P extends keyof paths> = {
@@ -117,6 +117,69 @@ export async function contractRequest<
   };
   const resolvedPath = appendQuery(fillPath(path, pathParams), query);
   return request<JsonResponse<Operation<P, M>>>(
+    resolvedPath,
+    {
+      ...requestOptions,
+      method: method.toUpperCase(),
+      body: body ?? (data === undefined ? undefined : JSON.stringify(data)),
+    },
+    token,
+  );
+}
+
+export async function contractRequestWithMeta<
+  const P extends keyof paths,
+  M extends MethodForPath<P>,
+>(
+  path: P,
+  method: M,
+  options: RequestOptions<Operation<P, M>>,
+  token?: string | null,
+): Promise<{
+  data: JsonResponse<Operation<P, M>>;
+  totalCount: number;
+  offset: number;
+  limit: number;
+}> {
+  const { data, body, pathParams, query, ...requestOptions } = options as RequestOptions<
+    Operation<P, M>
+  > & {
+    data?: unknown;
+    body?: BodyInit;
+    pathParams?: Record<string, string | number>;
+    query?: Record<string, unknown>;
+  };
+  const resolvedPath = appendQuery(fillPath(path, pathParams), query);
+  return requestWithMeta<JsonResponse<Operation<P, M>>>(
+    resolvedPath,
+    {
+      ...requestOptions,
+      method: method.toUpperCase(),
+      body: body ?? (data === undefined ? undefined : JSON.stringify(data)),
+    },
+    token,
+  );
+}
+
+export async function contractBlobRequest<
+  const P extends keyof paths,
+  M extends MethodForPath<P>,
+>(
+  path: P,
+  method: M,
+  options: RequestOptions<Operation<P, M>>,
+  token?: string | null,
+): Promise<Blob> {
+  const { data, body, pathParams, query, ...requestOptions } = options as RequestOptions<
+    Operation<P, M>
+  > & {
+    data?: unknown;
+    body?: BodyInit;
+    pathParams?: Record<string, string | number>;
+    query?: Record<string, unknown>;
+  };
+  const resolvedPath = appendQuery(fillPath(path, pathParams), query);
+  return requestBlob(
     resolvedPath,
     {
       ...requestOptions,

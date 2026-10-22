@@ -71,14 +71,72 @@ Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 [*AlertsApi*](doc/AlertsApi.md) | [**getAlertsApiV1AlertsGet**](doc/AlertsApi.md#getalertsapiv1alertsget) | **GET** /api/v1/alerts | Get Alerts
 [*AlertsApi*](doc/AlertsApi.md) | [**markReadApiV1AlertsAlertIdReadPost**](doc/AlertsApi.md#markreadapiv1alertsalertidreadpost) | **POST** /api/v1/alerts/{alert_id}/read | Mark Read
+[*AuthApi*](doc/AuthApi.md) | [**changePasswordApiV1AuthChangePasswordPost**](doc/AuthApi.md#changepasswordapiv1authchangepasswordpost) | **POST** /api/v1/auth/change-password | Change Password
+[*AuthApi*](doc/AuthApi.md) | [**forgotPasswordApiV1AuthForgotPasswordPost**](doc/AuthApi.md#forgotpasswordapiv1authforgotpasswordpost) | **POST** /api/v1/auth/forgot-password | Forgot Password
+[*AuthApi*](doc/AuthApi.md) | [**guestLoginApiV1AuthGuestPost**](doc/AuthApi.md#guestloginapiv1authguestpost) | **POST** /api/v1/auth/guest | Guest Login
+[*AuthApi*](doc/AuthApi.md) | [**loginApiV1AuthLoginPost**](doc/AuthApi.md#loginapiv1authloginpost) | **POST** /api/v1/auth/login | Login
+[*AuthApi*](doc/AuthApi.md) | [**refreshApiV1AuthRefreshPost**](doc/AuthApi.md#refreshapiv1authrefreshpost) | **POST** /api/v1/auth/refresh | Refresh
+[*AuthApi*](doc/AuthApi.md) | [**registerApiV1AuthRegisterPost**](doc/AuthApi.md#registerapiv1authregisterpost) | **POST** /api/v1/auth/register | Register
+[*AuthApi*](doc/AuthApi.md) | [**resetPasswordApiV1AuthResetPasswordPost**](doc/AuthApi.md#resetpasswordapiv1authresetpasswordpost) | **POST** /api/v1/auth/reset-password | Reset Password
 [*DefaultApi*](doc/DefaultApi.md) | [**cropsApiV1CropsGet**](doc/DefaultApi.md#cropsapiv1cropsget) | **GET** /api/v1/crops | Crops
+[*DefaultApi*](doc/DefaultApi.md) | [**feedbackApiV1FeedbackPost**](doc/DefaultApi.md#feedbackapiv1feedbackpost) | **POST** /api/v1/feedback | Feedback
+[*DefaultApi*](doc/DefaultApi.md) | [**historyApiV1HistoryGet**](doc/DefaultApi.md#historyapiv1historyget) | **GET** /api/v1/history | History
+[*DefaultApi*](doc/DefaultApi.md) | [**predictApiV1PredictPost**](doc/DefaultApi.md#predictapiv1predictpost) | **POST** /api/v1/predict | Predict
+[*DefaultApi*](doc/DefaultApi.md) | [**predictionDetailApiV1PredictionsPredictionIdGet**](doc/DefaultApi.md#predictiondetailapiv1predictionspredictionidget) | **GET** /api/v1/predictions/{prediction_id} | Prediction Detail
+[*DefaultApi*](doc/DefaultApi.md) | [**requestExpertReviewApiV1PredictionsPredictionIdRequestExpertPost**](doc/DefaultApi.md#requestexpertreviewapiv1predictionspredictionidrequestexpertpost) | **POST** /api/v1/predictions/{prediction_id}/request-expert | Request Expert Review
+[*DefaultApi*](doc/DefaultApi.md) | [**rescanPredictionApiV1PredictionsPredictionIdRescanPost**](doc/DefaultApi.md#rescanpredictionapiv1predictionspredictionidrescanpost) | **POST** /api/v1/predictions/{prediction_id}/rescan | Rescan Prediction
+[*DefaultApi*](doc/DefaultApi.md) | [**translateWeatherAdvisoryTextApiV1WeatherTranslatePost**](doc/DefaultApi.md#translateweatheradvisorytextapiv1weathertranslatepost) | **POST** /api/v1/weather/translate | Translate Weather Advisory Text
+[*DefaultApi*](doc/DefaultApi.md) | [**weatherApiV1WeatherGet**](doc/DefaultApi.md#weatherapiv1weatherget) | **GET** /api/v1/weather | Weather
+[*FarmApi*](doc/FarmApi.md) | [**createPlotApiV1FarmPlotsPost**](doc/FarmApi.md#createplotapiv1farmplotspost) | **POST** /api/v1/farm/plots | Create Plot
+[*FarmApi*](doc/FarmApi.md) | [**deletePlotApiV1FarmPlotsPlotIdDelete**](doc/FarmApi.md#deleteplotapiv1farmplotsplotiddelete) | **DELETE** /api/v1/farm/plots/{plot_id} | Delete Plot
+[*FarmApi*](doc/FarmApi.md) | [**getFarmerFarmApiV1FarmGet**](doc/FarmApi.md#getfarmerfarmapiv1farmget) | **GET** /api/v1/farm | Get Farmer Farm
+[*FarmApi*](doc/FarmApi.md) | [**saveFarmerFarmApiV1FarmPut**](doc/FarmApi.md#savefarmerfarmapiv1farmput) | **PUT** /api/v1/farm | Save Farmer Farm
+[*FarmApi*](doc/FarmApi.md) | [**updatePlotApiV1FarmPlotsPlotIdPut**](doc/FarmApi.md#updateplotapiv1farmplotsplotidput) | **PUT** /api/v1/farm/plots/{plot_id} | Update Plot
+[*ProfileApi*](doc/ProfileApi.md) | [**getFarmerProfileApiV1ProfileGet**](doc/ProfileApi.md#getfarmerprofileapiv1profileget) | **GET** /api/v1/profile | Get Farmer Profile
+[*ProfileApi*](doc/ProfileApi.md) | [**updateFarmerProfileApiV1ProfilePatch**](doc/ProfileApi.md#updatefarmerprofileapiv1profilepatch) | **PATCH** /api/v1/profile | Update Farmer Profile
+[*TranslationApi*](doc/TranslationApi.md) | [**translatePredictionRecommendationApiV1PredictionsPredictionIdTranslatePost**](doc/TranslationApi.md#translatepredictionrecommendationapiv1predictionspredictionidtranslatepost) | **POST** /api/v1/predictions/{prediction_id}/translate | Translate Prediction Recommendation
+[*TtsApi*](doc/TtsApi.md) | [**generateTtsApiV1TtsPost**](doc/TtsApi.md#generatettsapiv1ttspost) | **POST** /api/v1/tts | Generate Tts
 
 
 ## Documentation For Models
 
  - [AlertReadResponse](doc/AlertReadResponse.md)
  - [AlertResponse](doc/AlertResponse.md)
+ - [AuthResponse](doc/AuthResponse.md)
+ - [ChangePasswordRequest](doc/ChangePasswordRequest.md)
  - [CropListResponse](doc/CropListResponse.md)
+ - [ErrorResponse](doc/ErrorResponse.md)
+ - [FarmRequest](doc/FarmRequest.md)
+ - [FarmResponse](doc/FarmResponse.md)
+ - [FeedbackRequest](doc/FeedbackRequest.md)
+ - [FeedbackResponse](doc/FeedbackResponse.md)
+ - [ForgotPasswordRequest](doc/ForgotPasswordRequest.md)
+ - [LoginRequest](doc/LoginRequest.md)
+ - [MessageResponse](doc/MessageResponse.md)
+ - [PlotRequest](doc/PlotRequest.md)
+ - [PlotResponse](doc/PlotResponse.md)
+ - [PredictionExpertReviewResponse](doc/PredictionExpertReviewResponse.md)
+ - [PredictionHistoricalImageResponse](doc/PredictionHistoricalImageResponse.md)
+ - [PredictionImageResponse](doc/PredictionImageResponse.md)
+ - [PredictionLabelResponse](doc/PredictionLabelResponse.md)
+ - [PredictionRecommendationResponse](doc/PredictionRecommendationResponse.md)
+ - [PredictionResponse](doc/PredictionResponse.md)
+ - [PredictionSeverityResponse](doc/PredictionSeverityResponse.md)
+ - [PredictionStatusResponse](doc/PredictionStatusResponse.md)
+ - [PredictionTranslationResponse](doc/PredictionTranslationResponse.md)
+ - [PredictionWeatherResponse](doc/PredictionWeatherResponse.md)
+ - [ProfileResponse](doc/ProfileResponse.md)
+ - [ProfileUpdateRequest](doc/ProfileUpdateRequest.md)
+ - [Recommendation](doc/Recommendation.md)
+ - [RefreshRequest](doc/RefreshRequest.md)
+ - [RegisterRequest](doc/RegisterRequest.md)
+ - [ResetPasswordRequest](doc/ResetPasswordRequest.md)
+ - [TTSRequest](doc/TTSRequest.md)
+ - [TTSResponse](doc/TTSResponse.md)
+ - [TokenResponse](doc/TokenResponse.md)
+ - [WeatherResponse](doc/WeatherResponse.md)
+ - [WeatherTranslationRequest](doc/WeatherTranslationRequest.md)
+ - [WeatherTranslationResponse](doc/WeatherTranslationResponse.md)
 
 
 ## Documentation For Authorization

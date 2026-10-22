@@ -21,7 +21,7 @@ import sqlalchemy as sa
 from app.models import Prediction
 
 
-@router.get("/history")
+@router.get("/history", response_model=list[PredictionResponse])
 def history(
     request: Request,
     response: Response,

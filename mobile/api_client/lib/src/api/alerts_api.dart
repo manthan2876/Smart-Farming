@@ -13,19 +13,18 @@ import 'package:smart_farming_api/src/model/alert_read_response.dart';
 import 'package:smart_farming_api/src/model/alert_response.dart';
 
 class AlertsApi {
-
   final Dio _dio;
 
   const AlertsApi(this._dio);
 
   /// Get Alerts
-  /// 
+  ///
   ///
   /// Parameters:
-  /// * [offset] 
-  /// * [limit] 
-  /// * [lang] 
-  /// * [xUserId] 
+  /// * [offset]
+  /// * [limit]
+  /// * [lang]
+  /// * [xUserId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -35,7 +34,7 @@ class AlertsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [List<AlertResponse>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<List<AlertResponse>>> getAlertsApiV1AlertsGet({ 
+  Future<Response<List<AlertResponse>>> getAlertsApiV1AlertsGet({
     int? offset = 0,
     int? limit = 20,
     String? lang,
@@ -50,17 +49,10 @@ class AlertsApi {
     final _path = r'/api/v1/alerts';
     final _options = Options(
       method: r'GET',
-      headers: <String, dynamic>{
-        r'x-user-id': xUserId,
-        ...?headers,
-      },
+      headers: <String, dynamic>{r'x-user-id': xUserId, ...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
-          {
-            'type': 'http',
-            'scheme': 'bearer',
-            'name': 'HTTPBearer',
-          },
+          {'type': 'http', 'scheme': 'bearer', 'name': 'HTTPBearer'},
         ],
         ...?extra,
       },
@@ -85,9 +77,14 @@ class AlertsApi {
     List<AlertResponse>? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<List<AlertResponse>, AlertResponse>(rawData, 'List<AlertResponse>', growable: true);
-
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<List<AlertResponse>, AlertResponse>(
+              rawData,
+              'List<AlertResponse>',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -111,11 +108,11 @@ _responseData = rawData == null ? null : deserialize<List<AlertResponse>, AlertR
   }
 
   /// Mark Read
-  /// 
+  ///
   ///
   /// Parameters:
-  /// * [alertId] 
-  /// * [xUserId] 
+  /// * [alertId]
+  /// * [xUserId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -125,7 +122,7 @@ _responseData = rawData == null ? null : deserialize<List<AlertResponse>, AlertR
   ///
   /// Returns a [Future] containing a [Response] with a [AlertReadResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<AlertReadResponse>> markReadApiV1AlertsAlertIdReadPost({ 
+  Future<Response<AlertReadResponse>> markReadApiV1AlertsAlertIdReadPost({
     required int alertId,
     String? xUserId,
     CancelToken? cancelToken,
@@ -135,20 +132,18 @@ _responseData = rawData == null ? null : deserialize<List<AlertResponse>, AlertR
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/alerts/{alert_id}/read'.replaceAll('{' r'alert_id' '}', alertId.toString());
+    final _path = r'/api/v1/alerts/{alert_id}/read'.replaceAll(
+      '{'
+      r'alert_id'
+      '}',
+      alertId.toString(),
+    );
     final _options = Options(
       method: r'POST',
-      headers: <String, dynamic>{
-        r'x-user-id': xUserId,
-        ...?headers,
-      },
+      headers: <String, dynamic>{r'x-user-id': xUserId, ...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
-          {
-            'type': 'http',
-            'scheme': 'bearer',
-            'name': 'HTTPBearer',
-          },
+          {'type': 'http', 'scheme': 'bearer', 'name': 'HTTPBearer'},
         ],
         ...?extra,
       },
@@ -166,9 +161,14 @@ _responseData = rawData == null ? null : deserialize<List<AlertResponse>, AlertR
     AlertReadResponse? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<AlertReadResponse, AlertReadResponse>(rawData, 'AlertReadResponse', growable: true);
-
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<AlertReadResponse, AlertReadResponse>(
+              rawData,
+              'AlertReadResponse',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -190,5 +190,4 @@ _responseData = rawData == null ? null : deserialize<AlertReadResponse, AlertRea
       extra: _response.extra,
     );
   }
-
 }

@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { request } from "../api/client";
-import { exportDataset } from "../api/admin";
+import {
+  datasetSummary as getDatasetSummary,
+  exportDataset,
+  purgeBlobs,
+  purgeDatabase,
+  readAdminConfig,
+  updateAdminConfig,
+} from "../api/admin";
 import { changePassword } from "../api/auth";
 import { 
   AlertTriangle, 
@@ -278,13 +284,13 @@ export default function SettingsPage() {
   // Data Fetching
   const { data: configData } = useQuery({
     queryKey: ["adminConfig"],
-    queryFn: () => request<any>("/admin/config", {}, token!),
+    queryFn: () => readAdminConfig(token!),
     enabled: isAdmin,
   });
 
   const { data: datasetSummary } = useQuery({
     queryKey: ["datasetSummary"],
-    queryFn: () => request<any>("/admin/dataset/summary", {}, token!),
+    queryFn: () => getDatasetSummary(token!),
     enabled: isAdmin,
   });
 
@@ -296,13 +302,10 @@ export default function SettingsPage() {
   }, [configData]);
 
   const updateConfig = useMutation({
-    mutationFn: async () => request("/admin/config", {
-      method: "PUT",
-      body: JSON.stringify({
+    mutationFn: async () => updateAdminConfig(token!, {
         crop_routing_threshold: routingThresh / 100,
-        expert_escalation_cutoff: expertThresh / 100
-      })
-    }, token!),
+        expert_escalation_cutoff: expertThresh / 100,
+    }),
     onSuccess: () => {
       setConfigSaved(true);
       setTimeout(() => setConfigSaved(false), 3000);
@@ -314,11 +317,7 @@ export default function SettingsPage() {
     if (deleteConfirmText !== "DELETE") return;
     setIsDeleting(true);
     try {
-      await request("/admin/purge?confirmation=DELETE", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmation: "DELETE" }),
-      }, token!);
+      await purgeDatabase(token!);
       alert("Database wiped.");
       setShowDeleteModal(false);
       window.location.reload();
@@ -332,7 +331,7 @@ export default function SettingsPage() {
   const handlePurgeBlobs = async () => {
     if (!confirm("Delete all orphaned image blobs?")) return;
     try {
-      const res = await request<any>("/admin/blobs", { method: "DELETE" }, token!);
+      const res = await purgeBlobs(token!);
       const localCount = res.local_deleted ?? 0;
       const cloudCount = res.supabase_deleted ?? res.cloud_deleted ?? res.s3_deleted ?? 0;
       alert(`Success! Deleted ${res.deleted_files ?? (localCount + cloudCount)} orphaned files (Local: ${localCount}, Supabase: ${cloudCount}).`);

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { request } from "../api/client";
-import { createPlot, deletePlot } from "../api/farm";
+import { createPlot, deletePlot, getFarm, saveFarm } from "../api/farm";
+import { purgeDatabase } from "../api/admin";
 import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite } from "../components/icons";
 import { APIProvider, Circle, Map as GoogleMap, Marker, Polygon, useMap } from "@vis.gl/react-google-maps";
 import { motion } from "motion/react";
@@ -264,7 +264,7 @@ export default function FarmSettingsPage() {
 
   const { data: farmData, isLoading } = useQuery({
     queryKey: ["farmSettings", language],
-    queryFn: () => request<any>(`/farm?lang=${encodeURIComponent(language)}`, {}, token!),
+    queryFn: () => getFarm(token!, language),
     enabled: !!token,
   });
 
@@ -420,10 +420,7 @@ export default function FarmSettingsPage() {
 
   const mutation = useMutation({
     mutationFn: async (updatedPayload: any) => {
-      return request("/farm", {
-        method: "PUT",
-        body: JSON.stringify(updatedPayload),
-      }, token!);
+      return saveFarm(updatedPayload, token!);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["farmSettings"] });
@@ -454,11 +451,7 @@ export default function FarmSettingsPage() {
     if (deleteConfirmText !== "DELETE") return;
     setIsDeleting(true);
     try {
-      await request("/admin/purge?confirmation=DELETE", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmation: "DELETE" }),
-      }, token!);
+      await purgeDatabase(token!);
       alert("Database has been wiped successfully.");
       setShowDeleteModal(false);
       setDeleteConfirmText("");

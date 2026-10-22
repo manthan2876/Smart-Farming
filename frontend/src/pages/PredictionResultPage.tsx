@@ -1,4 +1,4 @@
-import { getAssetUrl, request } from "../api/client";
+import { getAssetUrl } from "../api/client";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +6,13 @@ import { motion } from "motion/react";
 import imageCompression from "browser-image-compression";
 import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer, Activity, Sprout } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
-import { getPrediction, requestExpertReview } from "../api/predictions";
+import {
+  getPrediction,
+  requestExpertReview,
+  submitFeedback as submitPredictionFeedback,
+  translatePrediction,
+  textToSpeech,
+} from "../api/predictions";
 import { Badge, Button, Card, Input } from "../components/ui";
 import { translateCrop, translateDisease, translatePest, translateSeverityBucket, translateWeather } from "../i18n/domain";
 import { analytics } from "../lib/analytics";
@@ -71,9 +77,9 @@ export default function PredictionResultPage() {
   useEffect(() => {
     if (prediction && (prediction.crop?.label || prediction.disease?.label)) {
       analytics.predictionViewed({
-        crop: prediction.crop?.label,
-        disease: prediction.disease?.label,
-        confidence: prediction.disease?.confidence,
+        crop: prediction.crop?.label ?? undefined,
+        disease: prediction.disease?.label ?? undefined,
+        confidence: prediction.disease?.confidence ?? undefined,
       });
     }
   }, [prediction?.prediction_id]);
@@ -96,13 +102,14 @@ export default function PredictionResultPage() {
       if (needsTranslation && inFlightLangRef.current !== targetLang) {
         inFlightLangRef.current = targetLang;
         setIsTranslating(true);
-        request<any>(`/predictions/${id}/translate?target_language=${targetLang}`, { method: "POST" }, token)
+        translatePrediction(id, targetLang, token)
           .then((res) => {
             if (res?.recommendation) {
               setLocalTranslations((prev) => ({ ...prev, [targetLang]: res.recommendation }));
             }
-            if (res?.expert_guidance) {
-              setLocalExpertGuidance((prev) => ({ ...prev, [targetLang]: res.expert_guidance }));
+            const expertGuidance = res?.expert_guidance;
+            if (expertGuidance) {
+              setLocalExpertGuidance((prev) => ({ ...prev, [targetLang]: expertGuidance }));
             }
             return refetch();
           })
@@ -171,7 +178,7 @@ export default function PredictionResultPage() {
 
     try {
       setIsLoadingAudio(true);
-      const response: any = await request("/tts", { method: "POST", body: JSON.stringify({ text, language: targetLang }) }, token!);
+      const response = await textToSpeech(text, targetLang, token!);
       if (response?.audioContent) {
         const format = response.format || (response.audioContent.startsWith("UklGR") ? "wav" : "mpeg");
         const mimeType = format === "wav" ? "audio/wav" : "audio/mpeg";
@@ -195,7 +202,10 @@ export default function PredictionResultPage() {
   const handleRequestExpert = async () => {
     try {
       await requestExpertReview(id!, token!);
-      analytics.expertReviewRequested(prediction?.crop?.label, prediction?.disease?.label);
+      analytics.expertReviewRequested(
+        prediction?.crop?.label ?? undefined,
+        prediction?.disease?.label ?? undefined,
+      );
       alert("Expert review requested successfully!");
       refetch();
     } catch (error) {
@@ -206,8 +216,12 @@ export default function PredictionResultPage() {
 
   const submitFeedback = async (correct: boolean) => {
     try {
-      await request("/feedback", { method: "POST", body: JSON.stringify({ prediction_id: Number(id), is_correct: correct, farmer_note: farmerNote }) }, token!);
-      analytics.feedbackSubmitted(correct ? "up" : "down", prediction?.crop?.label, prediction?.disease?.label);
+      await submitPredictionFeedback(Number(id), correct, farmerNote, token!);
+      analytics.feedbackSubmitted(
+        correct ? "up" : "down",
+        prediction?.crop?.label ?? undefined,
+        prediction?.disease?.label ?? undefined,
+      );
       setFeedbackSubmitted(true);
     } catch (error) {
       console.error("Feedback submission failed", error);

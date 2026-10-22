@@ -19,7 +19,9 @@
 - Added Ruff lint and focused MyPy checks, plus CPU-only disease-confidence tests.
 - Introduced canonical `/api/v1` routes while retaining unversioned compatibility aliases.
 - Added a checked-in OpenAPI snapshot and generated TypeScript API schema bindings with CI drift checks and an isolated, locked generator toolchain.
-- Added a TypeScript contract client that checks API paths, methods, parameters, JSON bodies, and responses against OpenAPI; migrated alert and crop calls.
+- Added a TypeScript contract client that checks API paths, methods, parameters, JSON bodies, and responses against OpenAPI; migrated web REST API modules.
+- Expanded the generated Dart SDK and CI drift checks to cover mobile-consumed API operations, with generated-model serialization tests.
+- Added explicit OpenAPI response schemas for prediction/history, weather, translation, TTS, and admin endpoints.
 - Localized English, Hindi, and Gujarati copy in web authentication, shared language/theme/navigation controls, and mobile authentication, history, and weather surfaces.
 - Localized the web account settings email/phone verification flow and mobile settings labels.
 - Localized additional web account settings validation and verification feedback in English, Gujarati, and Hindi.

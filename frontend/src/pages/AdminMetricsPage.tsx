@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { request } from "../api/client";
-import { exportDataset } from "../api/admin";
+import {
+  adminMetrics,
+  datasetSummary as getDatasetSummary,
+  modelHealth as getModelHealth,
+  exportDataset,
+} from "../api/admin";
 import { useAuth } from "../context/AuthContext";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -30,19 +34,19 @@ export default function AdminMetricsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin_metrics"],
-    queryFn: () => request<any>("/admin/metrics", {}, token!),
+    queryFn: () => adminMetrics(token!),
     enabled: !!token
   });
 
   const { data: datasetSummary, isError: datasetSummaryError } = useQuery({
     queryKey: ["dataset_summary"],
-    queryFn: () => request<any>("/admin/dataset/summary", {}, token!),
+    queryFn: () => getDatasetSummary(token!),
     enabled: !!token,
   });
 
   const { data: modelHealth } = useQuery({
     queryKey: ["model_health"],
-    queryFn: () => request<any>("/admin/models/health", {}, token!),
+    queryFn: () => getModelHealth(token!),
     enabled: !!token,
     staleTime: 60_000,
   });
@@ -59,7 +63,7 @@ export default function AdminMetricsPage() {
           expert: true,
           farmer: true,
           crop: exportCrop === "All Crops" ? undefined : exportCrop,
-          status: exportStatus === "Any" ? undefined : exportStatus,
+          status: exportStatus === "Any" ? "all" : exportStatus as "added_to_dataset" | "pending_review" | "rejected",
         },
         split: { train: exportTrain, val: exportVal, test: exportTest },
         format: exportFormat,

@@ -12,6 +12,11 @@ from app.context import create_context
 from app.core import get_session
 from app.crud import get_user
 from app.services.translation.service import normalize_language_code, translate_text
+from app.schemas.client import (
+    WeatherResponse,
+    WeatherTranslationRequest,
+    WeatherTranslationResponse,
+)
 from app.utils.json_utils import _json_safe
 
 import time
@@ -70,11 +75,7 @@ def _generate_rule_based_advisory(mapped_weather: dict[str, Any], user_profile: 
     return " ".join(parts)
 
 
-class WeatherTranslationRequest(BaseModel):
-    text: str
-    target_language: str
-
-@router.post("/weather/translate")
+@router.post("/weather/translate", response_model=WeatherTranslationResponse)
 async def translate_weather_advisory_text(
     payload: WeatherTranslationRequest,
     user_id: str = Depends(get_current_user),
@@ -90,7 +91,7 @@ async def translate_weather_advisory_text(
         logger.exception("Weather advisory translation failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Translation failed: {exc}")
 
-@router.get("/weather")
+@router.get("/weather", response_model=WeatherResponse)
 async def weather(
     lat: float | None = Query(None, description="Latitude"),
     lon: float | None = Query(None, description="Longitude"),
@@ -242,6 +243,5 @@ async def weather(
     except Exception:
         pass
     return _json_safe(result_payload)
-
 
 

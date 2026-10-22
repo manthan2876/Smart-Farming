@@ -30,6 +30,7 @@ from app.schemas import (
     VerifyEmailRequest,
     ResendVerificationEmailRequest,
     SetupFirstTimePasswordRequest,
+    TokenResponse,
 )
 from app.crud.refresh_token import (
     store_refresh_token,
@@ -1000,13 +1001,13 @@ async def setup_first_time_password(
     )
 
 
-@router.post("/refresh", response_model=dict[str, str | int])
+@router.post("/refresh", response_model=TokenResponse)
 def refresh(
     request: Request,
     response: Response,
     payload: RefreshRequest | None = None,
     session: Session = Depends(get_session),
-) -> dict[str, str | int]:
+) -> TokenResponse:
     refresh_token = (payload.refresh_token if payload else None) or request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=401, detail="Missing refresh token.")
@@ -1032,7 +1033,7 @@ def refresh(
         samesite=cookie_opts["samesite"],
         max_age=30 * 24 * 60 * 60,
     )
-    return tokens
+    return TokenResponse(**tokens)
 
 
 @router.post("/logout", response_model=dict[str, str])

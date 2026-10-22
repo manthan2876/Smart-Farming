@@ -20,7 +20,7 @@ class FarmResponse(BaseModel):
     longitude: float | None
     crop_history: list[str]
     boundary: dict[str, Any] | None = None
-    plots: list[PlotResponse] = []
+    plots: list[PlotResponse] = Field(default_factory=list)
 
 
 class FarmRequest(BaseModel):
@@ -39,4 +39,3 @@ class PlotRequest(BaseModel):
     area_acres: float | None = Field(default=None, ge=0)
     geometry: dict[str, Any] | None = Field(default=None)
     reset_geometry: bool = False
-

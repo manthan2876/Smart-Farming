@@ -26,7 +26,7 @@ function farmFromApi(farm: ApiFarm): Farm {
     longitude: farm.longitude ?? undefined,
     crop_history: farm.crop_history,
     boundary: farm.boundary,
-    plots: farm.plots.map(plotFromApi),
+    plots: (farm.plots ?? []).map(plotFromApi),
   };
 }
 

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.deps import get_current_user
+from app.schemas.client import PredictionTranslationResponse
 from app.core import get_session
 from app.models import Prediction
 from app.services.translation.service import (
@@ -59,7 +60,10 @@ def _rec_is_valid_indic(
     return verified_any
 
 
-@router.post("/{prediction_id}/translate")
+@router.post(
+    "/{prediction_id}/translate",
+    response_model=PredictionTranslationResponse,
+)
 async def translate_prediction_recommendation(
     prediction_id: int,
     target_language: str = Query(..., description="Target language: 'Hindi', 'Gujarati', 'English', or code 'hi', 'gu', 'en'"),
@@ -265,5 +269,4 @@ async def translate_prediction_recommendation(
             "translation_status": "degraded",
             "warning": "Translation services currently unavailable. Displaying original English.",
         }
-
 

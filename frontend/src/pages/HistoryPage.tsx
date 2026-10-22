@@ -2,20 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { requestWithMeta } from "../api/client";
+import { historyWithMeta } from "../api/predictions";
 import { History, ArrowRight, Filter, Search, Sprout } from "../components/icons";
 import { Badge, Button, Card, Input, Select, Table, Skeleton } from "../components/ui";
 import { translateCrop, translateDisease, translateSeverityBucket } from "../i18n/domain";
-
-interface PredictionRecord {
-  prediction_id: number | string | null;
-  crop?: { label?: string; name?: string; [key: string]: any };
-  disease?: { label?: string; name?: string; [key: string]: any };
-  severity?: { bucket?: string; level?: string; name?: string; [key: string]: any } | string;
-  confidence?: number;
-  request_id?: string;
-  [key: string]: any;
-}
 
 export default function HistoryPage() {
   const { token, t, language } = useAuth();
@@ -26,21 +16,13 @@ export default function HistoryPage() {
   const pageSize = 20;
 
   const offset = (page - 1) * pageSize;
-  const statusQueryParam = statusFilter !== "All" ? `&status=${encodeURIComponent(statusFilter)}` : "";
-
-  const { data: responseData, isLoading } = useQuery<{
-    data: PredictionRecord[];
-    totalCount: number;
-    offset: number;
-    limit: number;
-  }>({
+  const { data: responseData, isLoading } = useQuery({
     queryKey: ["scanHistory", page, statusFilter, pageSize],
-    queryFn: () =>
-      requestWithMeta<PredictionRecord[]>(
-        `/history?limit=${pageSize}&offset=${offset}${statusQueryParam}`,
-        {},
-        token!,
-      ),
+    queryFn: () => historyWithMeta(token!, {
+      limit: pageSize,
+      offset,
+      status: statusFilter === "All" ? undefined : statusFilter,
+    }),
     enabled: !!token,
   });
 
@@ -49,8 +31,8 @@ export default function HistoryPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const filteredScans = scans.filter((scan) => {
-    const cropName = String(scan.crop?.label || scan.crop?.name || "");
-    const diseaseName = String(scan.disease?.label || scan.disease?.name || "");
+    const cropName = String(scan.crop?.label || "");
+    const diseaseName = String(scan.disease?.label || "");
     
     const matchesCrop = filterCrop === "All" || cropName.toLowerCase() === filterCrop.toLowerCase();
     const matchesSearch = diseaseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -60,7 +42,7 @@ export default function HistoryPage() {
 
   const uniqueCrops = [
     "All", 
-    ...Array.from(new Set(scans.map((s) => s.crop?.label || s.crop?.name).filter(Boolean)))
+    ...Array.from(new Set(scans.map((s) => s.crop?.label).filter((crop): crop is string => Boolean(crop))))
   ] as string[];
 
   const statusOptions = [
@@ -169,13 +151,12 @@ export default function HistoryPage() {
             </thead>
             <tbody>
               {filteredScans.map((scan, index) => {
-                const cropName = scan.crop?.label || scan.crop?.name || "Unknown Crop";
-                const diseaseName = scan.disease?.label || scan.disease?.name || "Unidentified Condition";
+                const cropName = scan.crop?.label || "Unknown Crop";
+                const diseaseName = scan.disease?.label || "Unidentified Condition";
                 
                 const rawSeverity = scan.severity;
-                const severityText = typeof rawSeverity === "object" && rawSeverity !== null
-                  ? (rawSeverity.bucket || rawSeverity.level || rawSeverity.name || "Unknown")
-                  : String(rawSeverity || "Unknown");
+                const severityText = rawSeverity?.bucket || "Unknown";
+                const scanStatus = typeof scan.status === "object" && scan.status ? scan.status : {};
 
                 const recordId = scan.prediction_id;
 
@@ -185,7 +166,7 @@ export default function HistoryPage() {
                     <td className="px-5 py-4 font-semibold">
                       <div className="flex items-center gap-2">
                         <span>{translateDisease(diseaseName, language)}</span>
-                        {(scan.status?.expert_review === "verified" || scan.status?.pipeline === "verified") && (
+                        {(scanStatus.expert_review === "verified" || scanStatus.pipeline === "verified") && (
                           <Badge tone="success" className="text-[10px] py-0.5 px-1.5 font-normal">
                             {t("verified")}
                           </Badge>

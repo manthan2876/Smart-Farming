@@ -4,8 +4,11 @@ import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { Cloud, Loader2, Pause, Volume2 } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
-import { weather as fetchWeather } from "../api/predictions";
-import { request } from "../api/client";
+import {
+  textToSpeech,
+  translateWeather as translateWeatherApi,
+  weather as fetchWeather,
+} from "../api/predictions";
 import { Button, Card, Skeleton } from "../components/ui";
 import { formatTemperature, formatWindSpeed } from "../lib/format";
 import { translateWeather } from "../i18n/domain";
@@ -45,10 +48,7 @@ export default function WeatherPage() {
       if (!alreadyHas && inFlightLangRef.current !== targetLang) {
         inFlightLangRef.current = targetLang;
         setIsTranslating(true);
-        request<{ translated_text: string }>("/weather/translate", {
-          method: "POST",
-          body: JSON.stringify({ text: canonicalAdvisory, target_language: targetLang }),
-        }, token)
+        translateWeatherApi(canonicalAdvisory, targetLang, token)
           .then((res) => {
             if (res?.translated_text) {
               setLocalTranslations((prev) => ({ ...prev, [targetLang]: res.translated_text }));
@@ -86,10 +86,7 @@ export default function WeatherPage() {
     }
     try {
       setIsLoadingAudio(true);
-      const response: any = await request("/tts", {
-        method: "POST",
-        body: JSON.stringify({ text, language: targetLang }),
-      }, token!);
+      const response = await textToSpeech(text, targetLang, token!);
       if (response?.audioContent) {
         const format = response.format || (response.audioContent.startsWith("UklGR") ? "wav" : "mpeg");
         const mimeType = format === "wav" ? "audio/wav" : "audio/mpeg";

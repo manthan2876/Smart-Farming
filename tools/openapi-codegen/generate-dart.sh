@@ -40,3 +40,28 @@ ignore_file.write_text(ignore_text, encoding="utf-8")
 PY
 
 (cd "$repo_root/mobile/api_client" && dart pub get && dart run build_runner build --delete-conflicting-outputs)
+(cd "$repo_root/mobile/api_client" && dart format lib)
+
+python - "$repo_root/mobile/api_client/lib/src" <<'PY'
+from pathlib import Path
+import sys
+
+source_root = Path(sys.argv[1])
+unused_imports = {
+    "api/default_api.dart": "package:smart_farming_api/src/model/error_response.dart",
+    "model/recommendation.dart": "package:smart_farming_api/src/model/prediction_recommendation_response.dart",
+    "model/status.dart": "package:smart_farming_api/src/model/prediction_status_response.dart",
+}
+for relative_path, import_uri in unused_imports.items():
+    path = source_root / relative_path
+    lines = path.read_text(encoding="utf-8").splitlines()
+    import_line = f"import '{import_uri}';"
+    normalized = []
+    for line in lines:
+        if line == import_line:
+            while normalized and normalized[-1] == "// ignore: unused_import":
+                normalized.pop()
+            normalized.append("// ignore: unused_import")
+        normalized.append(line)
+    path.write_text("\n".join(normalized) + "\n", encoding="utf-8")
+PY

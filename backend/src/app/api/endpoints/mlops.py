@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin_role
+from app.schemas.client import DatasetSummaryResponse
 from app.core import get_session
 from app.core.config import settings
 from app.core.paths import resolve_storage_path
@@ -100,7 +101,7 @@ def _clean_image_without_exif(image_path: Path) -> bytes:
         return image_path.read_bytes()
 
 
-@router.get("/summary")
+@router.get("/summary", response_model=DatasetSummaryResponse)
 def get_dataset_summary(
     is_admin: str = Depends(require_admin_role),
     session: Session = Depends(get_session),

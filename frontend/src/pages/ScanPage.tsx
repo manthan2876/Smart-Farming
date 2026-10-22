@@ -8,7 +8,7 @@ import { motion } from "motion/react";
 import imageCompression from 'browser-image-compression';
 import { get, set, update } from 'idb-keyval';
 import { Button, Card, Input, Select } from "../components/ui";
-import { request } from "../api/client";
+import { predict } from "../api/predictions";
 import { translateCrop } from "../i18n/domain";
 import { analytics } from "../lib/analytics";
 
@@ -93,16 +93,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("location", location);
-    if (plotId) formData.append("plot_id", plotId.toString());
-    formData.append("lat", lat);
-    formData.append("lon", lon);
-    formData.append("language", language);
-
     try {
-      const result = await request<any>("/predict", { method: "POST", body: formData }, token);
+      const result = await predict(file, {
+        location,
+        plot_id: plotId,
+        lat: Number(lat),
+        lon: Number(lon),
+        language,
+      }, token!);
       navigate(`/predictions/${result.prediction_id}/processing`);
     } catch (err: any) {
       if (err.message === "Failed to fetch") {
@@ -122,15 +120,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       if (scans.length > 0) {
         alert(`Syncing ${scans.length} offline scans...`);
         for (const scan of scans) {
-          const formData = new FormData();
-          formData.append("file", scan.file);
-          formData.append("location", scan.location);
-          if (scan.plotId) formData.append("plot_id", scan.plotId.toString());
-          formData.append("lat", scan.lat);
-          formData.append("lon", scan.lon);
-          formData.append("language", scan.language);
           try {
-            await request<any>("/predict", { method: "POST", body: formData }, token);
+            await predict(scan.file, {
+              location: scan.location,
+              plot_id: scan.plotId,
+              lat: Number(scan.lat),
+              lon: Number(scan.lon),
+              language: scan.language,
+            }, token!);
           } catch (e) {
             console.error("Failed to sync offline scan", e);
           }

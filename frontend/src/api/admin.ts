@@ -1,10 +1,38 @@
-import { requestBlob } from "./client";
-import { contractRequest } from "./contract";
+import { contractBlobRequest, contractRequest } from "./contract";
+import type { components } from "./generated/openapi";
 import type { AdminMetrics, FeedbackLog, AdminUsersResponse } from "./types";
 
 export const adminMetrics = async (token: string): Promise<AdminMetrics> => {
   return contractRequest("/api/v1/admin/metrics", "get", {}, token);
 };
+
+export const datasetSummary = (token: string) =>
+  contractRequest("/api/v1/admin/dataset/summary", "get", {}, token);
+
+export const modelHealth = (token: string) =>
+  contractRequest("/api/v1/admin/models/health", "get", {}, token);
+
+export const readAdminConfig = (token: string) =>
+  contractRequest("/api/v1/admin/config", "get", {}, token);
+
+export const updateAdminConfig = (
+  token: string,
+  config: components["schemas"]["ConfigPayload"],
+) =>
+  contractRequest("/api/v1/admin/config", "put", { data: config }, token);
+
+export const purgeDatabase = (token: string) =>
+  contractRequest(
+    "/api/v1/admin/purge",
+    "delete",
+    {
+      query: { confirmation: "DELETE" },
+    },
+    token,
+  );
+
+export const purgeBlobs = (token: string) =>
+  contractRequest("/api/v1/admin/blobs", "delete", {}, token);
 
 export const adminFeedback = async (token: string): Promise<FeedbackLog[]> => {
   return contractRequest("/api/v1/admin/feedback", "get", {}, token);
@@ -116,15 +144,30 @@ export const triggerWeatherRisk = async (
 };
 
 export type DatasetExportRequest = {
-  filters: { expert: boolean; farmer: boolean; crop?: string; status?: string };
+  filters: {
+    expert: boolean;
+    farmer: boolean;
+    crop?: string;
+    status?: "added_to_dataset" | "all" | "pending_review" | "rejected";
+  };
   split: { train: number; val: number; test: number };
   format: "PyTorch Folder" | "JSON Manifest";
   imageTarget: "raw" | "preprocessed";
+  replay_ratio?: number;
+  include_replay_buffer?: boolean;
 };
 
 export const exportDataset = (token: string, payload: DatasetExportRequest) =>
-  requestBlob("/admin/dataset/export", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }, token);
+  contractBlobRequest(
+    "/api/v1/admin/dataset/export",
+    "post",
+    {
+      data: {
+        ...payload,
+        filters: { ...payload.filters, status: payload.filters.status ?? "all" },
+        replay_ratio: payload.replay_ratio ?? 0.7,
+        include_replay_buffer: payload.include_replay_buffer ?? true,
+      },
+    },
+    token,
+  );

@@ -51,7 +51,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/TTSResponse"
+                }
               }
             }
           },
@@ -104,7 +106,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetSummaryResponse"
+                }
               }
             }
           },
@@ -292,9 +296,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Model Health Api V1 Admin Models Health Get"
+                  "$ref": "#/components/schemas/AdminModelHealthResponse"
                 }
               }
             }
@@ -503,9 +505,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Translate Prediction Recommendation Api V1 Predictions  Prediction Id  Translate Post"
+                  "$ref": "#/components/schemas/PredictionTranslationResponse"
                 }
               }
             }
@@ -1127,18 +1127,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "integer"
-                      }
-                    ]
-                  },
-                  "type": "object",
-                  "title": "Response Refresh Api V1 Auth Refresh Post"
+                  "$ref": "#/components/schemas/TokenResponse"
                 }
               }
             }
@@ -2638,8 +2627,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/PredictionResponse"
                   },
                   "title": "Response History Api V1 History Get"
                 }
@@ -2904,9 +2892,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Translate Weather Advisory Text Api V1 Weather Translate Post"
+                  "$ref": "#/components/schemas/WeatherTranslationResponse"
                 }
               }
             }
@@ -3011,9 +2997,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Weather Api V1 Weather Get"
+                  "$ref": "#/components/schemas/WeatherResponse"
                 }
               }
             }
@@ -3378,9 +3362,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Purge Database Api V1 Admin Purge Delete"
+                  "$ref": "#/components/schemas/AdminDatabasePurgeResponse"
                 }
               }
             }
@@ -3801,7 +3783,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AdminConfigResponse"
+                }
               }
             }
           },
@@ -3861,7 +3845,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AdminConfigResponse"
+                }
               }
             }
           },
@@ -3923,7 +3909,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBlobPurgeResponse"
+                }
               }
             }
           },
@@ -4611,6 +4599,186 @@
   },
   "components": {
     "schemas": {
+      "AdminBlobPurgeResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "dry_run"
+            ],
+            "title": "Status"
+          },
+          "deleted_files": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted Files"
+          },
+          "local_deleted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Deleted"
+          },
+          "cloud_deleted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloud Deleted"
+          },
+          "supabase_deleted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supabase Deleted"
+          },
+          "s3_deleted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S3 Deleted"
+          },
+          "cloud_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloud Error"
+          },
+          "unreferenced_files_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unreferenced Files Count"
+          },
+          "local_unreferenced_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Unreferenced Count"
+          },
+          "cloud_unreferenced_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloud Unreferenced Count"
+          },
+          "supabase_unreferenced_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supabase Unreferenced Count"
+          },
+          "s3_unreferenced_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S3 Unreferenced Count"
+          },
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Files"
+          },
+          "local_files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Files"
+          },
+          "cloud_files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloud Files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "AdminBlobPurgeResponse"
+      },
       "AdminConfidenceBucket": {
         "properties": {
           "name": {
@@ -4704,6 +4872,56 @@
           "confidence_threshold"
         ],
         "title": "AdminConfidenceDrift"
+      },
+      "AdminConfigResponse": {
+        "properties": {
+          "crop_routing_threshold": {
+            "type": "number",
+            "title": "Crop Routing Threshold"
+          },
+          "expert_escalation_cutoff": {
+            "type": "number",
+            "title": "Expert Escalation Cutoff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crop_routing_threshold",
+          "expert_escalation_cutoff"
+        ],
+        "title": "AdminConfigResponse"
+      },
+      "AdminDatabasePurgeResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "dry_run"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "counts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminPurgeCounts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "AdminDatabasePurgeResponse"
       },
       "AdminDiseaseCount": {
         "properties": {
@@ -5018,6 +5236,128 @@
         ],
         "title": "AdminMetricsResponse"
       },
+      "AdminModelHealthItem": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "missing"
+            ],
+            "title": "Status"
+          },
+          "model_file": {
+            "type": "string",
+            "title": "Model File"
+          },
+          "model_exists": {
+            "type": "boolean",
+            "title": "Model Exists"
+          },
+          "labels_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels File"
+          },
+          "labels_exists": {
+            "type": "boolean",
+            "title": "Labels Exists"
+          },
+          "active_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Version"
+          },
+          "val_acc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Val Acc"
+          },
+          "test_acc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Acc"
+          },
+          "trained_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trained At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "model_file",
+          "model_exists",
+          "labels_file",
+          "labels_exists",
+          "active_version",
+          "val_acc",
+          "test_acc",
+          "trained_at"
+        ],
+        "title": "AdminModelHealthItem"
+      },
+      "AdminModelHealthResponse": {
+        "properties": {
+          "overall_status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "degraded"
+            ],
+            "title": "Overall Status"
+          },
+          "checked_at": {
+            "type": "string",
+            "title": "Checked At"
+          },
+          "models": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AdminModelHealthItem"
+            },
+            "type": "object",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall_status",
+          "checked_at",
+          "models"
+        ],
+        "title": "AdminModelHealthResponse"
+      },
       "AdminProcessingDuration": {
         "properties": {
           "avg_ms": {
@@ -5040,6 +5380,49 @@
           "sample_count"
         ],
         "title": "AdminProcessingDuration"
+      },
+      "AdminPurgeCounts": {
+        "properties": {
+          "dataset_candidates": {
+            "type": "integer",
+            "title": "Dataset Candidates"
+          },
+          "expert_reviews": {
+            "type": "integer",
+            "title": "Expert Reviews"
+          },
+          "recommendations": {
+            "type": "integer",
+            "title": "Recommendations"
+          },
+          "feedback": {
+            "type": "integer",
+            "title": "Feedback"
+          },
+          "alerts": {
+            "type": "integer",
+            "title": "Alerts"
+          },
+          "predictions": {
+            "type": "integer",
+            "title": "Predictions"
+          },
+          "images": {
+            "type": "integer",
+            "title": "Images"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dataset_candidates",
+          "expert_reviews",
+          "recommendations",
+          "feedback",
+          "alerts",
+          "predictions",
+          "images"
+        ],
+        "title": "AdminPurgeCounts"
       },
       "AdminPurgeRequest": {
         "properties": {
@@ -5622,6 +6005,24 @@
         ],
         "title": "CropListResponse"
       },
+      "DatasetCropCount": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crop",
+          "count"
+        ],
+        "title": "DatasetCropCount"
+      },
       "DatasetExportFilters": {
         "properties": {
           "expert": {
@@ -5724,6 +6125,59 @@
           "test"
         ],
         "title": "DatasetExportSplit"
+      },
+      "DatasetStatusCount": {
+        "properties": {
+          "pending_review": {
+            "type": "integer",
+            "title": "Pending Review"
+          },
+          "added_to_dataset": {
+            "type": "integer",
+            "title": "Added To Dataset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_review",
+          "added_to_dataset"
+        ],
+        "title": "DatasetStatusCount"
+      },
+      "DatasetSummaryResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "expert_overridden": {
+            "type": "integer",
+            "title": "Expert Overridden"
+          },
+          "farmer_confirmed": {
+            "type": "integer",
+            "title": "Farmer Confirmed"
+          },
+          "by_status": {
+            "$ref": "#/components/schemas/DatasetStatusCount"
+          },
+          "by_crop": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetCropCount"
+            },
+            "type": "array",
+            "title": "By Crop"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "expert_overridden",
+          "farmer_confirmed",
+          "by_status",
+          "by_crop"
+        ],
+        "title": "DatasetSummaryResponse"
       },
       "ErrorResponse": {
         "properties": {
@@ -6311,8 +6765,7 @@
               "$ref": "#/components/schemas/PlotResponse"
             },
             "type": "array",
-            "title": "Plots",
-            "default": []
+            "title": "Plots"
           }
         },
         "type": "object",
@@ -6713,6 +7166,349 @@
         ],
         "title": "PlotResponse"
       },
+      "PredictionExpertReviewResponse": {
+        "properties": {
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "corrected_disease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Disease"
+          },
+          "corrected_severity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Severity"
+          },
+          "farmer_guidance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Guidance"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionExpertReviewResponse"
+      },
+      "PredictionHistoricalImageResponse": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "disease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disease"
+          },
+          "severity_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Pct"
+          },
+          "severity_bucket": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Bucket"
+          },
+          "raw_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Path"
+          },
+          "processed_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Path"
+          },
+          "raw_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Url"
+          },
+          "processed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Url"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionHistoricalImageResponse"
+      },
+      "PredictionImageResponse": {
+        "properties": {
+          "raw_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Path"
+          },
+          "processed_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Path"
+          },
+          "raw_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Url"
+          },
+          "processed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Url"
+          },
+          "quality_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Score"
+          },
+          "leaf_detected": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leaf Detected"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionImageResponse"
+      },
+      "PredictionLabelResponse": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "model_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Used"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionLabelResponse"
+      },
+      "PredictionRecommendationResponse": {
+        "properties": {
+          "immediate_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Immediate Action"
+          },
+          "treatment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Treatment"
+          },
+          "prevention": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prevention"
+          },
+          "monitoring": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monitoring"
+          },
+          "safety_disclaimer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Disclaimer"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionRecommendationResponse"
+      },
       "PredictionResponse": {
         "properties": {
           "prediction_id": {
@@ -6725,6 +7521,28 @@
               }
             ],
             "title": "Prediction Id"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
           },
           "job_id": {
             "anyOf": [
@@ -6763,57 +7581,48 @@
           "image": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionImageResponse"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Image"
+            ]
           },
           "crop": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionLabelResponse"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Crop"
+            ]
           },
           "disease": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionLabelResponse"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Disease"
+            ]
           },
           "severity": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionSeverityResponse"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Severity"
+            ]
           },
           "pests": {
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "$ref": "#/components/schemas/PredictionLabelResponse"
                 },
                 "type": "array"
               },
@@ -6838,20 +7647,20 @@
           "weather": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionWeatherResponse"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Weather"
+            ]
           },
           "recommendation": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionRecommendationResponse"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6876,8 +7685,10 @@
           "status": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionStatusResponse"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6945,23 +7756,18 @@
           "expert_review_data": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionExpertReviewResponse"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Expert Review Data"
+            ]
           },
           "historical_images": {
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object"
+                  "$ref": "#/components/schemas/PredictionHistoricalImageResponse"
                 },
                 "type": "array"
               },
@@ -6974,19 +7780,19 @@
           "follow_up": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PredictionResponse"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Follow Up"
+            ]
           },
           "translations": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/PredictionRecommendationResponse"
+                },
                 "type": "object"
               },
               {
@@ -7035,6 +7841,207 @@
         "additionalProperties": true,
         "type": "object",
         "title": "PredictionResponse"
+      },
+      "PredictionSeverityResponse": {
+        "properties": {
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          },
+          "bucket": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bucket"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionSeverityResponse"
+      },
+      "PredictionStatusResponse": {
+        "properties": {
+          "pipeline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pipeline"
+          },
+          "preprocessing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preprocessing"
+          },
+          "expert_review": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Review"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionStatusResponse"
+      },
+      "PredictionTranslationResponse": {
+        "properties": {
+          "prediction_id": {
+            "type": "integer",
+            "title": "Prediction Id"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached"
+          },
+          "recommendation": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Recommendation"
+          },
+          "expert_guidance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Guidance"
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translations"
+          },
+          "translation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation Status"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prediction_id",
+          "language",
+          "cached",
+          "recommendation"
+        ],
+        "title": "PredictionTranslationResponse"
+      },
+      "PredictionWeatherResponse": {
+        "properties": {
+          "temperature_celsius": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature Celsius"
+          },
+          "humidity_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Humidity Percent"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PredictionWeatherResponse"
       },
       "ProfileResponse": {
         "properties": {
@@ -7915,6 +8922,29 @@
         ],
         "title": "TTSRequest"
       },
+      "TTSResponse": {
+        "properties": {
+          "audioContent": {
+            "type": "string",
+            "title": "Audiocontent"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached"
+          }
+        },
+        "type": "object",
+        "required": [
+          "audioContent",
+          "format",
+          "cached"
+        ],
+        "title": "TTSResponse"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -8041,6 +9071,129 @@
         ],
         "title": "VerifyPhoneUpdateRequest"
       },
+      "WeatherResponse": {
+        "properties": {
+          "temperature_celsius": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature Celsius"
+          },
+          "humidity_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Humidity Percent"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "wind_speed_mps": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wind Speed Mps"
+          },
+          "pressure_hpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pressure Hpa"
+          },
+          "cloudiness_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloudiness Percent"
+          },
+          "advisory": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advisory"
+          },
+          "translated_advisory": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translated Advisory"
+          },
+          "translations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Translations"
+          },
+          "cached": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "title": "WeatherResponse"
+      },
       "WeatherRiskTriggerResponse": {
         "properties": {
           "status": {
@@ -8077,6 +9230,24 @@
           "target_language"
         ],
         "title": "WeatherTranslationRequest"
+      },
+      "WeatherTranslationResponse": {
+        "properties": {
+          "translated_text": {
+            "type": "string",
+            "title": "Translated Text"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "type": "object",
+        "required": [
+          "translated_text",
+          "language"
+        ],
+        "title": "WeatherTranslationResponse"
       }
     },
     "securitySchemes": {

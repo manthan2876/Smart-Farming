@@ -21,6 +21,19 @@ from app.schemas.expert import (
     ExpertReviewSubmissionRequest,
     ExpertReviewSubmissionResponse,
 )
+from app.schemas.client import (
+    AdminBlobPurgeResponse,
+    AdminConfigResponse,
+    AdminDatabasePurgeResponse,
+    AdminModelHealthResponse,
+    DatasetSummaryResponse,
+    PredictionTranslationResponse,
+    TTSRequest,
+    TTSResponse,
+    WeatherResponse,
+    WeatherTranslationRequest,
+    WeatherTranslationResponse,
+)
 from app.schemas.user import (
     AuthResponse,
     ChangePasswordRequest,
@@ -54,6 +67,10 @@ __all__ = [
     "ModelRollbackResponse", "WeatherRiskTriggerResponse",
     "ExpertQueueItemResponse", "ExpertReviewDetailResponse", "ExpertReviewSubmissionRequest",
     "ExpertReviewSubmissionResponse",
+    "AdminBlobPurgeResponse", "AdminConfigResponse", "AdminDatabasePurgeResponse",
+    "AdminModelHealthResponse", "DatasetSummaryResponse", "PredictionTranslationResponse",
+    "TTSRequest", "TTSResponse", "WeatherResponse", "WeatherTranslationRequest",
+    "WeatherTranslationResponse",
     "AuthResponse", "ProfileResponse", "ProfileUpdateRequest", "RefreshRequest", "RegisterRequest", "LoginRequest",
     "ChangePasswordRequest", "ForgotPasswordRequest", "ResetPasswordRequest", "MessageResponse", "SessionSyncRequest",
     "RequestEmailUpdateRequest", "RequestPhoneUpdateRequest", "VerifyPhoneUpdateRequest", "VerifyEmailRequest", "ResendVerificationEmailRequest", "SetupFirstTimePasswordRequest",

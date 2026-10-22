@@ -20,6 +20,11 @@ from app.schemas.admin import (
     AdminUsersResponse,
     WeatherRiskTriggerResponse,
 )
+from app.schemas.client import (
+    AdminBlobPurgeResponse,
+    AdminConfigResponse,
+    AdminDatabasePurgeResponse,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -205,7 +210,7 @@ class AdminPurgeRequest(BaseModel):
     confirmation: str | None = None
 
 
-@router.delete("/purge")
+@router.delete("/purge", response_model=AdminDatabasePurgeResponse)
 def purge_database(
     payload: AdminPurgeRequest | None = Body(None),
     confirmation: str | None = Query(None),
@@ -526,11 +531,11 @@ def get_config():
             "expert_escalation_cutoff": data.get("thresholds", {}).get("disease_confidence", 0.70)
         }
 
-@router.get("/config")
+@router.get("/config", response_model=AdminConfigResponse)
 def read_config(is_admin: bool = Depends(require_admin_role)):
     return get_config()
 
-@router.put("/config")
+@router.put("/config", response_model=AdminConfigResponse)
 async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require_admin_role)):
     if payload.crop_routing_threshold < 0.05 or payload.crop_routing_threshold > 0.99:
         raise HTTPException(status_code=422, detail="crop_routing_threshold must be between 0.05 and 0.99")
@@ -571,7 +576,7 @@ async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require
         
     return get_config()
 
-@router.delete("/blobs")
+@router.delete("/blobs", response_model=AdminBlobPurgeResponse)
 def purge_blobs(
     dry_run: bool = False,
     is_admin: bool = Depends(require_admin_role),

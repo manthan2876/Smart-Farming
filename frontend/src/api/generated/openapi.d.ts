@@ -1246,6 +1246,42 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminBlobPurgeResponse */
+        AdminBlobPurgeResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "success" | "dry_run";
+            /** Deleted Files */
+            deleted_files?: number | null;
+            /** Local Deleted */
+            local_deleted?: number | null;
+            /** Cloud Deleted */
+            cloud_deleted?: number | null;
+            /** Supabase Deleted */
+            supabase_deleted?: number | null;
+            /** S3 Deleted */
+            s3_deleted?: number | null;
+            /** Cloud Error */
+            cloud_error?: string | null;
+            /** Unreferenced Files Count */
+            unreferenced_files_count?: number | null;
+            /** Local Unreferenced Count */
+            local_unreferenced_count?: number | null;
+            /** Cloud Unreferenced Count */
+            cloud_unreferenced_count?: number | null;
+            /** Supabase Unreferenced Count */
+            supabase_unreferenced_count?: number | null;
+            /** S3 Unreferenced Count */
+            s3_unreferenced_count?: number | null;
+            /** Files */
+            files?: string[] | null;
+            /** Local Files */
+            local_files?: string[] | null;
+            /** Cloud Files */
+            cloud_files?: string[] | null;
+        };
         /** AdminConfidenceBucket */
         AdminConfidenceBucket: {
             /** Name */
@@ -1271,6 +1307,24 @@ export interface components {
             expert_correction_rate: number | null;
             /** Confidence Threshold */
             confidence_threshold: number;
+        };
+        /** AdminConfigResponse */
+        AdminConfigResponse: {
+            /** Crop Routing Threshold */
+            crop_routing_threshold: number;
+            /** Expert Escalation Cutoff */
+            expert_escalation_cutoff: number;
+        };
+        /** AdminDatabasePurgeResponse */
+        AdminDatabasePurgeResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "success" | "dry_run";
+            /** Message */
+            message: string;
+            counts?: components["schemas"]["AdminPurgeCounts"] | null;
         };
         /** AdminDiseaseCount */
         AdminDiseaseCount: {
@@ -1364,6 +1418,44 @@ export interface components {
             confidence_histogram: components["schemas"]["AdminConfidenceBucket"][];
             drift: components["schemas"]["AdminConfidenceDrift"];
         };
+        /** AdminModelHealthItem */
+        AdminModelHealthItem: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "missing";
+            /** Model File */
+            model_file: string;
+            /** Model Exists */
+            model_exists: boolean;
+            /** Labels File */
+            labels_file: string | null;
+            /** Labels Exists */
+            labels_exists: boolean;
+            /** Active Version */
+            active_version: string | null;
+            /** Val Acc */
+            val_acc: number | null;
+            /** Test Acc */
+            test_acc: number | null;
+            /** Trained At */
+            trained_at: string | null;
+        };
+        /** AdminModelHealthResponse */
+        AdminModelHealthResponse: {
+            /**
+             * Overall Status
+             * @enum {string}
+             */
+            overall_status: "healthy" | "degraded";
+            /** Checked At */
+            checked_at: string;
+            /** Models */
+            models: {
+                [key: string]: components["schemas"]["AdminModelHealthItem"];
+            };
+        };
         /** AdminProcessingDuration */
         AdminProcessingDuration: {
             /** Avg Ms */
@@ -1372,6 +1464,23 @@ export interface components {
             p95_ms: number;
             /** Sample Count */
             sample_count: number;
+        };
+        /** AdminPurgeCounts */
+        AdminPurgeCounts: {
+            /** Dataset Candidates */
+            dataset_candidates: number;
+            /** Expert Reviews */
+            expert_reviews: number;
+            /** Recommendations */
+            recommendations: number;
+            /** Feedback */
+            feedback: number;
+            /** Alerts */
+            alerts: number;
+            /** Predictions */
+            predictions: number;
+            /** Images */
+            images: number;
         };
         /** AdminPurgeRequest */
         AdminPurgeRequest: {
@@ -1552,6 +1661,13 @@ export interface components {
             /** Crops */
             crops: string[];
         };
+        /** DatasetCropCount */
+        DatasetCropCount: {
+            /** Crop */
+            crop: string;
+            /** Count */
+            count: number;
+        };
         /** DatasetExportFilters */
         DatasetExportFilters: {
             /**
@@ -1608,6 +1724,25 @@ export interface components {
             val: number;
             /** Test */
             test: number;
+        };
+        /** DatasetStatusCount */
+        DatasetStatusCount: {
+            /** Pending Review */
+            pending_review: number;
+            /** Added To Dataset */
+            added_to_dataset: number;
+        };
+        /** DatasetSummaryResponse */
+        DatasetSummaryResponse: {
+            /** Total */
+            total: number;
+            /** Expert Overridden */
+            expert_overridden: number;
+            /** Farmer Confirmed */
+            farmer_confirmed: number;
+            by_status: components["schemas"]["DatasetStatusCount"];
+            /** By Crop */
+            by_crop: components["schemas"]["DatasetCropCount"][];
         };
         /** ErrorResponse */
         ErrorResponse: {
@@ -1746,11 +1881,8 @@ export interface components {
             boundary?: {
                 [key: string]: unknown;
             } | null;
-            /**
-             * Plots
-             * @default []
-             */
-            plots: components["schemas"]["PlotResponse"][];
+            /** Plots */
+            plots?: components["schemas"]["PlotResponse"][];
         };
         /** FeedbackRequest */
         FeedbackRequest: {
@@ -1886,10 +2018,95 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** PredictionExpertReviewResponse */
+        PredictionExpertReviewResponse: {
+            /** Decision */
+            decision?: string | null;
+            /** Corrected Disease */
+            corrected_disease?: string | null;
+            /** Corrected Severity */
+            corrected_severity?: number | null;
+            /** Farmer Guidance */
+            farmer_guidance?: string | null;
+            /** Status */
+            status?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PredictionHistoricalImageResponse */
+        PredictionHistoricalImageResponse: {
+            /** Id */
+            id?: number | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Disease */
+            disease?: string | null;
+            /** Severity Pct */
+            severity_pct?: number | null;
+            /** Severity Bucket */
+            severity_bucket?: string | null;
+            /** Raw Path */
+            raw_path?: string | null;
+            /** Processed Path */
+            processed_path?: string | null;
+            /** Raw Url */
+            raw_url?: string | null;
+            /** Processed Url */
+            processed_url?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PredictionImageResponse */
+        PredictionImageResponse: {
+            /** Raw Path */
+            raw_path?: string | null;
+            /** Processed Path */
+            processed_path?: string | null;
+            /** Raw Url */
+            raw_url?: string | null;
+            /** Processed Url */
+            processed_url?: string | null;
+            /** Quality Score */
+            quality_score?: number | null;
+            /** Leaf Detected */
+            leaf_detected?: boolean | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PredictionLabelResponse */
+        PredictionLabelResponse: {
+            /** Label */
+            label?: string | null;
+            /** Confidence */
+            confidence?: number | null;
+            /** Model Used */
+            model_used?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PredictionRecommendationResponse */
+        PredictionRecommendationResponse: {
+            /** Immediate Action */
+            immediate_action?: string | null;
+            /** Treatment */
+            treatment?: string | null;
+            /** Prevention */
+            prevention?: string | null;
+            /** Monitoring */
+            monitoring?: string | null;
+            /** Safety Disclaimer */
+            safety_disclaimer?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** PredictionResponse */
         PredictionResponse: {
             /** Prediction Id */
             prediction_id?: number | null;
+            /** Id */
+            id?: number | null;
+            /** Created At */
+            created_at?: string | null;
             /** Job Id */
             job_id?: string | null;
             /** Request Id */
@@ -1898,44 +2115,23 @@ export interface components {
             user?: {
                 [key: string]: unknown;
             } | null;
-            /** Image */
-            image?: {
-                [key: string]: unknown;
-            } | null;
-            /** Crop */
-            crop?: {
-                [key: string]: unknown;
-            } | null;
-            /** Disease */
-            disease?: {
-                [key: string]: unknown;
-            } | null;
-            /** Severity */
-            severity?: {
-                [key: string]: unknown;
-            } | null;
+            image?: components["schemas"]["PredictionImageResponse"] | null;
+            crop?: components["schemas"]["PredictionLabelResponse"] | null;
+            disease?: components["schemas"]["PredictionLabelResponse"] | null;
+            severity?: components["schemas"]["PredictionSeverityResponse"] | null;
             /** Pests */
-            pests?: {
-                [key: string]: unknown;
-            }[] | null;
+            pests?: components["schemas"]["PredictionLabelResponse"][] | null;
             /** Pest Classification */
             pest_classification?: {
                 [key: string]: unknown;
             } | null;
-            /** Weather */
-            weather?: {
-                [key: string]: unknown;
-            } | null;
+            weather?: components["schemas"]["PredictionWeatherResponse"] | null;
             /** Recommendation */
-            recommendation?: {
-                [key: string]: unknown;
-            } | null;
+            recommendation?: components["schemas"]["PredictionRecommendationResponse"] | string | null;
             /** Notes */
             notes?: string[] | null;
             /** Status */
-            status?: {
-                [key: string]: unknown;
-            } | null;
+            status?: components["schemas"]["PredictionStatusResponse"] | string | null;
             /** Error */
             error?: string | null;
             /** Stages */
@@ -1950,21 +2146,13 @@ export interface components {
             } | null;
             /** Total Duration Ms */
             total_duration_ms?: number | null;
-            /** Expert Review Data */
-            expert_review_data?: {
-                [key: string]: unknown;
-            } | null;
+            expert_review_data?: components["schemas"]["PredictionExpertReviewResponse"] | null;
             /** Historical Images */
-            historical_images?: {
-                [key: string]: string;
-            }[] | null;
-            /** Follow Up */
-            follow_up?: {
-                [key: string]: unknown;
-            } | null;
+            historical_images?: components["schemas"]["PredictionHistoricalImageResponse"][] | null;
+            follow_up?: components["schemas"]["PredictionResponse"] | null;
             /** Translations */
             translations?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["PredictionRecommendationResponse"];
             } | null;
             /** Treatment Progress */
             treatment_progress?: {
@@ -1978,6 +2166,64 @@ export interface components {
             plot?: {
                 [key: string]: unknown;
             } | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PredictionSeverityResponse */
+        PredictionSeverityResponse: {
+            /** Percent */
+            percent?: number | null;
+            /** Bucket */
+            bucket?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PredictionStatusResponse */
+        PredictionStatusResponse: {
+            /** Pipeline */
+            pipeline?: string | null;
+            /** Preprocessing */
+            preprocessing?: string | null;
+            /** Expert Review */
+            expert_review?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PredictionTranslationResponse */
+        PredictionTranslationResponse: {
+            /** Prediction Id */
+            prediction_id: number;
+            /** Language */
+            language: string;
+            /** Cached */
+            cached: boolean;
+            /** Recommendation */
+            recommendation: {
+                [key: string]: string;
+            };
+            /** Expert Guidance */
+            expert_guidance?: string | null;
+            /** Translations */
+            translations?: {
+                [key: string]: {
+                    [key: string]: string;
+                };
+            } | null;
+            /** Translation Status */
+            translation_status?: string | null;
+            /** Warning */
+            warning?: string | null;
+        };
+        /** PredictionWeatherResponse */
+        PredictionWeatherResponse: {
+            /** Temperature Celsius */
+            temperature_celsius?: number | null;
+            /** Humidity Percent */
+            humidity_percent?: number | null;
+            /** Condition */
+            condition?: string | null;
+            /** Status */
+            status?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -2222,6 +2468,15 @@ export interface components {
              */
             language: string | null;
         };
+        /** TTSResponse */
+        TTSResponse: {
+            /** Audiocontent */
+            audioContent: string;
+            /** Format */
+            format: string;
+            /** Cached */
+            cached: boolean;
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Access Token */
@@ -2268,6 +2523,33 @@ export interface components {
             /** Verified Phone Token */
             verified_phone_token?: string | null;
         };
+        /** WeatherResponse */
+        WeatherResponse: {
+            /** Temperature Celsius */
+            temperature_celsius?: number | null;
+            /** Humidity Percent */
+            humidity_percent?: number | null;
+            /** Condition */
+            condition?: string | null;
+            /** Wind Speed Mps */
+            wind_speed_mps?: number | null;
+            /** Pressure Hpa */
+            pressure_hpa?: number | null;
+            /** Cloudiness Percent */
+            cloudiness_percent?: number | null;
+            /** Advisory */
+            advisory?: string | null;
+            /** Translated Advisory */
+            translated_advisory?: string | null;
+            /** Translations */
+            translations?: {
+                [key: string]: string;
+            };
+            /** Cached */
+            cached?: boolean | null;
+            /** Timestamp */
+            timestamp?: number | null;
+        };
         /** WeatherRiskTriggerResponse */
         WeatherRiskTriggerResponse: {
             /**
@@ -2284,6 +2566,13 @@ export interface components {
             text: string;
             /** Target Language */
             target_language: string;
+        };
+        /** WeatherTranslationResponse */
+        WeatherTranslationResponse: {
+            /** Translated Text */
+            translated_text: string;
+            /** Language */
+            language: string;
         };
     };
     responses: never;
@@ -2315,7 +2604,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["TTSResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2346,7 +2635,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DatasetSummaryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2448,9 +2737,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AdminModelHealthResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2558,9 +2845,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PredictionTranslationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2984,9 +3269,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string | number;
-                    };
+                    "application/json": components["schemas"]["TokenResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3743,9 +4026,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["PredictionResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3889,9 +4170,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WeatherTranslationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3929,9 +4208,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WeatherResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4128,9 +4405,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AdminDatabasePurgeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4333,7 +4608,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AdminConfigResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4368,7 +4643,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AdminConfigResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4401,7 +4676,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AdminBlobPurgeResponse"];
                 };
             };
             /** @description Validation Error */
