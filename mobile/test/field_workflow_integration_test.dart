@@ -95,8 +95,18 @@ void main() {
       expect(failedDrainCount, 0);
       expect(await syncService.pendingCount(), 1);
 
-      // 3. Farmer returns to village with active cellular data / WiFi
+      // Verify retry metadata was recorded
+      final pendingItems = await syncService.getPendingItems();
+      expect(pendingItems.first.retryCount, 1);
+      expect(pendingItems.first.status, 'retry_pending');
+
+      // Immediate second drain skips item due to backoff cooldown
       mockApi.networkOffline = false;
+      final cooldownDrainCount = await syncService.drain();
+      expect(cooldownDrainCount, 0);
+
+      // 3. Once backoff cooldown window (2s for retry_count=1) elapses, queue drains successfully
+      await Future.delayed(const Duration(milliseconds: 2100));
       final successfulDrainCount = await syncService.drain();
       expect(successfulDrainCount, 1);
       expect(await syncService.pendingCount(), 0);
