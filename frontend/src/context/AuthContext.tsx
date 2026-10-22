@@ -4,6 +4,7 @@ import { Profile } from "../api/types";
 import { Language, Units, t, TranslationKey } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { normalizePhoneNumber } from "../lib/phone";
+import { analytics } from "../lib/analytics";
 
 interface AuthContextType {
   user: Profile | null;
@@ -123,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setLanguage = async (newLang: Language) => {
     setLanguageState(newLang);
     localStorage.setItem(PREF_LANG_KEY, newLang);
+    analytics.languageChanged(newLang);
     if (token) {
       try {
         await updateProfile({ language: newLang }, token);
@@ -149,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("smart_farm_token", accessToken);
     setToken(accessToken);
     setUser(res.user);
+    analytics.authAction("login");
     if (res.user.language && (res.user.language === "Gujarati" || res.user.language === "Hindi" || res.user.language === "English")) {
       setLanguageState(res.user.language as Language);
       localStorage.setItem(PREF_LANG_KEY, res.user.language);
@@ -171,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("smart_farm_token", accessToken);
       setToken(accessToken);
       setUser(res.user);
+      analytics.authAction("register");
     }
     if (payload.language && (payload.language === "Gujarati" || payload.language === "Hindi" || payload.language === "English")) {
       setLanguageState(payload.language as Language);
@@ -197,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("smart_farm_token", accessToken);
     setToken(accessToken);
     setUser(res.user);
+    analytics.authAction(registrationData ? "register" : "login");
     if (res.user.language && (res.user.language === "Gujarati" || res.user.language === "Hindi" || res.user.language === "English")) {
       setLanguageState(res.user.language as Language);
       localStorage.setItem(PREF_LANG_KEY, res.user.language);
@@ -205,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    analytics.authAction("logout");
     try {
       await logout();
     } catch (e) {

@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { getPrediction, requestExpertReview } from "../api/predictions";
 import { Badge, Button, Card, Input } from "../components/ui";
 import { translateCrop, translateDisease, translatePest, translateSeverityBucket, translateWeather } from "../i18n/domain";
+import { analytics } from "../lib/analytics";
 
 const isProperlyTranslated = (rec: any, lang: string) => {
   if (!rec || typeof rec !== "object") return false;
@@ -66,6 +67,16 @@ export default function PredictionResultPage() {
       return (latest.status as any)?.pipeline === "processing" || (latest.status as any)?.preprocessing === "processing" ? 2000 : false;
     },
   });
+
+  useEffect(() => {
+    if (prediction && (prediction.crop?.label || prediction.disease?.label)) {
+      analytics.predictionViewed({
+        crop: prediction.crop?.label,
+        disease: prediction.disease?.label,
+        confidence: prediction.disease?.confidence,
+      });
+    }
+  }, [prediction?.prediction_id]);
 
   useEffect(() => {
     if (targetLang !== "en" && prediction && id && token) {
@@ -184,6 +195,7 @@ export default function PredictionResultPage() {
   const handleRequestExpert = async () => {
     try {
       await requestExpertReview(id!, token!);
+      analytics.expertReviewRequested(prediction?.crop?.label, prediction?.disease?.label);
       alert("Expert review requested successfully!");
       refetch();
     } catch (error) {
@@ -195,6 +207,7 @@ export default function PredictionResultPage() {
   const submitFeedback = async (correct: boolean) => {
     try {
       await request("/feedback", { method: "POST", body: JSON.stringify({ prediction_id: Number(id), is_correct: correct, farmer_note: farmerNote }) }, token!);
+      analytics.feedbackSubmitted(correct ? "up" : "down", prediction?.crop?.label, prediction?.disease?.label);
       setFeedbackSubmitted(true);
     } catch (error) {
       console.error("Feedback submission failed", error);

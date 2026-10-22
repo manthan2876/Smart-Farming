@@ -30,6 +30,7 @@ import AppShell from "./components/Appshell";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { getApiUrl } from "./api/client";
+import { Analytics } from "@vercel/analytics/react";
 
 function ExternalRedirect({ to }: { to: string }) {
   window.location.href = to;
@@ -109,6 +110,7 @@ export default function App() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Analytics />
     </AuthProvider>
   </ThemeProvider>
   );

@@ -10,6 +10,7 @@ import { get, set, update } from 'idb-keyval';
 import { Button, Card, Input, Select } from "../components/ui";
 import { request } from "../api/client";
 import { translateCrop } from "../i18n/domain";
+import { analytics } from "../lib/analytics";
 
 export default function ScanPage() {
   const { token, user, language: appLanguage, t } = useAuth();
@@ -82,6 +83,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     setLoading(true);
     setError(null);
+    analytics.scanInitiated({ has_plot: Boolean(plotId), language, is_offline: !navigator.onLine });
 
     if (!navigator.onLine) {
       const offlineData = { id: Date.now(), file, location, plotId, lat, lon, language };
@@ -134,6 +136,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           }
         }
         await set('offline_scans', []);
+        analytics.offlineSyncCompleted(scans.length);
         alert("Offline scans synchronized successfully!");
         navigate("/history");
       }
