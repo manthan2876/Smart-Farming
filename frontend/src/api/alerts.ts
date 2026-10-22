@@ -1,23 +1,27 @@
-import { request } from "./client";
+import type { components } from "./generated/openapi";
+import { contractRequest } from "./contract";
 
-export interface AlertItem {
-  id: number;
-  prediction_id?: number | null;
-  kind?: string;
-  severity?: string;
-  title: string;
-  body: string;
-  is_read: boolean;
-  created_at: string;
-}
+export type AlertItem = components["schemas"]["AlertResponse"];
 
 export async function fetchAlerts(token: string, lang?: string): Promise<AlertItem[]> {
-  const query = lang ? `?lang=${encodeURIComponent(lang)}` : "";
-  return request<AlertItem[]>(`/alerts${query}`, {}, token);
+  return contractRequest(
+    "/api/v1/alerts",
+    "get",
+    { query: { lang } },
+    token,
+  );
 }
 
-export async function markAlertRead(alertId: number, token: string): Promise<{ status: string }> {
-  return request<{ status: string }>(`/alerts/${alertId}/read`, { method: "POST" }, token);
+export async function markAlertRead(
+  alertId: number,
+  token: string,
+): Promise<components["schemas"]["AlertReadResponse"]> {
+  return contractRequest(
+    "/api/v1/alerts/{alert_id}/read",
+    "post",
+    { pathParams: { alert_id: alertId } },
+    token,
+  );
 }
 
 export async function markAllAlertsRead(alerts: AlertItem[], token: string): Promise<void> {

@@ -104,25 +104,11 @@ class _WeatherScreenState extends State<WeatherScreen> {
     required String langCode,
   }) async {
     final buffer = StringBuffer();
-    if (langCode == 'hi') {
-      buffer.write('मौसम रिपोर्ट: ');
-      if (temp != '--') buffer.write('तापमान $temp, ');
-      buffer.write('स्थिति $cond, ');
-      if (hum != '--') buffer.write('आर्द्रता $hum. ');
-      buffer.write('कृषि सलाह: $advisory');
-    } else if (langCode == 'gu') {
-      buffer.write('હવામાન અહેવાલ: ');
-      if (temp != '--') buffer.write('તાપમાન $temp, ');
-      buffer.write('સ્થિતિ $cond, ');
-      if (hum != '--') buffer.write('ભેજ $hum. ');
-      buffer.write('ખેતી સલાહ: $advisory');
-    } else {
-      buffer.write('Weather report: ');
-      if (temp != '--') buffer.write('Temperature $temp, ');
-      buffer.write('Condition $cond, ');
-      if (hum != '--') buffer.write('Humidity $hum. ');
-      buffer.write('Agronomic advisory: $advisory');
-    }
+    buffer.write('${context.tr('weatherReportPrefix')}: ');
+    if (temp != '--') buffer.write('${context.tr('temperature')} $temp, ');
+    buffer.write('${context.tr('condition')} $cond, ');
+    if (hum != '--') buffer.write('${context.tr('humidity')} $hum. ');
+    buffer.write('${context.tr('agronomicAdvisoryLabel')}: $advisory');
 
     await _ttsService.toggle(
       id: 'weather_advisory',
@@ -186,7 +172,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600),
                   ),
                   if (weather?['cached'] == true)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 2),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -195,8 +181,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
                           SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              'Cached observation',
-                              style: TextStyle(fontSize: 11, color: AppColors.textSubtle),
+                              context.tr('cachedObservation'),
+                              style: const TextStyle(fontSize: 11, color: AppColors.textSubtle),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

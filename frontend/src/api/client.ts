@@ -37,6 +37,11 @@ export function getWebSocketUrl(path: string) {
 // Ensure subsequent requests pick up the latest token if refreshed elsewhere
 let refreshPromise: Promise<string | null> | null = null;
 
+function shouldRefreshAfterUnauthorized(path: string): boolean {
+  const unversionedPath = path.replace(/^\/api\/v\d+/, "");
+  return unversionedPath !== "/auth/login" && unversionedPath !== "/auth/refresh";
+}
+
 export async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -59,7 +64,7 @@ export async function request<T>(
 
   let response = await execute(token);
 
-  if (response.status === 401 && path !== "/auth/login" && path !== "/auth/refresh") {
+  if (response.status === 401 && shouldRefreshAfterUnauthorized(path)) {
     try {
       // Attempt refresh with deduplication
       if (!refreshPromise) {
@@ -139,7 +144,7 @@ export async function requestWithMeta<T>(
 
   let response = await execute(token);
 
-  if (response.status === 401 && path !== "/auth/login" && path !== "/auth/refresh") {
+  if (response.status === 401 && shouldRefreshAfterUnauthorized(path)) {
     try {
       if (!refreshPromise) {
         refreshPromise = fetch(`${API_URL}/auth/refresh`, {

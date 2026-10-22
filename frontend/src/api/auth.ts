@@ -1,4 +1,5 @@
-import { request } from "./client";
+import { contractRequest } from "./contract";
+import type { components } from "./generated/openapi";
 import type { Profile } from "./types";
 import { supabase } from "../lib/supabase";
 import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
@@ -8,8 +9,34 @@ type Tokens = {
   refresh_token: string;
   token_type?: string;
   expires_in?: number;
+  verification_required?: boolean | null;
 };
 export type AuthResponse = { tokens: Tokens; user: Profile };
+
+type ApiProfile = components["schemas"]["ProfileResponse"];
+type ApiAuthResponse = components["schemas"]["AuthResponse"];
+
+function profileFromApiUser(user: ApiProfile): Profile {
+  return {
+    ...user,
+    name: user.name ?? undefined,
+    phone: user.phone ?? undefined,
+    email: user.email ?? undefined,
+    location: user.location ?? undefined,
+    latitude: user.latitude ?? undefined,
+    longitude: user.longitude ?? undefined,
+    farm_name: user.farm_name ?? undefined,
+    farm_area_acres: user.farm_area_acres ?? undefined,
+    plots: [],
+  };
+}
+
+function authResponseFromApi(response: ApiAuthResponse): AuthResponse {
+  return {
+    tokens: response.tokens,
+    user: profileFromApiUser(response.user),
+  };
+}
 
 export function profileFromSupabaseUser(user: any): Profile {
   const meta = user?.user_metadata || {};
@@ -41,11 +68,11 @@ export async function login(
   // user password with Supabase Auth via Admin API (preventing 400 invalid_credentials
   // network console errors for existing users), and returns genuine Supabase session tokens.
   try {
-    const backendRes = await request<AuthResponse>("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier: cleanId, password }),
-    });
+    const backendRes = authResponseFromApi(
+      await contractRequest("/api/v1/auth/login", "post", {
+        data: { identifier: cleanId, password },
+      }),
+    );
 
     if (backendRes?.tokens?.access_token) {
       localStorage.setItem("smart_farm_token", backendRes.tokens.access_token);
@@ -126,11 +153,11 @@ export async function register(payload: {
 }): Promise<AuthResponse> {
   // 1. Primary: Register via backend to ensure verification email is issued
   try {
-    const backendRes = await request<AuthResponse>("/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const backendRes = authResponseFromApi(
+      await contractRequest("/api/v1/auth/register", "post", {
+        data: payload,
+      }),
+    );
 
     if (backendRes) {
       if (backendRes.tokens?.access_token) {
@@ -203,8 +230,13 @@ export async function register(payload: {
 }
 
 export async function profile(token: string, lang?: string) {
-  const query = lang ? `?lang=${encodeURIComponent(lang)}` : "";
-  return request<Profile>(`/profile${query}`, {}, token);
+  const user = await contractRequest(
+    "/api/v1/profile",
+    "get",
+    { query: lang ? { lang } : undefined },
+    token,
+  );
+  return profileFromApiUser(user);
 }
 
 export async function updateProfile(payload: Partial<Profile>, token: string) {
@@ -213,15 +245,25 @@ export async function updateProfile(payload: Partial<Profile>, token: string) {
     await supabase.auth.updateUser({ data: payload });
   } catch {}
 
-  return request<Profile>(
-    "/profile",
+  const user = await contractRequest(
+    "/api/v1/profile",
+    "patch",
     {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      data: {
+        name: payload.name,
+        phone: payload.phone,
+        location: payload.location,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        language: payload.language,
+        crop_history: payload.crop_history,
+        farm_name: payload.farm_name,
+        farm_area_acres: payload.farm_area_acres,
+      },
     },
     token,
   );
+  return profileFromApiUser(user);
 }
 
 export async function logout(): Promise<{ status: string }> {
@@ -231,9 +273,7 @@ export async function logout(): Promise<{ status: string }> {
     console.error("Supabase signOut error", e);
   }
   try {
-    await request<{ status: string }>("/auth/logout", {
-      method: "POST",
-    });
+    await contractRequest("/api/v1/auth/logout", "post", {});
   } catch {}
   localStorage.removeItem("smart_farm_token");
   return { status: "success" };
@@ -251,14 +291,11 @@ export async function changePassword(
     }
   } catch {}
 
-  return request<{ status: string; message: string }>(
-    "/auth/change-password",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
-    },
-    token
+  return contractRequest(
+    "/api/v1/auth/change-password",
+    "post",
+    { data: { old_password: oldPassword, new_password: newPassword } },
+    token,
   );
 }
 
@@ -274,10 +311,8 @@ export async function forgotPassword(
     }
   } catch {}
 
-  return request<{ status: string; message: string }>("/auth/forgot-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+  return contractRequest("/api/v1/auth/forgot-password", "post", {
+    data: { email },
   });
 }
 
@@ -295,10 +330,8 @@ export async function resetPassword(
 
   if (token && token !== "supabase_recovery") {
     try {
-      return await request<{ status: string; message: string }>("/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, new_password: newPassword }),
+      return await contractRequest("/api/v1/auth/reset-password", "post", {
+        data: { token, new_password: newPassword },
       });
     } catch (backendErr) {
       if (supaSuccess) {
@@ -346,14 +379,11 @@ export async function requestEmailUpdate(
     console.warn("Supabase updateUser email change note:", err);
   }
 
-  return request<{ status: string; message: string }>(
-    "/auth/request-email-update",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    },
-    activeToken
+  return contractRequest(
+    "/api/v1/auth/request-email-update",
+    "post",
+    { data: { email } },
+    activeToken,
   );
 }
 
@@ -372,14 +402,11 @@ export async function requestPhoneUpdate(
     }
   }
 
-  return request<{ status: string; message: string }>(
-    "/auth/request-phone-update",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
-    },
-    activeToken
+  return contractRequest(
+    "/api/v1/auth/request-phone-update",
+    "post",
+    { data: { phone } },
+    activeToken,
   );
 }
 
@@ -459,18 +486,19 @@ export async function verifyPhoneUpdate(
 
   // 2. Call backend to link phone to user account and sync to Supabase Auth
   try {
-    const updatedProfile = await request<Profile>(
-      "/auth/verify-phone-update",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const updatedProfile = profileFromApiUser(
+      await contractRequest(
+        "/api/v1/auth/verify-phone-update",
+        "post",
+        {
+          data: {
           phone: successfulPhone,
           token: otpCode.trim(),
           verified_phone_token: verifiedPhoneToken,
-        }),
-      },
-      activeToken
+          },
+        },
+        activeToken,
+      ),
     );
 
     // 3. Keep active user session intact on their primary account
@@ -493,10 +521,8 @@ export async function verifyPhoneUpdate(
 export async function verifyEmail(
   tokenStr: string
 ): Promise<{ status: string; message: string }> {
-  return request<{ status: string; message: string }>("/auth/verify-email", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: tokenStr }),
+  return contractRequest("/api/v1/auth/verify-email", "post", {
+    data: { token: tokenStr },
   });
 }
 
@@ -504,10 +530,8 @@ export async function resendVerificationEmail(
   email: string
 ): Promise<{ status: string; message: string }> {
   try {
-    return await request<{ status: string; message: string }>("/auth/resend-verification-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+    return await contractRequest("/api/v1/auth/resend-verification-email", "post", {
+      data: { email },
     });
   } catch (err: any) {
     // Fallback directly to Supabase Auth resend
@@ -574,11 +598,11 @@ export async function setupFirstTimePassword(payload: {
   phone: string;
   new_password: string;
 }): Promise<AuthResponse> {
-  const backendRes = await request<AuthResponse>("/auth/setup-first-time-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const backendRes = authResponseFromApi(
+    await contractRequest("/api/v1/auth/setup-first-time-password", "post", {
+      data: payload,
+    }),
+  );
 
   if (backendRes?.tokens?.access_token) {
     localStorage.setItem("smart_farm_token", backendRes.tokens.access_token);
@@ -786,13 +810,21 @@ export async function syncSession(
     crop_history?: string[];
   }
 ): Promise<AuthResponse> {
-  return request<AuthResponse>(
-    "/auth/sync-session",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload || {}),
-    },
-    token
+  return authResponseFromApi(
+    await contractRequest(
+      "/api/v1/auth/sync-session",
+      "post",
+      {
+        data: {
+          name: payload?.name,
+          phone: payload?.phone,
+          language: payload?.language,
+          location: payload?.location,
+          farm_name: payload?.farm_name,
+          crop_history: payload?.crop_history,
+        },
+      },
+      token,
+    ),
   );
 }

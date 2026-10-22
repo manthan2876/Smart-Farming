@@ -66,6 +66,10 @@ class AppTranslations {
     'searchScans': {'en': 'Search by crop or disease...', 'hi': 'फसल या रोग से खोजें...', 'gu': 'પાક અથવા રોગથી શોધો...'},
     'allCrops': {'en': 'All Crops', 'hi': 'सभी फसलें', 'gu': 'બધા પાક'},
     'emptyHistory': {'en': 'No matching scan records found.', 'hi': 'कोई स्कैन रिकॉर्ड नहीं मिला।', 'gu': 'કોઈ મેળ ખાતા સ્કેન રેકોર્ડ મળ્યા નથી.'},
+    'resetFilters': {'en': 'Reset filters', 'hi': 'फ़िल्टर हटाएं', 'gu': 'ફિલ્ટર રીસેટ કરો'},
+    'scanCount': {'en': '{count} scans', 'hi': '{count} स्कैन', 'gu': '{count} સ્કેન'},
+    'noScansMatch': {'en': 'No scans match "{query}"', 'hi': '"{query}" से कोई स्कैन मेल नहीं खाता', 'gu': '"{query}" સાથે કોઈ સ્કેન મેળ ખાતો નથી'},
+    'recent': {'en': 'Recent', 'hi': 'हाल ही में', 'gu': 'તાજેતરમાં'},
     'offlineQueued': {'en': 'Queued Offline', 'hi': 'ऑफ़लाइन कतारबद्ध', 'gu': 'ઓફલાઇન કતારબદ્ધ'},
     'completedStatus': {'en': 'Diagnosed', 'hi': 'निदान पूर्ण', 'gu': 'નિદાન પૂર્ણ'},
     'pendingStatus': {'en': 'Processing', 'hi': 'प्रक्रिया में', 'gu': 'પ્રક્રિયામાં'},
@@ -74,6 +78,10 @@ class AppTranslations {
 
     // ── Weather Screen ──────────────────────────────────────────────────────
     'weatherTitle': {'en': 'Weather & Spray Advisory', 'hi': 'मौसम और छिड़काव सलाह', 'gu': 'હવામાન અને છંટકાવ સલાહ'},
+    'cachedObservation': {'en': 'Cached observation', 'hi': 'कैश किया गया मौसम डेटा', 'gu': 'કેશ કરેલું હવામાન નિરીક્ષણ'},
+    'weatherReportPrefix': {'en': 'Weather report', 'hi': 'मौसम रिपोर्ट', 'gu': 'હવામાન અહેવાલ'},
+    'condition': {'en': 'Condition', 'hi': 'स्थिति', 'gu': 'પરિસ્થિતિ'},
+    'agronomicAdvisoryLabel': {'en': 'Agronomic advisory', 'hi': 'कृषि सलाह', 'gu': 'ખેતીની સલાહ'},
     'currentWeather': {'en': 'Current Conditions', 'hi': 'वर्तमान स्थिति', 'gu': 'વર્તમાન પરિસ્થિતિ'},
     'temperature': {'en': 'Temperature', 'hi': 'तापमान', 'gu': 'તાપમાન'},
     'humidity': {'en': 'Humidity', 'hi': 'नमी', 'gu': 'ભેજ'},
@@ -237,6 +245,10 @@ class AppTranslations {
     'navSettings': {'en': 'Settings', 'hi': 'सेटिंग्स', 'gu': 'સેટિંગ્સ'},
     'settingsTitle': {'en': 'Farmer Settings', 'hi': 'किसान सेटिंग्स', 'gu': 'ખેડૂત સેટિંગ્સ'},
     'changePassword': {'en': 'Change Password', 'hi': 'पासवर्ड बदलें', 'gu': 'પાસવર્ડ બદલો'},
+    'metricUnitsDescription': {'en': 'Celsius, km/h, hectares', 'hi': 'सेल्सियस, किमी/घंटा, हेक्टेयर', 'gu': 'સેલ્સિયસ, કિમી/કલાક, હેક્ટર'},
+    'imperialUnitsDescription': {'en': 'Fahrenheit, mph, acres', 'hi': 'फ़ारेनहाइट, मील/घंटा, एकड़', 'gu': 'ફૅરનહાઇટ, માઇલ/કલાક, એકર'},
+    'updateFarmerPassword': {'en': 'Update your farmer account password', 'hi': 'अपने किसान खाते का पासवर्ड बदलें', 'gu': 'તમારા ખેડૂત ખાતાનો પાસવર્ડ બદલો'},
+    'noCropModelsFound': {'en': 'No crop models found', 'hi': 'फसल के मॉडल नहीं मिले', 'gu': 'પાકના મૉડેલ મળ્યા નથી'},
     'oldPassword': {'en': 'Current Password', 'hi': 'वर्तमान पासवर्ड', 'gu': 'વર્તમાન પાસવર્ડ'},
     'newPassword': {'en': 'New Password (min 8 chars)', 'hi': 'नया पासवर्ड (न्यूनतम 8 अक्षर)', 'gu': 'નવો પાસવર્ડ (ઓછામાં ઓછા ૮ અક્ષર)'},
     'confirmPassword': {'en': 'Confirm New Password', 'hi': 'नए पासवर्ड की पुष्टि करें', 'gu': 'નવા પાસવર્ડની પુષ્ટિ કરો'},
@@ -287,5 +299,13 @@ class AppTranslations {
       return entry[code]!;
     }
     return entry?['en'] ?? key;
+  }
+
+  static List<String> missingKeysForLanguage(String language) {
+    final code = DomainTranslations.normalizeLang(language);
+    return _strings.entries
+        .where((entry) => entry.value[code]?.trim().isNotEmpty != true)
+        .map((entry) => entry.key)
+        .toList(growable: false);
   }
 }

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:smart_farming_api/smart_farming_api.dart';
 import '../models/prediction.dart';
 import '../utils/app_logger.dart';
 import 'remote_config_service.dart';
@@ -36,9 +38,73 @@ class ApiService {
   }
 
   ApiService({String? baseUrl, this.accessToken, this.languageCode})
-      : baseUrl = baseUrl ?? customBaseUrl ?? '';
+      : baseUrl = baseUrl ?? customBaseUrl ?? '',
+        _dio = Dio(
+          BaseOptions(
+            baseUrl: baseUrl ?? customBaseUrl ?? '',
+            connectTimeout: const Duration(seconds: 45),
+            receiveTimeout: const Duration(seconds: 45),
+          ),
+        ) {
+    _alertsApi = AlertsApi(_dio);
+    _defaultApi = DefaultApi(_dio);
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          options.headers.addAll(_headers);
+          handler.next(options);
+        },
+        onError: (error, handler) async {
+          final requestOptions = error.requestOptions;
+          final retryCount = requestOptions.extra['apiRetryCount'] as int? ?? 0;
+          final status = error.response?.statusCode;
+
+          if (status == 401 && accessToken != null && retryCount == 0) {
+            if (await _tryRefreshToken()) {
+              requestOptions.extra['apiRetryCount'] = 1;
+              try {
+                handler.resolve(await _dio.fetch(requestOptions));
+              } on DioException catch (retryError) {
+                handler.next(retryError);
+              }
+              return;
+            }
+          }
+
+          final responseBody = error.response?.data?.toString().toLowerCase() ?? '';
+          final shouldRetry = status == 502 ||
+              status == 504 ||
+              responseBody.contains('upstream request timeout') ||
+              responseBody.contains('upstream connect error') ||
+              error.type == DioExceptionType.connectionTimeout ||
+              error.type == DioExceptionType.receiveTimeout ||
+              error.type == DioExceptionType.sendTimeout ||
+              error.type == DioExceptionType.connectionError;
+          if (!shouldRetry || retryCount >= 2) {
+            handler.next(error);
+            return;
+          }
+
+          requestOptions.extra['apiRetryCount'] = retryCount + 1;
+          AppLogger.warn(
+            'ApiService',
+            'Generated API request retrying after transient failure (attempt ${retryCount + 1}).',
+          );
+          await Future.delayed(const Duration(seconds: 2));
+          try {
+            handler.resolve(await _dio.fetch(requestOptions));
+          } on DioException catch (retryError) {
+            handler.next(retryError);
+          }
+        },
+      ),
+    );
+  }
 
   final String baseUrl;
+  final Dio _dio;
+  late final AlertsApi _alertsApi;
+  late final DefaultApi _defaultApi;
   String? accessToken;
   String? languageCode;
 
@@ -460,23 +526,20 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getAlerts({String? lang}) async {
     final effectiveLang = lang ?? languageCode;
-    final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
-    final response = await _sendWithRetry(
-      () => http.get(Uri.parse('$baseUrl/alerts$query'), headers: _headers),
-    );
-    if (response.statusCode >= 400) {
-      throw Exception('Failed to retrieve alerts (${response.statusCode})');
-    }
-    final bodyText = response.body.trim();
-    if (bodyText.isEmpty) return [];
     try {
-      final decoded = jsonDecode(bodyText);
-      if (decoded is List) {
-        return decoded.cast<Map<String, dynamic>>();
+      final response = await _alertsApi.getAlertsApiV1AlertsGet(
+        lang: effectiveLang,
+      );
+      return response.data
+              ?.map((alert) => alert.toJson())
+              .toList(growable: false) ??
+          [];
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      if (status != null) {
+        throw Exception('Failed to retrieve alerts ($status)');
       }
-      return [];
-    } catch (_) {
-      return [];
+      rethrow;
     }
   }
 
@@ -491,31 +554,32 @@ class ApiService {
   }
 
   Future<List<String>> getSupportedCrops() async {
-    final response = await http.get(Uri.parse('$baseUrl/crops'), headers: _headers);
-    if (response.statusCode >= 400) {
-      throw Exception('Failed to retrieve supported crops');
+    try {
+      final response = await _defaultApi.cropsApiV1CropsGet();
+      return response.data?.crops ?? [];
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      if (status != null) {
+        throw Exception('Failed to retrieve supported crops ($status)');
+      }
+      rethrow;
     }
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final list = body['crops'] as List?;
-    return list?.map((e) => e.toString()).toList() ?? [];
   }
 
   Future<void> markAlertRead(int alertId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/alerts/$alertId/read'),
-      headers: _headers,
-    );
-    if (response.statusCode >= 400) {
-      throw Exception('Failed to mark alert as read');
+    try {
+      await _alertsApi.markReadApiV1AlertsAlertIdReadPost(alertId: alertId);
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      if (status != null) {
+        throw Exception('Failed to mark alert as read ($status)');
+      }
+      rethrow;
     }
   }
 
   Future<void> markAllAlertsRead(List<int> alertIds) async {
-    for (final id in alertIds) {
-      try {
-        await markAlertRead(id);
-      } catch (_) {}
-    }
+    await Future.wait(alertIds.map(markAlertRead));
   }
 
   String getWebSocketUrl(String path) {

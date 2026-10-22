@@ -17,8 +17,8 @@ import {
 } from "./icons";
 
 import { useQuery } from "@tanstack/react-query";
-import { request } from "../api/client";
 import { useState } from "react";
+import { fetchAlerts, markAlertRead } from "../api/alerts";
 
 import ThemeToggle from "./ThemeToggle";
 import LanguageToggle from "./LanguageToggle";
@@ -37,16 +37,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const { data: alerts = [], refetch: refetchAlerts } = useQuery({
     queryKey: ["alerts", language],
-    queryFn: () => request<any[]>(`/alerts?lang=${encodeURIComponent(language)}`, {}, token!),
+    queryFn: () => fetchAlerts(token!, language),
     enabled: !!token,
     refetchInterval: 15000,
   });
 
-  const unreadCount = alerts.filter((a: any) => !a.is_read).length;
+  const unreadCount = alerts.filter((alert) => !alert.is_read).length;
   const [showNotifications, setShowNotifications] = useState(false);
 
   const markRead = async (id: number) => {
-    await request(`/alerts/${id}/read`, { method: "POST" }, token!);
+    await markAlertRead(id, token!);
     refetchAlerts();
   };
 
@@ -73,7 +73,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               setShowNotifications(false);
             }
           }}
-          aria-label="Close notifications"
+          aria-label={t("close")}
         />
       )}
       {isOpen && (
@@ -81,7 +81,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           type="button"
           className="fixed inset-0 z-40 bg-ink/40 lg:hidden"
           onClick={onClose}
-          aria-label="Close navigation"
+          aria-label={t("close")}
         />
       )}
       <aside
@@ -108,7 +108,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               type="button"
               className="relative rounded-sm p-2 text-muted hover:bg-canvas hover:text-ink transition-colors"
               onClick={() => setShowNotifications(!showNotifications)}
-              aria-label="Open notifications"
+              aria-label={t("notifications")}
               aria-expanded={showNotifications}
             >
               <Bell size={18} />
@@ -122,7 +122,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               type="button"
               className="rounded-sm p-2 text-muted hover:bg-canvas hover:text-ink lg:hidden transition-colors"
               onClick={onClose}
-              aria-label="Close navigation"
+              aria-label={t("close")}
             >
               <X size={18} />
             </button>

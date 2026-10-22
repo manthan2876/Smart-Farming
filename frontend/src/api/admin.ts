@@ -1,12 +1,13 @@
-import { request, requestBlob } from "./client";
-import { AdminMetrics, FeedbackLog, AdminUsersResponse } from "./types";
+import { requestBlob } from "./client";
+import { contractRequest } from "./contract";
+import type { AdminMetrics, FeedbackLog, AdminUsersResponse } from "./types";
 
 export const adminMetrics = async (token: string): Promise<AdminMetrics> => {
-  return request<AdminMetrics>("/admin/metrics", {}, token);
+  return contractRequest("/api/v1/admin/metrics", "get", {}, token);
 };
 
 export const adminFeedback = async (token: string): Promise<FeedbackLog[]> => {
-  return request<FeedbackLog[]>("/admin/feedback", {}, token);
+  return contractRequest("/api/v1/admin/feedback", "get", {}, token);
 };
 
 export const reviewFeedback = async (
@@ -14,23 +15,31 @@ export const reviewFeedback = async (
   feedbackId: number,
   status: "approved" | "rejected",
 ): Promise<void> => {
-  await request(`/feedback/${feedbackId}/review`, {
-    method: 'POST',
-    body: JSON.stringify({ status })
-  }, token);
+  await contractRequest(
+    "/api/v1/feedback/{feedback_id}/review",
+    "post",
+    { pathParams: { feedback_id: feedbackId }, data: { status } },
+    token,
+  );
 };
 
 export const getAdminUsers = async (
   token: string,
   params?: { skip?: number; limit?: number; role?: string; search?: string }
 ): Promise<AdminUsersResponse> => {
-  const query = new URLSearchParams();
-  if (params?.skip !== undefined) query.set("skip", params.skip.toString());
-  if (params?.limit !== undefined) query.set("limit", params.limit.toString());
-  if (params?.role && params.role !== "all") query.set("role", params.role);
-  if (params?.search) query.set("search", params.search);
-  const qStr = query.toString();
-  return request<AdminUsersResponse>(`/admin/users${qStr ? `?${qStr}` : ""}`, {}, token);
+  return contractRequest(
+    "/api/v1/admin/users",
+    "get",
+    {
+      query: {
+        skip: params?.skip,
+        limit: params?.limit,
+        role: params?.role && params.role !== "all" ? params.role : undefined,
+        search: params?.search,
+      },
+    },
+    token,
+  );
 };
 
 export const updateUserRole = async (
@@ -39,14 +48,14 @@ export const updateUserRole = async (
   role: "farmer" | "expert" | "admin",
   reason?: string
 ): Promise<{ status: string; user_id: string; old_role: string; new_role: string }> => {
-  return request<{ status: string; user_id: string; old_role: string; new_role: string }>(
-    `/admin/users/${userId}/role`,
+  return contractRequest(
+    "/api/v1/admin/users/{target_user_id}/role",
+    "patch",
     {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role, reason }),
+      pathParams: { target_user_id: userId },
+      data: { role, reason },
     },
-    token
+    token,
   );
 };
 
@@ -54,15 +63,23 @@ export const updateAdminUser = async (
   token: string,
   userId: string,
   payload: { role?: "farmer" | "expert" | "admin"; phone?: string; name?: string; reason?: string }
-): Promise<{ status: string; user_id: string; name?: string; phone?: string; role: string; old_role: string; new_role: string }> => {
-  return request(
-    `/admin/users/${userId}`,
+): Promise<{
+  status: string;
+  user_id: string;
+  name?: string;
+  phone: string | null;
+  role: string;
+  old_role: string;
+  new_role: string;
+}> => {
+  return contractRequest(
+    "/api/v1/admin/users/{target_user_id}",
+    "patch",
     {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      pathParams: { target_user_id: userId },
+      data: payload,
     },
-    token
+    token,
   );
 };
 
@@ -70,25 +87,31 @@ export const rollbackModel = async (
   token: string,
   modelKey: string,
   targetVersion?: string
-): Promise<{ status: string; model_key: string; previous_version: string; active_version: string }> => {
-  return request(
-    "/admin/models/rollback",
+): Promise<{
+  status: "rolled_back";
+  model_key: string;
+  previous_version: string | null;
+  active_version: string;
+  storage: "postgresql_database";
+}> => {
+  return contractRequest(
+    "/api/v1/admin/models/rollback",
+    "post",
     {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model_key: modelKey, target_version: targetVersion }),
+      data: { model_key: modelKey, target_version: targetVersion },
     },
-    token
+    token,
   );
 };
 
-export const triggerWeatherRisk = async (token: string): Promise<{ status: string; farms_evaluated: number; alerts_generated: number }> => {
-  return request(
-    "/admin/weather-risk/trigger",
-    {
-      method: "POST",
-    },
-    token
+export const triggerWeatherRisk = async (
+  token: string,
+): Promise<{ status: "success"; result: string }> => {
+  return contractRequest(
+    "/api/v1/admin/weather-risk/trigger",
+    "post",
+    {},
+    token,
   );
 };
 
@@ -105,4 +128,3 @@ export const exportDataset = (token: string, payload: DatasetExportRequest) =>
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   }, token);
-

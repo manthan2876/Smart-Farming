@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin_role
+from app.schemas.admin import ModelRollbackResponse
 from app.core import get_session
 from app.core.config import settings
 from app.models.model_registry import ModelRegistryRecord
@@ -442,7 +443,7 @@ class RollbackRequest(BaseModel):
     target_version: str | None = None
 
 
-@router.post("/rollback")
+@router.post("/rollback", response_model=ModelRollbackResponse)
 def rollback_model(
     payload: RollbackRequest,
     is_admin: str = Depends(require_admin_role),
@@ -498,5 +499,4 @@ def rollback_model(
         "active_version": target_ver,
         "storage": "postgresql_database",
     }
-
 

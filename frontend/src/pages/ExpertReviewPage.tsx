@@ -50,15 +50,19 @@ export default function ExpertReviewPage() {
 
   const rawImage = getAssetUrl(review.raw_url || review.raw_path);
   const processedImage = getAssetUrl(review.processed_url || review.processed_path) || rawImage;
-  const triggerReason = review.disease_conf < 0.7 ? "Confidence < 70% Threshold" : "Rule Engine Safety Trigger";
-  const date = review.created_at ? new Date(review.created_at).toLocaleString() : "Unknown";
+  const diseaseConfidence = review.disease_conf ?? 0;
+  const severityPercent = review.severity_pct ?? 0;
+  const crop = review.crop ?? t("unknown");
+  const disease = review.disease ?? t("unknown");
+  const triggerReason = diseaseConfidence < 0.7 ? "Confidence < 70% Threshold" : "Rule Engine Safety Trigger";
+  const date = review.created_at ? new Date(review.created_at).toLocaleString() : t("unknown");
 
   return (
     <div className="space-y-6 pb-12">
       <Card className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-4">
           <button onClick={() => navigate("/admin/expert")} className="inline-flex items-center gap-2 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft size={18} /> {t("backToQueue")}</button>
-          <h2 className="font-display text-xl text-ink">{t("case")} #{review.prediction_id}: {review.crop} ({review.disease})</h2>
+          <h2 className="font-display text-xl text-ink">{t("case")} #{review.prediction_id}: {crop} ({disease})</h2>
           <Badge tone={review.status === "verified" ? "success" : "danger"}><ShieldAlert size={14} /> {review.status === "verified" ? t("verified") : t("criticalTriage")}</Badge>
         </div>
         <div className="flex flex-wrap gap-2 text-xs text-muted"><Badge>{triggerReason}</Badge><span>{date}</span></div>
@@ -104,7 +108,7 @@ export default function ExpertReviewPage() {
           <Card>
             <h3 className="border-b border-line pb-3 font-display text-xl text-ink">{t("modelTelemetryContext")}</h3>
             <div className="mt-5 grid gap-6 sm:grid-cols-2">
-              <ul className="space-y-3 text-sm text-ink"><li><strong>{t("crop")}:</strong> {review.crop}</li><li><strong>{t("identifiedCondition")}:</strong> {review.disease} ({(review.disease_conf * 100).toFixed(0)}%)</li><li><strong>{t("severity")}:</strong> {review.severity_pct.toFixed(0)}% {t("affectedArea")}</li><li><strong>{t("pests")}:</strong> {t("noPests")}</li></ul>
+              <ul className="space-y-3 text-sm text-ink"><li><strong>{t("crop")}:</strong> {crop}</li><li><strong>{t("identifiedCondition")}:</strong> {disease} ({(diseaseConfidence * 100).toFixed(0)}%)</li><li><strong>{t("severity")}:</strong> {severityPercent.toFixed(0)}% {t("affectedArea")}</li><li><strong>{t("pests")}:</strong> {t("noPests")}</li></ul>
               <ul className="space-y-3 text-sm text-ink"><li><CloudSun size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("weather")}:</strong> Current conditions available in prediction</li><li><MapPin size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("location")}:</strong> Prediction location</li><li><History size={16} className="mr-2 inline text-expert-500 dark:text-cyan-400" /><strong>{t("history")}:</strong> Review prediction history</li></ul>
             </div>
           </Card>

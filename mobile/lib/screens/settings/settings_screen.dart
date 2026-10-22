@@ -387,7 +387,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: currentUnit == 'Metric' ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
-                  subtitle: const Text('Celsius, km/h, Hectares', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  subtitle: Text(context.tr('metricUnitsDescription'), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                   trailing: currentUnit == 'Metric'
                       ? const Icon(Icons.check_circle, color: AppColors.primary)
                       : const Icon(Icons.radio_button_unchecked, color: AppColors.cardBorder),
@@ -403,7 +403,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: currentUnit == 'Imperial' ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
-                  subtitle: const Text('Fahrenheit, mph, Acres', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  subtitle: Text(context.tr('imperialUnitsDescription'), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                   trailing: currentUnit == 'Imperial'
                       ? const Icon(Icons.check_circle, color: AppColors.primary)
                       : const Icon(Icons.radio_button_unchecked, color: AppColors.cardBorder),
@@ -433,7 +433,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context.tr('changePassword'),
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
-              subtitle: const Text('Update your farmer account password', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              subtitle: Text(context.tr('updateFarmerPassword'), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
               trailing: const Icon(Icons.chevron_right),
               onTap: _showChangePasswordDialog,
             ),
@@ -459,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   )
                 : (_supportedCrops == null || _supportedCrops!.isEmpty)
-                    ? const Text('No crop models found', style: TextStyle(color: AppColors.textMuted))
+                    ? Text(context.tr('noCropModelsFound'), style: const TextStyle(color: AppColors.textMuted))
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

@@ -145,7 +145,7 @@ export type AdminUser = {
   email: string | null;
   phone: string | null;
   role: "farmer" | "expert" | "admin";
-  language: string;
+  language: string | null;
   created_at: string | null;
   deleted_at: string | null;
   scan_count: number;
@@ -167,5 +167,3 @@ export type FeedbackLog = {
   farmer_note: string | null;
   created_at: string;
 };
-
-

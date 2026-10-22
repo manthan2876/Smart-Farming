@@ -180,7 +180,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${filtered.length} ${filtered.length == 1 ? "record" : "records"}',
+              context.tr('scanCount').replaceAll('{count}', filtered.length.toString()),
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textMuted),
             ),
             if (_searchQuery.isNotEmpty || _selectedCrop != 'All')
@@ -192,7 +192,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     _selectedCrop = 'All';
                   });
                 },
-                child: const Text('Reset filters', style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                child: Text(context.tr('resetFilters'), style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
               ),
           ],
         ),
@@ -224,7 +224,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   const Icon(Icons.search_off, size: 42, color: AppColors.textSubtle),
                   const SizedBox(height: 10),
                   Text(
-                    'No scans match "$_searchQuery"',
+                    context.tr('noScansMatch').replaceAll('{query}', _searchQuery),
                     style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                   ),
                 ],
@@ -237,7 +237,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               final rawDate = item.createdAt;
               final dateStr = rawDate != null && rawDate.contains('T')
                   ? rawDate.split('T').first
-                  : (rawDate ?? 'Recent');
+                  : (rawDate ?? context.tr('recent'));
 
               return Card(
                 elevation: 0,

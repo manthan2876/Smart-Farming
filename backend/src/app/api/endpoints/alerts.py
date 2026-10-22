@@ -1,65 +1,48 @@
 from __future__ import annotations
+
+import logging
 from typing import Any
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.api.deps import get_current_user
 from app.core import get_session
-from app.models import Alert
-from app.services.translation.overlay import overlay_entity_translations
+from app.schemas.alert import AlertReadResponse, AlertResponse
+from app.services.alerts import list_alerts, mark_alert_read
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
+logger = logging.getLogger("smart-farming.api.alerts")
 
-@router.get("")
+@router.get("", response_model=list[AlertResponse])
 def get_alerts(
     request: Request,
-    offset: int = 0,
-    limit: int = 20,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
     lang: str | None = None,
     user_id: str = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> list[dict[str, Any]]:
     try:
-        alerts = (
-            session.query(Alert)
-            .filter(Alert.user_id == user_id)
-            .order_by(Alert.created_at.desc())
-            .offset(offset)
-            .limit(min(limit, 100))
-            .all()
-        )
-    except SQLAlchemyError:
-        return []
-
-    res = [
-        {
-            "id": a.id,
-            "prediction_id": a.prediction_id,
-            "kind": a.kind,
-            "severity": a.severity,
-            "title": a.title,
-            "body": a.body,
-            "is_read": a.is_read,
-            "created_at": a.created_at.isoformat() if a.created_at else None,
-        }
-        for a in alerts
-    ]
-    from app.models import User
-    try:
-        user = session.get(User, user_id)
-        req_lang = lang or request.headers.get("accept-language") or (user.language if user else None)
-        overlay_entity_translations(session, res, "alert", lambda x: x["id"], ["title", "body"], req_lang)
-    except Exception:
-        pass
-    return res
+        requested_language = lang or request.headers.get("accept-language")
+        return list_alerts(session, user_id, offset, limit, requested_language)
+    except SQLAlchemyError as exc:
+        logger.exception("Database error while listing alerts for user %s", user_id)
+        raise HTTPException(status_code=503, detail="Unable to load alerts.") from exc
 
 
-@router.post("/{alert_id}/read")
+@router.post("/{alert_id}/read", response_model=AlertReadResponse)
 def mark_read(
-    alert_id: int, user_id: str = Depends(get_current_user), session: Session = Depends(get_session)
+    alert_id: int,
+    user_id: str = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ) -> dict[str, str]:
-    alert = session.query(Alert).filter(Alert.id == alert_id, Alert.user_id == user_id).first()
-    if alert:
-        alert.is_read = True
-        session.commit()
+    try:
+        mark_alert_read(session, user_id, alert_id)
+    except SQLAlchemyError as exc:
+        logger.exception(
+            "Database error while marking alert %s read for user %s",
+            alert_id,
+            user_id,
+        )
+        raise HTTPException(status_code=503, detail="Unable to update alert.") from exc
     return {"status": "ok"}

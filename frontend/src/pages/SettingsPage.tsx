@@ -91,7 +91,7 @@ export default function SettingsPage() {
 
     const trimmedName = profileName.trim();
     if (!trimmedName || trimmedName.length < 2 || trimmedName.length > 100) {
-      setProfileError("Name must be between 2 and 100 characters.");
+      setProfileError(t("settingsNameInvalid"));
       return;
     }
 
@@ -103,7 +103,7 @@ export default function SettingsPage() {
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 4000);
     } catch (err: any) {
-      setProfileError(err?.message || "Failed to update profile name.");
+      setProfileError(err?.message || t("settingsNameUpdateFailed"));
     } finally {
       setProfileLoading(false);
     }
@@ -116,7 +116,7 @@ export default function SettingsPage() {
 
     const trimmed = profilePhone.trim();
     if (!trimmed) {
-      setPhoneError("Please enter your mobile phone number.");
+      setPhoneError(t("settingsPhoneRequired"));
       return;
     }
     if (!isValidPhoneNumber(trimmed)) {
@@ -126,7 +126,7 @@ export default function SettingsPage() {
 
     const normalized = normalizePhoneNumber(trimmed);
     if (user?.phone && normalizePhoneNumber(user.phone) === normalized) {
-      setPhoneError("This mobile number is already linked to your account.");
+      setPhoneError(t("settingsPhoneAlreadyLinked"));
       return;
     }
 
@@ -140,9 +140,9 @@ export default function SettingsPage() {
 
       setPhoneStep("otp");
       setPhoneCountdown(60);
-      setPhoneSuccess(`Verification code sent to ${normalized}. Enter the 6-digit code below.`);
+      setPhoneSuccess(`${t("settingsPhoneCodeSent")} ${normalized}.`);
     } catch (err: any) {
-      setPhoneError(err?.message || "Failed to send verification code. Please check your number.");
+      setPhoneError(err?.message || t("settingsPhoneCodeFailed"));
     } finally {
       setPhoneLoading(false);
     }
@@ -155,7 +155,7 @@ export default function SettingsPage() {
 
     const cleanCode = phoneOtp.trim();
     if (cleanCode.length !== 6 || !/^\d{6}$/.test(cleanCode)) {
-      setPhoneError("Please enter the complete 6-digit verification code.");
+      setPhoneError(t("settingsPhoneCodeIncomplete"));
       return;
     }
 
@@ -165,10 +165,10 @@ export default function SettingsPage() {
       await verifyPhoneUpdate(normalized, cleanCode);
       setPhoneStep("idle");
       setPhoneOtp("");
-      setPhoneSuccess("Mobile phone verified and linked successfully! You can now log in using either your email or this mobile number.");
+      setPhoneSuccess(t("phoneLinkedSuccess"));
       setTimeout(() => setPhoneSuccess(""), 10000);
     } catch (err: any) {
-      setPhoneError(err?.message || "Invalid verification code. Please try again.");
+      setPhoneError(err?.message || t("settingsPhoneCodeInvalid"));
     } finally {
       setPhoneLoading(false);
     }
@@ -190,9 +190,9 @@ export default function SettingsPage() {
     try {
       await sendPhoneOtp(normalized, false);
       setPhoneCountdown(60);
-      setPhoneSuccess(`A fresh verification code was sent to ${normalized}.`);
+      setPhoneSuccess(`${t("settingsPhoneCodeResent")} ${normalized}.`);
     } catch (err: any) {
-      setPhoneError(err?.message || "Failed to resend verification code.");
+      setPhoneError(err?.message || t("settingsPhoneResendFailed"));
     } finally {
       setPhoneLoading(false);
     }
@@ -205,22 +205,22 @@ export default function SettingsPage() {
 
     const trimmed = profileEmail.trim();
     if (!trimmed || !trimmed.includes("@") || !trimmed.includes(".")) {
-      setEmailError("Please enter a valid email address.");
+      setEmailError(t("settingsEmailInvalid"));
       return;
     }
 
     if (user?.email && user.email.toLowerCase() === trimmed.toLowerCase() && user.is_email_verified) {
-      setEmailError("This email is already verified and linked to your account.");
+      setEmailError(t("settingsEmailAlreadyVerified"));
       return;
     }
 
     setEmailLoading(true);
     try {
       const res = await requestEmailUpdate(trimmed);
-      setEmailSuccess(res.message || `Verification link sent to ${trimmed}. Please check your inbox.`);
+      setEmailSuccess(res.message || `${t("settingsEmailLinkSent")} ${trimmed}.`);
       setTimeout(() => setEmailSuccess(""), 10000);
     } catch (err: any) {
-      setEmailError(err.message || "Failed to send verification link.");
+      setEmailError(err.message || t("settingsEmailLinkFailed"));
     } finally {
       setEmailLoading(false);
     }
@@ -234,10 +234,10 @@ export default function SettingsPage() {
     setEmailLoading(true);
     try {
       const res = await resendVerificationEmail(target);
-      setEmailSuccess(res.message || `Verification link resent to ${target}.`);
+      setEmailSuccess(res.message || `${t("settingsEmailLinkResent")} ${target}.`);
       setTimeout(() => setEmailSuccess(""), 8000);
     } catch (err: any) {
-      setEmailError(err.message || "Failed to resend verification link.");
+      setEmailError(err.message || t("settingsEmailResendFailed"));
     } finally {
       setEmailLoading(false);
     }
@@ -485,7 +485,7 @@ export default function SettingsPage() {
                   type="tel"
                   value={profilePhone}
                   onChange={(e) => setProfilePhone(e.target.value)}
-                  placeholder="e.g. 98765 43210 or +919876543210"
+                  placeholder={t("phoneExamplePlaceholder")}
                   leadingIcon={<Phone size={16} />}
                 />
                 <span className="mt-1 block text-xs text-muted">
@@ -498,7 +498,7 @@ export default function SettingsPage() {
                   <Phone size={15} />
                   <span>
                     {phoneLoading
-                      ? "Sending Code..."
+                      ? t("sendingCode")
                       : user?.phone
                       ? t("changeMobilePhone")
                       : t("verifyAndLinkPhone")}
@@ -509,7 +509,7 @@ export default function SettingsPage() {
           ) : (
             <form onSubmit={handleVerifyPhoneOtp} className="mt-5 space-y-4">
               <div className="rounded-lg border border-farmer-200/80 bg-farmer-50/50 p-4 text-xs text-farmer-900 dark:border-farmer-900/40 dark:bg-farmer-950/30 dark:text-farmer-200">
-                A 6-digit verification code was sent to <strong>{profilePhone}</strong>. Please enter it below to confirm ownership.
+                {t("verificationCodeSent")} <strong>{profilePhone}</strong>. {t("phoneVerifyHelp")}
               </div>
 
               <div className="max-w-xs">
@@ -531,7 +531,7 @@ export default function SettingsPage() {
                   className="flex items-center gap-2"
                 >
                   <CheckCircle2 size={15} />
-                  <span>{phoneLoading ? "Verifying..." : t("confirmAndLinkPhone")}</span>
+                  <span>{phoneLoading ? t("verifying") : t("confirmAndLinkPhone")}</span>
                 </Button>
 
                 <Button
@@ -564,10 +564,10 @@ export default function SettingsPage() {
             <div>
               <h4 className="flex items-center gap-2 font-display text-lg text-ink">
                 <Mail size={18} className="text-farmer-700 dark:text-farmer-300" />
-                <span>Email Address & Authentication</span>
+                <span>{t("emailAuthentication")}</span>
               </h4>
               <p className="mt-1 text-sm text-muted">
-                Link or change your email address. You will receive a verification link. Once verified, your email and mobile phone belong to this same account.
+                {t("emailAuthenticationDesc")}
               </p>
             </div>
 
@@ -575,16 +575,16 @@ export default function SettingsPage() {
               {user?.is_email_verified && user?.email ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300">
                   <CheckCircle2 size={14} />
-                  <span>Verified</span>
+                  <span>{t("verified")}</span>
                 </span>
               ) : user?.pending_email ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                   <AlertTriangle size={14} />
-                  <span>Verification Pending</span>
+                  <span>{t("emailVerificationPending")}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs font-medium text-muted">
-                  <span>No Email Linked</span>
+                  <span>{t("noEmailLinked")}</span>
                 </span>
               )}
             </div>
@@ -606,8 +606,8 @@ export default function SettingsPage() {
           {user?.pending_email && (
             <div className="mt-4 rounded-lg border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <strong>Pending Verification:</strong> A verification link was sent to{" "}
-                <span className="underline font-semibold">{user.pending_email}</span>. Click the link to complete verification.
+                <strong>{t("pendingVerification")}:</strong> {t("pendingVerificationLinkSent")}{" "}
+                <span className="underline font-semibold">{user.pending_email}</span>. {t("completeEmailVerification")}
               </div>
               <Button
                 type="button"
@@ -617,7 +617,7 @@ export default function SettingsPage() {
                 disabled={emailLoading}
                 className="shrink-0"
               >
-                {emailLoading ? "Sending..." : "Resend Link"}
+                {emailLoading ? t("sending") : t("resendLink")}
               </Button>
             </div>
           )}
@@ -625,11 +625,11 @@ export default function SettingsPage() {
           <form onSubmit={handleUpdateEmail} className="mt-5 space-y-4">
             <div className="max-w-md">
               <Input
-                label="Email Address"
+                label={t("emailAddress")}
                 type="email"
                 value={profileEmail}
                 onChange={(e) => setProfileEmail(e.target.value)}
-                placeholder="e.g. farmer@example.com"
+                placeholder={t("emailExamplePlaceholder")}
                 leadingIcon={<Mail size={16} />}
               />
             </div>
@@ -639,10 +639,10 @@ export default function SettingsPage() {
                 <Mail size={15} />
                 <span>
                   {emailLoading
-                    ? "Sending..."
+                    ? t("sending")
                     : user?.email
-                    ? "Update Email Address"
-                    : "Send Verification Link"}
+                    ? t("updateEmailAddress")
+                    : t("sendVerificationLink")}
                 </span>
               </Button>
             </div>
@@ -878,7 +878,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-6">
-              <label className="text-sm font-semibold text-ink">Dataset Split: Train {splitTrain}% / Val {splitVal}% / Test {100 - splitTrain - splitVal}%</label>
+              <label className="text-sm font-semibold text-ink">{t("datasetSplit")}: {t("train")} {splitTrain}% / {t("val")} {splitVal}% / {t("test")} {100 - splitTrain - splitVal}%</label>
               <input className="mt-4 w-full accent-farmer-700 dark:accent-farmer-400" type="range" min="50" max="90" value={splitTrain} onChange={e => setSplitTrain(Number(e.target.value))} />
             </div>
 
@@ -932,7 +932,7 @@ export default function SettingsPage() {
           <div className="w-full max-w-md rounded-sm border border-line bg-surface p-6">
             <h3 className="font-display text-xl text-danger">{t("confirmPurge")}</h3>
             <p className="mt-2 text-sm text-muted">{t("typeDeleteBelow")}</p>
-            <Input id="delete-confirmation" className="mt-4" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE" />
+            <Input id="delete-confirmation" className="mt-4" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder={t("deleteConfirmationPlaceholder")} />
             <div className="mt-6 flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>{t("cancel")}</Button>
               <Button variant="danger" disabled={deleteConfirmText !== "DELETE" || isDeleting} onClick={handleDeleteData}>

@@ -8,10 +8,16 @@ from app.api.deps import get_current_user, require_expert_role
 from app.core import get_session
 from app.core.config import settings
 from app.models import Prediction, ExpertReview, Alert, DatasetCandidate
+from app.schemas.expert import (
+    ExpertQueueItemResponse,
+    ExpertReviewDetailResponse,
+    ExpertReviewSubmissionRequest,
+    ExpertReviewSubmissionResponse,
+)
 
 router = APIRouter(tags=["expert"])
 
-@router.get("/expert/queue")
+@router.get("/expert/queue", response_model=list[ExpertQueueItemResponse])
 def get_expert_queue(
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
@@ -47,7 +53,10 @@ def get_expert_queue(
         })
     return results
 
-@router.get("/expert/reviews/{review_id}")
+@router.get(
+    "/expert/reviews/{review_id}",
+    response_model=ExpertReviewDetailResponse,
+)
 def get_expert_review(
     request: Request,
     review_id: int,
@@ -164,10 +173,13 @@ def release_expert_review(
     return {"status": "released", "review_id": review_id}
 
 
-@router.post("/expert/reviews/{review_id}")
+@router.post(
+    "/expert/reviews/{review_id}",
+    response_model=ExpertReviewSubmissionResponse,
+)
 async def post_expert_review(
     review_id: int,
-    payload: dict,
+    payload: ExpertReviewSubmissionRequest,
     session: Session = Depends(get_session),
     user_id: str = Depends(require_expert_role),
 ):
@@ -196,16 +208,16 @@ async def post_expert_review(
                 detail=f"Conflict: This review is currently claimed by another expert ({review.claimed_by}).",
             )
 
-    action = payload.get("action") or payload.get("decision") or "Confirm AI Findings"
+    action = payload.action or payload.decision or "Confirm AI Findings"
     review.decision = action
     review.status = "verified"
     review.expert_id = user_id
     review.claimed_by = None
     review.claimed_at = None
     
-    if action in ("Override / Correct Findings", "corrected", "override", "Override") or payload.get("corrected_disease"):
-        review.corrected_disease = payload.get("corrected_disease")
-        raw_sev = payload.get("corrected_severity")
+    if action in ("Override / Correct Findings", "corrected", "override", "Override") or payload.corrected_disease:
+        review.corrected_disease = payload.corrected_disease
+        raw_sev = payload.corrected_severity
         if raw_sev is not None:
             if isinstance(raw_sev, (int, float)):
                 review.corrected_severity = float(raw_sev)
@@ -215,8 +227,8 @@ async def post_expert_review(
                 if m:
                     review.corrected_severity = float(m.group(0))
     
-    review.farmer_guidance = payload.get("farmer_guidance")
-    review.internal_note = payload.get("internal_note")
+    review.farmer_guidance = payload.farmer_guidance
+    review.internal_note = payload.internal_note
     review.reviewed_at = datetime.now(timezone.utc)
 
     
@@ -240,7 +252,7 @@ async def post_expert_review(
         session.add(new_alert)
     
     # Dataset flagging
-    if payload.get("add_to_retraining"):
+    if payload.add_to_retraining:
         orig_disease = pred.result.get("disease", {}).get("label") if pred.result else pred.disease
         corrected = review.corrected_disease or orig_disease
         if not session.query(DatasetCandidate).filter(DatasetCandidate.prediction_id == pred.id).first():

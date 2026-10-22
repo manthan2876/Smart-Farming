@@ -61,8 +61,16 @@ class ProfileResponse(BaseModel):
     farm_area_acres: float | None = None
 
 
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int = 3600
+    verification_required: bool | None = None
+
+
 class AuthResponse(BaseModel):
-    tokens: dict[str, str | int]
+    tokens: TokenResponse
     user: ProfileResponse
 
 
@@ -111,4 +119,3 @@ class SetupFirstTimePasswordRequest(BaseModel):
 class MessageResponse(BaseModel):
     status: str = "success"
     message: str
-

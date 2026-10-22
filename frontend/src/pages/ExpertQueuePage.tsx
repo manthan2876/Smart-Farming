@@ -70,8 +70,8 @@ export default function ExpertQueuePage() {
               <tbody>
                 {queue.map((item: any) => (
                   <tr key={item.id} className="border-t border-line text-sm text-ink">
-                    <td className="px-5 py-4"><Badge>{translateCrop(item.crop, language)}</Badge></td>
-                    <td className="px-5 py-4 font-semibold">{translateDisease(item.disease, language)}</td>
+                    <td className="px-5 py-4"><Badge>{translateCrop(item.crop ?? t("unknown"), language)}</Badge></td>
+                    <td className="px-5 py-4 font-semibold">{translateDisease(item.disease ?? t("unknown"), language)}</td>
                     <td className="px-5 py-4 text-xs font-semibold">{item.confidence ? `${(item.confidence * 100).toFixed(1)}%` : "N/A"}</td>
                     <td className="px-5 py-4 text-xs text-muted">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "N/A"}</td>
                     <td className="px-5 py-4">

@@ -20,7 +20,7 @@ export default function LanguageToggle({
   showCode = true,
   className = "" 
 }: LanguageToggleProps) {
-  const { language, setLanguage } = useAuth();
+  const { language, setLanguage, t } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +39,7 @@ export default function LanguageToggle({
       <div
         className={`inline-flex rounded-sm border border-line bg-canvas p-0.5 text-xs font-semibold ${className}`}
         role="group"
-        aria-label="Language selection"
+        aria-label={t("languageSelection")}
       >
         {LANGUAGES.map((lang) => {
           const isSelected = language === lang.code;
@@ -77,8 +77,8 @@ export default function LanguageToggle({
         }
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        title={`Language: ${currentLang.vernacular} (${currentLang.short})`}
-        aria-label={`Language: ${currentLang.vernacular} (${currentLang.short})`}
+        title={`${t("interfaceLanguage")}: ${currentLang.vernacular} (${currentLang.short})`}
+        aria-label={`${t("interfaceLanguage")}: ${currentLang.vernacular} (${currentLang.short})`}
       >
         <Globe size={isIconOnly ? 18 : 14} className={isIconOnly ? "text-muted hover:text-ink" : "text-farmer-700 dark:text-farmer-300 shrink-0"} />
         {!isIconOnly && (

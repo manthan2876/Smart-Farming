@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.schemas import FeedbackRequest, FeedbackResponse, FeedbackReviewRequest
+from app.schemas.admin import FeedbackReviewResponse
 from app.api.deps import get_current_user, require_expert_role
 from app.core import get_session
 from app.crud import get_prediction, add_feedback
@@ -84,7 +85,11 @@ def update_feedback(
     )
 
 
-@router.post("/feedback/{feedback_id}/review", status_code=200)
+@router.post(
+    "/feedback/{feedback_id}/review",
+    status_code=200,
+    response_model=FeedbackReviewResponse,
+)
 def review_feedback(
     feedback_id: int,
     payload: FeedbackReviewRequest,
@@ -159,5 +164,4 @@ def review_feedback(
         "review_status": fb.review_status,
         "corrected_label": fb.corrected_label,
     }
-
 

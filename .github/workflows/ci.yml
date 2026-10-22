@@ -124,6 +124,7 @@ jobs:
         run: |
           uv run --project backend --locked --extra dev pytest \
             backend/tests/test_storage.py \
+            backend/tests/test_alert_service.py \
             backend/tests/test_token_rotation.py \
             backend/tests/test_expert_concurrency.py \
             backend/tests/test_auth.py \
@@ -203,11 +204,23 @@ jobs:
       - name: Audit OpenAPI code generator dependencies
         run: npm audit --prefix tools/openapi-codegen --audit-level=high
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Regenerate OpenAPI and TypeScript contracts
+      - name: Regenerate OpenAPI and client contracts
         env:
           PYTHONPATH: backend/src:ai_service
           ENVIRONMENT: test
@@ -219,7 +232,17 @@ jobs:
           uv run --project backend --locked --no-dev \
             python backend/scripts/export_openapi.py
           npm --prefix frontend run api:types
-          git diff --exit-code -- Docs/openapi.json frontend/src/api/generated/openapi.d.ts
+          bash tools/openapi-codegen/generate-dart.sh
+          git diff --exit-code -- \
+            Docs/openapi.json \
+            frontend/src/api/generated/openapi.d.ts \
+            mobile/api_client \
+            mobile/pubspec.yaml \
+            mobile/pubspec.lock
+
+      - name: Verify mobile client dependency lock
+        working-directory: mobile
+        run: flutter pub get --enforce-lockfile
 
   secret-scan:
     name: Scan Repository for Secrets

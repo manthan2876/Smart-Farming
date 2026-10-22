@@ -1246,6 +1246,133 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminConfidenceBucket */
+        AdminConfidenceBucket: {
+            /** Name */
+            name: string;
+            /** Count */
+            count: number;
+        };
+        /** AdminConfidenceDrift */
+        AdminConfidenceDrift: {
+            /** Avg Disease Confidence 7D */
+            avg_disease_confidence_7d: number | null;
+            /** Avg Disease Confidence 30D */
+            avg_disease_confidence_30d: number | null;
+            /** Low Confidence Rate 7D */
+            low_confidence_rate_7d: number | null;
+            /** Predictions Last 7D */
+            predictions_last_7d: number;
+            /** Low Confidence Last 7D */
+            low_confidence_last_7d: number;
+            /** Retraining Candidates */
+            retraining_candidates: number;
+            /** Expert Correction Rate */
+            expert_correction_rate: number | null;
+            /** Confidence Threshold */
+            confidence_threshold: number;
+        };
+        /** AdminDiseaseCount */
+        AdminDiseaseCount: {
+            /** Name */
+            name: string;
+            /** Value */
+            value: number;
+        };
+        /** AdminExpertMetrics */
+        AdminExpertMetrics: {
+            /** Total Reviews */
+            total_reviews: number;
+            /** Approved */
+            approved: number;
+            /** Overrides */
+            overrides: number;
+            /** Pending */
+            pending: number;
+            /** Validated Accuracy */
+            validated_accuracy: number | null;
+        };
+        /** AdminFailureMetrics */
+        AdminFailureMetrics: {
+            /** Total Failed */
+            total_failed: number;
+            /** Failure Rate */
+            failure_rate: number;
+        };
+        /** AdminFallbackMetrics */
+        AdminFallbackMetrics: {
+            /** Recommendation Fallbacks */
+            recommendation_fallbacks: number;
+            /** Weather Fallbacks */
+            weather_fallbacks: number;
+        };
+        /** AdminFeedbackResponse */
+        AdminFeedbackResponse: {
+            /** Id */
+            id: number;
+            /** Prediction Id */
+            prediction_id: number;
+            /** Crop */
+            crop: string | null;
+            /** Disease */
+            disease: string | null;
+            /** Is Correct */
+            is_correct: boolean;
+            /** Farmer Note */
+            farmer_note: string | null;
+            /** Review Status */
+            review_status: string | null;
+            /** Review Decision */
+            review_decision: string | null;
+            /** Reviewer Id */
+            reviewer_id: string | null;
+            /** Reviewer Note */
+            reviewer_note: string | null;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Created At */
+            created_at: string;
+        };
+        /** AdminMetricsResponse */
+        AdminMetricsResponse: {
+            /** Total Users */
+            total_users: number;
+            /** Total Scans */
+            total_scans: number;
+            /** Completed Scans */
+            completed_scans: number;
+            /** Accuracy */
+            accuracy: number;
+            /** Farmer Reported Accuracy */
+            farmer_reported_accuracy: number;
+            /** Expert Audit Accuracy */
+            expert_audit_accuracy: number | null;
+            /**
+             * Accuracy Source
+             * @enum {string}
+             */
+            accuracy_source: "expert_audit" | "farmer_feedback";
+            /** Queue Depth */
+            queue_depth: number;
+            failures: components["schemas"]["AdminFailureMetrics"];
+            processing_duration: components["schemas"]["AdminProcessingDuration"];
+            fallbacks: components["schemas"]["AdminFallbackMetrics"];
+            expert_metrics: components["schemas"]["AdminExpertMetrics"];
+            /** Disease Distribution */
+            disease_distribution: components["schemas"]["AdminDiseaseCount"][];
+            /** Confidence Histogram */
+            confidence_histogram: components["schemas"]["AdminConfidenceBucket"][];
+            drift: components["schemas"]["AdminConfidenceDrift"];
+        };
+        /** AdminProcessingDuration */
+        AdminProcessingDuration: {
+            /** Avg Ms */
+            avg_ms: number;
+            /** P95 Ms */
+            p95_ms: number;
+            /** Sample Count */
+            sample_count: number;
+        };
         /** AdminPurgeRequest */
         AdminPurgeRequest: {
             /** Confirmation */
@@ -1258,6 +1385,50 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** AdminRoleUpdateResponse */
+        AdminRoleUpdateResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "success";
+            /** User Id */
+            user_id: string;
+            /** Old Role */
+            old_role: string;
+            /** New Role */
+            new_role: string;
+            /** Reason */
+            reason: string | null;
+        };
+        /** AdminUserResponse */
+        AdminUserResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string | null;
+            /** Phone */
+            phone: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "farmer" | "expert" | "admin";
+            /** Language */
+            language: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Deleted At */
+            deleted_at: string | null;
+            /** Scan Count */
+            scan_count: number;
+            /** Farm Name */
+            farm_name: string | null;
+            /** Farm Location */
+            farm_location: string | null;
+        };
         /** AdminUserUpdateRequest */
         AdminUserUpdateRequest: {
             /** Name */
@@ -1269,12 +1440,62 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** AdminUserUpdateResponse */
+        AdminUserUpdateResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "success";
+            /** User Id */
+            user_id: string;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string | null;
+            /** Role */
+            role: string;
+            /** Old Role */
+            old_role: string;
+            /** New Role */
+            new_role: string;
+            /** Reason */
+            reason: string | null;
+        };
+        /** AdminUsersResponse */
+        AdminUsersResponse: {
+            /** Total */
+            total: number;
+            /** Users */
+            users: components["schemas"]["AdminUserResponse"][];
+        };
+        /** AlertReadResponse */
+        AlertReadResponse: {
+            /** Status */
+            status: string;
+        };
+        /** AlertResponse */
+        AlertResponse: {
+            /** Id */
+            id: number;
+            /** Prediction Id */
+            prediction_id?: number | null;
+            /** Kind */
+            kind: string;
+            /** Severity */
+            severity: string;
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+            /** Is Read */
+            is_read: boolean;
+            /** Created At */
+            created_at?: string | null;
+        };
         /** AuthResponse */
         AuthResponse: {
-            /** Tokens */
-            tokens: {
-                [key: string]: string | number;
-            };
+            tokens: components["schemas"]["TokenResponse"];
             user: components["schemas"]["ProfileResponse"];
         };
         /** Body_predict_api_v1_predict_post */
@@ -1395,6 +1616,92 @@ export interface components {
             /** Status */
             status?: string | null;
         };
+        /** ExpertQueueItemResponse */
+        ExpertQueueItemResponse: {
+            /** Review Id */
+            review_id: number;
+            /** Prediction Id */
+            prediction_id: number;
+            /** Status */
+            status: string;
+            /** Crop */
+            crop: string | null;
+            /** Disease */
+            disease: string | null;
+            /** Disease Conf */
+            disease_conf: number | null;
+            /** Severity Pct */
+            severity_pct: number | null;
+            /** Claimed By */
+            claimed_by?: string | null;
+            /** Claimed At */
+            claimed_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /** ExpertReviewDetailResponse */
+        ExpertReviewDetailResponse: {
+            /** Review Id */
+            review_id: number;
+            /** Prediction Id */
+            prediction_id: number;
+            /** Status */
+            status: string;
+            /** Decision */
+            decision: string | null;
+            /** Corrected Disease */
+            corrected_disease: string | null;
+            /** Farmer Guidance */
+            farmer_guidance: string | null;
+            /** Internal Note */
+            internal_note: string | null;
+            /** Raw Path */
+            raw_path: string | null;
+            /** Processed Path */
+            processed_path: string | null;
+            /** Raw Url */
+            raw_url?: string | null;
+            /** Processed Url */
+            processed_url?: string | null;
+            /** Crop */
+            crop: string | null;
+            /** Disease */
+            disease: string | null;
+            /** Disease Conf */
+            disease_conf: number | null;
+            /** Severity Pct */
+            severity_pct: number | null;
+            /** Created At */
+            created_at: string | null;
+        };
+        /** ExpertReviewSubmissionRequest */
+        ExpertReviewSubmissionRequest: {
+            /** Action */
+            action?: string | null;
+            /** Decision */
+            decision?: string | null;
+            /** Corrected Disease */
+            corrected_disease?: string | null;
+            /** Corrected Severity */
+            corrected_severity?: string | number | null;
+            /** Pest Verified */
+            pest_verified?: boolean | null;
+            /** Farmer Guidance */
+            farmer_guidance?: string | null;
+            /** Internal Note */
+            internal_note?: string | null;
+            /** Add To Retraining */
+            add_to_retraining?: boolean | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ExpertReviewSubmissionResponse */
+        ExpertReviewSubmissionResponse: {
+            /** Status */
+            status: string;
+            /** Review Id */
+            review_id: number;
+        };
         /** FarmRequest */
         FarmRequest: {
             /** Name */
@@ -1477,6 +1784,20 @@ export interface components {
             /** Corrected Label */
             corrected_label?: string | null;
         };
+        /** FeedbackReviewResponse */
+        FeedbackReviewResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "success";
+            /** Feedback Id */
+            feedback_id: number;
+            /** Review Status */
+            review_status: string;
+            /** Corrected Label */
+            corrected_label: string | null;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /** Email */
@@ -1510,6 +1831,25 @@ export interface components {
             status: string;
             /** Message */
             message: string;
+        };
+        /** ModelRollbackResponse */
+        ModelRollbackResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "rolled_back";
+            /** Model Key */
+            model_key: string;
+            /** Previous Version */
+            previous_version: string | null;
+            /** Active Version */
+            active_version: string;
+            /**
+             * Storage
+             * @constant
+             */
+            storage: "postgresql_database";
         };
         /** PlotRequest */
         PlotRequest: {
@@ -1882,6 +2222,25 @@ export interface components {
              */
             language: string | null;
         };
+        /** TokenResponse */
+        TokenResponse: {
+            /** Access Token */
+            access_token: string;
+            /** Refresh Token */
+            refresh_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            /**
+             * Expires In
+             * @default 3600
+             */
+            expires_in: number;
+            /** Verification Required */
+            verification_required?: boolean | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1908,6 +2267,16 @@ export interface components {
             token: string;
             /** Verified Phone Token */
             verified_phone_token?: string | null;
+        };
+        /** WeatherRiskTriggerResponse */
+        WeatherRiskTriggerResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "success";
+            /** Result */
+            result: string;
         };
         /** WeatherTranslationRequest */
         WeatherTranslationRequest: {
@@ -2153,9 +2522,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ModelRollbackResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3487,9 +3854,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FeedbackReviewResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3661,9 +4026,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["AlertResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3696,9 +4059,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["AlertReadResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3729,9 +4090,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AdminMetricsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3807,9 +4166,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AdminUsersResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3846,9 +4203,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AdminRoleUpdateResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3885,9 +4240,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AdminUserUpdateResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3918,9 +4271,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WeatherRiskTriggerResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3951,9 +4302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["AdminFeedbackResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -4083,7 +4432,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExpertQueueItemResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -4118,7 +4467,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExpertReviewDetailResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4145,9 +4494,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
+                "application/json": components["schemas"]["ExpertReviewSubmissionRequest"];
             };
         };
         responses: {
@@ -4157,7 +4504,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExpertReviewSubmissionResponse"];
                 };
             };
             /** @description Validation Error */

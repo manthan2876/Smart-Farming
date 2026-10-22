@@ -1,14 +1,16 @@
-import { request } from "./client";
+import { contractRequest } from "./contract";
 
 export type ExpertQueueItem = {
   review_id: number;
   prediction_id: number;
   status: string;
-  crop: string;
-  disease: string;
-  disease_conf: number;
-  severity_pct: number;
-  created_at: string;
+  crop: string | null;
+  disease: string | null;
+  disease_conf: number | null;
+  severity_pct: number | null;
+  claimed_by?: string | null;
+  claimed_at?: string | null;
+  created_at: string | null;
 };
 
 export type ExpertReviewDetail = {
@@ -19,23 +21,28 @@ export type ExpertReviewDetail = {
   corrected_disease: string | null;
   farmer_guidance: string | null;
   internal_note: string | null;
-  raw_path: string;
+  raw_path: string | null;
   processed_path: string | null;
   raw_url?: string | null;
   processed_url?: string | null;
-  crop: string;
-  disease: string;
-  disease_conf: number;
-  severity_pct: number;
-  created_at: string;
+  crop: string | null;
+  disease: string | null;
+  disease_conf: number | null;
+  severity_pct: number | null;
+  created_at: string | null;
 };
 
 export async function getExpertQueue(token: string) {
-  return request<ExpertQueueItem[]>("/expert/queue", {}, token);
+  return contractRequest("/api/v1/expert/queue", "get", {}, token);
 }
 
-export async function getExpertReview(reviewId: number, token: string) {
-  return request<ExpertReviewDetail>("/expert/reviews/" + reviewId, {}, token);
+export async function getExpertReview(reviewId: number, token: string, lang?: string) {
+  return contractRequest(
+    "/api/v1/expert/reviews/{review_id}",
+    "get",
+    { pathParams: { review_id: reviewId }, query: lang ? { lang } : undefined },
+    token,
+  );
 }
 
 export async function submitExpertReview(
@@ -51,13 +58,13 @@ export async function submitExpertReview(
   },
   token: string
 ) {
-  return request<{status: string, review_id: number}>(
-    "/expert/reviews/" + reviewId,
+  return contractRequest(
+    "/api/v1/expert/reviews/{review_id}",
+    "post",
     {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      pathParams: { review_id: reviewId },
+      data: payload,
     },
-    token
+    token,
   );
 }

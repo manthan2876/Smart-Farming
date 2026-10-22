@@ -12,6 +12,14 @@ from app.core import get_session
 from app.models import Prediction, Feedback, User
 from app.core.config import settings
 from app.core.paths import ensure_storage_directories, storage_relative_path
+from app.schemas.admin import (
+    AdminFeedbackResponse,
+    AdminMetricsResponse,
+    AdminRoleUpdateResponse,
+    AdminUserUpdateResponse,
+    AdminUsersResponse,
+    WeatherRiskTriggerResponse,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -93,7 +101,7 @@ def _compute_drift_metrics(session: Session) -> dict[str, Any]:
     }
 
 
-@router.get("/metrics")
+@router.get("/metrics", response_model=AdminMetricsResponse)
 def get_metrics(
     user_id: str = Depends(require_admin_role), session: Session = Depends(get_session)
 ) -> dict[str, Any]:
@@ -256,7 +264,7 @@ class AdminUserUpdateRequest(BaseModel):
     reason: str | None = None
 
 
-@router.get("/users")
+@router.get("/users", response_model=AdminUsersResponse)
 def get_users_list(
     skip: int = 0,
     limit: int = 50,
@@ -299,7 +307,7 @@ def get_users_list(
     return {"total": total, "users": results}
 
 
-@router.patch("/users/{target_user_id}/role")
+@router.patch("/users/{target_user_id}/role", response_model=AdminRoleUpdateResponse)
 def update_user_role(
     target_user_id: str,
     payload: AdminRoleUpdateRequest,
@@ -355,7 +363,7 @@ def update_user_role(
     }
 
 
-@router.patch("/users/{target_user_id}")
+@router.patch("/users/{target_user_id}", response_model=AdminUserUpdateResponse)
 async def update_admin_user(
     target_user_id: str,
     payload: AdminUserUpdateRequest,
@@ -464,7 +472,7 @@ async def update_admin_user(
 # --------------------------------------------------------------------------------------
 # Proactive Weather Risk Manual Trigger
 # --------------------------------------------------------------------------------------
-@router.post("/weather-risk/trigger")
+@router.post("/weather-risk/trigger", response_model=WeatherRiskTriggerResponse)
 async def trigger_weather_risk_job(caller_id: str = Depends(require_admin_role)) -> dict[str, Any]:
     """Manually trigger proactive weather risk alert job for all farms."""
     from app.services.weather.proactive import evaluate_weather_risks
@@ -472,7 +480,7 @@ async def trigger_weather_risk_job(caller_id: str = Depends(require_admin_role))
     return {"status": "success", "result": result or "Completed"}
 
 
-@router.get("/feedback")
+@router.get("/feedback", response_model=list[AdminFeedbackResponse])
 def get_feedback(
     user_id: str = Depends(require_expert_role), session: Session = Depends(get_session)
 ) -> list[dict[str, Any]]:
@@ -571,4 +579,3 @@ def purge_blobs(
 ):
     from app.core.storage import purge_orphaned_blobs
     return purge_orphaned_blobs(session, dry_run=dry_run, grace_seconds=0)
-

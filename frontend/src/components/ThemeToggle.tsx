@@ -1,5 +1,6 @@
 import { Sun, Moon, Laptop } from "./icons";
 import { useTheme, type Theme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 interface ThemeToggleProps {
   variant?: "icon" | "segmented";
@@ -8,16 +9,17 @@ interface ThemeToggleProps {
 
 export default function ThemeToggle({ variant = "icon", className = "" }: ThemeToggleProps) {
   const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
+  const { t } = useAuth();
 
   if (variant === "segmented") {
     const options: { value: Theme; label: string; icon: typeof Sun }[] = [
-      { value: "light", label: "Light", icon: Sun },
-      { value: "dark", label: "Dark", icon: Moon },
-      { value: "system", label: "System", icon: Laptop },
+      { value: "light", label: t("lightTheme"), icon: Sun },
+      { value: "dark", label: t("darkTheme"), icon: Moon },
+      { value: "system", label: t("systemTheme"), icon: Laptop },
     ];
 
     return (
-      <div className={`inline-flex rounded-sm border border-line bg-canvas p-1 ${className}`} role="radiogroup" aria-label="Theme selection">
+      <div className={`inline-flex rounded-sm border border-line bg-canvas p-1 ${className}`} role="radiogroup" aria-label={t("themeSelection")}>
         {options.map((opt) => {
           const Icon = opt.icon;
           const isSelected = theme === opt.value;
@@ -51,8 +53,8 @@ export default function ThemeToggle({ variant = "icon", className = "" }: ThemeT
       type="button"
       onClick={toggleTheme}
       className={`relative inline-flex items-center justify-center rounded-sm p-2 text-muted transition-colors hover:bg-canvas hover:text-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-farmer-700 ${className}`}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? t("switchToLightMode") : t("switchToDarkMode")}
+      aria-label={isDark ? t("switchToLightMode") : t("switchToDarkMode")}
     >
       {isDark ? (
         <Sun size={18} className="text-amber-500" />

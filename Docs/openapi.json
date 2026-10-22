@@ -428,9 +428,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Rollback Model Api V1 Admin Models Rollback Post"
+                  "$ref": "#/components/schemas/ModelRollbackResponse"
                 }
               }
             }
@@ -2845,9 +2843,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Review Feedback Api V1 Feedback  Feedback Id  Review Post"
+                  "$ref": "#/components/schemas/FeedbackReviewResponse"
                 }
               }
             }
@@ -3108,6 +3104,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "minimum": 0,
               "default": 0,
               "title": "Offset"
             }
@@ -3118,6 +3115,8 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
               "default": 20,
               "title": "Limit"
             }
@@ -3163,8 +3162,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/AlertResponse"
                   },
                   "title": "Response Get Alerts Api V1 Alerts Get"
                 }
@@ -3229,11 +3227,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Mark Read Api V1 Alerts  Alert Id  Read Post"
+                  "$ref": "#/components/schemas/AlertReadResponse"
                 }
               }
             }
@@ -3287,9 +3281,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Metrics Api V1 Admin Metrics Get"
+                  "$ref": "#/components/schemas/AdminMetricsResponse"
                 }
               }
             }
@@ -3495,9 +3487,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Users List Api V1 Admin Users Get"
+                  "$ref": "#/components/schemas/AdminUsersResponse"
                 }
               }
             }
@@ -3571,9 +3561,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update User Role Api V1 Admin Users  Target User Id  Role Patch"
+                  "$ref": "#/components/schemas/AdminRoleUpdateResponse"
                 }
               }
             }
@@ -3647,9 +3635,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Update Admin User Api V1 Admin Users  Target User Id  Patch"
+                  "$ref": "#/components/schemas/AdminUserUpdateResponse"
                 }
               }
             }
@@ -3704,9 +3690,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Trigger Weather Risk Job Api V1 Admin Weather Risk Trigger Post"
+                  "$ref": "#/components/schemas/WeatherRiskTriggerResponse"
                 }
               }
             }
@@ -3762,8 +3746,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/AdminFeedbackResponse"
                   },
                   "title": "Response Get Feedback Api V1 Admin Feedback Get"
                 }
@@ -3992,7 +3975,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpertQueueItemResponse"
+                  },
+                  "title": "Response Get Expert Queue Api V1 Expert Queue Get"
+                }
               }
             }
           },
@@ -4069,7 +4058,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertReviewDetailResponse"
+                }
               }
             }
           },
@@ -4128,9 +4119,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true,
-                "title": "Payload"
+                "$ref": "#/components/schemas/ExpertReviewSubmissionRequest"
               }
             }
           }
@@ -4140,7 +4129,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertReviewSubmissionResponse"
+                }
               }
             }
           },
@@ -4620,6 +4611,436 @@
   },
   "components": {
     "schemas": {
+      "AdminConfidenceBucket": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "count"
+        ],
+        "title": "AdminConfidenceBucket"
+      },
+      "AdminConfidenceDrift": {
+        "properties": {
+          "avg_disease_confidence_7d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Disease Confidence 7D"
+          },
+          "avg_disease_confidence_30d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Disease Confidence 30D"
+          },
+          "low_confidence_rate_7d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low Confidence Rate 7D"
+          },
+          "predictions_last_7d": {
+            "type": "integer",
+            "title": "Predictions Last 7D"
+          },
+          "low_confidence_last_7d": {
+            "type": "integer",
+            "title": "Low Confidence Last 7D"
+          },
+          "retraining_candidates": {
+            "type": "integer",
+            "title": "Retraining Candidates"
+          },
+          "expert_correction_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Correction Rate"
+          },
+          "confidence_threshold": {
+            "type": "number",
+            "title": "Confidence Threshold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "avg_disease_confidence_7d",
+          "avg_disease_confidence_30d",
+          "low_confidence_rate_7d",
+          "predictions_last_7d",
+          "low_confidence_last_7d",
+          "retraining_candidates",
+          "expert_correction_rate",
+          "confidence_threshold"
+        ],
+        "title": "AdminConfidenceDrift"
+      },
+      "AdminDiseaseCount": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "integer",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "AdminDiseaseCount"
+      },
+      "AdminExpertMetrics": {
+        "properties": {
+          "total_reviews": {
+            "type": "integer",
+            "title": "Total Reviews"
+          },
+          "approved": {
+            "type": "integer",
+            "title": "Approved"
+          },
+          "overrides": {
+            "type": "integer",
+            "title": "Overrides"
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending"
+          },
+          "validated_accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validated Accuracy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_reviews",
+          "approved",
+          "overrides",
+          "pending",
+          "validated_accuracy"
+        ],
+        "title": "AdminExpertMetrics"
+      },
+      "AdminFailureMetrics": {
+        "properties": {
+          "total_failed": {
+            "type": "integer",
+            "title": "Total Failed"
+          },
+          "failure_rate": {
+            "type": "number",
+            "title": "Failure Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_failed",
+          "failure_rate"
+        ],
+        "title": "AdminFailureMetrics"
+      },
+      "AdminFallbackMetrics": {
+        "properties": {
+          "recommendation_fallbacks": {
+            "type": "integer",
+            "title": "Recommendation Fallbacks"
+          },
+          "weather_fallbacks": {
+            "type": "integer",
+            "title": "Weather Fallbacks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recommendation_fallbacks",
+          "weather_fallbacks"
+        ],
+        "title": "AdminFallbackMetrics"
+      },
+      "AdminFeedbackResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "prediction_id": {
+            "type": "integer",
+            "title": "Prediction Id"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop"
+          },
+          "disease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disease"
+          },
+          "is_correct": {
+            "type": "boolean",
+            "title": "Is Correct"
+          },
+          "farmer_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Note"
+          },
+          "review_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Status"
+          },
+          "review_decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Decision"
+          },
+          "reviewer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Id"
+          },
+          "reviewer_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Note"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "prediction_id",
+          "crop",
+          "disease",
+          "is_correct",
+          "farmer_note",
+          "review_status",
+          "review_decision",
+          "reviewer_id",
+          "reviewer_note",
+          "reviewed_at",
+          "created_at"
+        ],
+        "title": "AdminFeedbackResponse"
+      },
+      "AdminMetricsResponse": {
+        "properties": {
+          "total_users": {
+            "type": "integer",
+            "title": "Total Users"
+          },
+          "total_scans": {
+            "type": "integer",
+            "title": "Total Scans"
+          },
+          "completed_scans": {
+            "type": "integer",
+            "title": "Completed Scans"
+          },
+          "accuracy": {
+            "type": "number",
+            "title": "Accuracy"
+          },
+          "farmer_reported_accuracy": {
+            "type": "number",
+            "title": "Farmer Reported Accuracy"
+          },
+          "expert_audit_accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert Audit Accuracy"
+          },
+          "accuracy_source": {
+            "type": "string",
+            "enum": [
+              "expert_audit",
+              "farmer_feedback"
+            ],
+            "title": "Accuracy Source"
+          },
+          "queue_depth": {
+            "type": "integer",
+            "title": "Queue Depth"
+          },
+          "failures": {
+            "$ref": "#/components/schemas/AdminFailureMetrics"
+          },
+          "processing_duration": {
+            "$ref": "#/components/schemas/AdminProcessingDuration"
+          },
+          "fallbacks": {
+            "$ref": "#/components/schemas/AdminFallbackMetrics"
+          },
+          "expert_metrics": {
+            "$ref": "#/components/schemas/AdminExpertMetrics"
+          },
+          "disease_distribution": {
+            "items": {
+              "$ref": "#/components/schemas/AdminDiseaseCount"
+            },
+            "type": "array",
+            "title": "Disease Distribution"
+          },
+          "confidence_histogram": {
+            "items": {
+              "$ref": "#/components/schemas/AdminConfidenceBucket"
+            },
+            "type": "array",
+            "title": "Confidence Histogram"
+          },
+          "drift": {
+            "$ref": "#/components/schemas/AdminConfidenceDrift"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_users",
+          "total_scans",
+          "completed_scans",
+          "accuracy",
+          "farmer_reported_accuracy",
+          "expert_audit_accuracy",
+          "accuracy_source",
+          "queue_depth",
+          "failures",
+          "processing_duration",
+          "fallbacks",
+          "expert_metrics",
+          "disease_distribution",
+          "confidence_histogram",
+          "drift"
+        ],
+        "title": "AdminMetricsResponse"
+      },
+      "AdminProcessingDuration": {
+        "properties": {
+          "avg_ms": {
+            "type": "integer",
+            "title": "Avg Ms"
+          },
+          "p95_ms": {
+            "type": "integer",
+            "title": "P95 Ms"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "avg_ms",
+          "p95_ms",
+          "sample_count"
+        ],
+        "title": "AdminProcessingDuration"
+      },
       "AdminPurgeRequest": {
         "properties": {
           "confirmation": {
@@ -4660,6 +5081,164 @@
           "role"
         ],
         "title": "AdminRoleUpdateRequest"
+      },
+      "AdminRoleUpdateResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "success",
+            "title": "Status"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "old_role": {
+            "type": "string",
+            "title": "Old Role"
+          },
+          "new_role": {
+            "type": "string",
+            "title": "New Role"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "user_id",
+          "old_role",
+          "new_role",
+          "reason"
+        ],
+        "title": "AdminRoleUpdateResponse"
+      },
+      "AdminUserResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "farmer",
+              "expert",
+              "admin"
+            ],
+            "title": "Role"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "scan_count": {
+            "type": "integer",
+            "title": "Scan Count"
+          },
+          "farm_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farm Name"
+          },
+          "farm_location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farm Location"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "role",
+          "language",
+          "created_at",
+          "deleted_at",
+          "scan_count",
+          "farm_name",
+          "farm_location"
+        ],
+        "title": "AdminUserResponse"
       },
       "AdminUserUpdateRequest": {
         "properties": {
@@ -4711,21 +5290,168 @@
         "type": "object",
         "title": "AdminUserUpdateRequest"
       },
+      "AdminUserUpdateResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "success",
+            "title": "Status"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "old_role": {
+            "type": "string",
+            "title": "Old Role"
+          },
+          "new_role": {
+            "type": "string",
+            "title": "New Role"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "user_id",
+          "name",
+          "phone",
+          "role",
+          "old_role",
+          "new_role",
+          "reason"
+        ],
+        "title": "AdminUserUpdateResponse"
+      },
+      "AdminUsersResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/AdminUserResponse"
+            },
+            "type": "array",
+            "title": "Users"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "users"
+        ],
+        "title": "AdminUsersResponse"
+      },
+      "AlertReadResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "AlertReadResponse"
+      },
+      "AlertResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "prediction_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prediction Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "is_read": {
+            "type": "boolean",
+            "title": "Is Read"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "title",
+          "body",
+          "is_read"
+        ],
+        "title": "AlertResponse"
+      },
       "AuthResponse": {
         "properties": {
           "tokens": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Tokens"
+            "$ref": "#/components/schemas/TokenResponse"
           },
           "user": {
             "$ref": "#/components/schemas/ProfileResponse"
@@ -5023,6 +5749,403 @@
         ],
         "title": "ErrorResponse"
       },
+      "ExpertQueueItemResponse": {
+        "properties": {
+          "review_id": {
+            "type": "integer",
+            "title": "Review Id"
+          },
+          "prediction_id": {
+            "type": "integer",
+            "title": "Prediction Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop"
+          },
+          "disease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disease"
+          },
+          "disease_conf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disease Conf"
+          },
+          "severity_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Pct"
+          },
+          "claimed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claimed By"
+          },
+          "claimed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claimed At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "review_id",
+          "prediction_id",
+          "status",
+          "crop",
+          "disease",
+          "disease_conf",
+          "severity_pct"
+        ],
+        "title": "ExpertQueueItemResponse"
+      },
+      "ExpertReviewDetailResponse": {
+        "properties": {
+          "review_id": {
+            "type": "integer",
+            "title": "Review Id"
+          },
+          "prediction_id": {
+            "type": "integer",
+            "title": "Prediction Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "corrected_disease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Disease"
+          },
+          "farmer_guidance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Guidance"
+          },
+          "internal_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Internal Note"
+          },
+          "raw_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Path"
+          },
+          "processed_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Path"
+          },
+          "raw_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Url"
+          },
+          "processed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Url"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop"
+          },
+          "disease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disease"
+          },
+          "disease_conf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disease Conf"
+          },
+          "severity_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Pct"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "review_id",
+          "prediction_id",
+          "status",
+          "decision",
+          "corrected_disease",
+          "farmer_guidance",
+          "internal_note",
+          "raw_path",
+          "processed_path",
+          "crop",
+          "disease",
+          "disease_conf",
+          "severity_pct",
+          "created_at"
+        ],
+        "title": "ExpertReviewDetailResponse"
+      },
+      "ExpertReviewSubmissionRequest": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "corrected_disease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Disease"
+          },
+          "corrected_severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Severity"
+          },
+          "pest_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pest Verified"
+          },
+          "farmer_guidance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Guidance"
+          },
+          "internal_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Internal Note"
+          },
+          "add_to_retraining": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add To Retraining"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ExpertReviewSubmissionRequest"
+      },
+      "ExpertReviewSubmissionResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "review_id": {
+            "type": "integer",
+            "title": "Review Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "review_id"
+        ],
+        "title": "ExpertReviewSubmissionResponse"
+      },
       "FarmRequest": {
         "properties": {
           "name": {
@@ -5311,6 +6434,42 @@
         ],
         "title": "FeedbackReviewRequest"
       },
+      "FeedbackReviewResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "success",
+            "title": "Status"
+          },
+          "feedback_id": {
+            "type": "integer",
+            "title": "Feedback Id"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status"
+          },
+          "corrected_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "feedback_id",
+          "review_status",
+          "corrected_label"
+        ],
+        "title": "FeedbackReviewResponse"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -5396,6 +6555,48 @@
           "message"
         ],
         "title": "MessageResponse"
+      },
+      "ModelRollbackResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "rolled_back",
+            "title": "Status"
+          },
+          "model_key": {
+            "type": "string",
+            "title": "Model Key"
+          },
+          "previous_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Version"
+          },
+          "active_version": {
+            "type": "string",
+            "title": "Active Version"
+          },
+          "storage": {
+            "type": "string",
+            "const": "postgresql_database",
+            "title": "Storage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "model_key",
+          "previous_version",
+          "active_version",
+          "storage"
+        ],
+        "title": "ModelRollbackResponse"
       },
       "PlotRequest": {
         "properties": {
@@ -6714,6 +7915,45 @@
         ],
         "title": "TTSRequest"
       },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "default": 3600
+          },
+          "verification_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verification Required"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token"
+        ],
+        "title": "TokenResponse"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -6800,6 +8040,25 @@
           "token"
         ],
         "title": "VerifyPhoneUpdateRequest"
+      },
+      "WeatherRiskTriggerResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "success",
+            "title": "Status"
+          },
+          "result": {
+            "type": "string",
+            "title": "Result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "result"
+        ],
+        "title": "WeatherRiskTriggerResponse"
       },
       "WeatherTranslationRequest": {
         "properties": {
