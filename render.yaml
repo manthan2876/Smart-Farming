@@ -23,7 +23,7 @@ services:
       - key: AI_SERVICE_URL
         value: https://maharsh8805-smart-farming-ai.hf.space
       - key: GATEWAY_API_KEY
-        value: khdfiwfhhfwefofhweofhkjhhdfhskdjda
+        sync: false
       - key: WEB_CONCURRENCY
         value: "1"
     buildFilter:

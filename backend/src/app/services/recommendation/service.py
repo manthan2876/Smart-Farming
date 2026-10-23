@@ -240,9 +240,11 @@ def call_remote_advisory_server(payload: dict) -> dict[str, Any] | None:
             "Content-Type": "application/json",
             "User-Agent": "SmartFarmingBackend/2.0",
         }
-        gateway_key = getattr(settings, "GATEWAY_API_KEY", None) or os.getenv("GATEWAY_SECRET") or os.getenv("GATEWAY_API_KEY")
-        if not gateway_key and "maharsh8805-smart-farming-ai.hf.space" in endpoint:
-            gateway_key = "khdfiwfhhfwefofhweofhkjhhdfhskdjda"
+        gateway_key = (
+            getattr(settings, "GATEWAY_API_KEY", None)
+            or os.getenv("GATEWAY_SECRET")
+            or os.getenv("GATEWAY_API_KEY")
+        )
         if gateway_key:
             clean_key = str(gateway_key).strip().strip('"').strip("'")
             if clean_key:

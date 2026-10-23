@@ -23,9 +23,11 @@ async def call_model_service(
     headers = {}
 
     # Support Bearer token authentication (GATEWAY_SECRET on HF Space)
-    gateway_key = getattr(settings, "GATEWAY_API_KEY", None) or os.getenv("GATEWAY_SECRET") or os.getenv("GATEWAY_API_KEY")
-    if not gateway_key and "maharsh8805-smart-farming-ai.hf.space" in url:
-        gateway_key = "khdfiwfhhfwefofhweofhkjhhdfhskdjda"
+    gateway_key = (
+        getattr(settings, "GATEWAY_API_KEY", None)
+        or os.getenv("GATEWAY_SECRET")
+        or os.getenv("GATEWAY_API_KEY")
+    )
     if gateway_key:
         clean_key = str(gateway_key).strip().strip('"').strip("'")
         if clean_key:
