@@ -43,7 +43,7 @@ dev = [
     "pytest>=8.0.0",
     "pytest-mock>=3.14.0",
     "pip-audit>=2.10.0,<3.0.0",
-    "opencv-python-headless>=4.10.0,<4.13",
+    "opencv-python-headless>=5.0.0.93,<5.1",
     "ruff>=0.14.0,<1.0.0",
     "mypy>=2.4.0,<3.0.0",
 ]
