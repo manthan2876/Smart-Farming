@@ -69,8 +69,8 @@ export default function ExpertQueuePage() {
               </thead>
               <tbody>
                 {queue.map((item: any) => {
-                  const itemId = item.id ?? item.review_id;
-                  const itemConf = item.confidence ?? item.disease_conf;
+                  const itemId = item.review_id ?? item.id;
+                  const itemConf = item.disease_conf ?? item.confidence;
                   return (
                     <tr key={itemId} className="border-t border-line text-sm text-ink">
                       <td className="px-5 py-4"><Badge>{translateCrop(item.crop ?? t("unknown"), language)}</Badge></td>

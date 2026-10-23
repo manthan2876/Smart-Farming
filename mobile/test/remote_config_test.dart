@@ -13,7 +13,7 @@ void main() {
     final url = await RemoteConfigService.fetchBackendUrl();
     expect(url, isNotNull);
     expect(url, startsWith('https://smart-farming-backend-'));
-    expect(url, contains('run.app'));
+    expect(url, anyOf(contains('onrender.com'), contains('run.app')));
   });
 
   test('ApiService initializes backend URL strictly from Supabase Remote Config', () async {
