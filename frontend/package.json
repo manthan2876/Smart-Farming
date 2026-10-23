@@ -11,7 +11,7 @@
     "api:types": "npm --prefix ../tools/openapi-codegen run generate"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
+    "@supabase/supabase-js": "^2.118.0",
     "@tanstack/react-query": "^5.102.3",
     "@types/leaflet": "^1.9.22",
     "@vercel/analytics": "^2.0.1",
