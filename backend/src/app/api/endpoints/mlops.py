@@ -17,7 +17,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin_role
@@ -70,12 +70,10 @@ class DatasetExportSplit(BaseModel):
 
 
 class DatasetExportRequest(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     filters: DatasetExportFilters = DatasetExportFilters()
     split: DatasetExportSplit
     format: str = "PyTorch Folder"
-    imageTarget: str = Field(default="preprocessed", alias="image_target")
+    imageTarget: str = Field(default="preprocessed", validation_alias=AliasChoices("imageTarget", "image_target"))
     replay_ratio: float = Field(default=0.70, ge=0.0, le=0.95, description="Target proportion of baseline replay images (0.0 to 0.95)")
     include_replay_buffer: bool = True
 
