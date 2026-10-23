@@ -20,6 +20,9 @@ def _logical_storage_roots() -> tuple[tuple[Path, Path], ...]:
         (Path("data/uploads"), settings.UPLOAD_ROOT),
         (Path("data/processed"), settings.PROCESSED_ROOT),
         (Path("data/audio"), settings.AUDIO_ROOT),
+        (Path("uploads"), settings.UPLOAD_ROOT),
+        (Path("processed"), settings.PROCESSED_ROOT),
+        (Path("audio"), settings.AUDIO_ROOT),
         (Path("data"), settings.DATA_ROOT),
     )
 

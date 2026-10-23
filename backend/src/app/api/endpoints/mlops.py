@@ -88,17 +88,20 @@ def _split_for_entity(split_key: str, split: DatasetExportSplit) -> str:
     return "test"
 
 
-def _clean_image_without_exif(image_path: Path) -> bytes:
+def _clean_image_without_exif(image_input: Path | bytes) -> bytes:
     """Reads image bytes and strips all EXIF metadata (specifically GPS coordinates) to protect farmer privacy."""
     try:
         from PIL import Image as PILImage
-        with PILImage.open(image_path) as img:
+        img_source = image_input if isinstance(image_input, bytes) else image_input.read_bytes()
+        with PILImage.open(io.BytesIO(img_source)) as img:
             buffer = io.BytesIO()
             fmt = img.format or "JPEG"
             img.save(buffer, format=fmt)
             return buffer.getvalue()
     except Exception:
-        return image_path.read_bytes()
+        if isinstance(image_input, bytes):
+            return image_input
+        return image_input.read_bytes()
 
 
 @router.get("/summary", response_model=DatasetSummaryResponse)
@@ -205,6 +208,9 @@ def export_dataset_post(
     metadata: list[dict[str, Any]] = []
 
     try:
+        from app.core.storage import get_storage
+        storage = get_storage()
+
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             # 1. Process candidate images
             for candidate in selected:
@@ -212,11 +218,8 @@ def export_dataset_post(
                 image_path_value = candidate.image_path
                 if payload.imageTarget == "preprocessed" and prediction and prediction.processed_path:
                     image_path_value = prediction.processed_path
-
-                try:
-                    image_path = resolve_storage_path(image_path_value)
-                except ValueError as exc:
-                    raise HTTPException(status_code=422, detail="Candidate image path is outside configured storage") from exc
+                elif not image_path_value and prediction:
+                    image_path_value = prediction.processed_path if payload.imageTarget == "preprocessed" else prediction.raw_path
 
                 # Spatial deterministic split by plot_id / user_id
                 if prediction and prediction.plot_id:
@@ -231,17 +234,42 @@ def export_dataset_post(
                 label = (candidate.corrected_label or candidate.original_label or "unknown").replace(" ", "_").replace("/", "_")
                 class_counts[label] += 1
 
+                # Load image bytes from Supabase storage or local disk
+                raw_bytes: bytes | None = None
+                img_name = "leaf.jpg"
+                if image_path_value:
+                    try:
+                        img_name = Path(image_path_value).name or "leaf.jpg"
+                    except Exception:
+                        img_name = "leaf.jpg"
+
+                    # 1. Try unified storage backend (works for Supabase Object Storage & local storage)
+                    try:
+                        if storage.exists(image_path_value):
+                            raw_bytes = storage.get(image_path_value)
+                    except Exception as st_err:
+                        logger.debug("Storage backend lookup failed for %s: %s", image_path_value, st_err)
+
+                    # 2. Fallback to direct local filesystem check
+                    if raw_bytes is None:
+                        try:
+                            resolved_local = resolve_storage_path(image_path_value)
+                            if resolved_local.is_file():
+                                raw_bytes = resolved_local.read_bytes()
+                        except Exception:
+                            pass
+
                 image_file = None
-                if image_path.is_file():
+                if raw_bytes is not None:
                     # Strip EXIF GPS metadata for farmer privacy
-                    clean_bytes = _clean_image_without_exif(image_path)
+                    clean_bytes = _clean_image_without_exif(raw_bytes)
                     if payload.format == "PyTorch Folder":
-                        image_file = f"images/{split}/{label}/{candidate.id}_{image_path.name}"
+                        image_file = f"images/{split}/{label}/{candidate.id}_{img_name}"
                     else:
-                        image_file = f"images/{split}/{candidate.id}_{image_path.name}"
+                        image_file = f"images/{split}/{candidate.id}_{img_name}"
                     archive.writestr(image_file, clean_bytes)
                 else:
-                    missing_images_warnings.append(str(image_path_value))
+                    missing_images_warnings.append(str(image_path_value or f"candidate_{candidate.id}"))
                     logger.warning("Missing dataset candidate image file: %s (ID %s)", image_path_value, candidate.id)
 
                 metadata.append({

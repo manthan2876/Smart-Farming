@@ -110,9 +110,9 @@ export default function AdminMetricsPage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert(t("adminExportFailed"));
+      alert(e?.message || t("adminExportFailed"));
     } finally {
       setExporting(false);
     }

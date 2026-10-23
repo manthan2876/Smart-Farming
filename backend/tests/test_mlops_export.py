@@ -380,3 +380,48 @@ def test_export_remote_storage_returns_signed_url(client, admin_user, db_session
     assert data["candidates_count"] == 1
 
 
+def test_export_handles_uploads_prefix_and_missing_images(client, admin_user, db_session, tmp_path, monkeypatch):
+    """Test that candidate image paths starting with uploads/ or missing on disk do not raise 422."""
+    monkeypatch.setattr("app.core.paths.settings.BACKEND_ROOT", tmp_path)
+    monkeypatch.setattr("app.core.paths.settings.DATA_ROOT", tmp_path / "data")
+    monkeypatch.setattr("app.core.paths.settings.UPLOAD_ROOT", tmp_path / "data" / "uploads")
+
+    pred = Prediction(
+        user_id=admin_user["user"].id,
+        raw_path="uploads/20261023_test_leaf.jpg",
+        crop="Tomato",
+        disease="Early Blight",
+        status="completed",
+        plot_id=404,
+        result={"disease": {"label": "Early Blight"}},
+    )
+    db_session.add(pred)
+    db_session.commit()
+
+    cand = DatasetCandidate(
+        prediction_id=pred.id,
+        source="farmer_confirmation",
+        original_label="Early Blight",
+        corrected_label="Early Blight",
+        image_path="uploads/20261023_test_leaf.jpg",
+        status="pending_review",
+    )
+    db_session.add(cand)
+    db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_user['token']}"}
+    payload = {
+        "filters": {"expert": True, "farmer": True, "status": "all"},
+        "split": {"train": 70, "val": 15, "test": 15},
+        "format": "PyTorch Folder",
+        "imageTarget": "raw",
+        "include_replay_buffer": False,
+    }
+
+    # Must succeed (200) with download=true and not throw 422
+    resp = client.post("/admin/dataset/export?download=true", json=payload, headers=headers)
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/zip"
+
+
+

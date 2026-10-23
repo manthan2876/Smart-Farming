@@ -389,9 +389,9 @@ export default function SettingsPage() {
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert(t("exportError"));
+      alert(err?.message || t("exportError"));
     } finally {
       setIsExporting(false);
     }
