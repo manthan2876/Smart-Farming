@@ -35,8 +35,8 @@ jobs:
           # Prevent downloading large Git LFS weights during clone
           export GIT_LFS_SKIP_SMUDGE=1
 
-          echo "Cloning Space deployment mirror with secure header authorization..."
-          git -c http.extraheader="Authorization: Bearer $HF_TOKEN" clone --depth 1 https://huggingface.co/spaces/Maharsh8805/smart-farming-ai hf_mirror
+          echo "Cloning Space deployment mirror..."
+          git clone --depth 1 "https://Maharsh8805:${HF_TOKEN}@huggingface.co/spaces/Maharsh8805/smart-farming-ai" hf_mirror
 
           echo "Synchronizing ai_service source files..."
           for f in app.py requirements.txt README.md advisory_kb.json packages.txt; do
@@ -83,9 +83,9 @@ jobs:
           echo "Pushing updates to Hugging Face Space..."
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
           git commit -m "deploy(ai_service): sync from commit ${{ github.sha }}"
-          git -c http.extraheader="Authorization: Bearer $HF_TOKEN" push origin main
+          git push origin main
+          git remote set-url origin "https://huggingface.co/spaces/Maharsh8805/smart-farming-ai"
           echo "Successfully pushed ai_service commit to Hugging Face Space!"
 
       - name: Polling Post-Deployment Health Check
