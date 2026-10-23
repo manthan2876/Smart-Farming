@@ -17,7 +17,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin_role
@@ -44,6 +44,18 @@ class DatasetExportFilters(BaseModel):
     crop: str | None = None
     status: CandidateStatusEnum = CandidateStatusEnum.ADDED_TO_DATASET
 
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            v_clean = v.strip().lower()
+            if v_clean in ("any", "all", "*"):
+                return CandidateStatusEnum.ALL
+            for member in CandidateStatusEnum:
+                if member.value == v_clean:
+                    return member
+        return v
+
 
 class DatasetExportSplit(BaseModel):
     train: int = Field(ge=0, le=100)
@@ -58,10 +70,12 @@ class DatasetExportSplit(BaseModel):
 
 
 class DatasetExportRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     filters: DatasetExportFilters = DatasetExportFilters()
     split: DatasetExportSplit
     format: str = "PyTorch Folder"
-    imageTarget: str = "preprocessed"
+    imageTarget: str = Field(default="preprocessed", alias="image_target")
     replay_ratio: float = Field(default=0.70, ge=0.0, le=0.95, description="Target proportion of baseline replay images (0.0 to 0.95)")
     include_replay_buffer: bool = True
 
@@ -157,9 +171,11 @@ def export_dataset_post(
     is_admin: str = Depends(require_admin_role),
     session: Session = Depends(get_session),
 ):
-    if payload.format not in {"PyTorch Folder", "JSON Manifest"}:
+    target_fmt = payload.format.strip()
+    if target_fmt not in {"PyTorch Folder", "JSON Manifest"}:
         raise HTTPException(status_code=422, detail="Only PyTorch Folder and JSON Manifest exports are supported")
-    if payload.imageTarget not in {"raw", "preprocessed"}:
+    target_img = payload.imageTarget.strip().lower()
+    if target_img not in {"raw", "preprocessed"}:
         raise HTTPException(status_code=422, detail="imageTarget must be raw or preprocessed")
 
     sources = _source_filter(payload.filters)
@@ -169,7 +185,7 @@ def export_dataset_post(
     # Build base query with join to Prediction for crop filter
     query = (
         session.query(DatasetCandidate)
-        .join(Prediction, DatasetCandidate.prediction_id == Prediction.id)
+        .outerjoin(Prediction, DatasetCandidate.prediction_id == Prediction.id)
     )
 
     # Filter by source

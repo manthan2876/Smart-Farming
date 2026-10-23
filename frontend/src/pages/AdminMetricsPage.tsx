@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminMetrics,
   datasetSummary as getDatasetSummary,
@@ -22,6 +22,7 @@ const STATUS_OPTIONS = ["Any", "pending_review", "added_to_dataset", "rejected"]
 
 export default function AdminMetricsPage() {
   const { token, t, language } = useAuth();
+  const queryClient = useQueryClient();
 
   // MLOps UI tab state: summary | export | history
   const [mlopsTab, setMlopsTab] = useState<"summary" | "export" | "history">("summary");
@@ -81,6 +82,9 @@ export default function AdminMetricsPage() {
         imageTarget: exportImageTarget,
       });
 
+      // Invalidate audit history so the export appears in the History tab immediately
+      queryClient.invalidateQueries({ queryKey: ["mlops_runs"] });
+
       // If backend uploaded to Supabase/S3, it returns a JSON payload with signed download_url
       if (blob.type.includes("json")) {
         const text = await blob.text();
@@ -89,8 +93,6 @@ export default function AdminMetricsPage() {
           if (json.download_url) {
             const a = document.createElement("a");
             a.href = json.download_url;
-            a.target = "_blank";
-            a.rel = "noopener noreferrer";
             a.download = `dataset_export_${json.export_id || "bundle"}.zip`;
             document.body.appendChild(a);
             a.click();
@@ -111,8 +113,9 @@ export default function AdminMetricsPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (e: any) {
-      console.error(e);
-      alert(e?.message || t("adminExportFailed"));
+      console.error("Dataset export failed:", e);
+      const msg = typeof e?.message === "string" ? e.message : (typeof e?.detail === "string" ? e.detail : t("adminExportFailed"));
+      alert(msg);
     } finally {
       setExporting(false);
     }

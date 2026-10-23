@@ -424,4 +424,48 @@ def test_export_handles_uploads_prefix_and_missing_images(client, admin_user, db
     assert resp.headers["content-type"] == "application/zip"
 
 
+def test_export_status_any_normalization_and_alias(client, admin_user, db_session, tmp_path, monkeypatch):
+    """Test that filters.status='Any' normalizes to CandidateStatusEnum.ALL and image_target alias works."""
+    monkeypatch.setattr("app.core.paths.settings.BACKEND_ROOT", tmp_path)
+    monkeypatch.setattr("app.core.paths.settings.DATA_ROOT", tmp_path / "data")
+    monkeypatch.setattr("app.core.paths.settings.UPLOAD_ROOT", tmp_path / "data" / "uploads")
+
+    pred = Prediction(
+        user_id=admin_user["user"].id,
+        raw_path="uploads/test_any.jpg",
+        crop="Cotton",
+        disease="Bacterial Blight",
+        status="completed",
+        plot_id=505,
+        result={"disease": {"label": "Bacterial Blight"}},
+    )
+    db_session.add(pred)
+    db_session.commit()
+
+    cand = DatasetCandidate(
+        prediction_id=pred.id,
+        source="expert_correction",
+        original_label="Bacterial Blight",
+        corrected_label="Bacterial Blight",
+        image_path="uploads/test_any.jpg",
+        status="pending_review",
+    )
+    db_session.add(cand)
+    db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_user['token']}"}
+    payload = {
+        "filters": {"expert": True, "farmer": True, "status": "Any"},
+        "split": {"train": 80, "val": 10, "test": 10},
+        "format": "PyTorch Folder",
+        "image_target": "preprocessed",
+        "include_replay_buffer": False,
+    }
+
+    resp = client.post("/admin/dataset/export?download=true", json=payload, headers=headers)
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/zip"
+
+
+
 
