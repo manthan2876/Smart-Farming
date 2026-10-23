@@ -70,7 +70,12 @@ try:
     import os
     from dotenv import load_dotenv
 
-    _BACKEND_ROOT = Path(__file__).resolve().parents[1]
+    _FILE_PATH = Path(__file__).resolve()
+    # Find repository root that contains backend/
+    _CANDIDATE_ROOTS = [_FILE_PATH.parents[2], _FILE_PATH.parents[1], _FILE_PATH.parent]
+    _REPO_ROOT = next((p for p in _CANDIDATE_ROOTS if (p / "backend" / "src").exists()), _FILE_PATH.parents[1])
+    _BACKEND_ROOT = _REPO_ROOT / "backend" if (_REPO_ROOT / "backend").exists() else _REPO_ROOT
+
     load_dotenv(_BACKEND_ROOT / ".env")
     sys.path.insert(0, str(_BACKEND_ROOT / "src"))
 

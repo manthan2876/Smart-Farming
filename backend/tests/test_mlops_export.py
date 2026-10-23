@@ -186,3 +186,197 @@ def test_export_defaults_to_approved_only(client, admin_user, db_session, tmp_pa
         # Verify class support warning triggered (only 1 sample for Early_Blight)
         assert len(meta["provenance"]["warnings"]) >= 1
         assert "minimum recommended" in meta["provenance"]["warnings"][0]
+
+
+def test_split_percentages_validation(client, admin_user):
+    """Test that split percentages not totaling 100 are rejected with 422."""
+    headers = {"Authorization": f"Bearer {admin_user['token']}"}
+    payload = {
+        "split": {"train": 70, "val": 20, "test": 20},  # 110% != 100%
+        "format": "PyTorch Folder",
+    }
+    resp = client.post("/admin/dataset/export", json=payload, headers=headers)
+    assert resp.status_code == 422
+    assert "total 100" in resp.text
+
+
+def test_dataset_summary_and_aliases(client, admin_user, db_session):
+    """Test that GET /admin/dataset/summary and GET /admin/mlops/summary return accurate telemetry."""
+    # Seed candidates with unique predictions
+    pred1 = Prediction(
+        user_id=admin_user["user"].id,
+        raw_path="data/uploads/leaf1.jpg",
+        crop="Cotton",
+        disease="Bacterial Blight",
+        status="completed",
+        result={"disease": {"label": "Bacterial Blight"}},
+    )
+    pred2 = Prediction(
+        user_id=admin_user["user"].id,
+        raw_path="data/uploads/leaf2.jpg",
+        crop="Cotton",
+        disease="Bacterial Blight",
+        status="completed",
+        result={"disease": {"label": "Bacterial Blight"}},
+    )
+    db_session.add_all([pred1, pred2])
+    db_session.commit()
+
+    cand1 = DatasetCandidate(
+        prediction_id=pred1.id,
+        source="expert_correction",
+        original_label="Healthy",
+        corrected_label="Bacterial Blight",
+        image_path="data/uploads/leaf1.jpg",
+        status="added_to_dataset",
+    )
+    cand2 = DatasetCandidate(
+        prediction_id=pred2.id,
+        source="farmer_confirmation",
+        original_label="Bacterial Blight",
+        corrected_label="Bacterial Blight",
+        image_path="data/uploads/leaf2.jpg",
+        status="pending_review",
+    )
+    db_session.add_all([cand1, cand2])
+    db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_user['token']}"}
+
+    # Canonical dataset summary
+    resp1 = client.get("/admin/dataset/summary", headers=headers)
+    assert resp1.status_code == 200
+    data1 = resp1.json()
+    assert data1["total"] == 2
+    assert data1["expert_overridden"] == 1
+    assert data1["farmer_confirmed"] == 1
+    assert data1["by_status"]["added_to_dataset"] == 1
+    assert data1["by_status"]["pending_review"] == 1
+    assert any(c["crop"] == "Cotton" for c in data1["by_crop"])
+
+    # MLOps alias summary
+    resp2 = client.get("/api/v1/admin/mlops/summary", headers=headers)
+    assert resp2.status_code == 200
+    assert resp2.json()["total"] == 2
+
+
+def test_mlops_export_alias_and_runs_tracking(client, admin_user, db_session, tmp_path, monkeypatch):
+    """Test POST /api/v1/admin/mlops/export, MlopsRun persistence, and GET /admin/mlops/runs."""
+    monkeypatch.setattr("app.core.paths.settings.BACKEND_ROOT", tmp_path)
+    monkeypatch.setattr("app.core.paths.settings.DATA_ROOT", tmp_path / "data")
+    monkeypatch.setattr("app.core.paths.settings.UPLOAD_ROOT", tmp_path / "data" / "uploads")
+
+    img_dir = tmp_path / "data" / "uploads"
+    img_dir.mkdir(parents=True, exist_ok=True)
+    img_file = img_dir / "cotton_leaf.jpg"
+    PILImage.new("RGB", (100, 100), color="blue").save(img_file, format="JPEG")
+
+    pred = Prediction(
+        user_id=admin_user["user"].id,
+        raw_path=f"data/uploads/{img_file.name}",
+        crop="Cotton",
+        disease="Curl Virus",
+        status="completed",
+        plot_id=202,
+        result={"disease": {"label": "Curl Virus"}},
+    )
+    db_session.add(pred)
+    db_session.commit()
+
+    cand = DatasetCandidate(
+        prediction_id=pred.id,
+        source="expert_correction",
+        original_label="Healthy",
+        corrected_label="Curl Virus",
+        image_path=f"data/uploads/{img_file.name}",
+        status="added_to_dataset",
+    )
+    db_session.add(cand)
+    db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_user['token']}"}
+    payload = {
+        "filters": {"expert": True, "farmer": True, "crop": "Cotton", "status": "all"},
+        "split": {"train": 80, "val": 10, "test": 10},
+        "format": "PyTorch Folder",
+        "imageTarget": "raw",
+        "include_replay_buffer": False,
+    }
+
+    # Call /api/v1/admin/mlops/export alias with download=true
+    resp = client.post("/api/v1/admin/mlops/export?download=true", json=payload, headers=headers)
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/zip"
+
+    # Verify MlopsRun was recorded in database and accessible via GET /admin/mlops/runs
+    runs_resp = client.get("/admin/mlops/runs", headers=headers)
+    assert runs_resp.status_code == 200
+    runs_data = runs_resp.json()
+    assert len(runs_data["runs"]) >= 1
+    latest_run = runs_data["runs"][0]
+    assert latest_run["status"] == "completed"
+    assert "Cotton" in json.dumps(latest_run["dataset_export_config"])
+
+
+def test_export_remote_storage_returns_signed_url(client, admin_user, db_session, tmp_path, monkeypatch):
+    """Test that when STORAGE_BACKEND=supabase, POST /admin/dataset/export returns JSON with download_url."""
+    monkeypatch.setattr("app.core.paths.settings.BACKEND_ROOT", tmp_path)
+    monkeypatch.setattr("app.core.paths.settings.DATA_ROOT", tmp_path / "data")
+    monkeypatch.setattr("app.core.paths.settings.UPLOAD_ROOT", tmp_path / "data" / "uploads")
+    monkeypatch.setattr("app.api.endpoints.mlops.settings.STORAGE_BACKEND", "supabase")
+
+    # Mock storage
+    class MockStorage:
+        def save(self, data, key, content_type=None):
+            return key
+        def get_url(self, key, expires_in=3600):
+            return f"https://mock-supabase.storage.co/{key}?token=mock-token"
+
+    monkeypatch.setattr("app.core.storage.get_storage", lambda: MockStorage())
+
+    img_dir = tmp_path / "data" / "uploads"
+    img_dir.mkdir(parents=True, exist_ok=True)
+    img_file = img_dir / "leaf.jpg"
+    PILImage.new("RGB", (64, 64), color="yellow").save(img_file, format="JPEG")
+
+    pred = Prediction(
+        user_id=admin_user["user"].id,
+        raw_path=f"data/uploads/{img_file.name}",
+        crop="Tomato",
+        disease="Early Blight",
+        status="completed",
+        plot_id=303,
+        result={"disease": {"label": "Early Blight"}},
+    )
+    db_session.add(pred)
+    db_session.commit()
+
+    cand = DatasetCandidate(
+        prediction_id=pred.id,
+        source="expert_correction",
+        original_label="Healthy",
+        corrected_label="Early Blight",
+        image_path=f"data/uploads/{img_file.name}",
+        status="added_to_dataset",
+    )
+    db_session.add(cand)
+    db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_user['token']}"}
+    payload = {
+        "split": {"train": 70, "val": 15, "test": 15},
+        "format": "PyTorch Folder",
+        "imageTarget": "raw",
+        "include_replay_buffer": False,
+    }
+
+    resp = client.post("/admin/dataset/export", json=payload, headers=headers)
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/json"
+    data = resp.json()
+    assert data["status"] == "success"
+    assert "download_url" in data
+    assert "https://mock-supabase.storage.co/exports/dataset_export_" in data["download_url"]
+    assert data["candidates_count"] == 1
+
+

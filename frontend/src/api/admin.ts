@@ -157,11 +157,12 @@ export type DatasetExportRequest = {
   include_replay_buffer?: boolean;
 };
 
-export const exportDataset = (token: string, payload: DatasetExportRequest) =>
+export const exportDataset = (token: string, payload: DatasetExportRequest, download?: boolean) =>
   contractBlobRequest(
     "/api/v1/admin/dataset/export",
     "post",
     {
+      query: download !== undefined ? { download } : undefined,
       data: {
         ...payload,
         filters: { ...payload.filters, status: payload.filters.status ?? "all" },

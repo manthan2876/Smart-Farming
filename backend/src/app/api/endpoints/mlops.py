@@ -366,7 +366,31 @@ def export_dataset_post(
             )
             archive.writestr("README.md", readme_content)
 
-        # 6. Storage Backend Upload (Supabase Storage / Serverless)
+        # 6. Record MlopsRun Audit Trail
+        try:
+            from app.models.mlopsRun import MlopsRun
+            run_entry = MlopsRun(
+                model_name=f"dataset_export_{export_id}",
+                status="completed",
+                epoch=1,
+                total_epochs=1,
+                message=f"Exported {len(selected)} candidates + {replay_count} replay images ({payload.format})",
+                dataset_export_config=payload.model_dump(),
+                metrics={
+                    "total_images": len(selected) + replay_count,
+                    "candidates_count": len(selected),
+                    "replay_count": replay_count,
+                    "split_summary": split_counts,
+                },
+                finished_at=datetime.now(timezone.utc),
+            )
+            session.add(run_entry)
+            session.commit()
+        except Exception as run_err:
+            logger.warning("Could not persist MlopsRun audit record: %s", run_err)
+            session.rollback()
+
+        # 7. Storage Backend Upload (Supabase Storage / Serverless)
         from app.core.storage import get_storage
         storage = get_storage()
         zip_key = f"exports/dataset_export_{export_id}.zip"
@@ -395,3 +419,51 @@ def export_dataset_post(
     except HTTPException:
         shutil.rmtree(tmp_dir, ignore_errors=True)
         raise
+
+
+# Backward Compatibility & Specification Alias Router
+mlops_alias_router = APIRouter(prefix="/admin/mlops", tags=["mlops"])
+
+
+@mlops_alias_router.get("/summary", response_model=DatasetSummaryResponse)
+def get_mlops_summary_alias(
+    is_admin: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
+):
+    return get_dataset_summary(is_admin=is_admin, session=session)
+
+
+@mlops_alias_router.post("/export")
+def export_mlops_post_alias(
+    payload: DatasetExportRequest,
+    download: bool = Query(default=False, description="If true, returns file directly instead of Supabase URL"),
+    is_admin: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
+):
+    return export_dataset_post(payload=payload, download=download, is_admin=is_admin, session=session)
+
+
+@mlops_alias_router.get("/runs")
+def list_mlops_runs_alias(
+    is_admin: str = Depends(require_admin_role),
+    session: Session = Depends(get_session),
+):
+    from app.models.mlopsRun import MlopsRun
+    runs = session.query(MlopsRun).order_by(MlopsRun.started_at.desc()).limit(50).all()
+    return {
+        "runs": [
+            {
+                "id": r.id,
+                "model_name": r.model_name,
+                "status": r.status,
+                "epoch": r.epoch,
+                "total_epochs": r.total_epochs,
+                "message": r.message,
+                "dataset_export_config": r.dataset_export_config,
+                "metrics": r.metrics,
+                "started_at": r.started_at.isoformat() if r.started_at else None,
+                "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            }
+            for r in runs
+        ]
+    }

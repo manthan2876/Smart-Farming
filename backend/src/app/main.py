@@ -21,7 +21,7 @@ load_dotenv(_BACKEND_DIR / ".env")
 
 from app.api.endpoints.alerts import router as alerts_router
 from app.api.endpoints.tts import router as tts_router
-from app.api.endpoints.mlops import router as mlops_router
+from app.api.endpoints.mlops import router as mlops_router, mlops_alias_router
 from app.api.endpoints.model_registry import router as model_registry_router
 from app.api.endpoints.translation import router as translation_router
 from app.api import (
@@ -211,6 +211,10 @@ api_routers = (
 for api_router in api_routers:
     app.include_router(api_router, include_in_schema=False)
     app.include_router(api_router, prefix="/api/v1")
+
+# MLOps aliases (/admin/mlops/* and /api/v1/admin/mlops/*)
+app.include_router(mlops_alias_router, include_in_schema=False)
+app.include_router(mlops_alias_router, prefix="/api/v1", include_in_schema=False)
 
 # Mount static storage directories for uploaded and processed images
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent

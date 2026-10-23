@@ -69,11 +69,35 @@ export default function AdminMetricsPage() {
         format: exportFormat,
         imageTarget: exportImageTarget,
       });
+
+      // If backend uploaded to Supabase/S3, it returns a JSON payload with signed download_url
+      if (blob.type.includes("json")) {
+        const text = await blob.text();
+        try {
+          const json = JSON.parse(text);
+          if (json.download_url) {
+            const a = document.createElement("a");
+            a.href = json.download_url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.download = `dataset_export_${json.export_id || "bundle"}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            return;
+          }
+        } catch {
+          // Fall through to regular blob handling
+        }
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "dataset_export.zip";
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error(e);
