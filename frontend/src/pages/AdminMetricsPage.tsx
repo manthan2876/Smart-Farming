@@ -407,7 +407,7 @@ export default function AdminMetricsPage() {
               <div className="rounded-sm border border-line bg-canvas p-4">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("totalCandidates")}</span>
                 <div className="mt-2 font-display text-2xl text-ink">{datasetSummary?.total ?? 0}</div>
-                <p className="mt-1 text-xs text-muted">Vetted agricultural scans</p>
+                <p className="mt-1 text-xs text-muted">{t("vettedAgriculturalScans")}</p>
               </div>
 
               <div className="rounded-sm border border-line bg-canvas p-4">
@@ -433,7 +433,7 @@ export default function AdminMetricsPage() {
                 <div className="mt-2 font-display text-2xl text-farmer-700 dark:text-emerald-400">
                   {datasetSummary?.by_status?.added_to_dataset ?? 0}
                 </div>
-                <p className="mt-1 text-xs text-muted">Ready for neural fine-tuning</p>
+                <p className="mt-1 text-xs text-muted">{t("readyForFineTuning")}</p>
               </div>
 
               <div className="rounded-sm border border-line bg-canvas p-4">
@@ -491,7 +491,7 @@ export default function AdminMetricsPage() {
             <div className="flex items-start gap-3 rounded-sm border border-farmer-200 bg-farmer-50/50 p-3.5 text-xs text-muted dark:border-farmer-900 dark:bg-farmer-950/20">
               <ShieldCheck size={18} className="mt-0.5 shrink-0 text-farmer-700 dark:text-emerald-400" />
               <div>
-                <strong className="text-ink">Zero Data Leakage & Farmer Privacy:</strong> All candidate images undergo deterministic SHA-256 partition hashing by <code className="font-mono font-semibold">plot_id</code> (preventing plant re-scans across days from leaking between train and test splits) and automatic EXIF GPS coordinate scrubbing.
+                <strong className="text-ink">{t("zeroLeakagePrivacyTitle")}:</strong> {t("zeroLeakagePrivacyDesc")}
               </div>
             </div>
           </div>
@@ -615,7 +615,7 @@ export default function AdminMetricsPage() {
                       <th className="py-2.5 px-3">{t("runId")}</th>
                       <th className="py-2.5 px-3">{t("bundleName")}</th>
                       <th className="py-2.5 px-3">{t("status")}</th>
-                      <th className="py-2.5 px-3">Message</th>
+                      <th className="py-2.5 px-3">{t("runMessage")}</th>
                       <th className="py-2.5 px-3">{t("exportedAt")}</th>
                     </tr>
                   </thead>

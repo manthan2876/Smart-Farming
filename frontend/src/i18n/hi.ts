@@ -991,4 +991,9 @@ export const hi: Record<keyof typeof en, string> = {
   runId: "रन ID",
   bundleName: "बंडल नाम",
   exportedAt: "निर्यात समय",
+  vettedAgriculturalScans: "सत्यापित कृषि स्कैन",
+  readyForFineTuning: "मॉडल फ़ाइन-ट्यूनिंग हेतु तैयार",
+  zeroLeakagePrivacyTitle: "शून्य डेटा रिसाव और किसान गोपनीयता",
+  zeroLeakagePrivacyDesc: "सभी उम्मीदवार छवियों का प्लॉट ID के आधार पर SHA-256 विभाजन किया जाता है ताकि डेटा रिसाव न हो, और EXIF GPS डेटा स्वचालित रूप से हटा दिया जाता है।",
+  runMessage: "संदेश",
 };

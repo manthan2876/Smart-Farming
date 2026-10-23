@@ -989,4 +989,9 @@ export const en = {
   runId: "Run ID",
   bundleName: "Bundle Name",
   exportedAt: "Exported At",
+  vettedAgriculturalScans: "Vetted agricultural scans",
+  readyForFineTuning: "Ready for neural fine-tuning",
+  zeroLeakagePrivacyTitle: "Zero Data Leakage & Farmer Privacy",
+  zeroLeakagePrivacyDesc: "All candidate images undergo deterministic SHA-256 partition hashing by plot_id (preventing plant re-scans across days from leaking between train and test splits) and automatic EXIF GPS coordinate scrubbing.",
+  runMessage: "Message",
 };

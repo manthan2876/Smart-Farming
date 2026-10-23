@@ -991,4 +991,9 @@ export const gu: Record<keyof typeof en, string> = {
   runId: "રન ID",
   bundleName: "બંડલ નામ",
   exportedAt: "નિકાસ સમય",
+  vettedAgriculturalScans: "ચકાસાયેલ કૃષિ સ્કેન",
+  readyForFineTuning: "ન્યુરલ ફાઇન-ટ્યુનિંગ માટે તૈયાર",
+  zeroLeakagePrivacyTitle: "શૂન્ય ડેટા લિકેજ અને ખેડૂત ગોપનીયતા",
+  zeroLeakagePrivacyDesc: "તમામ ઉમેદવાર છબીઓનું પ્લોટ ID દ્વારા SHA-256 વિભાજન કરવામાં આવે છે જેથી ડેટા લિકેજ અટકે, અને EXIF GPS ડેટા આપમેળે દૂર કરવામાં આવે છે.",
+  runMessage: "સંદેશ",
 };
