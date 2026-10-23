@@ -1757,11 +1757,13 @@ export interface components {
         };
         /** DatasetExportRequest */
         DatasetExportRequest: {
-            /** @default {
+            /**
+             * @default {
              *       "expert": true,
              *       "farmer": true,
              *       "status": "added_to_dataset"
-             *     } */
+             *     }
+             */
             filters: components["schemas"]["DatasetExportFilters"];
             split: components["schemas"]["DatasetExportSplit"];
             /**
