@@ -199,10 +199,25 @@ export DATABASE_URL="postgresql://..."
 
 ## 5. Step 1 — Export the Dataset
 
-Export approved `DatasetCandidate` records as a labelled image dataset using the MLOps Admin API.
+Approved `DatasetCandidate` records can be exported as a labelled image dataset either via the **Admin Metrics Dashboard Web UI** (`/admin/metrics`) or directly via the **MLOps Admin API** (`POST /api/v1/admin/dataset/export` or `/api/v1/admin/mlops/export`).
+
+### 5.1 Exporting via the Web Dashboard
+Navigate to `/admin/metrics` on the web dashboard and select the MLOps tabs:
+1. **Candidate Summary Tab**: Inspect the distribution of vetted candidate scans across crops, pending review counts, and zero-leakage partition hashing status.
+2. **Dataset Export Tab**:
+   - Filter by crop species (or All Crops).
+   - Filter by verification status (e.g. `added_to_dataset`, `approved`, `pending_review`).
+   - Choose image target: `preprocessed` (224x224 normalized OpenCV) or `raw`.
+   - Choose archive format: `PyTorch Folder`, `YOLO`, `CSV`, or `TFRecord`.
+   - Adjust train / val / test split sliders (70 / 15 / 15 default; must total 100%).
+   - Adjust replay ratio slider (0.0 to 0.95; default 0.30 baseline mix).
+   - Click **Export MLOps Dataset** to generate the export.
+3. **Export History Tab**: View audit records of all historical export runs, with candidate count, split distribution, format, timestamp, status, and direct download links.
+
+### 5.2 Exporting via the REST API
 
 ```bash
-curl -X POST https://smart-farming-backend-kkty.onrender.com/api/v1/admin/mlops/export \
+curl -X POST https://smart-farming-backend-kkty.onrender.com/api/v1/admin/dataset/export \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -214,7 +229,8 @@ curl -X POST https://smart-farming-backend-kkty.onrender.com/api/v1/admin/mlops/
     },
     "split": {"train": 0.70, "val": 0.15, "test": 0.15},
     "format": "PyTorch Folder",
-    "imageTarget": "preprocessed"
+    "image_target": "preprocessed",
+    "replay_ratio": 0.30
   }' \
   --output dataset_export.zip
 

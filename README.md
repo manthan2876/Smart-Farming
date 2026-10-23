@@ -132,7 +132,7 @@ Smart Farming maintains strict separation between Development and Production env
 
 | Layer | Technologies & Services | Details |
 |---|---|---|
-| **Frontend (Web)** | React 19, TypeScript 7, Vite 8, Tailwind CSS 4, Lucide React | Dashboard, interactive Grad-CAM viewer, EN/HI/GU catalogs; some inline UI strings remain untranslated |
+| **Frontend (Web)** | React 19, TypeScript 7, Vite 8, Tailwind CSS 4, Leaflet & React-Leaflet | Multi-role dashboard, keyless Leaflet GIS boundary editor (OSM/Satellite), interactive Grad-CAM viewer, MLOps export tabs, EN/HI/GU localization |
 | **Mobile App** | Flutter 3.x (Dart), `flutter_map`, `latlong2`, `shared_preferences`, `flutter_tts` | Farmer-only native Android app with center-crosshair GIS boundary drawing, Supabase Remote Config, JWT auth, offline scan queue |
 | **Backend Gateway** | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic | RESTful API gateway, RBAC, background job orchestration |
 | **Model Microservice** | PyTorch 2.6 (CPU-optimised), timm, Ultralytics YOLOv8, OpenCV | Pure inference server, in-memory model pre-warming, Grad-CAM generation |
@@ -627,6 +627,9 @@ Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at b
 | | `GET` | `/api/v1/crops` | Catalog of supported crop species, pathogens, and symptoms |
 | | `GET` | `/api/v1/history` | Longitudinal diagnostic timeline for authenticated user |
 | | `GET` | `/api/v1/admin/metrics` | System health, model inference latencies, triage counts |
+| **MLOps & Retraining** | `GET` | `/api/v1/admin/dataset/summary` | Candidate counts and per-crop review breakdown |
+| | `POST` | `/api/v1/admin/dataset/export` | Export training dataset with spatial split and replay mixing |
+| | `GET` | `/api/v1/admin/dataset/exports` | Retrieve historical export runs audit log |
 
 ---
 

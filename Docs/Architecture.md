@@ -478,10 +478,10 @@ flowchart LR
 | `/predictions/:id` | `PredictionResultPage` | Farmer+ | Complete report: disease, severity, pests, audio narration, translation toggle |
 | `/history` | `HistoryPage` | Farmer+ | Paginated diagnostic log with search and crop filtering |
 | `/weather` | `WeatherPage` | Farmer+ | Real-time weather, spray condition advisories, neural voice playback |
-| `/farm/settings` | `FarmSettingsPage` | Farmer+ | Interactive Google Maps GIS boundary polygon creator |
+| `/farm/settings` | `FarmSettingsPage` | Farmer+ | Interactive Leaflet GIS boundary polygon creator with OpenStreetMap & Satellite layers, draggable vertices, and in-place plot editing/renaming |
 | `/admin/expert` | `ExpertQueuePage` | Expert+ | Agronomist triage desk for low-confidence scans with 15-min lease locking |
 | `/admin/expert/:id`| `ExpertReviewPage` | Expert+ | Side-by-side diagnostic validation and override interface |
-| `/admin/metrics` | `AdminMetricsPage` | Admin only | System-wide ML telemetry, drift monitoring, active models |
+| `/admin/metrics` | `AdminMetricsPage` | Admin only | System-wide ML telemetry, drift monitoring, active models, candidate summary, dataset export, and export history |
 | `/admin/users` | `AdminUsersPage` | Admin only | User directory and role management with safety locks |
 
 ### Frontend Telemetry & Vercel Web Analytics

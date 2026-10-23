@@ -67,9 +67,9 @@ This document is the canonical design reference for the frontend implementation.
 | `/predictions/:id/processing` | `ProcessingPage` | Live pipeline progress tracker with skeleton loader states |
 | `/predictions/:id` | `PredictionResultPage` | Full diagnosis report: disease, severity, pests, Grad-CAM viewer, audio advisory |
 | `/history` | `HistoryPage` | Diagnostic Archive: longitudinal scan history with filter and pagination |
-| `/farm/settings` | `FarmSettingsPage` | Farm details, field boundary map, and plot CRUD management |
+| `/farm/settings` | `FarmSettingsPage` | Farm details, interactive Leaflet field boundary map (OSM/Satellite), draggable vertex editing, plot renaming, and plot CRUD management |
 | `/weather` | `WeatherPage` | Meteorological intelligence dashboard with TTS audio advisory |
-| `/alerts` | `AlertsPage` | Notification center with auto-read on navigation |
+| `/alerts` | `AlertsPage` | Notification center with live unread badge and auto-read on navigation |
 | `/settings` | `SettingsPage` | Language selection, appearance theme, and password change |
 
 ### 2.3 Expert Routes (accessible by `expert`, `admin` roles)
@@ -84,7 +84,7 @@ This document is the canonical design reference for the frontend implementation.
 
 | Route | Page Component | Purpose |
 |---|---|---|
-| `/admin/metrics` | `AdminMetricsPage` | System dashboard: user metrics, scan volume, model accuracy, drift signals |
+| `/admin/metrics` | `AdminMetricsPage` | System dashboard: model registry health, drift signals, candidate summary, dataset export, and export history |
 | `/admin/users` | `AdminUsersPage` | User directory, role assignment, and account management |
 
 ---
@@ -258,11 +258,13 @@ ProtectedRoute
 
 ### `AppShell.tsx`
 - Persistent sidebar on `md+`; collapsible drawer on mobile (`sm`)
-- Top navigation bar: breadcrumb, notification bell (links to `/alerts`), user avatar menu
+- Clean layout without redundant notification bells; all navigation items, alerts badge, language switch, and theme controls are neatly anchored in the sidebar
 - Sidebar width: `w-64` expanded, `w-16` collapsed (icon-only mode)
 
-### `SideBar.tsx`
+### `Sidebar.tsx`
 - Renders link groups based on `user.role` from `AuthContext`
+- Dedicated **Alerts** navigation tab with live unread badge count (eliminating the need for a separate top navbar bell)
+- Bottom controls: Language selector (English, Hindi, Gujarati) and Dark/Light theme toggle anchored above user profile
 - Active link: `bg-green-50 text-green-700 font-semibold border-r-2 border-green-600`
 - Inactive link: `text-gray-600 hover:bg-gray-50 hover:text-gray-900`
 

@@ -162,7 +162,7 @@ Smart Farming is an autonomous, distributed multi-tier system comprised of:
 - **FR-7.3**: Experts can confirm AI findings, correct disease labels, adjust severity scores, and prescribe personalized farmer guidance.
 
 ### 3.8 FR-8: Farm & GeoJSON Plot Boundary Management
-- **FR-8.1**: Farmers can draw closed Polygon field boundaries on Leaflet/Google Maps.
+- **FR-8.1**: Farmers can draw, edit vertices, and rename closed Polygon field boundaries on interactive Leaflet GIS maps (OpenStreetMap and Satellite layers) with draggable vertex markers and edge insertion.
 - **FR-8.2**: The system shall validate coordinates, calculate geodesic area in acres, reject self-intersecting polygons, and ensure child plots are fully contained inside the parent farm boundary.
 
 ### 3.9 FR-9: Authentication, Authorization & Security
@@ -173,7 +173,7 @@ Smart Farming is an autonomous, distributed multi-tier system comprised of:
 
 ### 3.10 FR-10: Closed-Loop MLOps & Model Retraining
 - **FR-10.1**: Verified expert corrections and farmer feedback shall be staged as `dataset_candidates`.
-- **FR-10.2**: Administrators can trigger dataset export (filtering by crop and verification status) with train/validation splits.
+- **FR-10.2**: Administrators can inspect candidate summaries, trigger dataset exports (filtering by crop and verification status) with train/validation/test splits, spatial deterministic splitting by `plot_id`, replay buffer mixing, and review export history.
 - **FR-10.3**: Model registry shall track active candidate checkpoints, allowing 1-click promotion and instant rollback.
 
 ---

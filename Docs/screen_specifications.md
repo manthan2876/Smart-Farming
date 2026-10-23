@@ -10600,10 +10600,10 @@ Individual alert:
 /alerts/:alertId
 ```
 
-The notification bell should also link here:
+The sidebar Alerts tab links directly here:
 
 ```text
-🔔 → /alerts
+Sidebar "Alerts" [badge] → /alerts
 ```
 
 ---
@@ -11334,29 +11334,24 @@ Use alert skeletons:
 
 ---
 
-# 28. Notification Bell
+# 28. Notification Bell & Alerts Navigation
 
-The Alerts screen should connect to the global navbar.
+> [!NOTE]
+> **Implementation Note:** The standalone top header bell icon was removed to reduce clutter and consolidate navigation. Notifications are surfaced directly via the **Alerts** navigation tab in `Sidebar.tsx` with a real-time unread badge counter. Clicking the tab navigates directly to `/alerts`.
+
+The Alerts screen connects to global user notifications:
 
 Example:
 
 ```text
-🔔³
+Alerts [ 3 ]
 ```
 
-The number means:
+The number badge indicates:
 
 ```text
 3 unread alerts
 ```
-
-Click:
-
-```text
-🔔
-```
-
-opens a small notification preview.
 
 ---
 

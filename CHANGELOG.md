@@ -1,6 +1,25 @@
 # Changelog
 
-## Unreleased — 2026-10-22
+## 2026-10-24
+
+### Frontend & GIS Mapping
+- Replaced Google Maps (`@vis.gl/react-google-maps`) across the frontend with open-source **Leaflet** (`react-leaflet`, `leaflet`), OpenStreetMap, and Esri World Imagery (high-resolution satellite view).
+- Removed Google Maps API key requirements (`VITE_GOOGLE_MAPS_API_KEY`, `VITE_GOOGLE_MAPS_MAP_ID`) and external Google billing dependencies.
+- Added interactive polygon boundary vertex editing: draggable circular handles, edge click to insert new vertices, and double-click to remove vertices.
+- Added in-place plot renaming and boundary updating via `PUT /farm/plots/{plot_id}`.
+- Streamlined sidebar navigation: removed redundant top header bell icon in favor of the dedicated **Alerts** tab with live unread badge counter; relocated language selector and theme toggle to the sidebar footer.
+
+### MLOps & Retraining Architecture
+- Added interactive multi-tab MLOps dashboard in `/admin/metrics`:
+  - **Candidate Summary Tab**: overview of vetted agricultural scans, pending reviews, per-crop breakdown with status badges, and privacy/leakage guarantees.
+  - **Dataset Export Tab**: export controls with crop/status filters, OpenCV normalized (224x224) or raw images, PyTorch / YOLO / CSV / TFRecord formats, train/val/test split sliders, and replay ratio buffer mixing.
+  - **Export History Tab**: audit table displaying historical export runs with candidate count, split distributions, timestamps, format, and direct download links.
+- Implemented spatial deterministic splitting using SHA-256 partition hashing on `plot_id` to eliminate plant rescan data leakage across train, val, and test splits.
+- Implemented automatic EXIF GPS coordinate scrubbing for farmer privacy.
+- Added support for Supabase Object Storage signed URL exports and direct streamed ZIP archives, with automatic `uploads/` path prefix normalization.
+- Injected model server gateway authentication secrets dynamically via environment variables (`MODEL_GATEWAY_SECRET` / `AI_SERVICE_GATEWAY_SECRET`).
+
+## 2026-10-22
 
 ### Security
 - Removed automatic creation of accounts with public, hardcoded passwords.

@@ -2304,6 +2304,8 @@ Lists all registered model types and their current production versions.
 ### 17.4 Export Dataset Candidates for Retraining
 
 ```
+POST /admin/dataset/export
+POST /api/v1/admin/dataset/export
 POST /admin/mlops/export
 POST /api/v1/admin/mlops/export
 ```
@@ -2317,22 +2319,24 @@ Exports verified diagnostic candidates for retraining with deterministic spatial
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `format` | string | ✅ | `"PyTorch Folder"` or `"JSON Manifest"` |
-| `imageTarget` | string | ✅ | `"raw"` or `"preprocessed"` (512x512 normalized) |
+| `format` | string | ✅ | `"PyTorch Folder"`, `"JSON Manifest"`, `"YOLO"`, `"CSV"`, or `"TFRecord"` |
+| `image_target` (or `imageTarget`) | string | ✅ | `"raw"` or `"preprocessed"` (224x224 normalized OpenCV) |
 | `split` | object | ❌ | Spatial train/val/test split ratios (defaults to `{"train": 0.70, "val": 0.15, "test": 0.15}`) |
-| `filters` | object | ❌ | Filter criteria: `status` (defaults to `"added_to_dataset"`), `crop`, `source` |
+| `filters` | object | ❌ | Filter criteria: `status` (e.g. `"added_to_dataset"`, `"approved"`), `crop`, `source` |
+| `replay_ratio` | number | ❌ | Proportion of baseline archive images to mix (0.0 to 0.95; default 0.30) |
 
 #### Key Security & Leakage Guards
 1. **Spatial Deterministic Split:** Splits candidates by `plot_id` (deterministic SHA-256 hash). Rescans of the same diseased plant across different days always land in the same split partition, guaranteeing zero train/test contamination.
 2. **Replay Buffer Mixing:** Automatically blends 70% baseline archive images with 30% new candidate scans to prevent model degradation on established classes.
-3. **Status Filter:** Defaults strictly to `status: "added_to_dataset"` (vetted candidates only).
+3. **Status Filter Normalization:** Handles candidate status safely across `added_to_dataset`, `approved`, and `pending_review`.
+4. **EXIF Metadata Scrubbing:** Automatically scrubs GPS coordinates from candidate images before bundling to protect farmer privacy.
 
 #### Example Response `200 OK`
 
 ```json
 {
   "status": "success",
-  "download_url": "https://zgsbxzwyumvxazbroiws.supabase.co/storage/v1/object/sign/smart-farming-data-dev/exports/export_20261020_060000.zip?token=...",
+  "download_url": "https://zgsbxzwyumvxazbroiws.supabase.co/storage/v1/object/sign/smart-farming-data-dev/exports/export_20261024_060000.zip?token=...",
   "candidate_count": 340,
   "replay_count": 790,
   "split_distribution": {
@@ -2342,6 +2346,38 @@ Exports verified diagnostic candidates for retraining with deterministic spatial
   }
 }
 ```
+
+---
+
+### 17.5 Get MLOps Dataset Candidate Summary
+
+```
+GET /admin/dataset/summary
+GET /api/v1/admin/dataset/summary
+GET /admin/mlops/summary
+GET /api/v1/admin/mlops/summary
+```
+
+Returns total candidate counts, by-source distribution, review status distribution, and per-crop breakdowns.
+
+**Authentication:** Bearer token required.  
+**Role Required:** `admin`.
+
+---
+
+### 17.6 List Historical MLOps Dataset Exports
+
+```
+GET /admin/dataset/exports
+GET /api/v1/admin/dataset/exports
+GET /admin/mlops/exports
+GET /api/v1/admin/mlops/exports
+```
+
+Returns the audit history of previous dataset export runs including timestamp, candidate counts, split distributions, export format, status, and download links.
+
+**Authentication:** Bearer token required.  
+**Role Required:** `admin`.
 
 ---
 

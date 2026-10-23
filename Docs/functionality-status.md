@@ -1,8 +1,8 @@
 # Smart Farming Functionality Status
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
+**Version:** 2.4  
+**Date:** 24 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -53,7 +53,7 @@ The core AI diagnosis pipeline supports two execution modes controlled by `REQUI
 
 The mobile application is a fully functional farmer-facing client: full JWT authentication, farm/plot management, weather with TTS, alerts, feedback, expert-review escalation, on-demand translation, and cloud TTS service with on-device fallback — all orchestrated by a 5-screen bottom-navigation shell (`FarmerShell`).
 
-The web frontend is a functional multi-role application on Vercel with a shared typed API client, token refresh, weather with TTS, admin dashboard with drift metrics and model health, and an operational MLOps dataset export that works end-to-end.
+The web frontend is a functional multi-role application on Vercel with a shared typed API client, token refresh, weather with TTS, keyless Leaflet GIS farm and plot boundary drawing/editing, consolidated sidebar navigation with live alert badges, admin dashboard with drift metrics and model health, and an operational MLOps dataset export and history suite.
 
 ---
 
@@ -490,11 +490,18 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 - **GeoJSON polygon validation (`_validate_geojson_polygon`):** Verifies polygon type, minimum 4 coordinates, closed linear rings (`ring[0] == ring[-1]`), valid coordinate boundaries (`-180 <= lon <= 180`, `-90 <= lat <= 90`), and checks for absence of self-intersections via Shapely `poly.is_valid`.
 - **Geodesic area calculation:** Automatically calculates approximate geodesic farm area in acres using projected coordinates when geometry is submitted.
 - `POST /farm/plots` creates a new plot with name, crop, area, and optional geometry.
-- `PUT /farm/plots/{plot_id}` updates a plot.
+- `PUT /farm/plots/{plot_id}` updates a plot (supporting plot renaming, crop changes, and updated GeoJSON polygon geometry).
 - `DELETE /farm/plots/{plot_id}` removes a plot.
 - Plot geometry is validated against the farm boundary using an in-process ray-casting algorithm (`_plot_inside_farm`), including tolerance on the boundary.
 - Schemas `FarmRequest`, `FarmResponse`, `PlotRequest`, `PlotResponse` are Pydantic-validated.
-- Mobile `FarmScreen` now launches `FieldBoundaryScreen` for drawing farm and plot boundaries via an interactive map with center-crosshair point placement. Boundaries are drawn by panning the map and tapping + to place vertices. Magnetic snapping auto-corrects plot points placed outside the farm boundary to the nearest farm edge. `GeoMath` utility calculates geodesic area returned as acres and hectares.
+- **Web GIS boundary & plot editing (`FarmSettingsPage.tsx`):**
+  - Powered by open-source **Leaflet** (`react-leaflet`, `leaflet`) with dual-layer toggling: OpenStreetMap (street map) and Esri World Imagery (high-resolution satellite view).
+  - Operates completely keyless without Google Maps API dependencies, API restrictions, or external billing.
+  - Interactive polygon drawing: click canvas to place boundary vertices, auto-closing the ring and calculating geodesic acreage in real time.
+  - Interactive boundary vertex editing: draggable circular vertex markers, click along polygon perimeter to insert intermediate vertices, and double-click vertex to delete it.
+  - In-place plot renaming: inline edit controls allow farmers to update plot names and geometry without deleting and recreating plot records.
+  - "Locate Me" GPS button centers and zooms the map to current device coordinates.
+- Mobile `FarmScreen` launches `FieldBoundaryScreen` for drawing farm and plot boundaries via an interactive map with center-crosshair point placement. Boundaries are drawn by panning the map and tapping + to place vertices. Magnetic snapping auto-corrects plot points placed outside the farm boundary to the nearest farm edge. `GeoMath` utility calculates geodesic area returned as acres and hectares.
 - `CreatePredictionSheet` loads farm plots and shows them in a dropdown; the selected `plot_id` is sent to `predictBytes()`.
 
 **Known gaps:**
@@ -925,28 +932,34 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 
 ---
 
-### 4.6 MLOps dataset export
+### 4.6 MLOps dataset export & retraining lifecycle
 
-**Status: Implemented (backend); aligned (frontend)**
+**Status: Implemented (backend & frontend)**
 
 **What works:**
 
-- `GET /admin/dataset/summary` returns total candidates, by-source counts (expert vs. farmer), by-status counts, and per-crop distribution.
-- `POST /admin/dataset/export` builds and streams a ZIP archive:
-  - Filters by source (expert, farmer), crop (case-insensitive), and candidate status.
-  - Splits candidates into `train`/`val`/`test` using deterministic SHA-256 hashing of candidate ID; split percentages must total 100.
-  - Supports `PyTorch Folder` (ImageFolder structure: `images/<split>/<class_label>/`) and `JSON Manifest` formats.
-  - Supports `raw` or `preprocessed` image targets.
-  - Includes a `metadata.json` with full provenance block (exported\_at, total candidates, split summary, export config, schema\_version) and a `README.md` for reproducibility.
-  - Path traversal is protected via `resolve_storage_path()`.
-- `AdminMetricsPage.tsx` calls `exportDataset()` from `admin.ts` which sends `POST /admin/dataset/export` with a `requestBlob` call. The blob is downloaded as `dataset_export.zip`.
-- The frontend export form exposes crop filter, status filter, image target, format, and split percentage controls.
-- **Previously reported frontend/backend mismatch is resolved:** the frontend now calls the correct `POST /admin/dataset/export` route via `requestBlob`.
+- `GET /admin/dataset/summary` (and alias `/admin/mlops/summary`) returns total candidates, by-source counts (expert vs. farmer), by-status counts, and per-crop distribution.
+- `POST /admin/dataset/export` (and alias `/admin/mlops/export`) builds, records, and provides exports:
+  - Filters by source (expert, farmer), crop (case-insensitive), and candidate status with normalization (supporting `pending_review`, `approved`, `rejected`, `added_to_dataset`).
+  - **Zero Data Leakage (Spatial Deterministic Split):** Candidates are split deterministically across `train`/`val`/`test` using SHA-256 partition hashing on `plot_id`. This guarantees plant rescans from the same field across multiple days never leak between training and evaluation sets.
+  - **Replay Buffer Mixing:** Configurable `replay_ratio` (0.0 to 0.95, default 0.30) automatically mixes golden baseline archive samples with verified newly approved candidates to prevent catastrophic forgetting.
+  - **Automatic EXIF Coordinate Scrubbing:** Anonymizes image metadata for farmer privacy.
+  - Supports multiple archive formats: `PyTorch Folder` (`images/<split>/<class_label>/`), `JSON Manifest`, `YOLO`, `CSV`, and `TFRecord`.
+  - Supports `raw` and `preprocessed` (224x224 normalized OpenCV) image targets.
+  - Direct download options: delivers either a time-bounded Supabase Object Storage signed URL (`download_url`) or streams a direct ZIP file.
+  - Provenance package: includes `metadata.json` (provenance block, split summary, export configuration, schema version) and a reproducibility `README.md`.
+  - Supports Supabase storage paths and automatic `uploads/` prefix normalization to avoid missing asset paths.
+- `GET /admin/dataset/exports` (and alias `/admin/mlops/exports`) returns full historical export runs tracked in the database, including timestamp, format, candidate count, split distribution, status, and download links.
+- **Frontend Admin Metrics & MLOps UI (`AdminMetricsPage.tsx`):**
+  - Interactive multi-tab layout:
+    1. **Candidate Summary Tab**: overview cards showing total candidates, pending reviews, per-crop breakdown with status badges, and privacy/leakage architecture notes.
+    2. **Dataset Export Tab**: filter controls for crop species, verification status, format, and image target; train/val/test split sliders with strict 100% sum validation; replay ratio slider; and one-click dataset export download.
+    3. **Export History Tab**: audit table displaying previous export runs with date, candidate count, split summary, format, status badge, and direct download buttons.
+  - All copy and labels are fully localized in English, Gujarati, and Hindi with localized error reporting.
 
 **Known gaps:**
 
-- The `DatasetCandidate.status` filter accepts any string; invalid status values return an empty result rather than a validation error.
-- Files missing from disk are silently skipped (no image in the archive, but the candidate appears in `metadata.json` with `image_file: null`).
+- Background asynchronous bundling for very large datasets (>5,000 images) can be offloaded to worker queues to avoid gateway timeout limits.
 
 **Relevant code:**
 

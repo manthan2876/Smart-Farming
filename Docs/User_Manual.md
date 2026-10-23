@@ -104,18 +104,26 @@ Upon completing inference (average 2 to 3.5 seconds), the screen displays:
   3. *Prevention*: Long-term crop spacing and crop rotation tips.
   4. *Monitoring*: Follow-up foliage inspection schedule.
 
-### 3.5 Vernacular Language Switching & Audio Playback
-- **Language Toggle**: Tap the language button in the top navigation bar at any time to switch the entire user interface and diagnostic recommendations between Gujarati, Hindi, and English.
+### 3.5 Vernacular Language Switching, Theme & Audio Playback
+- **Language & Theme Toggles**: Located conveniently in the lower navigation sidebar (and top bar of public pages), tap the language selector at any time to switch the entire user interface and diagnostic recommendations between Gujarati, Hindi, and English. Tap the theme toggle to switch between dark and light modes.
 - **Listen to Advisory (TTS)**: Tap the **Speaker Icon** on any diagnosis card to listen to the advice narrated in clear regional speech with numbers and dosages correctly pronounced.
 
 ### 3.6 Mapping Farm & Plot Boundaries
-1. Navigate to the **My Farm** tab.
-2. Tap **Set Farm Boundary**.
-3. Use the interactive satellite map to tap the corners of your farm. The system will automatically close the polygon ring and calculate your farm acreage in real-time.
-4. Tap **Add Crop Plot** inside your farm to designate individual crop zones (e.g., *Plot 1: Cotton, 2.5 Acres*).
+1. Navigate to the **Farm Plots** tab (`/farm/settings`).
+2. **Interactive Leaflet Map**: Uses open-source OpenStreetMap and high-resolution Esri World Imagery (satellite view) without requiring third-party API keys.
+3. **Draw Boundaries**:
+   - Tap **Draw Boundary** or **Add Plot** to enter drawing mode.
+   - Tap anywhere on the map to place boundary vertices. The system automatically connects the points and computes geodesic acreage in real time.
+   - Tap **Locate Me** to fly the map directly to your device's current GPS location.
+4. **Edit Boundaries & Rename Plots**:
+   - **Move Vertices**: Drag any green circular vertex marker to reposition polygon corners.
+   - **Add Vertices**: Click along any segment/edge of the polygon outline to insert a new vertex point.
+   - **Delete Vertices**: Double-click any vertex marker to remove it.
+   - **Rename Plots**: Click the edit/pencil icon on any plot card to rename the plot directly and save changes.
+5. Tap **Add Crop Plot** inside your farm to designate individual crop zones (e.g., *Plot 1: Cotton, 2.5 Acres*).
 
 ### 3.7 Proactive Weather Alerts
-The **Alerts** tab continuously monitors 5-day forecasts for your specific GPS coordinates:
+The **Alerts** navigation tab in the sidebar displays a real-time badge count of unread notifications and monitors 5-day forecasts for your specific GPS coordinates:
 - **Blight Risk**: Alerts when humidity exceeds 75% during warm weather.
 - **Heat Stress**: Warns if temperatures exceed 38°C for more than 3 consecutive periods.
 - **Heavy Rain**: Notifies if rainfall exceeding 20mm is forecast, prompting farmers to clear field drainage channels.
@@ -156,9 +164,9 @@ At the bottom of every diagnostic result card:
 
 ### 5.1 Admin Telemetry & Health Dashboard
 Access `/admin/metrics` to monitor:
-- **System Health**: Database connection pool status, Redis latency, and AI microservice response time.
+- **Model Registry Health**: Health and validation accuracy for all loaded vision models (Crop Identifier, Cotton, Groundnut, Pepper Bell, Potato, Tomato, and Pest Classifier).
+- **System Telemetry**: Database connection pool status, Redis latency, and AI microservice response time.
 - **Confidence Drift**: Distribution of high, medium, and low confidence scans over time.
-- **Crop Distribution**: Relative percentage of Tomato, Potato, Cotton, Groundnut, and Pepper Bell scans.
 
 ### 5.2 Model Registry & Instant Version Rollback
 Access `/admin/models`:
@@ -166,11 +174,22 @@ Access `/admin/models`:
 - Inspect validation accuracy, F1-scores, and training dataset size.
 - **Rollback**: If a newly promoted model displays an anomaly in production, click **Rollback to Previous Version** to instantly switch active weights without taking the server offline.
 
-### 5.3 MLOps Continuous Retraining Data Export
-Access `/admin/mlops`:
-1. View all accumulated `dataset_candidates` from verified expert corrections and farmer feedback.
-2. Select target crops and date range.
-3. Click **Export Training Dataset**. The system compiles an organized directory of raw images and verified JSON metadata with an 80/20 train/validation split.
+### 5.3 MLOps Continuous Retraining & Dataset Export
+Integrated directly into `/admin/metrics` across three specialized tabs:
+1. **Candidate Summary Tab**:
+   - Total vetted agricultural scans and pending agronomist reviews.
+   - Crop distribution cards with breakdown by review status.
+   - Zero-leakage privacy guarantee: SHA-256 partition hashing by `plot_id` (preventing plant re-scans across days from leaking between splits) and automatic EXIF GPS scrubbing.
+2. **Dataset Export Tab**:
+   - Filter by crop species or export all crops.
+   - Filter by candidate verification status (e.g. `added_to_dataset`, `approved`, `pending_review`).
+   - Select image target: `OpenCV Preprocessed (224x224)` or `Raw Image`.
+   - Select export format: `PyTorch Folder`, `YOLO`, `CSV`, or `TFRecord`.
+   - Adjust train / val / test split percentages (must sum to 100%).
+   - Configure replay ratio buffer to mix baseline archive images with newly approved candidates.
+   - Click **Export MLOps Dataset** for instant ZIP download or Supabase Storage signed URL generation.
+3. **Export History Tab**:
+   - Review past export runs with timestamp, candidate count, train/val/test split distribution, format, status badge, and direct download links.
 
 ---
 
