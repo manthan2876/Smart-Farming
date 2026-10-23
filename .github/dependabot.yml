@@ -11,6 +11,11 @@ updates:
     directory: /frontend
     schedule:
       interval: monthly
+    groups:
+      react:
+        patterns:
+          - "react*"
+          - "@types/react*"
 
   - package-ecosystem: npm
     directory: /tools/openapi-codegen
