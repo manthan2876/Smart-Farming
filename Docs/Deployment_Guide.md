@@ -391,7 +391,9 @@ bash deploy.sh
 
 2. **Configure Environment Variables:**
    - `VITE_API_URL` = `https://smart-farming-backend.onrender.com`
-   - `VITE_GOOGLE_MAPS_API_KEY` = `<YOUR_GOOGLE_MAPS_API_KEY>`
+   - `VITE_SUPABASE_URL` = `https://<your-project-ref>.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = `<YOUR_SUPABASE_ANON_KEY>`
+   *(Note: Maps use Leaflet with OpenStreetMap / Esri World Imagery; no Google Maps API key required.)*
 
 3. **SPA Routing Configuration (`frontend/vercel.json`):**
    Ensures deep links (e.g., `/scan`, `/history`, `/admin`) resolve to `index.html`:

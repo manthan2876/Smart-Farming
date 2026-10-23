@@ -4,24 +4,27 @@ import { useAuth } from "../context/AuthContext";
 import { createPlot, deletePlot, getFarm, saveFarm, updatePlot } from "../api/farm";
 import { purgeDatabase } from "../api/admin";
 import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite, Pencil, X } from "../components/icons";
-import { APIProvider, Circle, Map as GoogleMap, Marker, Polygon, useMap } from "@vis.gl/react-google-maps";
+import { MapContainer, TileLayer, Polygon, Marker, Circle, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { motion } from "motion/react";
 import { Button, Card, Input } from "../components/ui";
 import { translateCrop } from "../i18n/domain";
 
 type PlotPoint = [number, number];
 
-function GoogleMapController({
+function LeafletMapController({
+  center,
   flyToRef,
 }: {
+  center: PlotPoint;
   flyToRef: React.MutableRefObject<((latlng: PlotPoint, zoom?: number) => void) | null>;
 }) {
   const map = useMap();
 
   useEffect(() => {
     flyToRef.current = (latlng, zoom = 17) => {
-      map?.panTo({ lat: latlng[0], lng: latlng[1] });
-      if (map) map.setZoom(zoom);
+      map.flyTo(latlng, zoom, { duration: 0.8 });
     };
 
     return () => {
@@ -29,24 +32,49 @@ function GoogleMapController({
     };
   }, [flyToRef, map]);
 
+  useEffect(() => {
+    if (center && Number.isFinite(center[0]) && Number.isFinite(center[1])) {
+      map.setView(center, map.getZoom() || 15);
+    }
+  }, [center, map]);
+
   return null;
 }
 
-function toGooglePath(points: PlotPoint[]) {
-  return points.map(([latitude, longitude]) => ({ lat: latitude, lng: longitude }));
-}
-
-function getEventLatLng(event: any) {
-  const latLng = event?.detail?.latLng ?? event?.latLng;
-  if (!latLng) return null;
-  if (typeof latLng.lat === "function") return [latLng.lat(), latLng.lng()] as PlotPoint;
-  if (typeof latLng.lat === "number") return [latLng.lat, latLng.lng] as PlotPoint;
+function MapResizeHandler() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [map]);
   return null;
 }
 
-const boundaryPointIcon = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#15803d" stroke="#ffffff" stroke-width="2"/></svg>',
-);
+function MapEventsHandler({
+  onMapClick,
+  drawingActive,
+}: {
+  onMapClick: (point: PlotPoint) => void;
+  drawingActive: boolean;
+}) {
+  useMapEvents({
+    click(e) {
+      if (drawingActive) {
+        onMapClick([e.latlng.lat, e.latlng.lng]);
+      }
+    },
+  });
+  return null;
+}
+
+const vertexIcon = L.divIcon({
+  className: "custom-vertex-marker",
+  html: '<div style="width: 14px; height: 14px; background: #15803d; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.55); cursor: grab;"></div>',
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
 
 const plotBoundaryColors = [
   { stroke: "#2563eb", fill: "#60a5fa" },
@@ -171,78 +199,135 @@ function BoundaryMap({
   onBoundaryClick: (point: PlotPoint) => void;
   onVertexDoubleClick: (index: number) => void;
 }) {
+  const mapCenter: PlotPoint = [
+    Number.isFinite(center[0]) && center[0] !== 0 ? center[0] : 21.7645,
+    Number.isFinite(center[1]) && center[1] !== 0 ? center[1] : 72.1519,
+  ];
+
   return (
-    <GoogleMap
-      defaultCenter={{ lat: center[0], lng: center[1] }}
-      defaultZoom={15}
-      mapTypeId={mapLayer === "satellite" ? "satellite" : "roadmap"}
-      gestureHandling={drawingActive ? "none" : "greedy"}
-      disableDoubleClickZoom
-      className="h-full w-full"
-      onClick={(event) => {
-        const point = getEventLatLng(event);
-        if (point) onMapClick(point);
-      }}
-    >
-      <GoogleMapController flyToRef={flyToRef} />
-      {farmBoundary.length >= 3 && (
-        <Polygon
-          paths={toGooglePath(farmBoundary)}
-          onClick={(event) => {
-            const point = getEventLatLng(event);
-            if (point) onBoundaryClick(point);
-          }}
-          options={{
-            strokeColor: plotDrawingActive ? "#f59e0b" : "#0f766e",
-            strokeWeight: plotDrawingActive ? 4 : 3,
-            fillColor: plotDrawingActive ? "#facc15" : "#14b8a6",
-            fillOpacity: plotDrawingActive ? 0.28 : 0.12,
-            clickable: !plotDrawingActive,
-          }}
-        />
-      )}
-      {showPlots && plots.map((plot: any, index: number) => {
-        const points = fromGeoJsonGeometry(plot.geometry);
-        const color = plotBoundaryColors[index % plotBoundaryColors.length];
-        return points.length >= 3 ? (
-          <Polygon
-            key={plot.id}
-            paths={toGooglePath(points)}
-            options={{ strokeColor: color.stroke, strokeWeight: 3, fillColor: color.fill, fillOpacity: 0.38, clickable: false }}
+    <div className="relative h-full w-full overflow-hidden">
+      <MapContainer
+        center={mapCenter}
+        zoom={15}
+        scrollWheelZoom={!drawingActive}
+        doubleClickZoom={false}
+        className="h-full w-full z-0"
+      >
+        <LeafletMapController center={mapCenter} flyToRef={flyToRef} />
+        <MapResizeHandler />
+        <MapEventsHandler onMapClick={onMapClick} drawingActive={drawingActive} />
+
+        {mapLayer === "satellite" ? (
+          <TileLayer
+            key="satellite-tiles"
+            attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            maxZoom={19}
           />
-        ) : null;
-      })}
-      {drawingPoints.length >= 3 && (
-        <Polygon
-          paths={toGooglePath(drawingPoints)}
-          onClick={(event) => {
-            const point = getEventLatLng(event);
-            if (point) onBoundaryClick(point);
-          }}
-          options={{ strokeColor: "#16a34a", strokeWeight: 3, fillColor: "#16a34a", fillOpacity: 0.25, clickable: true }}
-        />
-      )}
-      {drawingPoints.map((point, index) => (
-        <Marker
-          key={`drawing-${index}`}
-          position={{ lat: point[0], lng: point[1] }}
-          icon={boundaryPointIcon}
-          draggable={drawingActive}
-          onDblClick={() => onVertexDoubleClick(index)}
-          onDragEnd={(event) => {
-            const point = getEventLatLng(event);
-            if (point) onVertexDragEnd(index, point);
-          }}
-        />
-      ))}
-      {currentLocation && (
-        <Circle
-          center={{ lat: currentLocation[0], lng: currentLocation[1] }}
-          radius={12}
-          options={{ strokeColor: "#2563eb", strokeWeight: 2, fillColor: "#2563eb", fillOpacity: 0.75 }}
-        />
-      )}
-    </GoogleMap>
+        ) : (
+          <TileLayer
+            key="osm-tiles"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+          />
+        )}
+
+        {/* Saved Farm Boundary */}
+        {farmBoundary.length >= 3 && (
+          <Polygon
+            positions={farmBoundary}
+            pathOptions={{
+              color: plotDrawingActive ? "#f59e0b" : "#0f766e",
+              weight: plotDrawingActive ? 4 : 3,
+              fillColor: plotDrawingActive ? "#facc15" : "#14b8a6",
+              fillOpacity: plotDrawingActive ? 0.28 : 0.12,
+            }}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                if (!plotDrawingActive) {
+                  onBoundaryClick([e.latlng.lat, e.latlng.lng]);
+                }
+              },
+            }}
+          />
+        )}
+
+        {/* Existing Plots Overlays */}
+        {showPlots &&
+          plots.map((plot: any, index: number) => {
+            const points = fromGeoJsonGeometry(plot.geometry);
+            const color = plotBoundaryColors[index % plotBoundaryColors.length];
+            return points.length >= 3 ? (
+              <Polygon
+                key={plot.id}
+                positions={points}
+                pathOptions={{
+                  color: color.stroke,
+                  weight: 3,
+                  fillColor: color.fill,
+                  fillOpacity: 0.38,
+                }}
+              />
+            ) : null;
+          })}
+
+        {/* Active Drawing Boundary Polygon */}
+        {drawingPoints.length >= 3 && (
+          <Polygon
+            positions={drawingPoints}
+            pathOptions={{
+              color: "#16a34a",
+              weight: 3,
+              fillColor: "#16a34a",
+              fillOpacity: 0.25,
+            }}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onBoundaryClick([e.latlng.lat, e.latlng.lng]);
+              },
+            }}
+          />
+        )}
+
+        {/* Draggable Vertex Markers for active polygon */}
+        {drawingPoints.map((point, index) => (
+          <Marker
+            key={`drawing-${index}`}
+            position={point}
+            icon={vertexIcon}
+            draggable={drawingActive}
+            eventHandlers={{
+              dragend: (e) => {
+                const marker = e.target;
+                const latlng = marker.getLatLng();
+                onVertexDragEnd(index, [latlng.lat, latlng.lng]);
+              },
+              dblclick: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onVertexDoubleClick(index);
+              },
+            }}
+          />
+        ))}
+
+        {/* Geolocation indicator */}
+        {currentLocation && (
+          <Circle
+            center={currentLocation}
+            radius={15}
+            pathOptions={{
+              color: "#2563eb",
+              weight: 2,
+              fillColor: "#2563eb",
+              fillOpacity: 0.75,
+            }}
+          />
+        )}
+      </MapContainer>
+    </div>
   );
 }
 
@@ -561,8 +646,7 @@ export default function FarmSettingsPage() {
   if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-farmer-200 border-t-farmer-700" /></div>;
 
   return (
-    <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}>
-      <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12">
       <div>
         <h1 className="font-display text-3xl text-ink sm:text-4xl">{t("farmConfigTitle")}</h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">{t("farmConfigSubtitle")}</p>
@@ -1009,6 +1093,5 @@ export default function FarmSettingsPage() {
       
 
       </div>
-    </APIProvider>
   );
 }

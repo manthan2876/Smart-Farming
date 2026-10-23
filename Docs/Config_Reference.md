@@ -254,8 +254,8 @@ When client GPS coordinates are omitted or unavailable, the backend uses these a
 | Variable | Type | Example | Description |
 |---|---|---|---|
 | `VITE_API_URL` | string | `https://smart-farming-backend.onrender.com` | Backend API base URL consumed by the Fetch wrapper in `frontend/src/api/client.ts`. |
-| `VITE_GOOGLE_MAPS_API_KEY` | string | `<API_KEY>` | Google Maps API key for farm boundary geo-tagging and satellite imagery. |
-| `VITE_GOOGLE_MAPS_MAP_ID` | string | `<MAP_ID>` | Map ID for vector styling. |
+| `VITE_SUPABASE_URL` | string | `https://<ref>.supabase.co` | Supabase project URL for authentication and asset storage. |
+| `VITE_SUPABASE_ANON_KEY` | string | `<ANON_KEY>` | Supabase anonymous public key. |
 
 > [!IMPORTANT]
 > Vite only exposes variables prefixed with `VITE_` to client-side bundles. Never place backend secrets or private keys in the frontend configuration.
