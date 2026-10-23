@@ -29,13 +29,12 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: 'backend/requirements.txt'
 
-      - name: Install Dependencies
+      - name: Install UV and Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install uv==0.13.0
+          uv sync --project backend --locked --no-dev
 
       - name: Install PostgreSQL Client
         run: |
@@ -70,4 +69,4 @@ jobs:
           PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           PYTHONPATH: backend/src:ai_service
         run: |
-          python backend/scripts/migrate_to_prod.py --schema-only --yes
+          uv run --project backend --locked --no-dev python backend/scripts/migrate_to_prod.py --schema-only --yes
