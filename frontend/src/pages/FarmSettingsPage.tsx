@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { createPlot, deletePlot, getFarm, saveFarm } from "../api/farm";
+import { createPlot, deletePlot, getFarm, saveFarm, updatePlot } from "../api/farm";
 import { purgeDatabase } from "../api/admin";
-import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite } from "../components/icons";
+import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite, Pencil, X } from "../components/icons";
 import { APIProvider, Circle, Map as GoogleMap, Marker, Polygon, useMap } from "@vis.gl/react-google-maps";
 import { motion } from "motion/react";
 import { Button, Card, Input } from "../components/ui";
@@ -287,13 +287,21 @@ export default function FarmSettingsPage() {
   const [newPlotGeometry, setNewPlotGeometry] = useState<PlotPoint[]>([]);
   const [isDrawingFarm, setIsDrawingFarm] = useState(false);
   const [isDrawingPlot, setIsDrawingPlot] = useState(false);
-  const [boundaryDialog, setBoundaryDialog] = useState<"farm" | "plot" | null>(null);
+  const [boundaryDialog, setBoundaryDialog] = useState<"farm" | "plot" | "edit_plot" | null>(null);
   const [showBoundaryOverview, setShowBoundaryOverview] = useState(false);
   const [isEditingBoundary, setIsEditingBoundary] = useState(false);
   const [mapLayer, setMapLayer] = useState<'satellite' | 'street'>('satellite');
   const [isLocating, setIsLocating] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<PlotPoint | null>(null);
   const plotFlyToRef = useRef<((latlng: PlotPoint, zoom?: number) => void) | null>(null);
+
+  // Edit plot state
+  const [editingPlot, setEditingPlot] = useState<any | null>(null);
+  const [editPlotName, setEditPlotName] = useState("");
+  const [editPlotCrop, setEditPlotCrop] = useState("");
+  const [editPlotArea, setEditPlotArea] = useState<number | "">("");
+  const [editPlotGeometry, setEditPlotGeometry] = useState<PlotPoint[]>([]);
+  const [plotSuccessMessage, setPlotSuccessMessage] = useState<string | null>(null);
 
   // GPS Locate Me handler
   const handleLocate = () => {
@@ -332,28 +340,51 @@ export default function FarmSettingsPage() {
     }
   });
 
+  const updatePlotMutation = useMutation({
+    mutationFn: async ({ id, plotData }: { id: number; plotData: any }) =>
+      updatePlot(id, plotData, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farmSettings"] });
+      setPlotSuccessMessage(t("plotUpdatedSuccess"));
+      setTimeout(() => setPlotSuccessMessage(null), 4000);
+      setEditingPlot(null);
+      setEditPlotName("");
+      setEditPlotCrop("");
+      setEditPlotArea("");
+      setEditPlotGeometry([]);
+      closeBoundaryDialog();
+    },
+    onError: (err: any) => {
+      alert(err?.message || t("plotUpdateFailed"));
+    },
+  });
+
   const deletePlotMutation = useMutation({
     mutationFn: async (plotId: number) => deletePlot(plotId, token!),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["farmSettings"] })
   });
 
   const addBoundaryPoint = (point: PlotPoint) => {
-    const safePoint = isDrawingPlot && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
+    const isPlot = isDrawingPlot;
+    const safePoint = isPlot && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
       ? nearestEdgeProjection(point, farmBoundary).point
       : point;
 
     if (isDrawingFarm) {
       setFarmBoundary((points) => [...points, safePoint]);
+    } else if (boundaryDialog === "edit_plot") {
+      if (farmBoundary.length < 3) return;
+      setEditPlotGeometry((points) => [...points, safePoint]);
     } else if (isDrawingPlot) {
       if (farmBoundary.length < 3) return;
       setNewPlotGeometry((points) => [...points, safePoint]);
     }
   };
 
-  const insertBoundaryPoint = (point: PlotPoint, boundary: "farm" | "plot") => {
-    const points = boundary === "farm" ? farmBoundary : newPlotGeometry;
+  const insertBoundaryPoint = (point: PlotPoint, boundary: "farm" | "plot" | "edit_plot") => {
+    const points = boundary === "farm" ? farmBoundary : boundary === "edit_plot" ? editPlotGeometry : newPlotGeometry;
     if (points.length < 2) return;
-    const safePoint = boundary === "plot" && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
+    const safePoint = boundary !== "farm" && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
       ? nearestEdgeProjection(point, farmBoundary).point
       : point;
 
@@ -361,31 +392,40 @@ export default function FarmSettingsPage() {
     const edgeIndex = nearestEdgeProjection(safePoint, next).edgeIndex;
     next.splice(edgeIndex + 1, 0, safePoint);
     if (boundary === "farm") setFarmBoundary(next);
+    else if (boundary === "edit_plot") setEditPlotGeometry(next);
     else setNewPlotGeometry(next);
   };
 
-  const deleteBoundaryPoint = (index: number, boundary: "farm" | "plot") => {
+  const deleteBoundaryPoint = (index: number, boundary: "farm" | "plot" | "edit_plot") => {
     if (boundary === "farm") setFarmBoundary((points) => points.filter((_, pointIndex) => pointIndex !== index));
+    else if (boundary === "edit_plot") setEditPlotGeometry((points) => points.filter((_, pointIndex) => pointIndex !== index));
     else setNewPlotGeometry((points) => points.filter((_, pointIndex) => pointIndex !== index));
   };
 
-  const moveBoundaryPoint = (index: number, point: PlotPoint, boundary: "farm" | "plot") => {
-    const safePoint = boundary === "plot" && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
+  const moveBoundaryPoint = (index: number, point: PlotPoint, boundary: "farm" | "plot" | "edit_plot") => {
+    const safePoint = boundary !== "farm" && farmBoundary.length >= 3 && !pointInsideOrOnPolygon(point, farmBoundary)
       ? nearestEdgeProjection(point, farmBoundary).point
       : point;
     if (boundary === "farm") setFarmBoundary((points) => points.map((current, pointIndex) => pointIndex === index ? safePoint : current));
+    else if (boundary === "edit_plot") setEditPlotGeometry((points) => points.map((current, pointIndex) => pointIndex === index ? safePoint : current));
     else setNewPlotGeometry((points) => points.map((current, pointIndex) => pointIndex === index ? safePoint : current));
   };
 
-  const openBoundaryDialog = (boundary: "farm" | "plot") => {
-    if (boundary === "plot" && farmBoundary.length < 3) {
+  const openBoundaryDialog = (boundary: "farm" | "plot" | "edit_plot") => {
+    if ((boundary === "plot" || boundary === "edit_plot") && farmBoundary.length < 3) {
       alert(t("saveFarmBoundaryFirst"));
       return;
     }
     setBoundaryDialog(boundary);
-    setIsEditingBoundary(false);
+    setIsEditingBoundary(true);
     setIsDrawingFarm(boundary === "farm");
-    setIsDrawingPlot(boundary === "plot");
+    setIsDrawingPlot(boundary === "plot" || boundary === "edit_plot");
+
+    if (boundary === "edit_plot" && editPlotGeometry.length > 0) {
+      setTimeout(() => {
+        plotFlyToRef.current?.(editPlotGeometry[0], 17);
+      }, 100);
+    }
   };
 
   const closeBoundaryDialog = () => {
@@ -393,6 +433,47 @@ export default function FarmSettingsPage() {
     setIsEditingBoundary(false);
     setIsDrawingFarm(false);
     setIsDrawingPlot(false);
+  };
+
+  const handleStartEditPlot = (plot: any) => {
+    const points = fromGeoJsonGeometry(plot.geometry);
+    setEditingPlot(plot);
+    setEditPlotName(plot.name || "");
+    setEditPlotCrop(plot.crop || "");
+    setEditPlotArea(plot.area_acres ?? "");
+    setEditPlotGeometry(points);
+  };
+
+  const handleSaveEditPlot = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!editingPlot) return;
+    if (!editPlotName.trim()) {
+      alert(t("plotNameRequired"));
+      return;
+    }
+    if (editPlotGeometry.length > 0 && editPlotGeometry.length < 3) {
+      alert(t("minimumPlotBoundaryPoints"));
+      return;
+    }
+    if (
+      editPlotGeometry.length >= 3 &&
+      farmBoundary.length >= 3 &&
+      editPlotGeometry.some((point) => !pointInsideOrOnPolygon(point, farmBoundary))
+    ) {
+      alert(t("plotBoundaryMustBeInsideFarm"));
+      return;
+    }
+
+    updatePlotMutation.mutate({
+      id: editingPlot.id,
+      plotData: {
+        name: editPlotName.trim(),
+        crop: editPlotCrop.trim() || null,
+        area_acres: editPlotArea !== "" ? Number(editPlotArea) : null,
+        geometry: editPlotGeometry.length >= 3 ? toGeoJsonPolygon(editPlotGeometry) : null,
+        reset_geometry: editPlotGeometry.length === 0,
+      },
+    });
   };
 
   const handleCreatePlot = (e: React.FormEvent) => {
@@ -545,28 +626,62 @@ export default function FarmSettingsPage() {
         <h2 className="font-display text-2xl text-ink">{t("managePlots")}</h2>
         <p className="mt-2 text-sm leading-6 text-muted">{t("managePlotsSubtitle")}</p>
         
+        {plotSuccessMessage && (
+          <div className="mt-4 flex items-center gap-3 rounded-sm border border-farmer-200 bg-farmer-50 p-3 text-sm font-semibold text-farmer-800 dark:border-farmer-800 dark:bg-farmer-900/60 dark:text-farmer-200">
+            <CheckCircle2 size={18} />
+            <span>{plotSuccessMessage}</span>
+          </div>
+        )}
+
         <div className="mt-6 space-y-3">
-          {farmData?.plots?.map((plot: any) => (
-            <div key={plot.id} className="flex items-center justify-between gap-4 rounded-sm border border-line bg-canvas p-4">
-              <div>
-                <strong className="block text-base font-semibold text-ink">{plot.name}</strong>
-                <span className="mt-1 block text-xs text-muted">
-                  {t("crop")}: {translateCrop(plot.crop, language)} · {t("areaLabel")}: {plot.area_acres ? `${plot.area_acres} ${t("areaUnit")}` : t("unknown")}
-                </span>
+          {farmData?.plots?.map((plot: any) => {
+            const hasBoundary = Boolean(plot.geometry?.coordinates?.length);
+            return (
+              <div key={plot.id} className="flex flex-wrap items-center justify-between gap-4 rounded-sm border border-line bg-canvas p-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong className="truncate text-base font-semibold text-ink">{plot.name}</strong>
+                    {hasBoundary ? (
+                      <span className="inline-flex items-center gap-1 rounded-xs bg-farmer-100 px-2 py-0.5 text-[0.65rem] font-semibold text-farmer-800 dark:bg-farmer-900/60 dark:text-farmer-200">
+                        <MapIcon size={12} /> {t("boundaryDefined")}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-xs bg-amber-100 px-2 py-0.5 text-[0.65rem] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                        {t("noBoundaryDefined")}
+                      </span>
+                    )}
+                  </div>
+                  <span className="mt-1 block text-xs text-muted">
+                    {t("crop")}: {plot.crop ? translateCrop(plot.crop, language) : t("unknown")} · {t("areaLabel")}: {plot.area_acres ? `${plot.area_acres} ${t("areaUnit")}` : t("unknown")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleStartEditPlot(plot)}
+                    className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas transition-colors"
+                  >
+                    <Pencil size={14} />
+                    <span>{t("edit")}</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (confirm(t("confirmDeletePlot"))) {
+                        deletePlotMutation.mutate(plot.id);
+                      }
+                    }}
+                    disabled={deletePlotMutation.isPending}
+                    className="rounded-sm border border-red-200/80 bg-red-50 p-2 text-danger hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors"
+                    title={t("delete")}
+                    aria-label={t("delete")}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
-              <button 
-                onClick={() => {
-                  if (confirm(t("confirmDeletePlot"))) {
-                    deletePlotMutation.mutate(plot.id);
-                  }
-                }}
-                disabled={deletePlotMutation.isPending}
-                className="rounded-sm border border-red-200/80 bg-red-50 p-2 text-danger hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
           {(!farmData?.plots || farmData.plots.length === 0) && (
             <div className="rounded-sm bg-canvas p-8 text-center text-sm text-muted">
               {t("noPlotsConfigured")}
@@ -636,6 +751,104 @@ export default function FarmSettingsPage() {
         </form>
       </motion.div>
 
+      {/* Edit Plot Modal */}
+      {editingPlot && boundaryDialog !== "edit_plot" && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-label={t("editPlot")}>
+          <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
+            <div className="flex items-center justify-between border-b border-line p-4">
+              <div>
+                <h2 className="font-display text-xl text-ink">{t("editPlot")}</h2>
+                <p className="mt-1 text-xs text-muted">{t("editPlotSubtitle")}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPlot(null)}
+                className="rounded-sm p-1.5 text-muted hover:bg-canvas hover:text-ink transition-colors"
+                aria-label={t("close")}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditPlot} className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+              <Input
+                label={t("plotName")}
+                type="text"
+                value={editPlotName}
+                onChange={(e) => setEditPlotName(e.target.value)}
+                placeholder={t("plotNamePlaceholder")}
+                required
+              />
+
+              <Input
+                label={t("currentCrop")}
+                type="text"
+                value={editPlotCrop}
+                onChange={(e) => setEditPlotCrop(e.target.value)}
+                placeholder={t("cropExamplePlaceholder")}
+              />
+
+              <Input
+                label={t("plotArea")}
+                type="number"
+                step="any"
+                value={editPlotArea}
+                onChange={(e) => setEditPlotArea(e.target.value ? Number(e.target.value) : "")}
+                placeholder={t("optionalPlaceholder")}
+              />
+
+              <div className="rounded-sm border border-line bg-canvas p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                    <MapIcon size={14} /> {t("plotBoundary")}
+                  </span>
+                  <span className="text-xs font-medium text-ink">
+                    {editPlotGeometry.length >= 3
+                      ? `${editPlotGeometry.length} ${t("boundaryPointsCount")}`
+                      : t("noBoundaryDefined")}
+                  </span>
+                </div>
+                <p className="text-xs text-muted">{t("plotBoundaryDesc")}</p>
+                <div className="pt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openBoundaryDialog("edit_plot")}
+                    className="inline-flex items-center gap-1.5 rounded-sm border border-farmer-700 bg-farmer-50 px-3 py-1.5 text-xs font-semibold text-farmer-800 dark:border-farmer-500 dark:bg-farmer-950/50 dark:text-farmer-200 hover:bg-farmer-100 transition-colors"
+                  >
+                    <MapIcon size={14} />
+                    <span>{editPlotGeometry.length >= 3 ? t("editPlotBoundary") : t("createPlotBoundary")}</span>
+                  </button>
+                  {editPlotGeometry.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setEditPlotGeometry([])}
+                      className="inline-flex items-center gap-1 rounded-sm border border-red-200 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400 transition-colors"
+                    >
+                      <RotateCcw size={13} />
+                      <span>{t("clearBoundary")}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-line">
+                <button
+                  type="button"
+                  onClick={() => setEditingPlot(null)}
+                  className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink hover:bg-canvas transition-colors"
+                >
+                  {t("cancel")}
+                </button>
+                <Button type="submit" disabled={updatePlotMutation.isPending || !editPlotName.trim()}>
+                  <Save size={16} />
+                  <span>{updatePlotMutation.isPending ? t("updating") : t("save")}</span>
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-end border-t border-line pt-5">
         <Button type="button" onClick={() => setShowBoundaryOverview(true)}>
           <MapIcon size={18} /> {t("seeBoundaries")}
@@ -647,7 +860,13 @@ export default function FarmSettingsPage() {
           <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-md border border-line bg-surface shadow-lift">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
               <div>
-                <h2 className="font-display text-2xl text-ink">{boundaryDialog === "farm" ? t("farmBoundary") : t("plotBoundary")}</h2>
+                <h2 className="font-display text-2xl text-ink">
+                  {boundaryDialog === "farm"
+                    ? t("farmBoundary")
+                    : boundaryDialog === "edit_plot"
+                    ? `${t("editPlotBoundary")}: ${editPlotName || editingPlot?.name}`
+                    : t("plotBoundary")}
+                </h2>
                 <p className="mt-1 text-xs text-muted">{isEditingBoundary ? t("boundaryEditInstructions") : t("boundaryMapInstructions")}</p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -669,12 +888,12 @@ export default function FarmSettingsPage() {
                   mapLayer={mapLayer}
                   flyToRef={plotFlyToRef}
                   farmBoundary={farmBoundary}
-                  drawingPoints={boundaryDialog === "farm" ? farmBoundary : newPlotGeometry}
+                  drawingPoints={boundaryDialog === "farm" ? farmBoundary : boundaryDialog === "edit_plot" ? editPlotGeometry : newPlotGeometry}
                   currentLocation={currentLocation}
                   drawingActive={isEditingBoundary}
-                  plotDrawingActive={boundaryDialog === "plot"}
-                  plots={farmData?.plots}
-                  showPlots={boundaryDialog === "plot"}
+                  plotDrawingActive={boundaryDialog === "plot" || boundaryDialog === "edit_plot"}
+                  plots={boundaryDialog === "edit_plot" ? farmData?.plots?.filter((p: any) => p.id !== editingPlot?.id) : farmData?.plots}
+                  showPlots={boundaryDialog === "plot" || boundaryDialog === "edit_plot"}
                   onMapClick={(point) => { if (isEditingBoundary) addBoundaryPoint(point); }}
                   onBoundaryClick={(point) => {
                     if (!isEditingBoundary) return;
@@ -686,11 +905,53 @@ export default function FarmSettingsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t border-line p-4">
-              <button type="button" onClick={closeBoundaryDialog} className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink">{t("cancel")}</button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (boundaryDialog === "edit_plot" && editingPlot) {
+                    setEditPlotGeometry(fromGeoJsonGeometry(editingPlot.geometry));
+                  }
+                  closeBoundaryDialog();
+                }}
+                className="rounded-sm border border-line px-4 py-2 text-sm font-semibold text-ink"
+              >
+                {t("cancel")}
+              </button>
               {boundaryDialog === "farm" ? (
                 <Button type="button" onClick={saveFarmBoundary} disabled={mutation.isPending || farmBoundary.length < 3}>
                   {mutation.isPending ? t("saving") : t("saveFarmBoundary")}
                 </Button>
+              ) : boundaryDialog === "edit_plot" ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editPlotGeometry.length > 0 && editPlotGeometry.length < 3) {
+                        alert(t("minimumPlotBoundaryPoints"));
+                        return;
+                      }
+                      if (
+                        editPlotGeometry.length >= 3 &&
+                        farmBoundary.length >= 3 &&
+                        editPlotGeometry.some((point) => !pointInsideOrOnPolygon(point, farmBoundary))
+                      ) {
+                        alert(t("plotBoundaryMustBeInsideFarm"));
+                        return;
+                      }
+                      setBoundaryDialog(null);
+                    }}
+                    className="rounded-sm border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-canvas transition-colors"
+                  >
+                    {t("doneEditingBoundary")}
+                  </button>
+                  <Button
+                    type="button"
+                    onClick={() => handleSaveEditPlot()}
+                    disabled={updatePlotMutation.isPending || (editPlotGeometry.length > 0 && editPlotGeometry.length < 3) || !editPlotName.trim()}
+                  >
+                    {updatePlotMutation.isPending ? t("updating") : t("save")}
+                  </Button>
+                </div>
               ) : (
                 <Button type="button" onClick={() => savePlot()} disabled={createPlotMutation.isPending || newPlotGeometry.length < 3 || !newPlotName}>
                   {createPlotMutation.isPending ? t("saving") : t("savePlotBoundary")}

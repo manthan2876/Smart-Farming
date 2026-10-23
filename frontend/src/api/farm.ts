@@ -83,6 +83,7 @@ export async function updatePlot(
     crop: string | null;
     area_acres: number | null;
     geometry?: Record<string, unknown> | null;
+    reset_geometry?: boolean;
   },
   token: string,
 ) {
@@ -91,7 +92,7 @@ export async function updatePlot(
     "put",
     {
       pathParams: { plot_id: id },
-      data: { ...plot, reset_geometry: false },
+      data: { reset_geometry: false, ...plot },
     },
     token,
   );
