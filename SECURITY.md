@@ -38,3 +38,4 @@ Instead, please report vulnerabilities using one of the following methods:
 - **JWT Secrets**: Always set strong, random, 64-character hex strings for `SECRET_KEY` and `JWT_SECRET_KEY` in production environments. Never deploy using development defaults.
 - **Database Access**: Restrict Supabase/PostgreSQL connections to TLS-enforced endpoints (`sslmode=require`).
 - **Data Protection**: User and telemetry data are subject to the Digital Personal Data Protection (DPDP) Act 2023. Mobile credentials must remain encapsulated in OS-native secure hardware keychains (`TokenStorage`).
+
