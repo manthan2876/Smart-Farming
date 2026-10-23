@@ -138,7 +138,7 @@ def get_metrics(
     rec_fallbacks = 0
     weather_fallbacks = 0
 
-    for res, st in predictions:
+    for res, _st in predictions:
         if isinstance(res, dict):
             dur = res.get("total_duration_ms") or res.get("provenance", {}).get("pipeline_duration_ms")
             if dur is not None and isinstance(dur, (int, float)):

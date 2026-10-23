@@ -111,6 +111,8 @@ jobs:
           uv run --project backend --locked --extra dev mypy \
             --config-file backend/pyproject.toml \
             backend/src/app/core/paths.py \
+            backend/src/app/core/config.py \
+            backend/src/app/schemas \
             ai_service/vision_engine/stages/confidence.py
 
       - name: Run Pytest Suite
@@ -302,3 +304,23 @@ jobs:
 
       - name: Run Flutter unit & widget tests
         run: flutter test
+
+  docker-lint:
+    name: Dockerfile Security & Best Practices Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Lint Backend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: backend/Dockerfile
+          failure-threshold: error
+
+      - name: Lint Frontend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: frontend/Dockerfile
+          failure-threshold: error
