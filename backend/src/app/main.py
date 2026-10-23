@@ -174,12 +174,16 @@ allowed_origins = [
 if production_mode and not allowed_origins:
     raise RuntimeError("CORS_ORIGINS must contain the production frontend origin.")
 
+cors_headers = ["Authorization", "Content-Type", "Accept", "Accept-Language", "X-Request-ID"]
+if not production_mode:
+    cors_headers.append("X-User-ID")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins if allowed_origins else ["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Accept-Language", "X-User-ID", "X-Request-ID"],
+    allow_headers=cors_headers,
     expose_headers=["X-Request-ID", "X-Total-Count", "X-Offset", "X-Limit"],
 )
 

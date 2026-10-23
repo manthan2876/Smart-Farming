@@ -15,6 +15,7 @@ jobs:
     name: Deploy to Hugging Face Space Mirror
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: production        # Required reviewer approval gate in GitHub Settings
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success') }}
     steps:
       - name: Checkout repository
@@ -34,8 +35,8 @@ jobs:
           # Prevent downloading large Git LFS weights during clone
           export GIT_LFS_SKIP_SMUDGE=1
 
-          echo "Cloning Space deployment mirror..."
-          git clone --depth 1 https://Maharsh8805:${HF_TOKEN}@huggingface.co/spaces/Maharsh8805/smart-farming-ai hf_mirror
+          echo "Cloning Space deployment mirror with secure header authorization..."
+          git -c http.extraheader="Authorization: Bearer $HF_TOKEN" clone --depth 1 https://huggingface.co/spaces/Maharsh8805/smart-farming-ai hf_mirror
 
           echo "Synchronizing ai_service source files..."
           for f in app.py requirements.txt README.md advisory_kb.json packages.txt; do
@@ -84,7 +85,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "deploy(ai_service): sync from commit ${{ github.sha }}"
-          git push origin main
+          git -c http.extraheader="Authorization: Bearer $HF_TOKEN" push origin main
           echo "Successfully pushed ai_service commit to Hugging Face Space!"
 
       - name: Polling Post-Deployment Health Check

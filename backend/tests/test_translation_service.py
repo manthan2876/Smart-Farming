@@ -58,7 +58,7 @@ async def test_translate_batch_indictrans_success():
         "Your crop shows signs of leaf blight. Apply copper fungicide.",
         "Maintain proper plant spacing.",
     ]
-    
+
     # Mock response from IndicTrans2 FastAPI server
     mock_translations = [
         "आपकी फसल में पत्ती झुलसा के लक्षण दिख रहे हैं।",
@@ -70,8 +70,12 @@ async def test_translate_batch_indictrans_success():
     mock_resp.status_code = 200
     mock_resp.json.return_value = {"translations": mock_translations}
 
-    with patch.object(settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"):
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
+    with patch.object(
+        settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"
+    ):
+        with patch(
+            "httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp
+        ) as mock_post:
             result = await translate_batch_indictrans(texts, "hi")
 
             assert len(result) == 2
@@ -95,7 +99,9 @@ def test_translate_batch_indictrans_sync_success():
     mock_resp.status_code = 200
     mock_resp.json.return_value = {"translations": mock_translations}
 
-    with patch.object(settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"):
+    with patch.object(
+        settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"
+    ):
         with patch("httpx.Client.post", return_value=mock_resp) as mock_post:
             result = translate_batch_indictrans_sync(texts, "hi")
             assert len(result) == 1
@@ -114,15 +120,47 @@ async def test_translate_batch_indictrans_unconfigured():
 async def test_translate_batch_fallback_when_server_fails():
     texts = ["Test recommendation text."]
 
-    with patch.object(settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"):
+    with patch.object(
+        settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"
+    ):
         # Make IndicTrans2 raise an error (e.g. Colab disconnected / timeout)
         with patch(
             "app.services.translation.service.translate_batch_indictrans",
             side_effect=httpx.ConnectTimeout("Connection timed out"),
         ):
-            with patch("app.core.redis_rest.redis_rest.mget", new_callable=AsyncMock, return_value=[None]):
-                result = await translate_batch(texts, "hi")
-                assert result == ["Test recommendation text."]
+            with patch(
+                "app.core.redis_rest.redis_rest.mget", new_callable=AsyncMock, return_value=[None]
+            ):
+                # When both primary and fallback translation fail, it falls back to original text without throwing
+                with patch(
+                    "app.services.translation.service._fallback_translate_batch",
+                    side_effect=RuntimeError("Fallback translator unavailable"),
+                ):
+                    result = await translate_batch(texts, "hi")
+                    assert result == ["Test recommendation text."]
+
+
+@pytest.mark.anyio
+async def test_translate_batch_uses_fallback_when_server_fails():
+    texts = ["Test recommendation text."]
+
+    with patch.object(
+        settings, "TRANSLATION_SERVER_URL", "http://fake-colab-tunnel.ngrok-free.app"
+    ):
+        with patch(
+            "app.services.translation.service.translate_batch_indictrans",
+            side_effect=httpx.ConnectTimeout("Connection timed out"),
+        ):
+            with patch(
+                "app.core.redis_rest.redis_rest.mget", new_callable=AsyncMock, return_value=[None]
+            ):
+                with patch(
+                    "app.services.translation.service._fallback_translate_batch",
+                    new_callable=AsyncMock,
+                    return_value=["अनुशंसा पाठ का परीक्षण करें."],
+                ):
+                    result = await translate_batch(texts, "hi")
+                    assert result == ["अनुशंसा पाठ का परीक्षण करें."]
 
 
 @pytest.mark.anyio
@@ -161,9 +199,13 @@ def test_translate_batch_sync_fallback():
             "app.services.translation.service.translate_batch_indictrans_sync",
             side_effect=RuntimeError("Colab offline"),
         ):
-            # When IndicTrans2 fails, translate_batch_sync falls back to original text without throwing
-            result = translate_batch_sync(texts, "gu")
-            assert result == ["Sample text."]
+            with patch(
+                "app.services.translation.service._fallback_translate_batch_sync",
+                side_effect=RuntimeError("Fallback sync translator unavailable"),
+            ):
+                # When IndicTrans2 and fallback both fail, translate_batch_sync falls back to original text without throwing
+                result = translate_batch_sync(texts, "gu")
+                assert result == ["Sample text."]
 
 
 def test_translate_prediction_endpoint_success():
@@ -236,5 +278,3 @@ def test_translate_prediction_endpoint_success():
         app.dependency_overrides.pop(get_current_user, None)
         session.close()
         Base.metadata.drop_all(bind=test_engine)
-
-

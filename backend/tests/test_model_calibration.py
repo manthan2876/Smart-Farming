@@ -177,7 +177,10 @@ def test_predict_crop_with_temperature_scaling():
     """Verify crop_identifier stage scales logits and tags calibrated metadata."""
     import sys
     from unittest.mock import MagicMock, patch
-    import torch
+    try:
+        import torch
+    except Exception as e:
+        pytest.skip(f"PyTorch runtime unavailable: {e}")
 
     sys.path.insert(0, str(Path("ai_service").resolve()))
     from vision_engine.stages.crop_identifier import predict_crop
@@ -216,7 +219,10 @@ def test_predict_disease_with_temperature_scaling():
     """Verify disease_classifier stage applies temperature scaling and tags calibrated metadata."""
     import sys
     from unittest.mock import MagicMock, patch
-    import torch
+    try:
+        import torch
+    except Exception as e:
+        pytest.skip(f"PyTorch runtime unavailable: {e}")
 
     sys.path.insert(0, str(Path("ai_service").resolve()))
     from vision_engine.stages.disease_classifier import predict_disease

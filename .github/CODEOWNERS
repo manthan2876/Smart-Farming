@@ -1,0 +1,24 @@
+# Code Owners for Smart-Farming Repository
+# These owners will be automatically requested for review when pull requests touch their code.
+
+* @manthan2876
+
+# CI/CD & Deployments
+/.github/ @manthan2876
+
+# Backend Core & API
+/backend/ @manthan2876
+
+# Machine Learning & Inference Service
+/ai_service/ @manthan2876
+
+# Web Dashboard
+/frontend/ @manthan2876
+
+# Mobile Client
+/mobile/ @manthan2876
+
+# Automation Scripts & Docker
+/scripts/ @manthan2876
+/compose*.yaml @manthan2876
+
