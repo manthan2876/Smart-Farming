@@ -22,8 +22,8 @@
     "leaflet": "^1.9.4",
     "lucide-react": "1.34.0",
     "motion": "^13.1.1",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1"
@@ -31,8 +31,8 @@
   "devDependencies": {
     "@babel/parser": "^8.0.7",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
