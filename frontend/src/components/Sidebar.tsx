@@ -82,8 +82,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <LanguageToggle />
             <ThemeToggle />
+            <LanguageToggle />
             <button
               type="button"
               className="rounded-sm p-2 text-muted hover:bg-canvas hover:text-ink lg:hidden transition-colors"
