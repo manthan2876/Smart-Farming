@@ -526,6 +526,32 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getAlerts({String? lang}) async {
     final effectiveLang = lang ?? languageCode;
+    final query = effectiveLang != null && effectiveLang.isNotEmpty ? '?lang=$effectiveLang' : '';
+    final url = '$baseUrl/alerts$query';
+
+    // 1. Primary: Direct resilient HTTP with cold-start retries and token refresh
+    try {
+      final response = await _sendWithRetry(
+        () => http.get(Uri.parse(url), headers: _headers),
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is List) {
+          final list = <Map<String, dynamic>>[];
+          for (final raw in decoded) {
+            if (raw is Map) {
+              list.add(Map<String, dynamic>.from(raw));
+            }
+          }
+          AppLogger.info('ApiService', 'Retrieved ${list.length} alerts successfully via HTTP.');
+          return list;
+        }
+      }
+    } catch (e) {
+      AppLogger.warn('ApiService', 'Direct alerts fetch error: $e. Falling back to generated client.');
+    }
+
+    // 2. Secondary fallback: Generated AlertsApi
     try {
       final response = await _alertsApi.getAlertsApiV1AlertsGet(
         lang: effectiveLang,
@@ -567,6 +593,16 @@ class ApiService {
   }
 
   Future<void> markAlertRead(int alertId) async {
+    try {
+      final response = await _sendWithRetry(
+        () => http.post(
+          Uri.parse('$baseUrl/alerts/$alertId/read'),
+          headers: _headers,
+        ),
+      );
+      if (response.statusCode == 200) return;
+    } catch (_) {}
+
     try {
       await _alertsApi.markReadApiV1AlertsAlertIdReadPost(alertId: alertId);
     } on DioException catch (error) {

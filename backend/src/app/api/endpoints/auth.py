@@ -1061,12 +1061,12 @@ def logout(
     if refresh_token:
         revoke_refresh_token(session, refresh_token)
 
-    cookie_opts = _cookie_settings(request)
-    response.delete_cookie(
-        "refresh_token",
-        httponly=True,
-        secure=cookie_opts["secure"],
-        samesite=cookie_opts["samesite"],
+    _set_auth_cookie(
+        response,
+        key="refresh_token",
+        value="",
+        max_age=0,
+        request=request,
     )
     return {"status": "success"}
 

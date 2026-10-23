@@ -123,6 +123,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         final kind = alert['kind']?.toString().toLowerCase() ?? '';
         final title = alert['title']?.toString().toLowerCase() ?? '';
         return kind.contains('expert') ||
+            kind.contains('review') ||
             title.contains('expert') ||
             title.contains('विशेषज्ञ') ||
             title.contains('નિષ્ણાત');
@@ -245,7 +246,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 final isRead = alert['is_read'] == true;
                 final kind = alert['kind']?.toString().toLowerCase() ?? '';
                 final title = alert['title']?.toString() ?? '';
-                final isExpert = kind.contains('expert') || title.toLowerCase().contains('expert');
+                final isExpert = kind.contains('expert') || kind.contains('review') || title.toLowerCase().contains('expert');
                 final isWeather = kind.contains('weather') || title.toLowerCase().contains('weather');
                 final rawPredId = alert['prediction_id'];
                 final hasScan = rawPredId != null;
