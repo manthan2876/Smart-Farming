@@ -272,10 +272,16 @@ class Settings(BaseSettings):
         }
         env = (self.ENVIRONMENT or "development").strip().lower()
         if env in ("production", "staging"):
-            key = (self.JWT_SECRET_KEY or "").strip()
-            if not key or key in insecure_keys or len(key) < 32:
+            jwt_key = (self.JWT_SECRET_KEY or "").strip()
+            if not jwt_key or jwt_key in insecure_keys or len(jwt_key) < 32:
                 raise ValueError(
                     f"FATAL: Insecure or default JWT_SECRET_KEY detected in '{env}' environment. "
+                    "A unique random key of at least 32 characters must be configured."
+                )
+            sec_key = (self.SECRET_KEY or "").strip()
+            if not sec_key or sec_key in insecure_keys or len(sec_key) < 32:
+                raise ValueError(
+                    f"FATAL: Insecure or default SECRET_KEY detected in '{env}' environment. "
                     "A unique random key of at least 32 characters must be configured."
                 )
         return self

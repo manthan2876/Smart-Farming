@@ -144,6 +144,14 @@ jobs:
             backend/tests/test_worker_queue.py \
             backend/tests/test_backup_restore.py \
             backend/tests/test_paths.py \
+            backend/tests/test_password_reset.py \
+            backend/tests/test_diagnosis_guardrails.py \
+            backend/tests/test_pipeline_integration.py \
+            backend/tests/test_api_contracts.py \
+            backend/tests/test_model_calibration.py \
+            backend/tests/test_observability.py \
+            backend/tests/test_translation_service.py \
+            backend/tests/test_treatment_progress.py \
             ai_service/tests/test_confidence.py \
             -v
 
