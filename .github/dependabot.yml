@@ -1,17 +1,27 @@
 version: 2
+enable-beta-ecosystems: true
+
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: monthly
-  - package-ecosystem: pip
+
+  - package-ecosystem: npm
+    directory: /tools/openapi-codegen
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: uv
     directory: /backend
     schedule:
       interval: monthly
+
   - package-ecosystem: pub
     directory: /mobile
     schedule:

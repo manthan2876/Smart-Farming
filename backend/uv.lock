@@ -207,7 +207,7 @@ requires-dist = [
     { name = "arq", specifier = ">=0.26.0" },
     { name = "certifi", specifier = ">=2026.10.19" },
     { name = "fastapi", specifier = ">=0.115.0" },
-    { name = "gunicorn", specifier = ">=23.0.0" },
+    { name = "gunicorn", specifier = ">=26.2.0" },
     { name = "httpx", specifier = ">=0.25.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.19.0,<2.0.0" },
