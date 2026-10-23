@@ -5,13 +5,14 @@ import {
   datasetSummary as getDatasetSummary,
   modelHealth as getModelHealth,
   exportDataset,
+  getMlopsRuns,
 } from "../api/admin";
 import { useAuth } from "../context/AuthContext";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from "recharts";
-import { Loader2, Download, Filter, Sprout, Image, FileText } from "../components/icons";
+import { Loader2, Download, Filter, Sprout, Image, FileText, Database, History, Activity, ShieldCheck } from "../components/icons";
 import { Card, Button, Select, Skeleton } from "../components/ui";
 import { translateCrop, translateDisease } from "../i18n/domain";
 
@@ -21,6 +22,9 @@ const STATUS_OPTIONS = ["Any", "pending_review", "added_to_dataset", "rejected"]
 
 export default function AdminMetricsPage() {
   const { token, t, language } = useAuth();
+
+  // MLOps UI tab state: summary | export | history
+  const [mlopsTab, setMlopsTab] = useState<"summary" | "export" | "history">("summary");
 
   // Export filter state
   const [exportCrop, setExportCrop] = useState("All Crops");
@@ -49,6 +53,13 @@ export default function AdminMetricsPage() {
     queryFn: () => getModelHealth(token!),
     enabled: !!token,
     staleTime: 60_000,
+  });
+
+  const { data: mlopsRunsData } = useQuery({
+    queryKey: ["mlops_runs"],
+    queryFn: () => getMlopsRuns(token!),
+    enabled: !!token,
+    staleTime: 30_000,
   });
 
   const handleExportMLOps = async () => {
@@ -320,11 +331,14 @@ export default function AdminMetricsPage() {
         </Card>
       )}
 
-      {/* ── Dataset Export Panel ── */}
+      {/* ── Dataset Curation & MLOps Engine ── */}
       <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
           <div>
-            <h3 className="font-display text-xl text-ink">{t("mlopsDatasetExport")}</h3>
+            <h3 className="flex items-center gap-2 font-display text-xl text-ink">
+              <Database size={20} className="text-admin-600 dark:text-amber-400" />
+              {t("mlopsDatasetExport")}
+            </h3>
             <p className="mt-1 text-sm text-muted">
               {datasetSummary
                 ? `${datasetSummary.total} ${t("totalCandidates")} · ${datasetSummary.by_status?.pending_review ?? 0} ${t("pendingReview")}`
@@ -333,104 +347,298 @@ export default function AdminMetricsPage() {
                 : t("loadingSummary")}
             </p>
           </div>
+
+          {/* MLOps Tabs */}
+          <div className="flex rounded-md border border-line bg-canvas p-1 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setMlopsTab("summary")}
+              className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 transition-colors ${
+                mlopsTab === "summary"
+                  ? "bg-surface text-ink shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Activity size={14} />
+              <span>{t("candidateSummaryTab")}</span>
+              {datasetSummary && (
+                <span className="ml-1 rounded-full bg-admin-100 px-1.5 py-0.5 text-[10px] font-bold text-admin-800 dark:bg-amber-950/60 dark:text-amber-300">
+                  {datasetSummary.total}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMlopsTab("export")}
+              className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 transition-colors ${
+                mlopsTab === "export"
+                  ? "bg-surface text-ink shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <Download size={14} />
+              <span>{t("datasetExportTab")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMlopsTab("history")}
+              className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 transition-colors ${
+                mlopsTab === "history"
+                  ? "bg-surface text-ink shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <History size={14} />
+              <span>{t("exportHistoryTab")}</span>
+              {mlopsRunsData?.runs && mlopsRunsData.runs.length > 0 && (
+                <span className="ml-1 rounded-full bg-line px-1.5 py-0.5 text-[10px] font-bold text-muted">
+                  {mlopsRunsData.runs.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("cropFilter")}</label>
-            <Select
-              value={exportCrop}
-              onChange={(val) => setExportCrop(val)}
-              theme="admin"
-              leadingIcon={<Sprout size={14} className="text-admin-600 dark:text-amber-400" />}
-              options={[
-                { value: "All Crops", label: t("allCrops") },
-                ...CROP_OPTIONS.slice(1).map((c) => ({ value: c, label: translateCrop(c, language) })),
-              ]}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("statusFilter")}</label>
-            <Select
-              value={exportStatus}
-              onChange={(val) => setExportStatus(val)}
-              theme="admin"
-              leadingIcon={<Filter size={14} className="text-admin-600 dark:text-amber-400" />}
-              options={[
-                { value: "Any", label: t("any") },
-                { value: "pending_review", label: t("pendingReview") },
-                { value: "added_to_dataset", label: t("addedToDataset") },
-                { value: "rejected", label: t("rejected") },
-              ]}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("imageTarget")}</label>
-            <Select
-              value={exportImageTarget}
-              onChange={(val) => setExportImageTarget(val as any)}
-              theme="admin"
-              leadingIcon={<Image size={14} className="text-admin-600 dark:text-amber-400" />}
-              options={[
-                { value: "preprocessed", label: t("preprocessedImg") },
-                { value: "raw", label: t("rawImg") },
-              ]}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("format")}</label>
-            <Select
-              value={exportFormat}
-              onChange={(val) => setExportFormat(val as any)}
-              theme="admin"
-              leadingIcon={<FileText size={14} className="text-admin-600 dark:text-amber-400" />}
-              options={[
-                { value: "PyTorch Folder", label: "PyTorch Folder" },
-                { value: "JSON Manifest", label: "JSON Manifest" },
-              ]}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("trainValTestSplit")}</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                min={0}
-                max={100}
-                className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
-                placeholder={t("train")}
-                value={exportTrain}
-                onChange={e => setExportTrain(Number(e.target.value))}
-              />
-              <input
-                type="number"
-                min={0}
-                max={100}
-                className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
-                placeholder={t("val")}
-                value={exportVal}
-                onChange={e => setExportVal(Number(e.target.value))}
-              />
-              <input
-                type="number"
-                min={0}
-                max={100}
-                className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
-                placeholder={t("test")}
-                value={exportTest}
-                onChange={e => setExportTest(Number(e.target.value))}
-              />
+        {/* ── TAB 1: Candidate Summary ── */}
+        {mlopsTab === "summary" && (
+          <div className="mt-5 space-y-5">
+            {/* 4 Stat Cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-sm border border-line bg-canvas p-4">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("totalCandidates")}</span>
+                <div className="mt-2 font-display text-2xl text-ink">{datasetSummary?.total ?? 0}</div>
+                <p className="mt-1 text-xs text-muted">Vetted agricultural scans</p>
+              </div>
+
+              <div className="rounded-sm border border-line bg-canvas p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("pendingReview")}</span>
+                  <span className="rounded-xs bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700">
+                    {t("awaitingAgronomist")}
+                  </span>
+                </div>
+                <div className="mt-2 font-display text-2xl text-amber-600 dark:text-amber-400">
+                  {datasetSummary?.by_status?.pending_review ?? 0}
+                </div>
+                <p className="mt-1 text-xs text-muted">{t("pendingDatasetCandidates")}</p>
+              </div>
+
+              <div className="rounded-sm border border-line bg-canvas p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("addedToDataset")}</span>
+                  <span className="rounded-xs bg-farmer-50 px-2 py-0.5 text-[10px] font-bold text-farmer-800 border border-farmer-300 dark:bg-farmer-950/60 dark:text-farmer-200 dark:border-farmer-700">
+                    {t("approvedForRetraining")}
+                  </span>
+                </div>
+                <div className="mt-2 font-display text-2xl text-farmer-700 dark:text-emerald-400">
+                  {datasetSummary?.by_status?.added_to_dataset ?? 0}
+                </div>
+                <p className="mt-1 text-xs text-muted">Ready for neural fine-tuning</p>
+              </div>
+
+              <div className="rounded-sm border border-line bg-canvas p-4">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("groundTruthSources")}</span>
+                <div className="mt-2 text-sm font-semibold text-ink">
+                  {datasetSummary?.expert_overridden ?? 0} {t("expertOverriddenCases")}
+                </div>
+                <div className="mt-1 text-xs text-muted">
+                  {datasetSummary?.farmer_confirmed ?? 0} {t("confirmedFarmerFeedback")}
+                </div>
+              </div>
             </div>
-            <p className="mt-1 text-xs text-muted">{t("mustSum100")}. {t("current")}: {exportTrain + exportVal + exportTest}</p>
-          </div>
-        </div>
 
-        <div className="mt-5">
-          <Button variant="secondary" onClick={handleExportMLOps} disabled={exporting} className="flex items-center gap-2">
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {exporting ? t("exporting") : t("exportMlopsDataset")}
-          </Button>
-        </div>
+            {/* Crop Distribution Breakdown */}
+            <div className="rounded-sm border border-line bg-canvas p-5">
+              <div className="flex items-center justify-between border-b border-line pb-3">
+                <h4 className="flex items-center gap-2 text-sm font-bold text-ink">
+                  <Sprout size={16} className="text-admin-600 dark:text-amber-400" />
+                  {t("cropDistributionBreakdown")}
+                </h4>
+                <Button size="sm" variant="secondary" onClick={() => setMlopsTab("export")} className="text-xs">
+                  {t("configureAndExport")} →
+                </Button>
+              </div>
+
+              {(!datasetSummary?.by_crop || datasetSummary.by_crop.length === 0) ? (
+                <p className="py-6 text-center text-sm text-muted">
+                  {t("noCandidatesLogged")}
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {datasetSummary.by_crop.map((c) => {
+                    const total = datasetSummary.total || 1;
+                    const pct = Math.round((c.count / total) * 100);
+                    return (
+                      <div key={c.crop} className="rounded-sm border border-line bg-surface p-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-semibold text-ink">{translateCrop(c.crop, language)}</span>
+                          <span className="font-mono text-xs font-bold text-muted">{c.count} ({pct}%)</span>
+                        </div>
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-line">
+                          <div
+                            className="h-full bg-admin-600 dark:bg-amber-400"
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Privacy & Partitioning Safeguards banner */}
+            <div className="flex items-start gap-3 rounded-sm border border-farmer-200 bg-farmer-50/50 p-3.5 text-xs text-muted dark:border-farmer-900 dark:bg-farmer-950/20">
+              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-farmer-700 dark:text-emerald-400" />
+              <div>
+                <strong className="text-ink">Zero Data Leakage & Farmer Privacy:</strong> All candidate images undergo deterministic SHA-256 partition hashing by <code className="font-mono font-semibold">plot_id</code> (preventing plant re-scans across days from leaking between train and test splits) and automatic EXIF GPS coordinate scrubbing.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 2: Export Dataset Form ── */}
+        {mlopsTab === "export" && (
+          <div className="mt-5 space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("cropFilter")}</label>
+                <Select
+                  value={exportCrop}
+                  onChange={(val) => setExportCrop(val)}
+                  theme="admin"
+                  leadingIcon={<Sprout size={14} className="text-admin-600 dark:text-amber-400" />}
+                  options={[
+                    { value: "All Crops", label: t("allCrops") },
+                    ...CROP_OPTIONS.slice(1).map((c) => ({ value: c, label: translateCrop(c, language) })),
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("statusFilter")}</label>
+                <Select
+                  value={exportStatus}
+                  onChange={(val) => setExportStatus(val)}
+                  theme="admin"
+                  leadingIcon={<Filter size={14} className="text-admin-600 dark:text-amber-400" />}
+                  options={[
+                    { value: "Any", label: t("any") },
+                    { value: "pending_review", label: t("pendingReview") },
+                    { value: "added_to_dataset", label: t("addedToDataset") },
+                    { value: "rejected", label: t("rejected") },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("imageTarget")}</label>
+                <Select
+                  value={exportImageTarget}
+                  onChange={(val) => setExportImageTarget(val as any)}
+                  theme="admin"
+                  leadingIcon={<Image size={14} className="text-admin-600 dark:text-amber-400" />}
+                  options={[
+                    { value: "preprocessed", label: t("preprocessedImg") },
+                    { value: "raw", label: t("rawImg") },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("format")}</label>
+                <Select
+                  value={exportFormat}
+                  onChange={(val) => setExportFormat(val as any)}
+                  theme="admin"
+                  leadingIcon={<FileText size={14} className="text-admin-600 dark:text-amber-400" />}
+                  options={[
+                    { value: "PyTorch Folder", label: "PyTorch Folder" },
+                    { value: "JSON Manifest", label: "JSON Manifest" },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">{t("trainValTestSplit")}</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
+                    placeholder={t("train")}
+                    value={exportTrain}
+                    onChange={e => setExportTrain(Number(e.target.value))}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
+                    placeholder={t("val")}
+                    value={exportVal}
+                    onChange={e => setExportVal(Number(e.target.value))}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-admin-500 focus:outline-none focus:ring-4 focus:ring-admin-100 dark:focus:ring-admin-900/40 transition-colors"
+                    placeholder={t("test")}
+                    value={exportTest}
+                    onChange={e => setExportTest(Number(e.target.value))}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted">{t("mustSum100")}. {t("current")}: {exportTrain + exportVal + exportTest}</p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button variant="secondary" onClick={handleExportMLOps} disabled={exporting} className="flex items-center gap-2">
+                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {exporting ? t("exporting") : t("exportMlopsDataset")}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 3: Export History / Runs ── */}
+        {mlopsTab === "history" && (
+          <div className="mt-5 space-y-4">
+            <h4 className="text-sm font-bold text-ink">{t("exportRunsHistory")}</h4>
+            {(!mlopsRunsData?.runs || mlopsRunsData.runs.length === 0) ? (
+              <div className="rounded-sm border border-line bg-canvas py-8 text-center text-sm text-muted">
+                {t("noExportRunsYet")}
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-sm border border-line">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-line bg-canvas text-xs font-semibold uppercase tracking-wide text-muted">
+                    <tr>
+                      <th className="py-2.5 px-3">{t("runId")}</th>
+                      <th className="py-2.5 px-3">{t("bundleName")}</th>
+                      <th className="py-2.5 px-3">{t("status")}</th>
+                      <th className="py-2.5 px-3">Message</th>
+                      <th className="py-2.5 px-3">{t("exportedAt")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {mlopsRunsData.runs.map((r) => (
+                      <tr key={r.id} className="hover:bg-canvas/50">
+                        <td className="py-2 px-3 font-mono text-xs text-muted">#{r.id}</td>
+                        <td className="py-2 px-3 font-medium text-ink">{r.model_name}</td>
+                        <td className="py-2 px-3">
+                          <span className="inline-flex rounded-xs border border-farmer-300 bg-farmer-50 px-2 py-0.5 text-[11px] font-semibold text-farmer-800 dark:border-farmer-700 dark:bg-farmer-950/60 dark:text-farmer-200">
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-xs text-muted">{r.message || "—"}</td>
+                        <td className="py-2 px-3 text-xs text-muted">{new Date(r.started_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
     </div>
   );

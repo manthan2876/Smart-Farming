@@ -1,3 +1,4 @@
+import { request } from "./client";
 import { contractBlobRequest, contractRequest } from "./contract";
 import type { components } from "./generated/openapi";
 import type { AdminMetrics, FeedbackLog, AdminUsersResponse } from "./types";
@@ -155,6 +156,23 @@ export type DatasetExportRequest = {
   imageTarget: "raw" | "preprocessed";
   replay_ratio?: number;
   include_replay_buffer?: boolean;
+};
+
+export type MlopsRunItem = {
+  id: number;
+  model_name: string;
+  status: string;
+  epoch: number;
+  total_epochs: number;
+  message?: string | null;
+  dataset_export_config?: any;
+  metrics?: any;
+  started_at: string;
+  finished_at?: string | null;
+};
+
+export const getMlopsRuns = async (token: string): Promise<{ runs: MlopsRunItem[] }> => {
+  return request<{ runs: MlopsRunItem[] }>("/api/v1/admin/mlops/runs", { method: "GET" }, token);
 };
 
 export const exportDataset = (token: string, payload: DatasetExportRequest, download?: boolean) =>
