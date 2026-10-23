@@ -58,7 +58,7 @@ jobs:
           }
 
       - name: Upload Backup Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prod-db-backup-${{ github.sha }}
           path: backups/*.dump

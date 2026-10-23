@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload Android App Bundle
         if: ${{ github.event.inputs.build_target != 'apk' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smart-farming-release-bundle
           path: mobile/build/app/outputs/bundle/release/*.aab
@@ -103,14 +103,14 @@ jobs:
 
       - name: Upload Android APK
         if: ${{ github.event.inputs.build_target == 'apk' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smart-farming-release-apk
           path: mobile/build/app/outputs/flutter-apk/*.apk
           retention-days: 30
 
       - name: Upload Split Debug Symbols
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smart-farming-debug-symbols
           path: mobile/build/app/outputs/symbols/
