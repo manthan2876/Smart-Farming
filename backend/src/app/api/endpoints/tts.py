@@ -145,7 +145,9 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
         )
 
     headers = {"Content-Type": "application/json"}
-    gateway_key = settings.GATEWAY_API_KEY or os.getenv("GATEWAY_SECRET")
+    gateway_key = settings.GATEWAY_API_KEY or os.getenv("GATEWAY_SECRET") or os.getenv("GATEWAY_API_KEY")
+    if not gateway_key and "maharsh8805-smart-farming-ai.hf.space" in tts_url:
+        gateway_key = "khdfiwfhhfwefofhweofhkjhhdfhskdjda"
     if gateway_key:
         clean_key = str(gateway_key).strip().strip('"').strip("'")
         if clean_key:

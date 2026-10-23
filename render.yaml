@@ -19,7 +19,11 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://smart-farming-dashboard.vercel.app
+        value: https://smart-farming-dashboard.vercel.app,https://smart-farming-dashboard-green.vercel.app
+      - key: AI_SERVICE_URL
+        value: https://maharsh8805-smart-farming-ai.hf.space
+      - key: GATEWAY_API_KEY
+        value: khdfiwfhhfwefofhweofhkjhhdfhskdjda
       - key: WEB_CONCURRENCY
         value: "1"
     buildFilter:

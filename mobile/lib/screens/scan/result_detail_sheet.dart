@@ -43,6 +43,22 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
     super.initState();
     _pred = widget.prediction;
     _ttsService.addListener(_onTtsStateChange);
+    if (_pred.id > 0) {
+      _refreshLatestPrediction();
+    }
+  }
+
+  Future<void> _refreshLatestPrediction() async {
+    try {
+      final fresh = await widget.api.getPrediction(_pred.id);
+      if (mounted) {
+        setState(() {
+          _pred = fresh;
+        });
+      }
+    } catch (e) {
+      debugPrint('[ResultDetailSheet] Silent refresh notice: $e');
+    }
   }
 
   void _onTtsStateChange() {
@@ -86,7 +102,7 @@ class _ResultDetailSheetState extends State<ResultDetailSheet> {
   @override
   void dispose() {
     _ttsService.removeListener(_onTtsStateChange);
-    if (_ttsService.isItemPlaying('pred_${_pred.id}')) {
+    if (_ttsService.isItemPlaying('pred_${_pred.id}') || _ttsService.isItemPlaying('expert_${_pred.id}')) {
       _ttsService.stop();
     }
     _noteCtrl.dispose();
@@ -378,7 +394,24 @@ ${context.tr('reportGeneratedBy')}
             ],
           ),
 
-          Text(translatedDisease, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          if (_pred.correctedDisease != null && _pred.correctedDisease!.trim().isNotEmpty) ...[
+            Text(context.loc.disease(_pred.correctedDisease!), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.verified, size: 15, color: Color(0xff15803d)),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    '${context.tr('correctedBySpecialist')} (${context.tr('initialAiDiagnosis')}: $translatedDisease)',
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xff15803d)),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Text(translatedDisease, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          ],
           const SizedBox(height: 10),
 
           // Diagnostic Metrics Badges
@@ -430,9 +463,20 @@ ${context.tr('reportGeneratedBy')}
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(color: AppColors.warningBg, borderRadius: BorderRadius.circular(8)),
-                child: Text(
-                  '${_pred.severity}% $severityLevel',
-                  style: const TextStyle(color: AppColors.warning, fontWeight: FontWeight.bold, fontSize: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_pred.correctedSeverity != null) ...[
+                      const Icon(Icons.verified, size: 13, color: AppColors.warning),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      _pred.correctedSeverity != null
+                          ? '${_pred.correctedSeverity}% ${context.tr('correctedSeverity')}'
+                          : '${_pred.severity}% $severityLevel',
+                      style: const TextStyle(color: AppColors.warning, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
               if (_pred.isFallback)
@@ -444,16 +488,56 @@ ${context.tr('reportGeneratedBy')}
                     style: const TextStyle(color: Color(0xff856404), fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                 ),
-              if (_pred.expertReviewStatus == 'pending')
+              if (_pred.isVerified)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffe8f5e9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xffa5d6a7)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.verified, size: 14, color: Color(0xff2e7d32)),
+                      const SizedBox(width: 4),
+                      Text(
+                        context.tr('specialistVerified'),
+                        style: const TextStyle(color: Color(0xff2e7d32), fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_pred.expertReviewStatus == 'pending')
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(color: const Color(0xffe8eaf6), borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.hourglass_top, size: 14, color: Color(0xff3f51b5)),
-                      SizedBox(width: 4),
+                      const Icon(Icons.hourglass_top, size: 14, color: Color(0xff3f51b5)),
+                      const SizedBox(width: 4),
                       Text(context.tr('reviewPending'), style: const TextStyle(color: Color(0xff3f51b5), fontWeight: FontWeight.bold, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              if (_pred.expertDecision == 'Request Rescan' || _pred.status == 'rescan_requested')
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfffff3e0),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xffffcc80)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.camera_alt_outlined, size: 14, color: Color(0xffe65100)),
+                      const SizedBox(width: 4),
+                      Text(
+                        context.tr('rescanRequested'),
+                        style: const TextStyle(color: Color(0xffe65100), fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
@@ -800,7 +884,12 @@ ${context.tr('reportGeneratedBy')}
           const SizedBox(height: 20),
 
           // ── Specialist Verified Advisory OR Masked Advisory ─────────────────
-          if (_pred.isMasked) ...[
+          if (_pred.isVerified ||
+              _pred.expertDecision != null ||
+              (_pred.expertGuidance != null && _pred.expertGuidance!.trim().isNotEmpty) ||
+              _pred.status == 'rescan_requested') ...[
+            _buildExpertReviewCard(context, langCode),
+          ] else if (_pred.isMasked) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -823,106 +912,76 @@ ${context.tr('reportGeneratedBy')}
               ),
             ),
             const SizedBox(height: 20),
-          ] else if (_pred.expertGuidance != null && _pred.expertGuidance!.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xffe0f2f1),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xff80cbc4)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.verified, color: Color(0xff00897b), size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          context.tr('specialistVerified'),
-                          style: const TextStyle(color: Color(0xff00695c), fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _pred.expertGuidance!,
-                    style: const TextStyle(color: Color(0xff004d40), fontSize: 13, height: 1.45),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
           ],
 
           // ── Actionable Recommendations ──────────────────────────────────────
-          Text(
-            context.tr('actionableRecommendations'),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          if (_pred.plotInfo != null) ...[
-            Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primaryBorder),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.grass, color: AppColors.primary, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${context.tr('calibratedForPlot')}: ${_pred.plotInfo!['name']}${_pred.plotInfo!['area_acres'] != null ? ' (${_pred.plotInfo!['area_acres']} acres)' : ''} — ${context.tr('plotScaleAdvice')}',
-                      style: const TextStyle(color: AppColors.primary, fontSize: 11.5, fontWeight: FontWeight.w600),
+          if (!_pred.isMasked || _pred.isVerified) ...[
+            Text(
+              context.tr('actionableRecommendations'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            if (_pred.plotInfo != null) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.primaryBorder),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.grass, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${context.tr('calibratedForPlot')}: ${_pred.plotInfo!['name']}${_pred.plotInfo!['area_acres'] != null ? ' (${_pred.plotInfo!['area_acres']} acres)' : ''} — ${context.tr('plotScaleAdvice')}',
+                        style: const TextStyle(color: AppColors.primary, fontSize: 11.5, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+              ),
+            ],
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: const Color(0xfff4f1e8), borderRadius: BorderRadius.circular(14)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (immAction != null && immAction.isNotEmpty) ...[
+                    Text(context.tr('immediateAction'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(immAction, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
+                    const SizedBox(height: 12),
+                  ],
+                  if (treatment != null && treatment.isNotEmpty) ...[
+                    Text(context.tr('treatmentGuidance'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(treatment, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
+                    const SizedBox(height: 12),
+                  ],
+                  if (prevention != null && prevention.isNotEmpty) ...[
+                    Text(context.tr('preventionStrategy'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(prevention, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
+                    const SizedBox(height: 12),
+                  ],
+                  if (monitoring != null && monitoring.isNotEmpty) ...[
+                    Text(context.tr('monitoringPlan'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(monitoring, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
+                    const SizedBox(height: 12),
+                  ],
+                  if (immAction == null && treatment == null && prevention == null) ...[
+                    Text(fallbackRec, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
+                  ],
                 ],
               ),
             ),
+            const SizedBox(height: 16),
           ],
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xfff4f1e8), borderRadius: BorderRadius.circular(14)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (immAction != null && immAction.isNotEmpty) ...[
-                  Text(context.tr('immediateAction'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text(immAction, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
-                  const SizedBox(height: 12),
-                ],
-                if (treatment != null && treatment.isNotEmpty) ...[
-                  Text(context.tr('treatmentGuidance'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text(treatment, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
-                  const SizedBox(height: 12),
-                ],
-                if (prevention != null && prevention.isNotEmpty) ...[
-                  Text(context.tr('preventionStrategy'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text(prevention, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
-                  const SizedBox(height: 12),
-                ],
-                if (monitoring != null && monitoring.isNotEmpty) ...[
-                  Text(context.tr('monitoringPlan'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text(monitoring, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
-                  const SizedBox(height: 12),
-                ],
-                if (immAction == null && treatment == null && prevention == null) ...[
-                  Text(fallbackRec, style: const TextStyle(color: Color(0xff5d513f), height: 1.4)),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
 
           // ── Agricultural Safety & Statutory Disclaimer ─────────────────────
           Container(
@@ -1273,6 +1332,333 @@ ${context.tr('reportGeneratedBy')}
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExpertReviewCard(BuildContext context, String langCode) {
+    final decision = _pred.expertDecision ?? '';
+    final isRescan = decision == 'Request Rescan' || _pred.status == 'rescan_requested';
+    final isOverride = decision.contains('Override') || decision.contains('Correct') || _pred.correctedDisease != null;
+
+    final Color badgeBg;
+    final Color badgeText;
+    final IconData badgeIcon;
+    final String decisionLabel;
+
+    if (isRescan) {
+      badgeBg = const Color(0xfffff3e0);
+      badgeText = const Color(0xffe65100);
+      badgeIcon = Icons.camera_alt_outlined;
+      decisionLabel = context.tr('decisionRescanRequested');
+    } else if (isOverride) {
+      badgeBg = const Color(0xfffef3c7);
+      badgeText = const Color(0xffb45309);
+      badgeIcon = Icons.edit_note;
+      decisionLabel = context.tr('decisionOverridden');
+    } else {
+      badgeBg = const Color(0xffdcfce7);
+      badgeText = const Color(0xff15803d);
+      badgeIcon = Icons.check_circle_outline;
+      decisionLabel = context.tr('decisionApproved');
+    }
+
+    final hasGuidance = _pred.expertGuidance != null && _pred.expertGuidance!.trim().isNotEmpty;
+    final isPlaying = _ttsService.isItemPlaying('expert_${_pred.id}');
+    final isPaused = _ttsService.isItemPaused('expert_${_pred.id}');
+    final isLoading = _ttsService.isItemLoading('expert_${_pred.id}');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xfff0fdf4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xff86efac), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xff15803d).withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row: Title & Audio
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xffdcfce7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.verified, color: Color(0xff15803d), size: 22),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.tr('specialistVerifiedPlan'),
+                      style: const TextStyle(
+                        color: Color(0xff14532d),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      context.tr('agronomistGuidance'),
+                      style: const TextStyle(
+                        color: Color(0xff15803d),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasGuidance)
+                IconButton.filledTonal(
+                  onPressed: () async {
+                    await _ttsService.toggle(
+                      id: 'expert_${_pred.id}',
+                      text: _pred.expertGuidance!,
+                      langCode: langCode,
+                      api: widget.api,
+                    );
+                  },
+                  style: IconButton.styleFrom(
+                    backgroundColor: isPlaying ? AppColors.warning : const Color(0xffdcfce7),
+                    foregroundColor: isPlaying ? Colors.white : const Color(0xff15803d),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xff15803d)),
+                        )
+                      : Icon(
+                          isPlaying
+                              ? Icons.pause
+                              : (isPaused ? Icons.play_arrow : Icons.volume_up_outlined),
+                          size: 20,
+                        ),
+                  tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('playAudio'),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Decision Tag Pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: badgeText.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(badgeIcon, size: 15, color: badgeText),
+                const SizedBox(width: 6),
+                Text(
+                  decisionLabel,
+                  style: TextStyle(
+                    color: badgeText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Corrected Findings Callout
+          if (_pred.correctedDisease != null || _pred.correctedSeverity != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xffbbf7d0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_pred.correctedDisease != null)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.check_circle, size: 16, color: Color(0xff15803d)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 13, color: Color(0xff1f2937)),
+                              children: [
+                                TextSpan(
+                                  text: '${context.tr('correctedCondition')}: ',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: context.loc.disease(_pred.correctedDisease!),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xff15803d),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (_pred.correctedSeverity != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.trending_up, size: 16, color: Color(0xffb45309)),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${context.tr('correctedSeverity')}: ${_pred.correctedSeverity}%',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xffb45309),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
+          // Guidance body text
+          if (hasGuidance) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xffbbf7d0)),
+              ),
+              child: Text(
+                _pred.expertGuidance!.trim(),
+                style: const TextStyle(
+                  color: Color(0xff14532d),
+                  fontSize: 13.5,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+
+          // Rescan Call-to-action
+          if (isRescan) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xfffff7ed),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xfffed7aa)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline, color: Color(0xffc2410c), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          context.tr('rescanPromptDesc'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xff9a3412),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: _isRescanning ? null : () => _showRescanBottomSheet(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xffea580c),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: _isRescanning
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.camera_alt, size: 18),
+                    label: Text(
+                      _isRescanning ? context.tr('rescanning') : context.tr('takeRescanPhoto'),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showRescanBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                title: Text(context.tr('takePhoto')),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleRescan(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: AppColors.primary),
+                title: Text(context.tr('gallery')),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleRescan(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

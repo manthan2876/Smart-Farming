@@ -29,6 +29,7 @@ class Prediction {
     this.expertDecision,
     this.expertGuidance,
     this.correctedDisease,
+    this.correctedSeverity,
     this.expertReviewStatus,
     this.isFallback = false,
     this.isMasked = false,
@@ -72,6 +73,7 @@ class Prediction {
   final String? expertDecision;
   final String? expertGuidance;
   final String? correctedDisease;
+  final int? correctedSeverity;
   final String? expertReviewStatus;
   final bool isFallback;
   final bool isMasked;
@@ -97,7 +99,10 @@ class Prediction {
       disease.toLowerCase().contains('unsupported') ||
       status == 'unsupported_crop';
 
-  bool get isVerified => expertReviewStatus == 'verified' || status == 'verified';
+  bool get isVerified =>
+      expertReviewStatus == 'verified' ||
+      status == 'verified' ||
+      (expertDecision != null && expertDecision!.isNotEmpty && expertDecision != 'Request Rescan');
 
   String? get processedPath => imagePath;
 
@@ -217,6 +222,15 @@ class Prediction {
 
     final norm = DomainTranslations.normalizeLang(languageCode);
     final buffer = StringBuffer();
+    if (expertGuidance != null && expertGuidance!.trim().isNotEmpty) {
+      if (norm == 'hi') {
+        buffer.write('कृषि विशेषज्ञ द्वारा सत्यापित सलाह: ${expertGuidance!.trim()}. ');
+      } else if (norm == 'gu') {
+        buffer.write('કૃષિ નિષ્ણાત દ્વારા પ્રમાણિત સલાહ: ${expertGuidance!.trim()}. ');
+      } else {
+        buffer.write('Specialist verified advisory: ${expertGuidance!.trim()}. ');
+      }
+    }
     if (norm == 'hi') {
       buffer.write('$cName की जांच रिपोर्ट। स्थिति: $dName। ');
       buffer.write('गंभीरता $severity प्रतिशत है। ');
@@ -288,6 +302,7 @@ class Prediction {
     String? expertDecision,
     String? expertGuidance,
     String? correctedDisease,
+    int? correctedSeverity,
     String? expertReviewStatus,
     bool? isFallback,
     bool? isMasked,
@@ -331,6 +346,7 @@ class Prediction {
       expertDecision: expertDecision ?? this.expertDecision,
       expertGuidance: expertGuidance ?? this.expertGuidance,
       correctedDisease: correctedDisease ?? this.correctedDisease,
+      correctedSeverity: correctedSeverity ?? this.correctedSeverity,
       expertReviewStatus: expertReviewStatus ?? this.expertReviewStatus,
       isFallback: isFallback ?? this.isFallback,
       isMasked: isMasked ?? this.isMasked,
@@ -492,6 +508,15 @@ class Prediction {
     final expertDecision = expRaw?['decision']?.toString();
     final expertGuidance = expRaw?['farmer_guidance']?.toString();
     final correctedDisease = expRaw?['corrected_disease']?.toString();
+    final correctedSeverity = (expRaw?['corrected_severity'] as num?)?.round();
+
+    expertReviewStatus ??= expRaw?['status']?.toString();
+    if (statusStr == 'verified' || statusStr == 'rescan_requested') {
+      expertReviewStatus ??= statusStr;
+    }
+    if (expertReviewStatus == 'verified' || (expertGuidance != null && expertGuidance.isNotEmpty)) {
+      isMasked = false;
+    }
 
     // 9. Weather snapshot
     final weatherMap = target['weather'] as Map?;
@@ -547,6 +572,7 @@ class Prediction {
       expertDecision: expertDecision,
       expertGuidance: expertGuidance,
       correctedDisease: correctedDisease,
+      correctedSeverity: correctedSeverity,
       modelUsed: modelUsed,
       durationMs: durationMs,
       schemaVersion: schemaVersion,

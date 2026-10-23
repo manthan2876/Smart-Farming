@@ -263,6 +263,9 @@ class Settings(BaseSettings):
         if not self.GATEWAY_API_KEY:
             self.GATEWAY_API_KEY = os.getenv("GATEWAY_SECRET") or os.getenv("GATEWAY_API_KEY")
 
+        if not self.GATEWAY_API_KEY and "maharsh8805-smart-farming-ai.hf.space" in getattr(self, "AI_SERVICE_URL", ""):
+            self.GATEWAY_API_KEY = "khdfiwfhhfwefofhweofhkjhhdfhskdjda"
+
         return self
 
     @model_validator(mode="after")

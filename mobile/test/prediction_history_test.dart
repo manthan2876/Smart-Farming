@@ -72,6 +72,41 @@ void main() {
 
       AppLogger.info('UnitTest', 'Parsed failed scan #${pred.id}: ${pred.status}');
     });
+
+    test('Correctly parses expert review findings and verifies prediction', () {
+      final reviewedJson = {
+        'prediction_id': 55,
+        'crop': {'label': 'Cotton', 'confidence': 0.88},
+        'disease': {'label': 'Bacterial Blight', 'confidence': 0.72},
+        'severity': {'percent': 45.0, 'bucket': 'Moderate'},
+        'recommendation': {
+          'immediate_action': 'Hold spraying.',
+        },
+        'status': {
+          'pipeline': 'verified',
+          'expert_review': 'verified',
+          'mask_advisory': false,
+        },
+        'expert_review_data': {
+          'decision': 'Override / Correct Findings',
+          'corrected_disease': 'Alternaria Leaf Spot',
+          'corrected_severity': 38.0,
+          'farmer_guidance': 'This is early Alternaria, not Bacterial Blight. Apply Mancozeb 2g/L.',
+          'status': 'verified',
+        },
+      };
+
+      final pred = Prediction.fromJson(reviewedJson);
+      expect(pred.id, 55);
+      expect(pred.isVerified, isTrue);
+      expect(pred.isMasked, isFalse);
+      expect(pred.expertDecision, 'Override / Correct Findings');
+      expect(pred.correctedDisease, 'Alternaria Leaf Spot');
+      expect(pred.correctedSeverity, 38);
+      expect(pred.expertGuidance, contains('Apply Mancozeb 2g/L'));
+      expect(pred.expertReviewStatus, 'verified');
+      expect(pred.localizedAudioText('en'), contains('Specialist verified advisory:'));
+    });
   });
 }
 
