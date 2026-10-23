@@ -76,22 +76,26 @@ fastapi_app.add_middleware(
 
 @fastapi_app.middleware("http")
 async def security_middleware(request: Request, call_next):
-    # Allow public health check endpoints and all Gradio UI static assets
+    # Allow public health check endpoints and all Gradio UI static assets (fonts, themes, scripts)
     path = request.url.path
-    if path in ("/", "/health") or path.startswith(("/_app", "/assets", "/config", "/theme.css", "/gradio_api", "/favicon")):
+    if (
+        path in ("/", "/health", "/robots.txt")
+        or path.startswith(("/_app", "/assets", "/static", "/config", "/theme.css", "/gradio_api", "/favicon"))
+    ):
         return await call_next(request)
 
-    # Enforce Bearer authentication on microservice endpoints
+    # If GATEWAY_SECRET is configured, enforce Bearer authentication on microservice endpoints
     secret = settings.GATEWAY_SECRET
-    auth_header = request.headers.get("Authorization", "")
-    if not secret or auth_header != f"Bearer {secret}":
-        return JSONResponse(
-            status_code=401,
-            content={
-                "error": "Unauthorized",
-                "message": "Microservice requires valid Bearer authentication. Provide 'Authorization: Bearer <GATEWAY_SECRET>'.",
-            },
-        )
+    if secret:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header != f"Bearer {secret}":
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "error": "Unauthorized",
+                    "message": "Microservice requires valid Bearer authentication. Provide 'Authorization: Bearer <GATEWAY_SECRET>'.",
+                },
+            )
 
     return await call_next(request)
 
