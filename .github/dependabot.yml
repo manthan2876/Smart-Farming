@@ -34,6 +34,9 @@ updates:
     directory: /ai_service
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "torch"
+        versions: ["> 2.13.0"]
 
   - package-ecosystem: pub
     directory: /mobile
