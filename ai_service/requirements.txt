@@ -1,5 +1,5 @@
 # Web & API Framework
-fastapi>=0.115.0
+fastapi>=0.151.0
 gradio>=5.16.0
 uvicorn[standard]>=0.30.0
 python-multipart>=0.0.32
