@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { 
   Bell,
@@ -17,12 +17,10 @@ import {
 } from "./icons";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { fetchAlerts, markAlertRead } from "../api/alerts";
+import { fetchAlerts } from "../api/alerts";
 
 import ThemeToggle from "./ThemeToggle";
 import LanguageToggle from "./LanguageToggle";
-import { translateAlertTitle } from "../i18n/domain";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -35,7 +33,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const isExpert = user?.role === "expert";
   const isSuperAdmin = user?.role === "admin";
 
-  const { data: alerts = [], refetch: refetchAlerts } = useQuery({
+  const { data: alerts = [] } = useQuery({
     queryKey: ["alerts", language],
     queryFn: () => fetchAlerts(token!, language),
     enabled: !!token,
@@ -43,12 +41,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   });
 
   const unreadCount = alerts.filter((alert) => !alert.is_read).length;
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  const markRead = async (id: number) => {
-    await markAlertRead(id, token!);
-    refetchAlerts();
-  };
 
   const handleSignOut = () => {
     signOut();
@@ -64,18 +56,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {showNotifications && (
-        <button
-          type="button"
-          className="fixed inset-0 z-30 bg-ink/30"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setShowNotifications(false);
-            }
-          }}
-          aria-label={t("close")}
-        />
-      )}
       {isOpen && (
         <button
           type="button"
@@ -106,20 +86,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <ThemeToggle />
             <button
               type="button"
-              className="relative rounded-sm p-2 text-muted hover:bg-canvas hover:text-ink transition-colors"
-              onClick={() => setShowNotifications(!showNotifications)}
-              aria-label={t("notifications")}
-              aria-expanded={showNotifications}
-            >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-xs bg-danger px-1 text-[0.6rem] font-bold text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
               className="rounded-sm p-2 text-muted hover:bg-canvas hover:text-ink lg:hidden transition-colors"
               onClick={onClose}
               aria-label={t("close")}
@@ -127,67 +93,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <X size={18} />
             </button>
           </div>
-
-          {showNotifications && (
-            <div
-              className="fixed left-3 top-16 z-[60] max-h-[24rem] w-[calc(100vw-2rem)] overflow-y-auto rounded-sm border border-line bg-surface lg:left-[18rem] lg:w-[22rem] custom-scrollbar"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-line p-3 font-semibold text-ink">
-                <span className="text-xs uppercase tracking-wider text-muted">{t("notifications")}</span>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-100 transition-colors"
-                  onClick={() => {
-                    alerts.filter((a: any) => !a.is_read).forEach((a: any) => markRead(a.id));
-                    setShowNotifications(false);
-                  }}
-                >
-                  {t("markAllRead")}
-                </button>
-              </div>
-              {alerts.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted">{t("noNewAlerts")}</div>
-              ) : (
-                alerts.map((alert: any) => (
-                  <div
-                    key={alert.id}
-                    className={`border-b border-line p-3 last:border-0 ${
-                      alert.is_read ? "bg-surface" : "bg-farmer-50 dark:bg-farmer-900/30"
-                    }`}
-                  >
-                    <div className="mb-1 text-sm font-semibold text-ink">
-                      {translateAlertTitle(alert.title, language)}
-                    </div>
-                    <div className="mb-2 text-xs leading-5 text-muted">{alert.body}</div>
-                    <div className="flex items-center gap-3">
-                      {alert.prediction_id && (
-                        <Link
-                          to={`/predictions/${alert.prediction_id}`}
-                          onClick={() => {
-                            if (!alert.is_read) markRead(alert.id);
-                            setShowNotifications(false);
-                            if (onClose) onClose();
-                          }}
-                          className="text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200"
-                        >
-                          {t("viewScan")}
-                        </Link>
-                      )}
-                      {!alert.is_read && (
-                        <button
-                          onClick={() => markRead(alert.id)}
-                          className="p-0 text-xs font-semibold text-muted hover:text-ink transition-colors"
-                        >
-                          {t("markAsRead")}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
         </div>
 
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5 custom-scrollbar">
