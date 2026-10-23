@@ -21,13 +21,36 @@ updates:
     directory: /tools/openapi-codegen
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">= 6.0.0"]
 
   - package-ecosystem: uv
     directory: /backend
     schedule:
       interval: monthly
 
+  - package-ecosystem: pip
+    directory: /ai_service
+    schedule:
+      interval: monthly
+
   - package-ecosystem: pub
     directory: /mobile
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker-compose
+    directory: /
     schedule:
       interval: monthly
