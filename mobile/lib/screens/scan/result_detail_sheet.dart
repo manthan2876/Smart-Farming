@@ -284,15 +284,19 @@ ${context.tr('reportGeneratedBy')}
     final monitoring = _pred.localizedMonitoring(langCode);
     final fallbackRec = _pred.localizedRecommendation(langCode);
 
-    final rawImgUrl = (_pred.rawPath != null && _pred.rawPath!.isNotEmpty)
-        ? widget.api.getAssetUrl(_pred.rawPath)
-        : (_pred.rawUrl != null && _pred.rawUrl!.isNotEmpty ? _pred.rawUrl! : null);
+    final rawImgUrl = (_pred.rawUrl != null && _pred.rawUrl!.isNotEmpty)
+        ? _pred.rawUrl
+        : ((_pred.rawPath != null && _pred.rawPath!.isNotEmpty)
+            ? widget.api.getAssetUrl(_pred.rawPath)
+            : null);
 
-    final procImgUrl = (_pred.processedPath != null && _pred.processedPath!.isNotEmpty)
-        ? widget.api.getAssetUrl(_pred.processedPath)
-        : (_pred.processedUrl != null && _pred.processedUrl!.isNotEmpty
-            ? _pred.processedUrl!
-            : (_pred.imagePath != null && _pred.imagePath!.isNotEmpty ? widget.api.getAssetUrl(_pred.imagePath) : null));
+    final procImgUrl = (_pred.processedUrl != null && _pred.processedUrl!.isNotEmpty)
+        ? _pred.processedUrl
+        : ((_pred.processedPath != null && _pred.processedPath!.isNotEmpty)
+            ? widget.api.getAssetUrl(_pred.processedPath)
+            : ((_pred.imagePath != null && _pred.imagePath!.isNotEmpty)
+                ? widget.api.getAssetUrl(_pred.imagePath)
+                : null));
 
     final hasImages = rawImgUrl != null || procImgUrl != null;
     final activeImgUrl = _visualTab == 0 ? (rawImgUrl ?? procImgUrl) : (procImgUrl ?? rawImgUrl);
@@ -342,6 +346,7 @@ ${context.tr('reportGeneratedBy')}
                   Builder(
                     builder: (_) {
                       final isPlaying = _ttsService.isItemPlaying('pred_${_pred.id}');
+                      final isPaused = _ttsService.isItemPaused('pred_${_pred.id}');
                       final isLoading = _ttsService.isItemLoading('pred_${_pred.id}');
                       if (isLoading) {
                         return const Padding(
@@ -356,11 +361,15 @@ ${context.tr('reportGeneratedBy')}
                       return IconButton(
                         onPressed: _togglePlayPause,
                         icon: Icon(
-                          isPlaying ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+                          isPlaying
+                              ? Icons.pause_circle_filled
+                              : (isPaused ? Icons.play_circle_filled : Icons.volume_up_outlined),
                           color: isPlaying ? AppColors.warning : AppColors.primary,
                           size: 26,
                         ),
-                        tooltip: isPlaying ? context.tr('pauseAudio') : context.tr('listenComplete'),
+                        tooltip: isPlaying
+                            ? context.tr('pauseAudio')
+                            : (isPaused ? context.tr('playAudio') : context.tr('listenComplete')),
                       );
                     },
                   ),
@@ -720,6 +729,7 @@ ${context.tr('reportGeneratedBy')}
           Builder(
             builder: (_) {
               final isPlaying = _ttsService.isItemPlaying('pred_${_pred.id}');
+              final isPaused = _ttsService.isItemPaused('pred_${_pred.id}');
               final isLoading = _ttsService.isItemLoading('pred_${_pred.id}');
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -745,7 +755,7 @@ ${context.tr('reportGeneratedBy')}
                               child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
                             )
                           : Icon(
-                              isPlaying ? Icons.stop : Icons.play_arrow,
+                              isPlaying ? Icons.pause : Icons.play_arrow,
                               color: Colors.white,
                               size: 22,
                             ),
@@ -761,7 +771,7 @@ ${context.tr('reportGeneratedBy')}
                                 ? context.tr('loading')
                                 : (isPlaying
                                     ? context.tr('playingFullAudio')
-                                    : context.tr('listenComplete')),
+                                    : (isPaused ? context.tr('playAudio') : context.tr('listenComplete'))),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

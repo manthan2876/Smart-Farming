@@ -145,8 +145,11 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
         )
 
     headers = {"Content-Type": "application/json"}
-    if settings.GATEWAY_API_KEY:
-        headers["Authorization"] = f"Bearer {settings.GATEWAY_API_KEY}"
+    gateway_key = settings.GATEWAY_API_KEY or os.getenv("GATEWAY_SECRET")
+    if gateway_key:
+        clean_key = str(gateway_key).strip().strip('"').strip("'")
+        if clean_key:
+            headers["Authorization"] = f"Bearer {clean_key}"
 
     data = {
         "text": cleaned_text,

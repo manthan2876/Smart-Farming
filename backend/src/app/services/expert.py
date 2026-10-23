@@ -37,12 +37,14 @@ def get_queue_items(session: Session) -> list[dict[str, Any]]:
         severity_pct = result_json.get("severity", {}).get("percent") or (pred.severity_pct if pred else None)
 
         results.append({
+            "id": r.id,
             "review_id": r.id,
             "prediction_id": r.prediction_id,
             "status": r.status,
             "crop": crop,
             "disease": disease,
             "disease_conf": disease_conf,
+            "confidence": disease_conf,
             "severity_pct": severity_pct,
             "claimed_by": r.claimed_by,
             "claimed_at": r.claimed_at.isoformat() if r.claimed_at else None,

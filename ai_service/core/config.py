@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     DEVICE: str = _detect_device()
     CPU_THREADS: int = int(os.getenv("CPU_THREADS", str(min(os.cpu_count() or 2, 4))))
 
-    # Security
-    GATEWAY_SECRET: str = os.getenv("GATEWAY_SECRET", "")
+    # Security (accepts GATEWAY_SECRET or GATEWAY_API_KEY)
+    GATEWAY_SECRET: str = os.getenv("GATEWAY_SECRET") or os.getenv("GATEWAY_API_KEY", "")
     ALLOW_ALL_ORIGINS: bool = True
 
     # Advisory LLM Engine (Default False for instant verified ICAR/KVK facts, or Optional Groq/Local LLM)

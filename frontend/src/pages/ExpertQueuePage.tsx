@@ -68,20 +68,24 @@ export default function ExpertQueuePage() {
                 </tr>
               </thead>
               <tbody>
-                {queue.map((item: any) => (
-                  <tr key={item.id} className="border-t border-line text-sm text-ink">
-                    <td className="px-5 py-4"><Badge>{translateCrop(item.crop ?? t("unknown"), language)}</Badge></td>
-                    <td className="px-5 py-4 font-semibold">{translateDisease(item.disease ?? t("unknown"), language)}</td>
-                    <td className="px-5 py-4 text-xs font-semibold">{item.confidence ? `${(item.confidence * 100).toFixed(1)}%` : "N/A"}</td>
-                    <td className="px-5 py-4 text-xs text-muted">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "N/A"}</td>
-                    <td className="px-5 py-4">
-                      <Link to={`/admin/expert/${item.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200 transition-colors">
-                        <span>{t("viewScan")}</span>
-                        <ArrowRight size={13} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {queue.map((item: any) => {
+                  const itemId = item.id ?? item.review_id;
+                  const itemConf = item.confidence ?? item.disease_conf;
+                  return (
+                    <tr key={itemId} className="border-t border-line text-sm text-ink">
+                      <td className="px-5 py-4"><Badge>{translateCrop(item.crop ?? t("unknown"), language)}</Badge></td>
+                      <td className="px-5 py-4 font-semibold">{translateDisease(item.disease ?? t("unknown"), language)}</td>
+                      <td className="px-5 py-4 text-xs font-semibold">{itemConf ? `${(itemConf * 100).toFixed(1)}%` : "N/A"}</td>
+                      <td className="px-5 py-4 text-xs text-muted">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "N/A"}</td>
+                      <td className="px-5 py-4">
+                        <Link to={`/admin/expert/${itemId}`} className="inline-flex items-center gap-1 text-xs font-semibold text-farmer-700 hover:text-farmer-900 dark:text-farmer-300 dark:hover:text-farmer-200 transition-colors">
+                          <span>{t("viewScan")}</span>
+                          <ArrowRight size={13} />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </Table>
           </div>

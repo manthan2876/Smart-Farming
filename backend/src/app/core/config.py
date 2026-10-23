@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Self
 from urllib.parse import urlparse
 
-from pydantic import Field, model_validator
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from dotenv import load_dotenv
@@ -61,8 +61,11 @@ class Settings(BaseSettings):
     TTS_SERVER_URL: str = Field(default="")
     TTS_SERVER_TIMEOUT: float = Field(default=90.0)
 
-    # AI Service API Authentication (Optional Bearer token)
-    GATEWAY_API_KEY: str | None = Field(default=None)
+    # AI Service API Authentication (Optional Bearer token, accepts GATEWAY_API_KEY or GATEWAY_SECRET)
+    GATEWAY_API_KEY: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GATEWAY_API_KEY", "GATEWAY_SECRET"),
+    )
 
     # Storage & Auth (Supabase Object Storage & Supabase Auth)
     STORAGE_BACKEND: str = Field(default="supabase")
@@ -256,6 +259,9 @@ class Settings(BaseSettings):
                 if clean_val.endswith(".hf.space"):
                     clean_val = f"{clean_val}{subpath}"
                 setattr(self, field, clean_val)
+
+        if not self.GATEWAY_API_KEY:
+            self.GATEWAY_API_KEY = os.getenv("GATEWAY_SECRET") or os.getenv("GATEWAY_API_KEY")
 
         return self
 

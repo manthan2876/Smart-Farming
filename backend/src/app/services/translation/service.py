@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from typing import Any
 import httpx
@@ -460,9 +461,11 @@ async def translate_batch_indictrans(texts: list[str], target_lang: str) -> list
         "Content-Type": "application/json",
         "User-Agent": "SmartFarmingBackend/2.0",
     }
-    gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
+    gateway_key = getattr(settings, "GATEWAY_API_KEY", None) or os.getenv("GATEWAY_SECRET")
     if gateway_key:
-        headers["Authorization"] = f"Bearer {gateway_key}"
+        clean_key = str(gateway_key).strip().strip('"').strip("'")
+        if clean_key:
+            headers["Authorization"] = f"Bearer {clean_key}"
 
     payload = {
         "texts": flat_sentences,
@@ -528,9 +531,11 @@ def translate_batch_indictrans_sync(texts: list[str], target_lang: str) -> list[
         "Content-Type": "application/json",
         "User-Agent": "SmartFarmingBackend/2.0",
     }
-    gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
+    gateway_key = getattr(settings, "GATEWAY_API_KEY", None) or os.getenv("GATEWAY_SECRET")
     if gateway_key:
-        headers["Authorization"] = f"Bearer {gateway_key}"
+        clean_key = str(gateway_key).strip().strip('"').strip("'")
+        if clean_key:
+            headers["Authorization"] = f"Bearer {clean_key}"
 
     payload = {
         "texts": flat_sentences,

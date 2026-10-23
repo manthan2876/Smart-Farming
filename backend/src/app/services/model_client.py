@@ -4,6 +4,7 @@ model_client.py — HTTP client for invoking Server 2 (Model Inference Server)
 
 from __future__ import annotations
 
+import os
 import httpx
 from fastapi import HTTPException, status
 from app.core.config import settings
@@ -22,9 +23,11 @@ async def call_model_service(
     headers = {}
 
     # Support Bearer token authentication (GATEWAY_SECRET on HF Space)
-    gateway_key = getattr(settings, "GATEWAY_API_KEY", None)
+    gateway_key = getattr(settings, "GATEWAY_API_KEY", None) or os.getenv("GATEWAY_SECRET")
     if gateway_key:
-        headers["Authorization"] = f"Bearer {gateway_key}"
+        clean_key = str(gateway_key).strip().strip('"').strip("'")
+        if clean_key:
+            headers["Authorization"] = f"Bearer {clean_key}"
 
     # Support GCP OIDC Identity Token when deployed to Cloud Run in the future
     if "run.app" in settings.MODEL_SERVER_URL:

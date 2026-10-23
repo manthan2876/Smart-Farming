@@ -22,23 +22,33 @@ class TtsService with ChangeNotifier {
 
   bool _isPlaying = false;
   bool _isLoading = false;
+  bool _isPaused = false;
   String? _currentId;
 
   bool get isPlaying => _isPlaying;
   bool get isLoadingState => _isLoading;
+  bool get isPaused => _isPaused;
   String? get currentId => _currentId;
 
   bool isItemPlaying(String id) => _isPlaying && _currentId == id;
   bool isItemLoading(String id) => _isLoading && _currentId == id;
+  bool isItemPaused(String id) => _isPaused && _currentId == id;
 
   void _initAudioPlayer() {
     _player.onPlayerStateChanged.listen((state) {
       if (state == PlayerState.playing) {
         _isPlaying = true;
+        _isPaused = false;
+        _isLoading = false;
+        notifyListeners();
+      } else if (state == PlayerState.paused) {
+        _isPlaying = false;
+        _isPaused = true;
         _isLoading = false;
         notifyListeners();
       } else if (state == PlayerState.completed || state == PlayerState.stopped) {
         _isPlaying = false;
+        _isPaused = false;
         _isLoading = false;
         _currentId = null;
         notifyListeners();
@@ -132,15 +142,29 @@ class TtsService with ChangeNotifier {
   }
 
   /// Toggles playback for a specific item identifier.
-  /// If the current item is playing or loading, it stops.
-  /// If another item or none is playing, it synthesizes and starts Google Cloud audio.
+  /// If the current item is playing, it pauses.
+  /// If the current item is paused, it resumes from the same position.
+  /// If another item or none is playing, it synthesizes and starts audio playback.
   Future<void> toggle({
     required String id,
     required String text,
     required String langCode,
     ApiService? api,
   }) async {
-    if ((_isPlaying || _isLoading) && _currentId == id) {
+    // If this item is playing, pause it
+    if (_isPlaying && _currentId == id) {
+      await pause();
+      return;
+    }
+
+    // If this item is paused, resume playback from current position
+    if (_isPaused && _currentId == id) {
+      await resume();
+      return;
+    }
+
+    // If loading this item, cancel/stop
+    if (_isLoading && _currentId == id) {
       await stop();
       return;
     }
@@ -154,6 +178,7 @@ class TtsService with ChangeNotifier {
     _currentId = id;
     _isLoading = true;
     _isPlaying = false;
+    _isPaused = false;
     notifyListeners();
 
     final norm = DomainTranslations.normalizeLang(langCode);
@@ -176,6 +201,31 @@ class TtsService with ChangeNotifier {
     await _speakWithOnDeviceTts(sanitized, langCode);
   }
 
+  /// Pauses current playback.
+  Future<void> pause() async {
+    try {
+      await _player.pause();
+    } catch (_) {}
+    _isPlaying = false;
+    _isPaused = true;
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// Resumes current paused playback.
+  Future<void> resume() async {
+    try {
+      await _player.resume();
+      _isPlaying = true;
+      _isPaused = false;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[TtsService] Resume failed: $e');
+      await stop();
+    }
+  }
+
   /// Stops current speech output from both cloud player and on-device engine.
   Future<void> stop() async {
     try {
@@ -186,6 +236,7 @@ class TtsService with ChangeNotifier {
     } catch (_) {}
 
     _isPlaying = false;
+    _isPaused = false;
     _isLoading = false;
     _currentId = null;
     notifyListeners();

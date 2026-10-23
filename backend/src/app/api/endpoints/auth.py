@@ -398,6 +398,30 @@ def _cookie_settings(request: Request | None = None) -> dict[str, Any]:
     return {"secure": False, "samesite": "lax"}
 
 
+def _set_auth_cookie(
+    response: Response,
+    *,
+    key: str,
+    value: str,
+    max_age: int,
+    request: Request | None = None,
+) -> None:
+    """Set an HTTP-only authentication cookie with CHIPS Partitioned support for cross-domain HTTPS."""
+    cookie_opts = _cookie_settings(request)
+    response.set_cookie(
+        key=key,
+        value=value,
+        httponly=True,
+        secure=cookie_opts["secure"],
+        samesite=cookie_opts["samesite"],
+        max_age=max_age,
+    )
+    if cookie_opts["secure"] and cookie_opts["samesite"] == "none":
+        current = response.headers.get("set-cookie")
+        if current and "Partitioned" not in current:
+            response.headers["set-cookie"] = f"{current}; Partitioned"
+
+
 @router.post("/register", response_model=AuthResponse, status_code=201)
 async def register(
     request: Request,
@@ -495,14 +519,12 @@ async def register(
         tokens = create_token_pair(user.id)
         store_refresh_token(session, user.id, tokens["refresh_token"])
         session.commit()
-        cookie_opts = _cookie_settings(request)
-        response.set_cookie(
+        _set_auth_cookie(
+            response,
             key="refresh_token",
             value=tokens["refresh_token"],
-            httponly=True,
-            secure=cookie_opts["secure"],
-            samesite=cookie_opts["samesite"],
             max_age=30 * 24 * 60 * 60,
+            request=request,
         )
 
     # Enqueue write-time transliteration for user and farm name
@@ -582,14 +604,12 @@ async def login(
     if not supabase_tokens and tokens.get("refresh_token"):
         store_refresh_token(session, user.id, tokens["refresh_token"])
         session.commit()
-    cookie_opts = _cookie_settings(request)
-    response.set_cookie(
+    _set_auth_cookie(
+        response,
         key="refresh_token",
         value=tokens["refresh_token"],
-        httponly=True,
-        secure=cookie_opts["secure"],
-        samesite=cookie_opts["samesite"],
         max_age=30 * 24 * 60 * 60,
+        request=request,
     )
     return AuthResponse(
         tokens=tokens,
@@ -617,14 +637,12 @@ def guest_login(
     if tokens.get("refresh_token"):
         store_refresh_token(session, guest_id, tokens["refresh_token"])
         session.commit()
-    cookie_opts = _cookie_settings(request)
-    response.set_cookie(
+    _set_auth_cookie(
+        response,
         key="refresh_token",
         value=tokens["refresh_token"],
-        httponly=True,
-        secure=cookie_opts["secure"],
-        samesite=cookie_opts["samesite"],
         max_age=7 * 24 * 60 * 60,
+        request=request,
     )
     return AuthResponse(
         tokens=tokens,
@@ -986,14 +1004,12 @@ async def setup_first_time_password(
     if not supabase_tokens and tokens.get("refresh_token"):
         store_refresh_token(session, user.id, tokens["refresh_token"])
         session.commit()
-    cookie_opts = _cookie_settings(request)
-    response.set_cookie(
+    _set_auth_cookie(
+        response,
         key="refresh_token",
         value=tokens["refresh_token"],
-        httponly=True,
-        secure=cookie_opts["secure"],
-        samesite=cookie_opts["samesite"],
         max_age=30 * 24 * 60 * 60,
+        request=request,
     )
     return AuthResponse(
         tokens=tokens,
@@ -1024,14 +1040,12 @@ def refresh(
         store_refresh_token(session, user_id, tokens["refresh_token"])
         session.commit()
 
-    cookie_opts = _cookie_settings(request)
-    response.set_cookie(
+    _set_auth_cookie(
+        response,
         key="refresh_token",
         value=tokens["refresh_token"],
-        httponly=True,
-        secure=cookie_opts["secure"],
-        samesite=cookie_opts["samesite"],
         max_age=30 * 24 * 60 * 60,
+        request=request,
     )
     return TokenResponse(**tokens)
 

@@ -7,11 +7,13 @@ from pydantic import BaseModel, ConfigDict
 
 class ExpertQueueItemResponse(BaseModel):
     review_id: int
+    id: int | None = None
     prediction_id: int
     status: str
     crop: str | None
     disease: str | None
     disease_conf: float | None
+    confidence: float | None = None
     severity_pct: float | None
     claimed_by: str | None = None
     claimed_at: str | None = None

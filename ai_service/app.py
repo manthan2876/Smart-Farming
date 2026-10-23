@@ -85,10 +85,11 @@ async def security_middleware(request: Request, call_next):
         return await call_next(request)
 
     # If GATEWAY_SECRET is configured, enforce Bearer authentication on microservice endpoints
-    secret = settings.GATEWAY_SECRET
+    secret = (settings.GATEWAY_SECRET or "").strip().strip('"').strip("'")
     if secret:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header != f"Bearer {secret}":
+        auth_header = request.headers.get("Authorization", "").strip()
+        expected = f"Bearer {secret}"
+        if auth_header != expected:
             return JSONResponse(
                 status_code=401,
                 content={
