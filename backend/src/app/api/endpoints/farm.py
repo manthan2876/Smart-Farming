@@ -22,6 +22,14 @@ from app.services.farm import (
 _validate_geojson_polygon = validate_geojson_polygon
 _plot_inside_farm = plot_inside_farm
 
+__all__ = [
+    "router",
+    "_validate_geojson_polygon",
+    "_plot_inside_farm",
+    "validate_geojson_polygon",
+    "plot_inside_farm",
+]
+
 logger = logging.getLogger("smart-farming.api.farm")
 router = APIRouter(prefix="/farm", tags=["farm"])
 

@@ -11,13 +11,16 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 if str(ROOT_DIR / "ai_service") not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR / "ai_service"))
+    sys.path.append(str(ROOT_DIR / "ai_service"))
+if str(ROOT_DIR / "backend" / "src") in sys.path:
+    sys.path.remove(str(ROOT_DIR / "backend" / "src"))
+sys.path.insert(0, str(ROOT_DIR / "backend" / "src"))
 
 from app.main import app
 from app.api.deps import get_current_user
 from app.core import get_session
 from app.context import create_context
-from app.models import User, Prediction
+from app.models import Prediction
 from app.services.prediction_job import calculate_treatment_progress
 from app.services.recommendation.service import generate_recommendation, _build_prompt
 

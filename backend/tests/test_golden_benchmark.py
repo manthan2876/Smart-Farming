@@ -8,9 +8,10 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 if str(ROOT_DIR / "ai_service") not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR / "ai_service"))
-if str(ROOT_DIR / "backend" / "src") not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR / "backend" / "src"))
+    sys.path.append(str(ROOT_DIR / "ai_service"))
+if str(ROOT_DIR / "backend" / "src") in sys.path:
+    sys.path.remove(str(ROOT_DIR / "backend" / "src"))
+sys.path.insert(0, str(ROOT_DIR / "backend" / "src"))
 
 from ai_service.vision_engine.stages.decision_router import route_to_disease_model
 from ai_service.vision_engine.stages.severity import _severity_bucket
