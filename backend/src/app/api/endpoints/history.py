@@ -1,24 +1,19 @@
 from __future__ import annotations
 
-import uuid
-import logging
-from pathlib import Path
+from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+import sqlalchemy as sa
 
 from app.schemas import PredictionResponse
 from app.api.deps import get_current_user
 from app.core import get_session
-from app.crud import list_predictions
+from app.models import Prediction
 
 router = APIRouter()
-
-from datetime import datetime, timezone
-import sqlalchemy as sa
-from app.models import Prediction
 
 
 @router.get("/history", response_model=list[PredictionResponse])

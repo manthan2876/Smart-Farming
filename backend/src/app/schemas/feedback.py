@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
+from pydantic import BaseModel, Field
 
 class FeedbackRequest(BaseModel):
     prediction_id: int = Field(gt=0)

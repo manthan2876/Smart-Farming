@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any
 from fastapi import HTTPException
 from shapely.geometry import Polygon as ShapelyPolygon  # type: ignore[import-untyped]
 from sqlalchemy.orm import Session

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
@@ -7,7 +7,6 @@ from app.schemas import ProfileResponse, ProfileUpdateRequest
 from app.crud import get_user, update_profile
 from app.core import get_session
 from app.services.translation.overlay import overlay_dict_translations
-from app.models.translation import EntityTranslation
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
