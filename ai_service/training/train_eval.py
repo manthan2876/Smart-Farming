@@ -67,7 +67,6 @@ import numpy as np
 # ─── Optional DB logging ───────────────────────────────────────────────────────
 _DB_AVAILABLE = False
 try:
-    import os
     from dotenv import load_dotenv
 
     _FILE_PATH = Path(__file__).resolve()

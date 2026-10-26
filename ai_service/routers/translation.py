@@ -7,15 +7,13 @@ and pre-warmed ICAR/KVK agronomic caches.
 
 from __future__ import annotations
 
-import concurrent.futures
 import json
 import logging
 import os
 import re
 import threading
-import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 try:
     import torch

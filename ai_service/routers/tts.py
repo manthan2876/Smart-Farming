@@ -8,15 +8,12 @@ from __future__ import annotations
 
 import base64
 import io
-import json
 import logging
-import os
 import re
 from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import Response
 from pydantic import BaseModel
 
 from core.config import settings
