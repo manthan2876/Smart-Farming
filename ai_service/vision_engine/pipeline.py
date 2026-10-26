@@ -111,9 +111,9 @@ def run_vision_pipeline(image_bgr: np.ndarray, filename: str = "upload.jpg") -> 
             context["stages"][stage_name] = {
                 "status": "failed",
                 "duration_ms": duration_ms,
-                "error": str(exc),
+                "error": f"Stage '{stage_name}' failed.",
             }
-            context.setdefault("notes", []).append(f"Stage '{stage_name}' encountered an error: {exc}")
+            context.setdefault("notes", []).append(f"Stage '{stage_name}' encountered an internal error.")
             import logging
             logging.getLogger(__name__).error(f"Stage '{stage_name}' failed: {exc}", exc_info=True)
             return context
