@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, cast
 import cv2
 import numpy as np
-from ..loader import load_yolo
+from ..loader import load_yolo, DEVICE
 
 
 def predict_pest(context: dict, config: dict[str, Any]) -> dict:
@@ -76,7 +76,8 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
 
     try:
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        results = list(model.predict(source=image_rgb, verbose=False))
+        device = config.get("device", DEVICE)
+        results = list(model.predict(source=image_rgb, verbose=False, device=device))
         if not results:
             context["pest_classification"] = {
                 "model_type": "classification",
