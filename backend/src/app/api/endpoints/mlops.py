@@ -271,8 +271,9 @@ def export_dataset_post(
                             resolved_local = resolve_storage_path(image_path_value)
                             if resolved_local.is_file():
                                 raw_bytes = resolved_local.read_bytes()
-                        except Exception:
-                            pass
+                        except (OSError, ValueError) as fs_err:
+                            # Best-effort local file read; skip candidate image if missing
+                            logger.debug("Local disk candidate lookup failed: %s", fs_err)
 
                 image_file = None
                 if raw_bytes is not None:

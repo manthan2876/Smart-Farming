@@ -136,8 +136,9 @@ async def weather(
                             translations[target_code] = translated
                             cached_data["translations"] = translations
                             await redis_rest.set(grid_cache_key, cached_data, ex=_CACHE_TTL_SECONDS)
-                        except Exception:
-                            pass
+                        except Exception as tr_err:
+                            # Non-critical translation cache write failure; serve untranslated advisory
+                            logger.debug("Advisory translation cache write failed: %s", tr_err)
                 cached_data["translated_advisory"] = translations.get(target_code, cached_data.get("advisory", ""))
                 cached_data["cached"] = True
                 return _json_safe(cached_data)
@@ -266,8 +267,9 @@ async def weather(
             from app.core.redis_rest import redis_rest
             await redis_rest.set(grid_cache_key, _json_safe(result_payload), ex=_CACHE_TTL_SECONDS)
             await redis_rest.set(f"sf:weather:{cache_key}", _json_safe(result_payload), ex=_CACHE_TTL_SECONDS)
-        except Exception:
-            pass
+        except Exception as redis_err:
+            # Redis cache write failure is non-fatal; continue returning fresh payload
+            logger.debug("Weather Redis cache write failed: %s", redis_err)
         return _json_safe(result_payload)
 
     except HTTPException:
