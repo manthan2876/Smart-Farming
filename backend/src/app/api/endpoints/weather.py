@@ -195,9 +195,12 @@ async def weather(
         except Exception as exc:
             logger.warning("fetch_weather execution failed: %s", exc)
 
-        logger.info("Weather service raw result: %s", result)
         weather_data = result.get("weather", result) if isinstance(result, dict) else {}
-        logger.info("Extracted weather data: %s", weather_data)
+        logger.info(
+            "Weather data fetched successfully for coordinates lat=%.2f, lon=%.2f",
+            float(lat),
+            float(lon),
+        )
 
         # Map properly to frontend expected fields with resilient defaults
         raw_temp = weather_data.get("temperature_celsius") or weather_data.get("temperature")
