@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -244,15 +245,20 @@ def promote_model(
     # ── 1. Resolve and Parse Metrics ──────────────────────────────────────────
     metrics: dict[str, Any] = dict(payload.metrics_json or {})
     if payload.metrics_path:
-        mp = Path(payload.metrics_path)
-        if not mp.is_absolute():
-            mp = _CONFIG_PATH.parent.parent / payload.metrics_path
-        if mp.exists():
+        base_dir = os.path.realpath(str(_CONFIG_PATH.parent.parent))
+        cleaned_metrics_path = payload.metrics_path.replace("\\", "/").strip("/")
+        unsafe_path = os.path.join(base_dir, cleaned_metrics_path)
+        normalized_path = os.path.realpath(unsafe_path)
+        if not normalized_path.startswith(base_dir + os.sep):
+            raise HTTPException(status_code=400, detail="Invalid metrics path: access outside project directory is forbidden.")
+        if os.path.isfile(normalized_path):
             try:
-                loaded_m = json.loads(mp.read_text(encoding="utf-8"))
-                metrics.update(loaded_m)
+                with open(normalized_path, "r", encoding="utf-8") as f:
+                    loaded_m = json.load(f)
+                if isinstance(loaded_m, dict):
+                    metrics.update(loaded_m)
             except Exception as exc:
-                logger.warning("Could not read metrics_path %s: %s", mp, exc)
+                logger.warning("Could not read metrics file (%s)", exc)
 
     test_acc = payload.test_acc if payload.test_acc is not None else metrics.get("test_acc") or metrics.get("accuracy")
     val_acc = payload.val_acc if payload.val_acc is not None else metrics.get("val_acc") or 0.0
