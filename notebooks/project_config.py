@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 # Updated to match your actual folder structure: F:\Projects\Crop Identification

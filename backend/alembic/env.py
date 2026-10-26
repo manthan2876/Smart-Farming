@@ -8,9 +8,10 @@ from sqlalchemy import engine_from_config, pool
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_ROOT / "src"))
 
+import importlib
 from app.core import Base
 from app.core.session import database_url
-import app.models
+importlib.import_module("app.models")
 
 config = context.config
 if config.config_file_name is not None:

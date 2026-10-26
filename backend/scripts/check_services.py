@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
 import sys
 import time
 import uuid
@@ -25,7 +24,7 @@ from pathlib import Path
 scripts_dir = Path(__file__).resolve().parent
 sys.path.insert(0, str(scripts_dir))
 
-from _common import get_supabase_env_config, load_env_file, sanitize_db_url
+from _common import get_supabase_env_config
 import httpx
 from sqlalchemy import text
 from app.core.config import settings
