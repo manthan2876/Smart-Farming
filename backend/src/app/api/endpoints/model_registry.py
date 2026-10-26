@@ -245,14 +245,15 @@ def promote_model(
     # ── 1. Resolve and Parse Metrics ──────────────────────────────────────────
     metrics: dict[str, Any] = dict(payload.metrics_json or {})
     if payload.metrics_path:
-        real_base = os.path.realpath(str(_CONFIG_PATH.parent.parent))
-        target_path = os.path.join(real_base, payload.metrics_path.replace("\\", "/").strip("/"))
-        real_target = os.path.realpath(target_path)
-        if os.path.commonpath([real_base, real_target]) != real_base:
+        base_dir = os.path.realpath(str(_CONFIG_PATH.parent.parent))
+        cleaned_metrics_path = payload.metrics_path.replace("\\", "/").strip("/")
+        unsafe_path = os.path.join(base_dir, cleaned_metrics_path)
+        normalized_path = os.path.realpath(unsafe_path)
+        if not normalized_path.startswith(base_dir + os.sep):
             raise HTTPException(status_code=400, detail="Invalid metrics path: access outside project directory is forbidden.")
-        if os.path.isfile(real_target):
+        if os.path.isfile(normalized_path):
             try:
-                with open(real_target, "r", encoding="utf-8") as f:
+                with open(normalized_path, "r", encoding="utf-8") as f:
                     loaded_m = json.load(f)
                 if isinstance(loaded_m, dict):
                     metrics.update(loaded_m)

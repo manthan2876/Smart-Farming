@@ -234,16 +234,16 @@ def serve_data_file(file_path: str, request: Request):
     if clean_subpath.startswith("data/"):
         clean_subpath = clean_subpath[5:]
 
-    real_base = os.path.realpath(str(_DATA_DIR))
-    target_path = os.path.join(real_base, clean_subpath)
-    real_target = os.path.realpath(target_path)
+    base_dir = os.path.realpath(str(_DATA_DIR))
+    unsafe_path = os.path.join(base_dir, clean_subpath)
+    normalized_path = os.path.realpath(unsafe_path)
 
-    # Ensure target remains strictly within the allowed data directory
-    if os.path.commonpath([real_base, real_target]) != real_base:
+    # Ensure normalized path is strictly contained inside base_dir
+    if not normalized_path.startswith(base_dir + os.sep):
         raise HTTPException(status_code=404, detail="File not found.")
 
-    if os.path.isfile(real_target):
-        return FileResponse(real_target)
+    if os.path.isfile(normalized_path):
+        return FileResponse(normalized_path)
 
     backend_type = (settings.STORAGE_BACKEND or "local").lower()
     if backend_type in ("supabase", "s3"):
