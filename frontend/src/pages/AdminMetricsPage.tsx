@@ -13,12 +13,11 @@ import {
   PieChart, Pie, Cell
 } from "recharts";
 import { Loader2, Download, Filter, Sprout, Image, FileText, Database, History, Activity, ShieldCheck } from "../components/icons";
-import { Card, Button, Select, Skeleton } from "../components/ui";
+import { Card, Button, Select } from "../components/ui";
 import { translateCrop, translateDisease } from "../i18n/domain";
 
 const COLORS = ['#284b35', '#4d6f3d', '#8f6520', '#9e382b', '#6b7280'];
 const CROP_OPTIONS = ["All Crops", "Tomato", "Cotton", "Groundnut", "Pepper Bell", "Potato"];
-const STATUS_OPTIONS = ["Any", "pending_review", "added_to_dataset", "rejected"];
 
 export default function AdminMetricsPage() {
   const { token, t, language } = useAuth();

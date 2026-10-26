@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import PublicNav from "../components/PublicNav";
 import Footer from "../components/Footer";
-import { ScanSearch, Map, Activity, ArrowRight } from "../components/icons";
+import { ScanSearch, Map, Activity } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { translateCrop, translateDisease } from "../i18n";
 

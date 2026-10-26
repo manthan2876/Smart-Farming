@@ -2,7 +2,7 @@ import { contractRequest } from "./contract";
 import type { components } from "./generated/openapi";
 import type { Profile } from "./types";
 import { supabase } from "../lib/supabase";
-import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
+import { normalizePhoneNumber } from "../lib/phone";
 
 type Tokens = {
   access_token: string;

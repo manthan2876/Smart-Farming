@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PublicNav from "../components/PublicNav";
 import Footer from "../components/Footer";
-import { Sprout, ScanSearch, ShieldCheck, Activity, Map, ArrowRight } from "../components/icons";
+import { ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { translateCrop, translateDisease } from "../i18n/domain";
 

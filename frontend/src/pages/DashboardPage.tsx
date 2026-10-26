@@ -3,7 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { CloudSun, Activity, Scan, ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { history as getHistory, weather as fetchWeather } from "../api/predictions";
-import { Badge, Button, Card, Skeleton } from "../components/ui";
+import { Badge, Button, Skeleton } from "../components/ui";
 import { formatTemperature, formatWindSpeed } from "../lib/format";
 import { translateCrop, translateDisease, translateSeverityBucket, translateWeather } from "../i18n/domain";
 

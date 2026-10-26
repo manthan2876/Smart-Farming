@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { getAdminUsers, updateAdminUser } from "../api/admin";
 import { AdminUser } from "../api/types";
-import { Card, Button, Input, Modal, Badge, Select } from "../components/ui";
+import { Card, Button, Input, Modal, Select } from "../components/ui";
 import { 
   Users, 
   ShieldCheck, 
@@ -260,13 +260,6 @@ export default function AdminUsersPage() {
                 </tr>
               ) : (
                 users.map((u) => {
-                  const roleBadgeVariant =
-                    u.role === "admin"
-                      ? "blue"
-                      : u.role === "expert"
-                      ? "purple"
-                      : "green";
-
                   return (
                     <tr key={u.id} className="hover:bg-canvas/50 transition-colors">
                       <td className="px-6 py-4">

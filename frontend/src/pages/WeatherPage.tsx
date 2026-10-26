@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { Cloud, Loader2, Pause, Volume2 } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
