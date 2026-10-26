@@ -3,10 +3,13 @@ from __future__ import annotations
 import logging
 from sqlalchemy import inspect, text
 
+import importlib
 from app.core import Base, database_url
 from app.core.session import create_app_engine
 from app.core.config import settings
-import app.models
+
+# Ensure all ORM models are registered with Base metadata
+importlib.import_module("app.models")
 
 logger = logging.getLogger("smart-farming.init_db")
 

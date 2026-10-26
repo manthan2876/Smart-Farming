@@ -14,7 +14,7 @@ from app.crud.expert_review import (
     claim_review,
     release_review,
 )
-from app.models import Alert, DatasetCandidate, ExpertReview
+from app.models import Alert, DatasetCandidate
 from app.schemas.expert import ExpertReviewSubmissionRequest
 from app.services.translation.overlay import overlay_dict_translations
 

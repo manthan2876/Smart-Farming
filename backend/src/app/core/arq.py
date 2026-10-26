@@ -1,5 +1,4 @@
 import logging
-from urllib.parse import urlparse
 
 from arq import create_pool
 from arq.connections import RedisSettings

@@ -6,12 +6,11 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import sqlalchemy as sa
-from app.models import DatasetCandidate, Farm, Image, Recommendation, Alert, Plot, ExpertReview
+from app.models import DatasetCandidate, Image, Recommendation, Alert, ExpertReview
 from app.api.deps import require_admin_role, require_expert_role
 from app.core import get_session
 from app.models import Prediction, Feedback, User
 from app.core.config import settings
-from app.core.paths import ensure_storage_directories, storage_relative_path
 from app.schemas.admin import (
     AdminFeedbackResponse,
     AdminMetricsResponse,
@@ -509,8 +508,6 @@ def get_feedback(
         })
     return results
 
-from pydantic import BaseModel
-import json
 from pathlib import Path
 
 import yaml
