@@ -1,0 +1,20 @@
+AI-Powered Smart Farming
+Copyright 2026 Manthan Kuvadiya, Kunj Lunagariya, and contributors.
+Department of Information Technology, CSPIT, CHARUSAT University.
+
+This product is developed as an academic capstone project and distributed
+under the Apache License, Version 2.0.
+
+This product includes software, foundational architectures, and models developed by third parties:
+- PyTorch (BSD-3-Clause License, Meta AI & PyTorch contributors)
+- EfficientNet (Apache-2.0 License, Google Research)
+- Ultralytics YOLOv8 (Ultralytics Inc.)
+- IndicTrans2 (MIT License, AI4Bharat)
+- FastAPI (MIT License, Sebastián Ramírez)
+- React 19 (MIT License, Meta Platforms, Inc.)
+- Leaflet (BSD-2-Clause License, Vladimir Agafonkin)
+- Tailwind CSS (MIT License, Tailwind Labs)
+- Microsoft Edge-TTS (LGPL-3.0 License)
+- Supabase (Apache-2.0 / MIT Licenses, Supabase, Inc.)
+- Upstash Redis & QStash (Upstash Inc.)
+

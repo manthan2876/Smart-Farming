@@ -253,4 +253,14 @@ stop_all.sh
 Docs/name change of folders.txt
 backend/package-lock.json
 
+# LaTeX Auxiliary Build Files
+*.aux
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.toc
+*.bbl
+*.blg
+
 

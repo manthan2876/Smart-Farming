@@ -716,5 +716,25 @@ Comprehensive documentation is available in the [`Docs/`](Docs/) directory:
 
 ---
 
+## License & Academic Attribution
+
+This project is licensed under the **Apache License, Version 2.0** — see the [LICENSE](LICENSE) file for the full license terms. Third-party library and model acknowledgments are documented in the [NOTICE](NOTICE) file.
+
+### Academic Citation & Project Context
+This software was developed as an academic capstone project in the **Department of Information Technology, CSPIT, CHARUSAT University** under the guidance of **Prof. Rajnik Katariya**.
+
+If you use or build upon this platform, code, or architecture in your academic work, please cite:
+```bibtex
+@misc{kuvadiya2026smartfarming,
+  author = {Manthan Kuvadiya and Kunj Lunagariya},
+  title = {AI-Powered Smart Farming: Crop Identification, Disease Diagnosis, and Context-Aware Advisory},
+  year = {2026},
+  howpublished = {\url{https://github.com/manthan2876/Smart-Farming}},
+  note = {Department of Information Technology, CSPIT, CHARUSAT University. Project Guide: Prof. Rajnik Katariya}
+}
+```
+
+---
+
 *AI-Powered Smart Farming Platform*  
 *Last Updated: 22 October 2026*
