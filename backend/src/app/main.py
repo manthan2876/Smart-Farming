@@ -238,6 +238,7 @@ def serve_data_file(file_path: str, request: Request):
         if local_file.is_file():
             return FileResponse(local_file)
     except ValueError:
+        # Path escapes _DATA_DIR; fall through to remote storage or 404
         pass
 
     backend_type = (settings.STORAGE_BACKEND or "local").lower()

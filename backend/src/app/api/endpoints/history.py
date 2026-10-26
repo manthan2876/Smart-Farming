@@ -53,12 +53,14 @@ def history(
                 dt_start = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
                 query = query.filter(Prediction.created_at >= dt_start)
             except Exception:
+                # Invalid start_date format string; safely ignore filter
                 pass
         if end_date:
             try:
                 dt_end = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
                 query = query.filter(Prediction.created_at <= dt_end)
             except Exception:
+                # Invalid end_date format string; safely ignore filter
                 pass
         if last_id is not None:
             query = query.filter(Prediction.id < last_id)
@@ -194,6 +196,7 @@ def history(
                         if pid in trans_map and isinstance(r.get("recommendation"), dict):
                             r["recommendation"].update(trans_map[pid])
                 except Exception:
+                    # Translation overlay failure must not block returning primary history records
                     pass
 
     return results

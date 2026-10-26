@@ -73,6 +73,7 @@ async def queue_health(request: Request) -> QueueHealthResponse:
             # Query ARQ default queue length if accessible
             pending = await arq_pool.zcard("arq:queue") or 0
         except Exception:
+            # Fall back to 0 pending jobs if queue cardinality check fails
             pass
 
         return QueueHealthResponse(

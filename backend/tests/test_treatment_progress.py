@@ -247,6 +247,8 @@ def test_history_endpoint_pagination_headers():
 
     fake_session = FakeHistorySession(preds)
 
+    orig_user = app.dependency_overrides.get(get_current_user)
+    orig_session = app.dependency_overrides.get(get_session)
     app.dependency_overrides[get_current_user] = lambda: "usr-test-farmer"
     app.dependency_overrides[get_session] = lambda: fake_session
 
@@ -265,5 +267,11 @@ def test_history_endpoint_pagination_headers():
         assert isinstance(data, list)
         assert len(data) == 5
     finally:
-        app.dependency_overrides.pop(get_current_user, None)
-        app.dependency_overrides.pop(get_session, None)
+        if orig_user is not None:
+            app.dependency_overrides[get_current_user] = orig_user
+        else:
+            app.dependency_overrides.pop(get_current_user, None)
+        if orig_session is not None:
+            app.dependency_overrides[get_session] = orig_session
+        else:
+            app.dependency_overrides.pop(get_session, None)

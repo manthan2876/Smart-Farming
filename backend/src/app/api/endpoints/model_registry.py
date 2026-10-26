@@ -326,6 +326,7 @@ def promote_model(
             try:
                 labels = json.loads(labels_path.read_text(encoding="utf-8"))
             except Exception:
+                # Failed reading labels file; fall back to empty labels list
                 pass
     num_classes = payload.num_classes or len(labels) or metrics.get("num_classes", 0)
 
@@ -424,6 +425,7 @@ def promote_model(
             from app import pipeline as _pipeline
             _pipeline.reload_config()
         except Exception:
+            # Hot reload failure is non-blocking after config save
             pass
 
     return {

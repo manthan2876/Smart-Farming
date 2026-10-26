@@ -89,6 +89,7 @@ def _verify_supabase_token(token: str) -> str | None:
             if sub:
                 return str(sub)
         except jwt.PyJWTError:
+            # Fall back to local in-memory token cache or remote validation
             pass
 
     # 2. Check local in-memory token cache
@@ -141,6 +142,7 @@ def decode_token(token: str, expected_type: str = "access") -> str:
             if payload.get("type") == expected_type or payload.get("aud") == "authenticated":
                 return str(payload["sub"])
     except jwt.PyJWTError:
+        # Fall through to reject invalid token
         pass
 
     raise ValueError("Invalid or expired token.")

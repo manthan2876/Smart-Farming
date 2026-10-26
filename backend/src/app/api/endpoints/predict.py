@@ -342,6 +342,7 @@ async def predict(
                 cached_dedup["cached"] = True
                 return cached_dedup
         except Exception:
+            # Redis cache lookup failure is non-blocking; proceed with processing
             pass
 
         # Resolve coordinates if not provided: Plot -> User farm -> Indian regional default
@@ -523,6 +524,7 @@ async def predict(
                 if client_uuid:
                     await redis_rest.set(f"sf:uuid:{client_uuid}", final_res, ex=86400)
             except Exception:
+                # Redis cache write failure is non-blocking
                 pass
 
             # Pre-translate Hindi & Gujarati in background thread without blocking farmer
@@ -669,6 +671,7 @@ async def prediction_detail(
                         "total_area_acres": getattr(p_obj.farm, "area_acres", None),
                     }
         except Exception:
+            # Farm/plot metadata enrichment failure is non-blocking
             pass
 
     # Attach treatment progress if this is a follow-up rescan
@@ -726,6 +729,7 @@ async def prediction_detail(
                     fu_bkt,
                 )
             except Exception:
+                # Follow-up treatment progress calculation failure is non-blocking
                 pass
         if latest_follow_up.expert_review and latest_follow_up.status == "verified":
             fu_res["expert_review_data"] = {
@@ -770,6 +774,7 @@ async def prediction_detail(
 
         result["translations"] = translations
     except Exception:
+        # Pre-cached translations loading failure is non-blocking
         pass
 
     req_lang = lang or request.headers.get("accept-language")
@@ -822,6 +827,7 @@ async def prediction_detail(
                     if result.get("follow_up", {}).get("expert_review_data"):
                         result["follow_up"]["expert_review_data"]["farmer_guidance"] = guidance_trans.translated_text
             except Exception:
+                # Guidance translation lookup failure is non-blocking
                 pass
 
     return _enrich_image_urls(result)
@@ -1171,6 +1177,7 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
                 if event.get("stage") in {"completed", "failed"} or event.get("status") == "failed":
                     break
             except asyncio.TimeoutError:
+                # No event emitted within timeout; continue event loop
                 pass
 
             # Fallback DB check in case an event was committed without a live broadcaster
@@ -1182,6 +1189,7 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
                     await websocket.send_json(terminal)
                     break
     except WebSocketDisconnect:
+        # Client disconnected cleanly; exit streaming loop
         pass
     except Exception as e:
         _LOGGER.error(f"WebSocket error: {e}", exc_info=True)
@@ -1191,6 +1199,7 @@ async def websocket_prediction_status(websocket: WebSocket, prediction_id: int):
         try:
             await websocket.close()
         except Exception:
+            # Socket already closed or disconnected; ignore during cleanup
             pass
 
 

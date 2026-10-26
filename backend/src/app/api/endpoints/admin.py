@@ -459,6 +459,7 @@ async def update_admin_user(
         try:
             await sync_supabase_user_phone(target_user.id, clean_phone)
         except Exception:
+            # Supabase phone sync failure is non-blocking for local admin update
             pass
 
     return {
@@ -558,7 +559,8 @@ async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require
     try:
         from app import pipeline
         pipeline.reload_config()
-    except Exception as exc:
+    except Exception:
+        # In-process pipeline reload failure must not block config persistence
         pass
 
     # Publish to Upstash Redis REST for serverless multi-instance sync
@@ -569,6 +571,7 @@ async def update_config(payload: ConfigPayload, is_admin: bool = Depends(require
             data.get("thresholds", {}),
         )
     except Exception:
+        # Redis cluster notification is best-effort
         pass
         
     return get_config()
