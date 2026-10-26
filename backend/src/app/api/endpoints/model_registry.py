@@ -245,18 +245,19 @@ def promote_model(
     # ── 1. Resolve and Parse Metrics ──────────────────────────────────────────
     metrics: dict[str, Any] = dict(payload.metrics_json or {})
     if payload.metrics_path:
-        base_dir = os.path.abspath(str(_CONFIG_PATH.parent.parent))
-        cleaned_metrics_path = payload.metrics_path.replace("\\", "/").strip("/")
-        if ".." not in cleaned_metrics_path.split("/"):
-            safe_metrics_path = os.path.abspath(os.path.join(base_dir, cleaned_metrics_path))
-            if (safe_metrics_path == base_dir or safe_metrics_path.startswith(base_dir + os.sep)) and os.path.isfile(safe_metrics_path):
-                try:
-                    with open(safe_metrics_path, "r", encoding="utf-8") as f:
-                        loaded_m = json.load(f)
-                    if isinstance(loaded_m, dict):
-                        metrics.update(loaded_m)
-                except Exception as exc:
-                    logger.warning("Could not read metrics_path %s: %s", safe_metrics_path, exc)
+        real_base = os.path.realpath(str(_CONFIG_PATH.parent.parent))
+        target_path = os.path.join(real_base, payload.metrics_path.replace("\\", "/").strip("/"))
+        real_target = os.path.realpath(target_path)
+        if os.path.commonpath([real_base, real_target]) != real_base:
+            raise HTTPException(status_code=400, detail="Invalid metrics path: access outside project directory is forbidden.")
+        if os.path.isfile(real_target):
+            try:
+                with open(real_target, "r", encoding="utf-8") as f:
+                    loaded_m = json.load(f)
+                if isinstance(loaded_m, dict):
+                    metrics.update(loaded_m)
+            except Exception as exc:
+                logger.warning("Could not read metrics file (%s)", exc)
 
     test_acc = payload.test_acc if payload.test_acc is not None else metrics.get("test_acc") or metrics.get("accuracy")
     val_acc = payload.val_acc if payload.val_acc is not None else metrics.get("val_acc") or 0.0
