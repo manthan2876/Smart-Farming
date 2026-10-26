@@ -10,7 +10,7 @@ pydantic-settings>=2.16.0
 python-dotenv>=1.2.4
 
 # Web Framework & Server
-fastapi>=0.151.0
+fastapi>=0.156.2
 uvicorn[standard]>=0.54.0
 gunicorn>=26.2.0
 uvicorn-worker>=0.3.0
