@@ -36,6 +36,7 @@ def build_model_arch(arch: str, num_classes: int) -> nn.Module:
         import timm
         return timm.create_model(arch, pretrained=False, num_classes=num_classes)
     except Exception:
+        # timm not installed or failed to create model architecture; fallback to torchvision
         pass
 
     # Fallback to torchvision

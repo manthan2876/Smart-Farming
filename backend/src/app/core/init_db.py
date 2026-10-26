@@ -101,6 +101,7 @@ def initialize_database() -> None:
                         text("UPDATE users SET is_email_verified = TRUE WHERE email IS NOT NULL AND password_hash IS NOT NULL AND (is_email_verified IS NULL OR is_email_verified IS NOT TRUE)")
                     )
             except Exception:
+                # Column is_email_verified or users table may not exist yet during initial schema initialization
                 pass
 
             # Farms table

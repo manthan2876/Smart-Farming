@@ -450,6 +450,7 @@ def run_prediction_job(
                     translations[ct.language]["language"] = ct.language
                 translations[ct.language][ct.field_name] = ct.translated_text
         except Exception:
+            # Cached entity translation lookup is best-effort; fall back to unaugmented translations
             pass
 
         public_result = _public_result(context)

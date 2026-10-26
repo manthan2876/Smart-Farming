@@ -143,6 +143,7 @@ def downgrade() -> None:
         if has_auth_users:
             op.execute("DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;")
     except Exception:
+        # Schema table check or drop trigger may fail if auth schema is missing or lacks permissions during downgrade
         pass
 
     op.execute("DROP FUNCTION IF EXISTS public.handle_new_user();")

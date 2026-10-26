@@ -550,6 +550,7 @@ def prune_cached_audio(
                     except Exception as exc:
                         logger.warning("Failed to delete expired audio %s: %s", file_path, exc)
         except Exception:
+            # Local audio directory access or scanning failed; proceed to cloud pruning
             pass
 
     # 2. Supabase storage pruning
@@ -587,6 +588,7 @@ def prune_cached_audio(
                                 if age > cutoff_seconds:
                                     expired_keys.append(f"audio/{name}")
                             except Exception:
+                                # Malformed timestamp string in object metadata; skip item age calculation
                                 pass
                     if len(items) < limit:
                         break

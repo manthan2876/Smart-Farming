@@ -109,6 +109,7 @@ def root_health():
         import resource
         rss_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
     except Exception:
+        # resource module or ru_maxrss may be unavailable on non-Unix platforms
         pass
 
     cache_stats = {}
@@ -116,6 +117,7 @@ def root_health():
         from vision_engine.loader import get_cache_stats
         cache_stats = get_cache_stats()
     except Exception:
+        # Model cache stats collection failure is non-fatal for health status check
         pass
 
     return {

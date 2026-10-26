@@ -61,6 +61,7 @@ async def call_model_service(
                     data = response.json()
                     detail = data.get("detail", detail)
                 except Exception:
+                    # Non-JSON error response; fallback to default detail message
                     pass
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
@@ -183,6 +184,7 @@ def call_model_service_sync(
                     data = response.json()
                     detail = data.get("detail", detail)
                 except Exception:
+                    # Non-JSON error response; fallback to default detail message
                     pass
                 raise ValueError(detail)
 

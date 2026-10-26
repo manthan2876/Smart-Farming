@@ -73,6 +73,7 @@ def test_access_and_refresh_tokens_have_separate_types() -> None:
     try:
         decode_token(tokens["refresh_token"])
     except ValueError:
+        # Expected ValueError when decoding refresh token as access token
         pass
     else:
         raise AssertionError(
@@ -84,6 +85,7 @@ def test_decode_invalid_token() -> None:
     try:
         decode_token("invalid.token.payload")
     except ValueError:
+        # Expected ValueError on invalid token format
         pass
     else:
         raise AssertionError("Invalid token should raise ValueError.")

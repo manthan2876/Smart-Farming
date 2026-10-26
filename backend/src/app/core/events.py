@@ -29,6 +29,7 @@ class PredictionStatusHub:
                     redis_rest.set_sync(f"sf:pipeline:state:{prediction_id}", event, ex=300)
                 threading.Thread(target=_do_set, daemon=True).start()
         except Exception:
+            # Asynchronous Redis state persistence is best-effort; failures do not disrupt event dispatch
             pass
 
     def _dispatch(self, prediction_id: int, event: dict) -> None:

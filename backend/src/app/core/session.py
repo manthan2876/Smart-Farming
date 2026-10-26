@@ -108,8 +108,10 @@ def get_db_connect_args(url: str) -> dict[str, Any]:
                             connect_args["hostaddr"] = r.to_text()
                             break
                     except Exception:
+                        # Public DNS resolution fallback failed or dns module unavailable; proceed with system resolver
                         pass
         except Exception:
+            # URL parsing or hostaddr resolution failed; proceed with standard connect_args
             pass
 
     return connect_args

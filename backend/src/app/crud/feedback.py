@@ -52,6 +52,7 @@ def add_feedback(
                 )
                 session.add(candidate)
         except Exception:
+            # DatasetCandidate creation is non-blocking and auxiliary to feedback recording
             pass
 
     session.commit()

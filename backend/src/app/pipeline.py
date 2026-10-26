@@ -49,6 +49,7 @@ def _load_config(config_path: Path | None = None) -> dict[str, Any]:
         if overrides and isinstance(overrides, dict):
             cfg.setdefault("thresholds", {}).update(overrides)
     except Exception:
+        # Redis REST configuration override is optional; fallback to file-based defaults
         pass
 
     return cfg

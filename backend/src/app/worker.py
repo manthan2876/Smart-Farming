@@ -116,6 +116,7 @@ def _get_worker_redis_settings() -> RedisSettings:
         rs.retry = Retry(ExponentialBackoff(cap=10, base=1), retries=5)
         rs.retry_on_error = [ConnectionError, TimeoutError, OSError]
     except Exception:
+        # Custom Retry/ExponentialBackoff classes unavailable in older or alternative redis library versions
         pass
     return rs
 
