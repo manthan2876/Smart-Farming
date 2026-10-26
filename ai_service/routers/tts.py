@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Optional
@@ -116,24 +117,26 @@ async def synthesize_speech(req: TTSRequest):
     # 2. Fallback: Local Indic-TTS (if checkpoints are installed)
     try:
         from TTS.utils.synthesizer import Synthesizer
-        checkpoint_dir = Path("/content/checkpoints") / lang
-        if checkpoint_dir.exists():
-            # Local Synthesizer synthesis
-            acoustic = checkpoint_dir / "fastpitch" / "best_model.pth"
-            config = checkpoint_dir / "fastpitch" / "config_local.json"
-            if acoustic.exists() and config.exists():
-                syn = Synthesizer(str(acoustic), str(config), None, None, use_cuda=settings.DEVICE == "cuda")
-                wav = syn.tts(cleaned)
-                buf = io.BytesIO()
-                import soundfile as sf
-                sf.write(buf, wav, syn.output_sample_rate, format="WAV")
-                b64_wav = base64.b64encode(buf.getvalue()).decode("ascii")
-                return {
-                    "audioContent": b64_wav,
-                    "format": "wav",
-                    "voice": "indic_tts_local",
-                    "language": lang,
-                }
+        safe_lang = os.path.basename(lang)
+        if safe_lang.isalnum():
+            base_cp = os.path.abspath("/content/checkpoints")
+            cp_dir = os.path.abspath(os.path.join(base_cp, safe_lang))
+            if cp_dir.startswith(base_cp + os.sep) and os.path.isdir(cp_dir):
+                acoustic = os.path.join(cp_dir, "fastpitch", "best_model.pth")
+                config = os.path.join(cp_dir, "fastpitch", "config_local.json")
+                if os.path.isfile(acoustic) and os.path.isfile(config):
+                    syn = Synthesizer(acoustic, config, None, None, use_cuda=settings.DEVICE == "cuda")
+                    wav = syn.tts(cleaned)
+                    buf = io.BytesIO()
+                    import soundfile as sf
+                    sf.write(buf, wav, syn.output_sample_rate, format="WAV")
+                    b64_wav = base64.b64encode(buf.getvalue()).decode("ascii")
+                    return {
+                        "audioContent": b64_wav,
+                        "format": "wav",
+                        "voice": "indic_tts_local",
+                        "language": lang,
+                    }
     except Exception as fb_exc:
         logger.warning("Indic-TTS local fallback failed: %s", fb_exc)
 

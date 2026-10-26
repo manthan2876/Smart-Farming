@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import uuid
 from pathlib import Path
@@ -232,14 +233,15 @@ def serve_data_file(file_path: str, request: Request):
     clean_subpath = file_path.replace("\\", "/").strip("/")
     if clean_subpath.startswith("data/"):
         clean_subpath = clean_subpath[5:]
-    local_file = (_DATA_DIR / clean_subpath).resolve()
-    try:
-        local_file.relative_to(_DATA_DIR.resolve())
-        if local_file.is_file():
-            return FileResponse(local_file)
-    except ValueError:
-        # Path escapes _DATA_DIR; fall through to remote storage or 404
-        pass
+
+    # Prevent path traversal attacks
+    if ".." in clean_subpath.split("/"):
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    base_dir = os.path.abspath(str(_DATA_DIR))
+    safe_file_path = os.path.abspath(os.path.join(base_dir, clean_subpath))
+    if (safe_file_path == base_dir or safe_file_path.startswith(base_dir + os.sep)) and os.path.isfile(safe_file_path):
+        return FileResponse(safe_file_path)
 
     backend_type = (settings.STORAGE_BACKEND or "local").lower()
     if backend_type in ("supabase", "s3"):

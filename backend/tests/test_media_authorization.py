@@ -137,3 +137,12 @@ def test_legacy_media_path_disabled_in_production(monkeypatch):
 
     response = client.get("/data/uploads/private-leaf.jpg")
     assert response.status_code == 404
+
+
+def test_legacy_media_path_traversal_forbidden():
+    client = TestClient(app)
+    response = client.get("/data/../etc/passwd")
+    assert response.status_code == 404
+    response2 = client.get("/data/uploads/../../secret.txt")
+    assert response2.status_code == 404
+
