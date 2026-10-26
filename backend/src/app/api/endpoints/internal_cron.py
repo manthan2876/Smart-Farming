@@ -162,7 +162,7 @@ def trigger_purge_blobs(
         logger.error("Storage purge job failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Storage purge error: {exc}",
+            detail="Storage purge failed due to an internal error.",
         )
 
 
@@ -228,7 +228,7 @@ async def trigger_keepalive_ai(
         logger.warning("Keepalive ping to %s failed: %s", target_url, exc)
         return {
             "status": "error",
-            "error": str(exc),
+            "error": "Keepalive request to AI service failed.",
             "timestamp": time.time(),
         }
 

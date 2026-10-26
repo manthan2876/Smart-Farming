@@ -44,8 +44,11 @@ Notes:
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 try:
     import cv2
@@ -184,7 +187,8 @@ def estimate_severity(context: dict) -> dict:
             import base64
             context["image"]["processed_image_base64"] = base64.b64encode(encoded_buf.tobytes()).decode("ascii")
     except Exception as exc:
-        context["notes"].append(f"Grad-CAM overlay generation error: {exc}")
+        logger.error("Grad-CAM overlay generation error: %s", exc, exc_info=True)
+        context["notes"].append("Grad-CAM overlay generation failed.")
 
     disease_label = str(context.get("disease", {}).get("label") or "").strip().lower()
     is_healthy = "healthy" in disease_label

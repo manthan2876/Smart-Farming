@@ -3,10 +3,14 @@ pest_detector.py — Pest Classification Stage (YOLOv8)
 """
 
 from __future__ import annotations
+import logging
 from typing import Any, cast
 import cv2
 import numpy as np
 from ..loader import load_yolo, DEVICE
+
+
+logger = logging.getLogger(__name__)
 
 
 def predict_pest(context: dict, config: dict[str, Any]) -> dict:
@@ -150,12 +154,13 @@ def predict_pest(context: dict, config: dict[str, Any]) -> dict:
         }
         context["status"]["pest_detection"] = "completed"
     except Exception as exc:
-        context.setdefault("notes", []).append(f"Pest detection error: {exc}")
+        logger.error("Pest detection error: %s", exc, exc_info=True)
+        context.setdefault("notes", []).append("Pest detection stage encountered an internal error.")
         context["pest_classification"] = {
             "model_type": "classification",
             "status": "failed",
             "available": False,
-            "message": str(exc),
+            "message": "Pest detection failed due to an internal error.",
         }
         context["status"]["pest_detection"] = "failed"
         context["pests"] = []

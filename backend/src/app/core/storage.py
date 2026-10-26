@@ -450,7 +450,7 @@ def purge_orphaned_blobs(
                     logger.warning("Failed to list Supabase storage prefix %s: %s", prefix, prefix_err)
         except Exception as exc:
             logger.warning("Supabase storage purge skipped or failed: %s", exc)
-            cloud_error = str(exc)
+            cloud_error = "Storage backend purge encountered an internal error."
 
     if dry_run:
         return {

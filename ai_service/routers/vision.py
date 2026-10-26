@@ -48,10 +48,10 @@ async def predict_image(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as exc:
-        import traceback
-        traceback.print_exc()
+        import logging
+        logging.getLogger(__name__).error("Vision pipeline internal error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Vision pipeline internal error: {str(exc)}"
+            detail="Vision pipeline encountered an internal error processing the image."
         )
 

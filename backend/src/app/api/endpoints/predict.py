@@ -1360,4 +1360,5 @@ async def get_prediction_job_status(
             "success": info.success if info else None,
         }
     except Exception as exc:
-        return {"job_id": job_id, "status": "error", "detail": str(exc)}
+        logger.error("Failed to retrieve ARQ worker job status (%s)", exc)
+        return {"job_id": job_id, "status": "error", "detail": "Failed to retrieve worker job status."}
