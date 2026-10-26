@@ -104,6 +104,7 @@ async def pregenerate_all(dry_run: bool = False, upload_storage: bool = False):
                     try:
                         cond_named_file.write_bytes(out_file.read_bytes())
                     except Exception:
+                        # Secondary named file write failure is non-fatal; hash-named asset exists
                         pass
                 continue
 
@@ -118,6 +119,7 @@ async def pregenerate_all(dry_run: bool = False, upload_storage: bool = False):
                 try:
                     cond_named_file.write_bytes(out_file.read_bytes())
                 except Exception:
+                    # Secondary named file copy failure is non-fatal; primary out_file exists
                     pass
 
                 if storage:

@@ -83,6 +83,7 @@ try:
 
     _DB_AVAILABLE = True
 except Exception:
+    # Optional backend DB integration unavailable; fallback to local logging
     pass
 
 logging.basicConfig(
@@ -346,6 +347,7 @@ def _compute_dataset_hash(dataset_dir: Path) -> str:
         try:
             return hashlib.sha256(meta.read_bytes()).hexdigest()
         except Exception:
+            # Metadata file read failure; fall back to hashing individual files
             pass
     hasher = hashlib.sha256()
     for path in sorted(dataset_dir.glob("**/*")):
@@ -354,6 +356,7 @@ def _compute_dataset_hash(dataset_dir: Path) -> str:
             try:
                 hasher.update(str(path.stat().st_size).encode())
             except Exception:
+                # File stat access error; continue hashing path name
                 pass
     return hasher.hexdigest()
 
@@ -510,6 +513,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         try:
             export_config = json.loads(config_path.read_text())
         except Exception:
+            # Malformed metadata.json; proceed with export_config=None
             pass
 
     run_id = _db_create_run(
@@ -767,6 +771,7 @@ def evaluate_only(args: argparse.Namespace) -> None:
         from sklearn.metrics import classification_report
         logger.info("\n%s", classification_report(all_labels, all_preds, target_names=test_ds.classes))
     except ImportError:
+        # scikit-learn not installed; skip classification report
         pass
 
 

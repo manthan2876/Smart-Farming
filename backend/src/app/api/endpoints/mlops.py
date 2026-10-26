@@ -53,6 +53,7 @@ class DatasetExportFilters(BaseModel):
             try:
                 return CandidateStatusEnum(v_clean)
             except ValueError:
+                # Value is not a recognized CandidateStatusEnum member; return original value
                 pass
         return v
 

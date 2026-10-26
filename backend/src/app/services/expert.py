@@ -85,6 +85,7 @@ def get_review_detail(
             if proc_path:
                 processed_url = storage.get_url(proc_path, expires_in=expiry)
         except Exception:
+            # Storage signed URL generation failure is non-fatal; raw/proc paths remain available
             pass
 
     data = {

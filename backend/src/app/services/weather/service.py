@@ -42,6 +42,7 @@ def fetch_weather(context: dict, _config: dict | None = None) -> dict:
             context["status"]["weather"] = "completed"
             return context
     except Exception:
+        # Weather cache read failure is non-fatal; fall back to upstream API request
         pass
 
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
@@ -76,6 +77,7 @@ def fetch_weather(context: dict, _config: dict | None = None) -> dict:
                 from app.core.redis_rest import redis_rest
                 redis_rest.set_sync(grid_cache_key, weather_payload, ex=1800)
             except Exception:
+                # Weather cache write failure is non-fatal
                 pass
         else:
             context["weather"] = {

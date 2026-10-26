@@ -88,6 +88,7 @@ def is_git_lfs_pointer(path: Path) -> bool:
                 if prefix.startswith("version https://git-lfs"):
                     return True
     except Exception:
+        # File read or stat error while checking LFS pointer; treat as non-pointer
         pass
     return False
 

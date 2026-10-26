@@ -15,6 +15,7 @@ async def init_arq():
     try:
         main_loop = asyncio.get_running_loop()
     except RuntimeError:
+        # No running event loop found in the current thread context
         pass
 
     # If Redis worker is not required, skip connection to prevent startup delays
@@ -160,6 +161,7 @@ def enqueue_translation_sync(
             try:
                 current_loop = asyncio.get_running_loop()
             except RuntimeError:
+                # No active event loop in current worker thread
                 pass
 
             if current_loop is main_loop:

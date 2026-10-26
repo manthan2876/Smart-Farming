@@ -42,6 +42,7 @@ from urllib.parse import urlparse
 try:
     sys.stdout.reconfigure(line_buffering=True)
 except Exception:
+    # sys.stdout may not support reconfigure in certain non-standard or redirected streams
     pass
 
 

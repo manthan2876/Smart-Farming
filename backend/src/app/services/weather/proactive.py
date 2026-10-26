@@ -146,6 +146,7 @@ async def evaluate_weather_risks(ctx: dict | None = None) -> None:
             try:
                 await enqueue_translation("alert", a.id, {"title": a.title, "body": a.body})
             except Exception:
+                # Asynchronous alert translation dispatch failure does not block alert generation
                 pass
 
         logger.info(f"Proactive weather evaluation complete. {created_count} new alert(s) created.")

@@ -952,6 +952,7 @@ def translate_texts(texts: list[str], target_lang: str) -> list[str]:
     try:
         threading.Thread(target=_save_cache, daemon=True).start()
     except Exception:
+        # Background cache save thread spawn failure is non-fatal to translation delivery
         pass
 
     return results
