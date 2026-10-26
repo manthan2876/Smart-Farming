@@ -4,7 +4,6 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from app.api.deps import get_current_user
 from app.api.endpoints.predict import _public_result
 from app.core import get_session
 from app.models.user import User

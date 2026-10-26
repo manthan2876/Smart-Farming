@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import sys
-import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -12,9 +11,8 @@ if str(_SRC_DIR) not in sys.path:
 from arq.connections import RedisSettings
 
 from app.core.config import settings
-from app.core.paths import ensure_storage_directories, storage_relative_path
+from app.core.paths import ensure_storage_directories
 from app.core.session import _session_factory
-from app.models.image import Image
 from app.services.prediction_job import run_prediction_job
 
 logger = logging.getLogger("smart-farming.arq")

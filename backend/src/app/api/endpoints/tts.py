@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
 import httpx
 import os
 import hashlib

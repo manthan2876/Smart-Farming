@@ -64,7 +64,6 @@ async def enqueue_translation(
 
     # If Redis worker is NOT required (serverless mode / Cloud Run), execute in thread pool directly
     if not getattr(settings, "REQUIRE_REDIS", False):
-        import asyncio
         from app.core.session import _session_factory
         from app.services.translation.manager import process_entity_translation_sync
 
@@ -105,7 +104,6 @@ async def enqueue_translation(
             raise
     else:
         # Fallback if ARQ was requested but pool failed
-        import asyncio
         from app.core.session import _session_factory
         from app.services.translation.manager import process_entity_translation_sync
 
