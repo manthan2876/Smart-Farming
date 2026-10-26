@@ -51,9 +51,10 @@ class DatasetExportFilters(BaseModel):
             v_clean = v.strip().lower()
             if v_clean in ("any", "all", "*"):
                 return CandidateStatusEnum.ALL
-            for member in CandidateStatusEnum:
-                if member.value == v_clean:
-                    return member
+            try:
+                return CandidateStatusEnum(v_clean)
+            except ValueError:
+                pass
         return v
 
 
