@@ -29,7 +29,6 @@ import {
   Phone,
   Mail
 } from "../components/icons";
-import { motion } from "motion/react";
 import { Button, Card, Input, Select } from "../components/ui";
 import ThemeToggle from "../components/ThemeToggle";
 import { normalizePhoneNumber, isValidPhoneNumber } from "../lib/phone";
@@ -273,7 +272,7 @@ export default function SettingsPage() {
   const [exportFormat, setExportFormat] = useState("PyTorch Folder");
   const [exportImage, setExportImage] = useState("preprocessed");
   const [splitTrain, setSplitTrain] = useState(70);
-  const [splitVal, setSplitVal] = useState(15);
+  const [splitVal] = useState(15);
   const [isExporting, setIsExporting] = useState(false);
 
   // Config

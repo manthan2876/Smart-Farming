@@ -1,9 +1,8 @@
 import { getAssetUrl } from "../api/client";
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import imageCompression from "browser-image-compression";
 import { AlertCircle, CheckCircle2, Loader2, Pause, ShieldAlert, Volume2, Printer, Activity, Sprout } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -13,7 +12,7 @@ import {
   translatePrediction,
   textToSpeech,
 } from "../api/predictions";
-import { Badge, Button, Card, Input } from "../components/ui";
+import { Badge, Button, Card } from "../components/ui";
 import { translateCrop, translateDisease, translatePest, translateSeverityBucket, translateWeather } from "../i18n/domain";
 import { analytics } from "../lib/analytics";
 
@@ -31,8 +30,6 @@ export default function PredictionResultPage() {
   const { id } = useParams<{ id: string }>();
   const { token, language, t } = useAuth();
   const targetLang = language === "Hindi" ? "hi" : language === "Gujarati" ? "gu" : "en";
-  const navigate = useNavigate();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -121,36 +118,6 @@ export default function PredictionResultPage() {
       }
     }
   }, [targetLang, prediction, id, token, localTranslations, localExpertGuidance, refetch]);
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0];
-    if (!selected) return;
-    try {
-      setIsUploading(true);
-      setSelectedFile(await imageCompression(selected, { maxSizeMB: 1, maxWidthOrHeight: 1440, useWebWorker: true }));
-    } catch (error) {
-      console.error("Compression error:", error);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleRescanSubmit = async () => {
-    if (!selectedFile || !token || !id) return;
-    setIsUploading(true);
-    try {
-      const { rescan } = await import("../api/predictions");
-      await rescan(id, selectedFile, token);
-      await refetch();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) {
-      console.error(error);
-      alert(t("failedUploadPhoto"));
-    } finally {
-      setIsUploading(false);
-      setSelectedFile(null);
-    }
-  };
 
   const toggleAudio = async (text: string) => {
     if (!text || !text.trim().replace(/[.,!?;:\s-]/g, "").length) return;

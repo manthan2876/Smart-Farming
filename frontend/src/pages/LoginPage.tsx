@@ -5,7 +5,7 @@ import { LogIn, Sprout, CheckCircle2, Phone, Mail, ArrowLeft, ArrowRight, Smartp
 import { motion, AnimatePresence } from "motion/react";
 import { Button, Input } from "../components/ui";
 import { getDefaultRouteForRole } from "../lib/routes";
-import { normalizePhoneNumber, isValidPhoneNumber, formatPhoneDisplay } from "../lib/phone";
+import { formatPhoneDisplay } from "../lib/phone";
 import ThemeToggle from "../components/ThemeToggle";
 import LanguageToggle from "../components/LanguageToggle";
 

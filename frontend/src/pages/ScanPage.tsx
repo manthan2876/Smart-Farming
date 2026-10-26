@@ -7,7 +7,7 @@ import { Upload, Camera, MapPin, Globe, AlertCircle, Loader2 } from "../componen
 import { motion } from "motion/react";
 import imageCompression from 'browser-image-compression';
 import { get, set, update } from 'idb-keyval';
-import { Button, Card, Input, Select } from "../components/ui";
+import { Button, Card, Select } from "../components/ui";
 import { predict } from "../api/predictions";
 import { translateCrop } from "../i18n/domain";
 import { analytics } from "../lib/analytics";

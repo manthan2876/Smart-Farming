@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Bell, CheckCircle2, ShieldAlert, AlertTriangle, Info, Check, ArrowRight } from "../components/icons";
+import { CheckCircle2, ShieldAlert, AlertTriangle, Info, Check, ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { fetchAlerts, markAlertRead, markAllAlertsRead, AlertItem } from "../api/alerts";
 import { Badge, Button, Card, Skeleton } from "../components/ui";

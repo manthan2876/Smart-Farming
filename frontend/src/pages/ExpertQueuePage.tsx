@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { AlertCircle, CheckCircle, ArrowRight } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { getExpertQueue } from "../api/expert";
-import { Badge, Card, Table, Skeleton } from "../components/ui";
+import { Badge, Table, Skeleton } from "../components/ui";
 import { translateCrop, translateDisease } from "../i18n/domain";
 
 export default function ExpertQueuePage() {

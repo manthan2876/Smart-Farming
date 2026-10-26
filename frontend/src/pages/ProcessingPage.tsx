@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPrediction } from "../api/predictions";
-import { AlertCircle, Loader2, Check, Wheat, Leaf, TreeDeciduous, Sprout, Clover, Activity } from "../components/icons";
+import { AlertCircle, Loader2, Check, Wheat, Leaf, TreeDeciduous, Sprout, Clover } from "../components/icons";
 import { Button, Card } from "../components/ui";
 import { getWebSocketUrl } from "../api/client";
 import { translateCrop, translateDisease } from "../i18n/domain";

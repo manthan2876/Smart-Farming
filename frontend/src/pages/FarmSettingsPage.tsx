@@ -2,13 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { createPlot, deletePlot, getFarm, saveFarm, updatePlot } from "../api/farm";
-import { purgeDatabase } from "../api/admin";
 import { MapPin, Save, CheckCircle2, Sprout, Trash2, RotateCcw, Map as MapIcon, Navigation2, Satellite, Pencil, X } from "../components/icons";
 import { MapContainer, TileLayer, Polygon, Marker, Circle, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { motion } from "motion/react";
-import { Button, Card, Input } from "../components/ui";
+import { Button, Input } from "../components/ui";
 import { translateCrop } from "../i18n/domain";
 
 type PlotPoint = [number, number];
@@ -332,7 +331,7 @@ function BoundaryMap({
 }
 
 export default function FarmSettingsPage() {
-  const { token, user, language, t } = useAuth();
+  const { token, language, t } = useAuth();
   const queryClient = useQueryClient();
 
   const [farmName, setFarmName] = useState("");
@@ -342,9 +341,6 @@ export default function FarmSettingsPage() {
   const [lon, setLon] = useState<number>(0);
   const [cropHistory, setCropHistory] = useState("");
   const [successMessage, setSuccessMessage] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
 
 
   const { data: farmData, isLoading } = useQuery({
@@ -610,24 +606,6 @@ export default function FarmSettingsPage() {
       crop_history: cropHistory.split(",").map((s) => s.trim()).filter(Boolean),
       boundary: toGeoJsonPolygon(farmBoundary),
     });
-  };
-
-
-  const handleDeleteData = async () => {
-    if (deleteConfirmText !== "DELETE") return;
-    setIsDeleting(true);
-    try {
-      await purgeDatabase(token!);
-      alert(t("databaseWiped"));
-      setShowDeleteModal(false);
-      setDeleteConfirmText("");
-      queryClient.clear();
-      window.location.reload();
-    } catch (err: any) {
-      alert(`${t("databaseDeleteFailed")}: ${err.message}`);
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

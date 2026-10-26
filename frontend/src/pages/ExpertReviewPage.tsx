@@ -12,7 +12,7 @@ type ReviewAction = (typeof actions)[number];
 
 export default function ExpertReviewPage() {
   const { id } = useParams();
-  const { token, t, language } = useAuth();
+  const { token, t } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [action, setAction] = useState<ReviewAction>("Approve");
