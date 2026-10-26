@@ -30,7 +30,7 @@ export default function PredictionResultPage() {
   const { id } = useParams<{ id: string }>();
   const { token, language, t } = useAuth();
   const targetLang = language === "Hindi" ? "hi" : language === "Gujarati" ? "gu" : "en";
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);

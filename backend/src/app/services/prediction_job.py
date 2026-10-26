@@ -436,8 +436,6 @@ def run_prediction_job(
         # Write-time translation architecture:
         # Load any existing translations from entity_translations table (instant lookup)
         from app.models.translation import EntityTranslation
-        from app.services.translation.service import normalize_language_code
-        target_code = normalize_language_code(language)
         translations: dict[str, Any] = {}
 
         try:

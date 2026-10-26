@@ -45,7 +45,7 @@ class FakeSession:
         return FakeQuery()
 
 
-app.dependency_overrides[get_session] = lambda: FakeSession()
+app.dependency_overrides[get_session] = FakeSession
 
 
 def test_health_and_crops() -> None:

@@ -81,7 +81,6 @@ def predict_crop(context: dict, config: dict[str, Any]) -> dict:
     context["crop"]["temperature"] = temperature
     context["status"]["crop_identification"] = "completed"
 
-    threshold = config["thresholds"].get("crop_confidence", 0.70)
     context["crop"]["uncertainty"] = round(float(1.0 - confidence), 3)
 
     # 1. Out-Of-Distribution (OOD) Guard (max prob < 0.45 or entropy > 1.5)

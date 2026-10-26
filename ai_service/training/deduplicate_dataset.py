@@ -83,7 +83,6 @@ def scan_dataset(
         buckets[prefix].append((path, h))
 
     # Compare within buckets and adjacent prefixes
-    seen_pairs = set()
     n = len(hashes)
     for i in range(n):
         path1, h1 = hashes[i]

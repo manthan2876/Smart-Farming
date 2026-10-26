@@ -74,13 +74,13 @@ def test_compute_ece_perfect_calibration():
     n_samples = 100
     y_true = np.array([0] * 80 + [1] * 20)
     # Predicted probabilities: 80% for class 0, 20% for class 1
-    y_probs = np.array([[0.8, 0.2]] * 100)
+    y_probs = np.array([[0.8, 0.2]] * n_samples)
     
     result = compute_ece(y_true, y_probs, num_bins=10)
     assert "ece" in result
     assert "mce" in result
     assert "brier_score" in result
-    assert result["num_samples"] == 100
+    assert result["num_samples"] == n_samples
     # Expected Calibration Error for the bin containing 0.8 is 0 because accuracy == confidence == 0.8
     assert result["ece"] == 0.0
 
@@ -90,7 +90,7 @@ def test_compute_ece_overconfident_model():
     n_samples = 100
     y_true = np.array([0] * 50 + [1] * 50)
     # Model predicts class 0 with 0.99 confidence for all samples
-    y_probs = np.array([[0.99, 0.01]] * 100)
+    y_probs = np.array([[0.99, 0.01]] * n_samples)
     
     result = compute_ece(y_true, y_probs, num_bins=10)
     # ECE should be approximately |0.50 - 0.99| = 0.49
@@ -179,11 +179,10 @@ def test_predict_crop_with_temperature_scaling():
     from unittest.mock import MagicMock, patch
     try:
         import torch
-    except Exception as e:
-        pytest.skip(f"PyTorch runtime unavailable: {e}")
-
-    sys.path.insert(0, str(Path("ai_service").resolve()))
-    from vision_engine.stages.crop_identifier import predict_crop
+        sys.path.insert(0, str(Path("ai_service").resolve()))
+        from vision_engine.stages.crop_identifier import predict_crop
+    except (ImportError, Exception) as e:
+        pytest.skip(f"PyTorch / Vision dependencies unavailable: {e}")
 
     mock_model = MagicMock()
     mock_model.return_value = torch.tensor([[5.0, 1.0, 0.5, 0.2, 0.1]])
@@ -221,11 +220,10 @@ def test_predict_disease_with_temperature_scaling():
     from unittest.mock import MagicMock, patch
     try:
         import torch
-    except Exception as e:
-        pytest.skip(f"PyTorch runtime unavailable: {e}")
-
-    sys.path.insert(0, str(Path("ai_service").resolve()))
-    from vision_engine.stages.disease_classifier import predict_disease
+        sys.path.insert(0, str(Path("ai_service").resolve()))
+        from vision_engine.stages.disease_classifier import predict_disease
+    except (ImportError, Exception) as e:
+        pytest.skip(f"PyTorch / Vision dependencies unavailable: {e}")
 
     mock_model = MagicMock()
     mock_model.return_value = torch.tensor([[4.0, 1.0, 0.2, 0.1]])

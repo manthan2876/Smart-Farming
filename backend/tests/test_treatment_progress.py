@@ -226,12 +226,6 @@ class FakeHistorySession:
 
 
 def test_history_endpoint_pagination_headers():
-    fake_user = User(
-        id="usr-test-farmer",
-        phone="+919999999999",
-        role="farmer",
-    )
-
     preds = []
     for i in range(1, 15):
         p = Prediction(
