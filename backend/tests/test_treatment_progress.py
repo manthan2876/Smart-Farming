@@ -4,7 +4,6 @@ import io
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-import pytest
 from PIL import Image as PILImage
 from fastapi.testclient import TestClient
 
@@ -19,8 +18,6 @@ from app.api.deps import get_current_user
 from app.core import get_session
 from app.context import create_context
 from app.models import User, Prediction
-from app.models.farm import Farm
-from app.models.plot import Plot
 from app.services.prediction_job import calculate_treatment_progress
 from app.services.recommendation.service import generate_recommendation, _build_prompt
 

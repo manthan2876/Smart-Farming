@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -16,7 +15,6 @@ from app.crud.refresh_token import (
     hash_token,
     store_refresh_token,
     rotate_refresh_token,
-    revoke_refresh_token,
 )
 
 test_engine = create_engine(
