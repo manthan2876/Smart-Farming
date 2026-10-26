@@ -1,4 +1,3 @@
-import pytest
 from app.services.recommendation.service import (
     generate_recommendation,
     _generate_rule_based_advisory,

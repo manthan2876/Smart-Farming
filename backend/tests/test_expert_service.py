@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import HTTPException
 
-from app.schemas.expert import ExpertReviewSubmissionRequest
 from app.services import expert as expert_service
 
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 import re
-import pytest
 from app.api.endpoints.farm import _validate_geojson_polygon
 
 def test_polygon_validation_valid():

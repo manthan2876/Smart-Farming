@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -13,11 +12,9 @@ if str(ROOT_DIR / "ai_service") not in sys.path:
 if str(ROOT_DIR / "backend" / "src") not in sys.path:
     sys.path.insert(0, str(ROOT_DIR / "backend" / "src"))
 
-import pytest
-import numpy as np
 from ai_service.vision_engine.stages.decision_router import route_to_disease_model
 from ai_service.vision_engine.stages.severity import _severity_bucket
-from ai_service.routers.advisory import validate_advisory_safety, BANNED_AGROCHEMICALS
+from ai_service.routers.advisory import validate_advisory_safety
 
 # 30-image golden benchmark manifest (6 per crop: 4 diseased, 2 healthy)
 GOLDEN_BENCHMARK = [

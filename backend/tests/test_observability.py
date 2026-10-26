@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import time
-from types import SimpleNamespace
-import pytest
-
 from app.context import create_context
 from app.services.weather.service import fetch_weather
 from app.services.recommendation.service import generate_recommendation

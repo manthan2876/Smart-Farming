@@ -1,6 +1,5 @@
 import io
 import os
-import glob
 import re
 import sys
 from contextlib import contextmanager
@@ -39,7 +38,6 @@ from app.core.storage import (
     purge_orphaned_blobs,
     compress_image_bytes,
     prune_cached_audio,
-    prune_unflagged_heatmaps,
 )
 
 
@@ -260,7 +258,7 @@ def test_get_storage_factory_local():
 
 
 def test_aws_and_google_storage_removed():
-    import app.core.storage as storage_mod
+    storage_mod = sys.modules["app.core.storage"]
     assert not hasattr(storage_mod, "GCSStorageBackend"), "GCSStorageBackend must be removed"
     assert not hasattr(settings, "GCS_BUCKET"), "GCS_BUCKET setting must be removed"
 

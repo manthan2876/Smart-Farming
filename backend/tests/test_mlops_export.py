@@ -4,7 +4,6 @@ import io
 import zipfile
 import json
 import pytest
-from datetime import datetime, timezone
 from pathlib import Path
 from fastapi.testclient import TestClient
 from PIL import Image as PILImage
@@ -18,7 +17,7 @@ from app.api.deps import hash_password, create_token
 from app.models.user import User
 from app.models.prediction import Prediction
 from app.models.dataset import DatasetCandidate
-from app.api.endpoints.mlops import _split_for_entity, DatasetExportSplit, CandidateStatusEnum
+from app.api.endpoints.mlops import _split_for_entity, DatasetExportSplit
 
 test_engine = create_engine(
     "sqlite:///:memory:",
