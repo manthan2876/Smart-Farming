@@ -22,7 +22,6 @@ import app.pipeline as pipeline_mod
 from app.services.recommendation.service import generate_recommendation
 
 try:
-    import torch
     from ai_service.vision_engine.stages.decision_router import route_to_disease_model
     from ai_service.vision_engine.stages.severity import estimate_severity, _severity_bucket
     from ai_service.vision_engine.stages.pest_detector import predict_pest

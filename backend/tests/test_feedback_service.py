@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import HTTPException
 
-from app.schemas import FeedbackRequest, FeedbackReviewRequest
+from app.schemas import FeedbackRequest
 from app.services import feedback as feedback_service
 
 

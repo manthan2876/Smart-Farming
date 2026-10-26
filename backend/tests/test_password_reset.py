@@ -11,8 +11,7 @@ from app.main import app
 from app.core import Base, get_session
 from app.api.deps import hash_password, create_token
 from app.models.user import User
-from app.models.password_reset import PasswordResetToken
-from app.crud.password_reset import get_valid_password_reset_token, create_password_reset_token
+from app.crud.password_reset import create_password_reset_token
 
 # Setup in-memory SQLite database
 test_engine = create_engine(

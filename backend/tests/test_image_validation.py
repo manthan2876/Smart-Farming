@@ -15,7 +15,6 @@ if str(ROOT_DIR / "ai_service") not in sys.path:
     sys.path.insert(0, str(ROOT_DIR / "ai_service"))
 
 from app.main import app
-from app.api.deps import get_current_user
 from app.core import get_session
 from app.models import User, Prediction, ExpertReview
 import app.pipeline as pipeline_mod
