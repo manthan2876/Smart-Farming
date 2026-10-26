@@ -89,15 +89,10 @@ ADVISORY_KB: dict[str, Any] = {}
 CONDITIONS_BY_ID: dict[str, dict[str, Any]] = {}
 CONDITIONS_BY_KEY: dict[str, dict[str, Any]] = {}
 ALIAS_INDEX: dict[str, list[str]] = {}
-FALLBACK_IDS: dict[str, str] = {}
-CROPS_METADATA: dict[str, Any] = {}
-DECISION_RULES: dict[str, Any] = {}
-OUTPUT_CONTRACT: dict[str, Any] = {}
 
 
 def _load_knowledge_base():
     global ADVISORY_KB, CONDITIONS_BY_ID, CONDITIONS_BY_KEY, ALIAS_INDEX
-    global FALLBACK_IDS, CROPS_METADATA, DECISION_RULES, OUTPUT_CONTRACT
 
     if not settings.KB_PATH.exists():
         logger.warning("Advisory knowledge base not found at %s", settings.KB_PATH)
@@ -111,10 +106,6 @@ def _load_knowledge_base():
             # v2.0.0 Expanded Schema
             conditions = raw_data.get("conditions", [])
             ALIAS_INDEX = raw_data.get("condition_alias_index", {})
-            FALLBACK_IDS = raw_data.get("fallback_ids", {})
-            CROPS_METADATA = raw_data.get("crops", {})
-            DECISION_RULES = raw_data.get("decision_rules", {})
-            OUTPUT_CONTRACT = raw_data.get("output_contract", {})
 
             for cond in conditions:
                 cid = cond.get("id")
@@ -448,8 +439,6 @@ def _fallback_fields(
     }
 
 
-_qwen_model = None
-_qwen_tokenizer = None
 # ─── Agronomic Safety Guard & Banned Agrochemical Blocklist ────────────────────
 BANNED_AGROCHEMICALS = {
     "monocrotophos",

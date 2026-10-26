@@ -1297,7 +1297,7 @@ def get_prediction_media_stream(
     norm_type = media_type.lower().strip()
     storage = get_storage()
     key: str | None = None
-    mime = "application/octet-stream"
+    mime: str
     if norm_type in ["raw", "image", "upload"]:
         key = pred.raw_path or (pred.image.raw_path if pred.image else None)
         mime = "image/jpeg"
