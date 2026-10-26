@@ -69,9 +69,6 @@ def test_recommendation_fallback_tagging(monkeypatch) -> None:
 
 
 def test_confidence_rating_and_uncertainty_flags() -> None:
-    # Test crop confidence classification
-    dummy_crop_cfg = {"thresholds": {"crop_confidence": 0.75}}
-    
     # 1. High confidence
     ctx = create_context("test.jpg")
     ctx["crop"] = {"label": "Tomato", "confidence": 0.92}

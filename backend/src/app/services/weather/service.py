@@ -5,15 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def fetch_weather(context: dict, config: dict | None = None) -> dict:
+def fetch_weather(context: dict, _config: dict | None = None) -> dict:
     """
     Fetches current weather data from OpenWeather using coordinates
     from context['user'] and populates context['weather'].
     """
-
-    if config is None:
-        config = {}
-    
     user_info = context.get("user", {})
     lat = user_info.get("lat")
     lon = user_info.get("lon")

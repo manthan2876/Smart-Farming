@@ -389,7 +389,6 @@ def purge_orphaned_blobs(
         logger.warning("Error scanning DatasetCandidate records: %s", exc)
 
     now = time.time()
-    now_utc = datetime.now(timezone.utc)
 
     # ── 1. Purge from Local Storage ──
     local_deleted = 0

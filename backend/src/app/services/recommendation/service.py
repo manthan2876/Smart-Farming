@@ -272,15 +272,12 @@ def _safe_float(val: Any, default: float = 0.0) -> float:
         return default
 
 
-def generate_recommendation(context: dict, config: dict[str, Any] | None = None) -> dict:
+def generate_recommendation(context: dict, _config: dict[str, Any] | None = None) -> dict:
     """
     Pipeline Stage 8: Generate agronomic recommendation.
     Invokes the unified AI microservice advisory stage (/advisory/advise) if available,
     otherwise falling back safely to deterministic ICAR agronomic rules.
     """
-    if config is None:
-        config = {}
-
     status_map = context.setdefault("status", {})
     if status_map.get("preprocessing", "completed") != "completed":
         status_map["recommendation"] = "skipped"
