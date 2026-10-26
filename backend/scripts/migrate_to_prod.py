@@ -54,15 +54,15 @@ from dotenv import load_dotenv
 
 load_dotenv(backend_dir / ".env")
 
+import importlib
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect, text
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import inspect, text
 
 from app.core import Base
 from app.core.config import settings
 from app.core.session import create_app_engine, sanitize_db_url
-import app.models  # Register all models with Base.metadata
+importlib.import_module("app.models")  # Register all models with Base.metadata
 
 # Tables safe to copy Dev -> Prod (static/reference lookup data only, NEVER user-generated or operational data).
 # In this project, all current 13 tables (users, farms, plots, predictions, entity_translations, alerts, etc.)

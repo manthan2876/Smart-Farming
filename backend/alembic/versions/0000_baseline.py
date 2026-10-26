@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import importlib
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy import inspect
 
 # Ensure backend src is in sys.path
@@ -18,7 +18,7 @@ if str(backend_src) not in sys.path:
     sys.path.insert(0, str(backend_src))
 
 from app.core import Base
-import app.models
+importlib.import_module("app.models")
 
 revision = "0000_baseline"
 down_revision = None
