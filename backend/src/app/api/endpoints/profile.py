@@ -192,6 +192,7 @@ async def update_farmer_profile(
             try:
                 await sync_supabase_user_phone(user.id, clean_phone)
             except Exception:
+                # Supabase phone sync failure is non-blocking for profile update
                 pass
 
         # Enqueue write-time transliteration for user name
@@ -200,6 +201,7 @@ async def update_farmer_profile(
             try:
                 await enqueue_translation("user", user.id, {"name": payload.name}, name_fields=["name"])
             except Exception:
+                # Transliteration background task enqueue failure is non-blocking
                 pass
     except HTTPException:
         raise

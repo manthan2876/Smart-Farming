@@ -539,6 +539,7 @@ async def register(
                 name_fields=["name", "location"],
             )
     except Exception:
+        # Background transliteration failure must not fail registration
         pass
 
     return AuthResponse(tokens=tokens, user=_profile(user, session=session))

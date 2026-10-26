@@ -120,11 +120,13 @@ async def post_expert_review(
             try:
                 await enqueue_translation("expert_review", review_id, {"farmer_guidance": farmer_guidance})
             except Exception:
+                # Background transliteration failure must not fail review submission
                 pass
         if new_alert and new_alert.id:
             try:
                 await enqueue_translation("alert", new_alert.id, {"title": new_alert.title, "body": new_alert.body})
             except Exception:
+                # Background transliteration failure must not fail review submission
                 pass
 
         return result

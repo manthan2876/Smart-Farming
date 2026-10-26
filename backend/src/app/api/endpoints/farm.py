@@ -47,6 +47,7 @@ def _enqueue_farm_transliteration(farm_id: int, name: str, location: str) -> Non
             )
         )
     except Exception:
+        # Background transliteration failure must not fail the primary synchronous farm request
         pass
 
 
@@ -63,6 +64,7 @@ def _enqueue_plot_transliteration(plot_id: int, name: str) -> None:
             )
         )
     except Exception:
+        # Background transliteration failure must not fail the primary synchronous plot request
         pass
 
 
