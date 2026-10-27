@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.0] - 2026-10-27
+
+### Security Hardening & Zero CodeQL Alerts
+- Successfully eliminated **all 268+ GitHub Advanced Security CodeQL alerts** across 17 categories down to **0 open alerts**.
+- **Log Injection (CWE-117)**: Sanitized user-controlled entity identifiers, request parameters, and input strings across all backend and AI service log entry points.
+- **Clear-Text Storage (CWE-312 / CWE-359)**: Replaced clear-text sensitive data storage in web storage with in-memory module-level session caching and removed redundant token rewrites.
+- **Polynomial ReDoS (CWE-1333)**: Refactored regular expression backtracking across translation and TTS normalizers with non-overlapping character boundaries.
+- **Server-Side Request Forgery (SSRF - CWE-918)**: Hardened URL validation and path sanitizers across image fetching and proxying routes.
+- **Stack Trace Exposure (CWE-209)**: Sanitized exception disclosures across internal cron, storage, and worker endpoints.
+- **Path Injection (CWE-22 / CWE-73)**: Validated storage and cache file paths against directory traversal attacks.
+- **Sensitive Data Logging (CWE-532)**: Cleaned auth and service logs to prevent sensitive credential and phone number leakage.
+- **Code Quality**: Cleaned all unused imports, unused local/global variables, uninitialized variables, empty exception handlers, and unnecessary lambdas across backend, frontend, and AI service.
+
+
 ## 2026-10-24
 
 ### Frontend & GIS Mapping
