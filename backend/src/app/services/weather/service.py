@@ -29,11 +29,27 @@ def fetch_weather(context: dict, _config: dict | None = None) -> dict:
         context["status"]["weather"] = "skipped"
         return context
 
+    try:
+        val_lat = float(lat)
+        val_lon = float(lon)
+        if not (-90.0 <= val_lat <= 90.0 and -180.0 <= val_lon <= 180.0):
+            raise ValueError("Coordinates out of geographical bounds.")
+    except (ValueError, TypeError):
+        context["weather"] = {
+            "provider": "OpenWeatherMap",
+            "timestamp": now_iso,
+            "is_degraded": True,
+            "status": "invalid_coordinates",
+            "message": "Invalid latitude or longitude provided.",
+        }
+        context["status"]["weather"] = "skipped"
+        return context
+
     # 1. Coordinate grid caching (0.1° cell ~11km) to conserve OpenWeatherMap API quota
     try:
         from app.core.redis_rest import redis_rest
-        grid_lat = round(float(lat), 1)
-        grid_lon = round(float(lon), 1)
+        grid_lat = round(val_lat, 1)
+        grid_lon = round(val_lon, 1)
         grid_cache_key = f"sf:weather:grid:{grid_lat}_{grid_lon}"
         cached_weather = redis_rest.get_sync(grid_cache_key)
         if cached_weather and isinstance(cached_weather, dict) and cached_weather.get("status") == "success":
@@ -45,10 +61,19 @@ def fetch_weather(context: dict, _config: dict | None = None) -> dict:
         # Weather cache read failure is non-fatal; fall back to upstream API request
         pass
 
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
+    params = {
+        "lat": f"{val_lat:.6f}",
+        "lon": f"{val_lon:.6f}",
+        "units": "metric",
+        "appid": api_key,
+    }
 
     try:
-        response = requests.get(url, timeout=5)
+        response = requests.get(
+            "https://api.openweathermap.org/data/2.5/weather",
+            params=params,
+            timeout=5,
+        )
         data = response.json()
 
         if response.status_code == 200:
@@ -98,6 +123,6 @@ def fetch_weather(context: dict, _config: dict | None = None) -> dict:
             "message": str(exc),
         }
         context["status"]["weather"] = "failed"
-        context["notes"].append(f"Weather fetch error: {exc}")
+        context.setdefault("notes", []).append(f"Weather fetch error: {exc}")
 
     return context

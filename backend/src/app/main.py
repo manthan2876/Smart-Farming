@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import urllib.parse
 import uuid
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
@@ -234,8 +235,17 @@ def serve_data_file(file_path: str, request: Request):
     if clean_subpath.startswith("data/"):
         clean_subpath = clean_subpath[5:]
 
+    segments = [s for s in clean_subpath.split("/") if s and s != "."]
+    if not segments or any(s == ".." for s in segments):
+        raise HTTPException(status_code=404, detail="File not found.")
+    for s in segments:
+        if not s.replace("-", "").replace("_", "").replace(".", "").isalnum():
+            raise HTTPException(status_code=404, detail="File not found.")
+
+    safe_subpath = "/".join(urllib.parse.quote(s, safe=".-_~") for s in segments)
+
     base_dir = os.path.realpath(str(_DATA_DIR))
-    unsafe_path = os.path.join(base_dir, clean_subpath)
+    unsafe_path = os.path.join(base_dir, safe_subpath)
     normalized_path = os.path.realpath(unsafe_path)
 
     # Ensure normalized path is strictly contained inside base_dir
@@ -250,9 +260,9 @@ def serve_data_file(file_path: str, request: Request):
         try:
             from app.core.storage import get_storage
             storage = get_storage()
-            data = storage.get(clean_subpath)
+            data = storage.get(safe_subpath)
             content_type = "image/jpeg"
-            lower_path = clean_subpath.lower()
+            lower_path = safe_subpath.lower()
             if lower_path.endswith(".png"):
                 content_type = "image/png"
             elif lower_path.endswith(".webp"):
@@ -267,7 +277,7 @@ def serve_data_file(file_path: str, request: Request):
                     "Access-Control-Allow-Origin": "*",
                 },
             )
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
             return JSONResponse(status_code=404, content={"detail": "File not found"})
         except Exception:
             logger.exception("Failed to retrieve stored media (request_id=%s)", getattr(request.state, "request_id", "unavailable"))

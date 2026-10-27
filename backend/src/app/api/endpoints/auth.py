@@ -1,5 +1,6 @@
 import logging
 import secrets
+import urllib.parse
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -230,11 +231,18 @@ async def fetch_supabase_user_details(user_id: str, bearer_token: str | None = N
     )
     if not supabase_url:
         return None
+
+    clean_user_id = str(user_id).strip()
+    # Guard against partial SSRF and path traversal: restrict user_id to standard UUID alphanumeric/hyphen characters
+    if not clean_user_id or not clean_user_id.replace("-", "").replace("_", "").isalnum():
+        return None
+    safe_user_id = urllib.parse.quote(clean_user_id, safe="")
+
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             if service_key:
                 resp = await client.get(
-                    f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{user_id}",
+                    f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{safe_user_id}",
                     headers={
                         "apikey": service_key,
                         "Authorization": f"Bearer {service_key}",
@@ -253,7 +261,7 @@ async def fetch_supabase_user_details(user_id: str, bearer_token: str | None = N
                 if resp.status_code == 200:
                     return resp.json()
     except Exception as exc:
-        logger.warning("Failed to fetch Supabase user details for %s: %s", user_id, exc)
+        logger.warning("Failed to fetch Supabase user details: %s", exc)
     return None
 
 
@@ -1106,7 +1114,6 @@ async def sync_session(
 
         if existing is not None:
             if existing.id != user_id:
-                old_id = existing.id
                 existing.id = user_id
                 logger.info("Relinked existing user record for session sync.")
             if sup_phone and not existing.phone:
