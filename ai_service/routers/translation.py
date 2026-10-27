@@ -731,14 +731,24 @@ def _call_google_translate(text: str, target_code: str) -> Optional[str]:
     if not text or not text.strip():
         return text
 
-    encoded = urllib.parse.quote(text)
-    url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl={target_code}&dt=t&q={encoded}"
+    clean_code = target_code.strip().lower()
+    # Guard against SSRF: ensure target_code is strictly alphanumeric and short
+    if not clean_code or not clean_code.isalnum() or len(clean_code) > 10:
+        return None
+
+    params = {
+        "client": "gtx",
+        "sl": "auto",
+        "tl": clean_code,
+        "dt": "t",
+        "q": text,
+    }
     headers = {"User-Agent": "SmartFarmingApp/2.0 (Linux; IndicTrans2 Fallback)"}
 
     if httpx is not None:
         try:
             with httpx.Client(timeout=3.5, headers=headers) as client:
-                resp = client.get(url)
+                resp = client.get("https://translate.googleapis.com/translate_a/single", params=params)
                 if resp.status_code == 200:
                     data = resp.json()
                     segments = "".join(s[0] for s in data[0] if s and s[0])
@@ -748,7 +758,9 @@ def _call_google_translate(text: str, target_code: str) -> Optional[str]:
             logger.debug("Google translate httpx notice: %s", exc)
 
     try:
-        req = urllib.request.Request(url, headers=headers)
+        query_string = urllib.parse.urlencode(params)
+        full_url = f"https://translate.googleapis.com/translate_a/single?{query_string}"
+        req = urllib.request.Request(full_url, headers=headers)
         with urllib.request.urlopen(req, timeout=3.5) as resp:
             if resp.status == 200:
                 raw_data = resp.read().decode("utf-8")

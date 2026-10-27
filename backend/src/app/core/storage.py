@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import time
+import urllib.parse
 from datetime import datetime, timezone
 import logging
 from abc import ABC, abstractmethod
@@ -143,7 +144,13 @@ class SupabaseStorageBackend(StorageBackend):
         clean = key.replace("\\", "/").strip("/")
         if clean.startswith("data/"):
             clean = clean[5:]
-        return clean
+        segments = [s for s in clean.split("/") if s and s != "."]
+        if any(s == ".." for s in segments):
+            raise ValueError(f"Directory traversal detected in storage key: {key}")
+        for s in segments:
+            if not s.replace("-", "").replace("_", "").replace(".", "").isalnum():
+                raise ValueError(f"Invalid character in storage key segment: {s}")
+        return "/".join(urllib.parse.quote(s, safe=".-_~") for s in segments)
 
     def _get_headers(self) -> dict[str, str]:
         headers: dict[str, str] = {}
@@ -156,7 +163,9 @@ class SupabaseStorageBackend(StorageBackend):
         import httpx
 
         norm_key = self._normalize_key(destination_key)
-        url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{norm_key}"
+        safe_bucket = urllib.parse.quote(str(self.bucket_name), safe=".-_~")
+        safe_key = "/".join(urllib.parse.quote(seg, safe=".-_~") for seg in norm_key.split("/"))
+        url = f"{self.supabase_url}/storage/v1/object/{safe_bucket}/{safe_key}"
         headers = self._get_headers()
         headers["Content-Type"] = content_type
         headers["x-upsert"] = "true"
@@ -171,7 +180,9 @@ class SupabaseStorageBackend(StorageBackend):
         import httpx
 
         norm_key = self._normalize_key(key)
-        url = f"{self.supabase_url}/storage/v1/object/authenticated/{self.bucket_name}/{norm_key}"
+        safe_bucket = urllib.parse.quote(str(self.bucket_name), safe=".-_~")
+        safe_key = "/".join(urllib.parse.quote(seg, safe=".-_~") for seg in norm_key.split("/"))
+        url = f"{self.supabase_url}/storage/v1/object/authenticated/{safe_bucket}/{safe_key}"
         headers = self._get_headers()
 
         with httpx.Client(timeout=30.0) as client:
@@ -186,7 +197,9 @@ class SupabaseStorageBackend(StorageBackend):
         import httpx
 
         norm_key = self._normalize_key(key)
-        url = f"{self.supabase_url}/storage/v1/object/sign/{self.bucket_name}/{norm_key}"
+        safe_bucket = urllib.parse.quote(str(self.bucket_name), safe=".-_~")
+        safe_key = "/".join(urllib.parse.quote(seg, safe=".-_~") for seg in norm_key.split("/"))
+        url = f"{self.supabase_url}/storage/v1/object/sign/{safe_bucket}/{safe_key}"
         headers = self._get_headers()
         headers["Content-Type"] = "application/json"
 
@@ -216,7 +229,8 @@ class SupabaseStorageBackend(StorageBackend):
         import httpx
 
         norm_key = self._normalize_key(key)
-        url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}"
+        safe_bucket = urllib.parse.quote(str(self.bucket_name), safe=".-_~")
+        url = f"{self.supabase_url}/storage/v1/object/{safe_bucket}"
         headers = self._get_headers()
         headers["Content-Type"] = "application/json"
 
@@ -232,7 +246,9 @@ class SupabaseStorageBackend(StorageBackend):
         import httpx
 
         norm_key = self._normalize_key(key)
-        url = f"{self.supabase_url}/storage/v1/object/authenticated/{self.bucket_name}/{norm_key}"
+        safe_bucket = urllib.parse.quote(str(self.bucket_name), safe=".-_~")
+        safe_key = "/".join(urllib.parse.quote(seg, safe=".-_~") for seg in norm_key.split("/"))
+        url = f"{self.supabase_url}/storage/v1/object/authenticated/{safe_bucket}/{safe_key}"
         headers = self._get_headers()
 
         try:

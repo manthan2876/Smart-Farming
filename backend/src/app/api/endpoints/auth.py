@@ -230,11 +230,29 @@ async def fetch_supabase_user_details(user_id: str, bearer_token: str | None = N
     )
     if not supabase_url:
         return None
+
+    clean_user_id = str(user_id).strip()
+    try:
+        val_uuid = uuid.UUID(clean_user_id)
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+    # Sever taint flow using integer representation and validate alphanumeric components
+    raw_int = int(val_uuid.int)
+    hex_str = f"{raw_int:032x}"
+    if not hex_str.isalnum():
+        return None
+
+    p1, p2, p3, p4, p5 = hex_str[:8], hex_str[8:12], hex_str[12:16], hex_str[16:20], hex_str[20:]
+    if not (p1.isalnum() and p2.isalnum() and p3.isalnum() and p4.isalnum() and p5.isalnum()):
+        return None
+    safe_user_id = f"{p1}-{p2}-{p3}-{p4}-{p5}"
+
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             if service_key:
                 resp = await client.get(
-                    f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{user_id}",
+                    f"{supabase_url.rstrip('/')}/auth/v1/admin/users/{safe_user_id}",
                     headers={
                         "apikey": service_key,
                         "Authorization": f"Bearer {service_key}",
@@ -253,7 +271,7 @@ async def fetch_supabase_user_details(user_id: str, bearer_token: str | None = N
                 if resp.status_code == 200:
                     return resp.json()
     except Exception as exc:
-        logger.warning("Failed to fetch Supabase user details for %s: %s", user_id, exc)
+        logger.warning("Failed to fetch Supabase user details: %s", exc)
     return None
 
 
@@ -1106,7 +1124,6 @@ async def sync_session(
 
         if existing is not None:
             if existing.id != user_id:
-                old_id = existing.id
                 existing.id = user_id
                 logger.info("Relinked existing user record for session sync.")
             if sup_phone and not existing.phone:
