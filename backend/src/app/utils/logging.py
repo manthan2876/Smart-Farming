@@ -34,4 +34,10 @@ def configure_logging() -> None:
 
 def prediction_event(logger: logging.Logger, event: str, **data: Any) -> None:
     safe_event = str(event).replace("\r", "").replace("\n", "")
-    logger.info(safe_event, extra={"event": safe_event, "data": data})
+    safe_data = {
+        str(k).replace("\r", "").replace("\n", ""): (
+            str(v).replace("\r", "").replace("\n", "") if isinstance(v, str) else v
+        )
+        for k, v in data.items()
+    }
+    logger.info(safe_event, extra={"event": safe_event, "data": safe_data})
