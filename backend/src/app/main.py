@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import urllib.parse
 import uuid
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
