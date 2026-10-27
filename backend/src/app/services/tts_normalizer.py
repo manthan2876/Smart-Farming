@@ -73,14 +73,14 @@ def expand_numbers_for_tts(text: str, lang: str) -> str:
 
     # 2. Units / symbols replacement
     if lang == "gu":
-        text = re.sub(r"(\d+)\s*%", r"\1 ટકા", text)
-        text = re.sub(r"(\d+)\s*°\s*[cC]", r"\1 ડિગ્રી સેલ્સિયસ", text)
+        text = re.sub(r"\b(\d+)\s*%", r"\1 ટકા", text)
+        text = re.sub(r"\b(\d+)\s*°\s*[cC]", r"\1 ડિગ્રી સેલ્સિયસ", text)
         text = text.replace(" / ", " પ્રતિ ")
         text = text.replace("/", " પ્રતિ ")
         point_word = "પોઇન્ટ"
     else:
-        text = re.sub(r"(\d+)\s*%", r"\1 प्रतिशत", text)
-        text = re.sub(r"(\d+)\s*°\s*[cC]", r"\1 डिग्री सेल्सियस", text)
+        text = re.sub(r"\b(\d+)\s*%", r"\1 प्रतिशत", text)
+        text = re.sub(r"\b(\d+)\s*°\s*[cC]", r"\1 डिग्री सेल्सियस", text)
         text = text.replace(" / ", " प्रति ")
         text = text.replace("/", " प्रति ")
         point_word = "दशमलव"

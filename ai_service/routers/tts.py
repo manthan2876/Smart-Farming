@@ -50,7 +50,7 @@ def _clean_text_for_speech(text: str) -> str:
         return ""
     # Strip markdown markers, bullets, and excessive spaces
     t = re.sub(r"[\*\_#`]", "", text)
-    t = re.sub(r"\[.*?\]\(.*?\)", "", t)
+    t = re.sub(r"\[[^\]]*\]\([^)]*\)", "", t)
     t = re.sub(r"\s+", " ", t).strip()
     return t
 

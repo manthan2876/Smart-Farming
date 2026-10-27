@@ -502,12 +502,12 @@ def translate_treatment_recommendation(text: str, target_code: str) -> str:
         trans = translate_chemical_recommendation(inner, target_code)
         return f"[{prefix}: {trans}]"
 
-    return re.sub(r"\[Recommended:\s*(.+?)\]", repl, text, flags=re.IGNORECASE)
+    return re.sub(r"\[Recommended:\s*([^\]]+)\]", repl, text, flags=re.IGNORECASE)
 
 
 _AGRONOMIC_PATTERNS = [
     (
-        re.compile(r"^\[Recommended:\s*(.+?)\]$", re.IGNORECASE),
+        re.compile(r"^\[Recommended:\s*([^\]]+)\]$", re.IGNORECASE),
         {
             "gu": lambda m: f"[ભલામણ કરેલ: {translate_chemical_recommendation(m.group(1), 'gu')}]",
             "hi": lambda m: f"[अनुशंसित: {translate_chemical_recommendation(m.group(1), 'hi')}]",
@@ -653,7 +653,7 @@ def resolve_agronomic_phrase(text: str, target_code: str) -> Optional[str]:
         return translate_treatment_recommendation(clean, target_code)
 
     # Treatment guidance containing [Recommended: ...]
-    m_rec = re.search(r"(\[Recommended:\s*.+?\])", clean, flags=re.IGNORECASE)
+    m_rec = re.search(r"(\[Recommended:\s*[^\]]+\])", clean, flags=re.IGNORECASE)
     if m_rec:
         prefix_text = clean[:m_rec.start()].strip()
         rec_block = clean[m_rec.start():m_rec.end()]
