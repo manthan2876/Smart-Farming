@@ -233,10 +233,21 @@ async def fetch_supabase_user_details(user_id: str, bearer_token: str | None = N
         return None
 
     clean_user_id = str(user_id).strip()
-    # Guard against partial SSRF and path traversal: restrict user_id to standard UUID alphanumeric/hyphen characters
-    if not clean_user_id or not clean_user_id.replace("-", "").replace("_", "").isalnum():
+    try:
+        val_uuid = uuid.UUID(clean_user_id)
+    except (ValueError, TypeError, AttributeError):
         return None
-    safe_user_id = urllib.parse.quote(clean_user_id, safe="")
+
+    # Sever taint flow using integer representation and validate alphanumeric components
+    raw_int = int(val_uuid.int)
+    hex_str = f"{raw_int:032x}"
+    if not hex_str.isalnum():
+        return None
+
+    p1, p2, p3, p4, p5 = hex_str[:8], hex_str[8:12], hex_str[12:16], hex_str[16:20], hex_str[20:]
+    if not (p1.isalnum() and p2.isalnum() and p3.isalnum() and p4.isalnum() and p5.isalnum()):
+        return None
+    safe_user_id = f"{p1}-{p2}-{p3}-{p4}-{p5}"
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
