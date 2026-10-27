@@ -4,6 +4,9 @@ import type { Profile } from "./types";
 import { supabase } from "../lib/supabase";
 import { normalizePhoneNumber } from "../lib/phone";
 
+// In-memory cache for recent OTP phone candidate to avoid storing sensitive PII in clear-text web storage (CWE-312 / CWE-359)
+let _cachedOtpPhone: string | null = null;
+
 type Tokens = {
   access_token: string;
   refresh_token: string;
@@ -112,7 +115,6 @@ export async function login(
     const { data, error } = await supabase.auth.signInWithPassword(credentials);
     if (!error && data?.session?.access_token) {
       const accessToken = data.session.access_token;
-      localStorage.setItem("smart_farm_token", accessToken);
       let userProfile: Profile = profileFromSupabaseUser(data.user);
       try {
         const backendProfile = await profile(accessToken);
@@ -429,9 +431,15 @@ export async function verifyPhoneUpdate(
   // 1. Verify OTP with Supabase Auth in the browser using the browser's PKCE verifier
   const digitsOnly = phone.replace(/\D/g, "");
   const e164Phone = normalizePhoneNumber(phone);
-  let storedPhone: string | null = null;
+  let storedPhone: string | null = _cachedOtpPhone;
+  if (!storedPhone) {
+    try {
+      storedPhone = sessionStorage.getItem("smart_farm_otp_phone");
+    } catch {}
+  }
+  _cachedOtpPhone = null;
   try {
-    storedPhone = sessionStorage.getItem("smart_farm_otp_phone");
+    sessionStorage.removeItem("smart_farm_otp_phone");
   } catch {}
 
   const candidates: string[] = [];
@@ -501,19 +509,12 @@ export async function verifyPhoneUpdate(
       ),
     );
 
-    // 3. Keep active user session intact on their primary account
-    if (activeToken) {
-      localStorage.setItem("smart_farm_token", activeToken);
-    }
     try {
       sessionStorage.removeItem("smart_farm_otp_phone");
     } catch {}
 
     return updatedProfile;
   } catch (backendErr) {
-    if (activeToken) {
-      localStorage.setItem("smart_farm_token", activeToken);
-    }
     throw backendErr;
   }
 }
@@ -668,8 +669,9 @@ export async function sendPhoneOtp(
       });
 
       if (!error) {
+        _cachedOtpPhone = candidate;
         try {
-          sessionStorage.setItem("smart_farm_otp_phone", candidate);
+          sessionStorage.removeItem("smart_farm_otp_phone");
         } catch {}
         return { success: true, message: "Verification code sent successfully.", phoneUsed: candidate };
       }
@@ -702,9 +704,15 @@ export async function verifyPhoneOtp(
 ): Promise<AuthResponse> {
   const digitsOnly = phone.replace(/\D/g, "");
   const e164Phone = normalizePhoneNumber(phone);
-  let storedPhone: string | null = null;
+  let storedPhone: string | null = _cachedOtpPhone;
+  if (!storedPhone) {
+    try {
+      storedPhone = sessionStorage.getItem("smart_farm_otp_phone");
+    } catch {}
+  }
+  _cachedOtpPhone = null;
   try {
-    storedPhone = sessionStorage.getItem("smart_farm_otp_phone");
+    sessionStorage.removeItem("smart_farm_otp_phone");
   } catch {}
 
   const candidates: string[] = [];
