@@ -78,12 +78,16 @@ async def enqueue_translation(
                     name_fields=name_fields or [],
                 )
             except Exception as e:
-                logger.warning("In-process translation fallback error for %s #%s: %s", entity_type, entity_id, e)
+                safe_etype = str(entity_type).replace("\r", "").replace("\n", "")
+                safe_eid = str(entity_id).replace("\r", "").replace("\n", "")
+                logger.warning("In-process translation fallback error for %s #%s: %s", safe_etype, safe_eid, e)
                 return None
             finally:
                 db.close()
 
-        logger.info("Executing translation in background thread (serverless mode) for %s #%s", entity_type, entity_id)
+        safe_etype = str(entity_type).replace("\r", "").replace("\n", "")
+        safe_eid = str(entity_id).replace("\r", "").replace("\n", "")
+        logger.info("Executing translation in background thread (serverless mode) for %s #%s", safe_etype, safe_eid)
         return await asyncio.to_thread(_run_sync)
 
     if arq_pool is None:
@@ -98,7 +102,10 @@ async def enqueue_translation(
                 fields=fields,
                 name_fields=name_fields or [],
             )
-            logger.info("Enqueued translation job %s for %s #%s to Redis", getattr(job, "job_id", ""), entity_type, entity_id)
+            safe_etype = str(entity_type).replace("\r", "").replace("\n", "")
+            safe_eid = str(entity_id).replace("\r", "").replace("\n", "")
+            safe_job_id = str(getattr(job, "job_id", "")).replace("\r", "").replace("\n", "")
+            logger.info("Enqueued translation job %s for %s #%s to Redis", safe_job_id, safe_etype, safe_eid)
             return job
         except Exception as exc:
             logger.error("Failed to enqueue translation job to Redis: %s", exc)
@@ -119,12 +126,16 @@ async def enqueue_translation(
                     name_fields=name_fields or [],
                 )
             except Exception as e:
-                logger.warning("In-process translation fallback error for %s #%s: %s", entity_type, entity_id, e)
+                safe_etype = str(entity_type).replace("\r", "").replace("\n", "")
+                safe_eid = str(entity_id).replace("\r", "").replace("\n", "")
+                logger.warning("In-process translation fallback error for %s #%s: %s", safe_etype, safe_eid, e)
                 return None
             finally:
                 db.close()
 
-        logger.info("Executing translation in background thread (fallback) for %s #%s", entity_type, entity_id)
+        safe_etype = str(entity_type).replace("\r", "").replace("\n", "")
+        safe_eid = str(entity_id).replace("\r", "").replace("\n", "")
+        logger.info("Executing translation in background thread (fallback) for %s #%s", safe_etype, safe_eid)
         return await asyncio.to_thread(_run_sync)
 
 

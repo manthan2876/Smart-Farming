@@ -235,14 +235,18 @@ def overlay_dict_translations(
                         )
                         records_to_save.append(new_rec)
             except Exception as err:
-                logger.debug("On-the-fly dict translation error for %s #%s field '%s': %s", entity_type, entity_id, field, err)
+                safe_etype = str(entity_type).replace("\r", "").replace("\n", "")
+                safe_eid = str(entity_id).replace("\r", "").replace("\n", "")
+                safe_field = str(field).replace("\r", "").replace("\n", "")
+                logger.debug("On-the-fly dict translation error for %s #%s field '%s': %s", safe_etype, safe_eid, safe_field, err)
 
     if records_to_save:
         try:
             for rec in records_to_save:
                 session.add(rec)
             session.commit()
-            logger.info("Auto-healed and persisted %d missing/invalid dict translations for %s", len(records_to_save), entity_type)
+            safe_etype = str(entity_type).replace("\r", "").replace("\n", "")
+            logger.info("Auto-healed and persisted %d missing/invalid dict translations for %s", len(records_to_save), safe_etype)
         except Exception:
             session.rollback()
 

@@ -89,7 +89,8 @@ class UpstashRedisREST:
                         return raw
                 return raw
         except Exception as exc:
-            logger.warning("Upstash Redis REST GET failed for '%s': %s", key, exc)
+            safe_key = str(key).replace("\r", "").replace("\n", "")
+            logger.warning("Upstash Redis REST GET failed for '%s': %s", safe_key, exc)
         return None
 
     async def mget(self, keys: list[str]) -> list[Any | None]:
@@ -132,7 +133,8 @@ class UpstashRedisREST:
             resp = await client.post(endpoint, content=val_str)
             return resp.status_code == 200 and resp.json().get("result") == "OK"
         except Exception as exc:
-            logger.warning("Upstash Redis REST SET failed for '%s': %s", key, exc)
+            safe_key = str(key).replace("\r", "").replace("\n", "")
+            logger.warning("Upstash Redis REST SET failed for '%s': %s", safe_key, exc)
             return False
 
     async def delete(self, key: str) -> bool:

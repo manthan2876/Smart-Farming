@@ -371,7 +371,9 @@ def promote_model(
     )
     session.add(new_db_record)
     session.commit()
-    logger.info("Persisted active model '%s' version '%s' to database registry", payload.model_key, payload.version)
+    safe_mkey = str(payload.model_key).replace("\r", "").replace("\n", "")
+    safe_ver = str(payload.version).replace("\r", "").replace("\n", "")
+    logger.info("Persisted active model '%s' version '%s' to database registry", safe_mkey, safe_ver)
 
     # ── 5. Backward Compatibility: Sync Local File & config.yaml ─────────────
     registry = _load_registry()
@@ -500,7 +502,10 @@ def rollback_model(
         info["status"] = "active" if v == target_ver else "retired"
     _save_registry(registry)
 
-    logger.info("Model '%s' rolled back from '%s' to '%s'", payload.model_key, current_active, target_ver)
+    safe_mkey = str(payload.model_key).replace("\r", "").replace("\n", "")
+    safe_cur = str(current_active).replace("\r", "").replace("\n", "")
+    safe_target = str(target_ver).replace("\r", "").replace("\n", "")
+    logger.info("Model '%s' rolled back from '%s' to '%s'", safe_mkey, safe_cur, safe_target)
     return {
         "status": "rolled_back",
         "model_key": payload.model_key,

@@ -134,7 +134,8 @@ async def translate_prediction_recommendation(
                 session.commit()
                 return translated_guidance
         except Exception as e:
-            logger.warning("Failed to translate expert guidance for prediction %s: %s", prediction_id, e)
+            safe_pred_id = str(prediction_id).replace("\r", "").replace("\n", "")
+            logger.warning("Failed to translate expert guidance for prediction %s: %s", safe_pred_id, e)
         return source_guidance
 
     expert_guidance_val = await _resolve_expert_guidance(target_code)
@@ -162,7 +163,9 @@ async def translate_prediction_recommendation(
                 "expert_guidance": expert_guidance_val,
                 "translations": translations,
             }
-        logger.info("Discarding stale/incomplete non-Indic cached translation for %s (prediction %s)", target_code, prediction_id)
+        safe_code = str(target_code).replace("\r", "").replace("\n", "")
+        safe_pred_id = str(prediction_id).replace("\r", "").replace("\n", "")
+        logger.info("Discarding stale/incomplete non-Indic cached translation for %s (prediction %s)", safe_code, safe_pred_id)
 
     # Check EntityTranslation table first (0 ms external API latency)
     db_translations = session.query(EntityTranslation).filter_by(
@@ -192,7 +195,9 @@ async def translate_prediction_recommendation(
                 "expert_guidance": expert_guidance_val,
                 "translations": translations,
             }
-        logger.info("Discarding incomplete EntityTranslation records for %s (prediction %s)", target_code, prediction_id)
+        safe_code = str(target_code).replace("\r", "").replace("\n", "")
+        safe_pred_id = str(prediction_id).replace("\r", "").replace("\n", "")
+        logger.info("Discarding incomplete EntityTranslation records for %s (prediction %s)", safe_code, safe_pred_id)
 
     # Translate on-demand
     if not canonical_rec and not expert_guidance_val:
@@ -256,9 +261,10 @@ async def translate_prediction_recommendation(
         }
 
     except Exception as exc:
+        safe_pred_id = str(prediction_id).replace("\r", "").replace("\n", "")
         logger.warning(
-            "On-demand translation failed for prediction #%d: %s; falling back to canonical English",
-            prediction_id, exc
+            "On-demand translation failed for prediction #%s: %s; falling back to canonical English",
+            safe_pred_id, exc
         )
         return {
             "prediction_id": prediction_id,

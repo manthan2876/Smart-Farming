@@ -572,7 +572,9 @@ def advise(req: AdvisoryRequest):
     # Stage 2: Knowledge Base Lookup with Smart Aliasing & Normalization
     matched_key, kb = _find_kb_entry(crop, disease)
     if not isinstance(kb, dict) or not kb:
-        logger.info("No verified KB entry found for %s | %s", crop, disease)
+        safe_crop = str(crop).replace("\r", "").replace("\n", "")
+        safe_disease = str(disease).replace("\r", "").replace("\n", "")
+        logger.info("No verified KB entry found for %s | %s", safe_crop, safe_disease)
         tpl = UNVERIFIED_DATA.get(lang, UNVERIFIED_DATA["en"])
         data = {
             "immediate_action": tpl["immediate_action"].format(crop=crop, disease=disease),

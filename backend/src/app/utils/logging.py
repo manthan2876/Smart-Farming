@@ -33,4 +33,5 @@ def configure_logging() -> None:
 
 
 def prediction_event(logger: logging.Logger, event: str, **data: Any) -> None:
-    logger.info(event, extra={"event": event, "data": data})
+    safe_event = str(event).replace("\r", "").replace("\n", "")
+    logger.info(safe_event, extra={"event": safe_event, "data": data})

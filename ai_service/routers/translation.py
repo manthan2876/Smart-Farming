@@ -936,7 +936,8 @@ def translate_single_text(text: str, target_code: str) -> str:
     # Tier 6: Safe graceful fallback to source text
     if "[Recommended:" in clean:
         clean = translate_treatment_recommendation(clean, target_code)
-    logger.info("Translation fallback used source text for: '%s'", clean[:30])
+    safe_clean = str(clean[:30]).replace("\r", "").replace("\n", "")
+    logger.info("Translation fallback used source text for: '%s'", safe_clean)
     return clean
 
 
