@@ -1,9 +1,9 @@
 # Smart Farming — Deployment Guide
 
 - **Project:** AI-Powered Smart Farming
-- **Version:** 2.2 (Monorepo, Cloud Production Architecture & Vercel Analytics)
-- **Date:** 22 October 2026
-- **Status:** Active / Operator reference; verify provider settings before production deployment
+- **Version:** 1.0.0 (Cloud Production Architecture & Release)
+- **Date:** 27 October 2026
+- **Status:** Active / Production Reference (v1.0.0)
 
 ---
 
@@ -532,4 +532,4 @@ The Compose file provides a local frontend and API with SQLite and a persistent 
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 22 October 2026*
+*Last Updated: 27 October 2026*

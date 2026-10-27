@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Project:** Smart Farming Platform  
-**Effective Date:** 22 October 2026  
+**Effective Date:** 27 October 2026  
 **Institution:** Department of Information Technology, CSPIT, Charotar University of Science and Technology (CHARUSAT)  
 **Governing Jurisdiction:** Anand, Gujarat, India  
 
@@ -43,7 +43,7 @@ The Platform is an AI-powered agricultural decision-support and disease diagnost
 
 ## 5. Intellectual Property & Academic Rights
 
-- The software source code, system design, and custom trained models are licensed under the MIT License ([`LICENSE`](file:///home/manthan/Projects/Smart-Farming/LICENSE)).
+- The software source code, system design, and custom trained models are licensed under the Apache License, Version 2.0 ([`LICENSE`](file:///home/manthan/Projects/Smart-Farming/LICENSE)) with attribution notices in [`NOTICE`](file:///home/manthan/Projects/Smart-Farming/NOTICE).
 - Users retain ownership of images and field boundary data captured through their accounts. By submitting imagery, Users grant the Platform a non-exclusive license to use anonymized images solely for retraining and improving diagnostic accuracy in the public interest.
 
 ---

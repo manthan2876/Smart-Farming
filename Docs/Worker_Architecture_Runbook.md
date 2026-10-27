@@ -3,7 +3,8 @@
 **Project:** Smart Farming Platform  
 **Component:** ARQ / Redis Asynchronous Inference & Translation Worker  
 **Standard:** Phase 4 Production-Readiness Specification  
-**Last Updated:** October 2026  
+**Version:** 1.0.0 (Production Reference)  
+**Last Updated:** 27 October 2026  
 
 ---
 

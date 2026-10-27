@@ -1,9 +1,9 @@
 # Smart Farming — Backend API Specification
 
 - **Project:** AI-Powered Smart Farming
-- **Version:** 2.1
-- **Date:** 22 October 2026
-- **Status:** Active / Operator reference; confirm runtime behavior before production use
+- **Version:** 1.0.0 (Production Release)
+- **Date:** 27 October 2026
+- **Status:** Active / Production Contract (v1.0.0)
 
 ---
 
@@ -51,7 +51,7 @@ The Smart Farming backend is an AI-powered crop disease detection and agronomic 
 
 | Layer | Technology | Deployment Details |
 |---|---|---|
-| **API Gateway** | FastAPI 0.115+ (Python 3.11) | Render Web Service (`smart-farming-backend` via `render.yaml`) |
+| **API Gateway** | FastAPI 0.156+ (Python 3.12) | Render Web Service (`smart-farming-backend` via `render.yaml`) |
 | **Unified AI Microservice** | FastAPI + PyTorch CPU/ZeroGPU | Hugging Face Spaces (`Maharsh8805/smart-farming-ai`, port `7860`) |
 | **Authentication** | JWT (HS256) | Bearer tokens in headers, HttpOnly refresh cookies (`SameSite=Strict`), Argon2id hashing |
 | **Serverless Cache** | Upstash Redis REST | HTTPS Token Auth (`sf:*` namespace, sub-20ms latency) |
@@ -2690,4 +2690,4 @@ Boundary fields accept a standard GeoJSON Polygon geometry object:
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 27 October 2026*

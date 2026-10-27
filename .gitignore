@@ -250,6 +250,7 @@ start_all.sh
 start_all_with_mobile.sh
 stop_all.sh
 *.log
+folder_tree.txt
 Docs/name change of folders.txt
 backend/package-lock.json
 

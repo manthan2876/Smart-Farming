@@ -1,9 +1,9 @@
 # MLOps & Retraining Guide — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.2  
-**Date:** 20 October 2026  
-**Status:** Active / Production Reference  
+**Version:** 1.0.0 (Production Reference)  
+**Date:** 27 October 2026  
+**Status:** Active / Production Reference (v1.0.0)  
 
 ---
 
@@ -560,4 +560,4 @@ SUPABASE_SIGNED_URL_EXPIRY_SECONDS=900
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 27 October 2026*

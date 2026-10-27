@@ -30,7 +30,7 @@ The primary academic objectives of this project are:
 
 ## 3. Intellectual Property & Licensing
 
-- **Codebase & Architecture**: Released under the **Academic MIT License** ([`LICENSE`](file:///home/manthan/Projects/Smart-Farming/LICENSE)) to support future academic cohorts, agricultural extension researchers, and open-source rural technology development.
+- **Codebase & Architecture**: Released under the **Apache License, Version 2.0** ([`LICENSE`](file:///home/manthan/Projects/Smart-Farming/LICENSE)) with attribution in [`NOTICE`](file:///home/manthan/Projects/Smart-Farming/NOTICE) to support future academic cohorts, agricultural extension researchers, and open-source rural technology development.
 - **Model Weights & Pretrained Networks**: Released strictly for academic evaluation, non-commercial research, and educational demonstration.
 - **Academic Paper Publication**: The authors reserve the right to submit findings, performance benchmarks, and user field trial results to peer-reviewed academic journals and IEEE/ACM conferences.
 

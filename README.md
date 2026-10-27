@@ -1,150 +1,148 @@
-# Smart Farming: AI-Powered Crop Disease Diagnosis and Precision Agronomy
+# Smart Farming: AI-Powered Crop Disease Diagnosis & Precision Agronomy
 
-> Enterprise-grade, distributed AI platform for rapid crop disease diagnosis, pest detection, treatment recommendations, multilingual voice advisories, and precision agronomy management.
+> Enterprise-grade, distributed AI platform for foliar crop disease diagnosis, pest detection, treatment recommendations, multilingual voice advisories, and precision agronomy management.
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Release](https://img.shields.io/badge/Release-v1.0.0-success?logo=github)](https://github.com/manthan2876/Smart-Farming/releases/tag/v1.0.0)
+[![CodeQL](https://img.shields.io/badge/CodeQL-0%20Alerts%20%2F%20Passed-brightgreen?logo=github)](https://github.com/manthan2876/Smart-Farming/security/code-scanning)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.156%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript)](https://typescriptlang.org)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.6%20CPU-EE4C2C?logo=pytorch)](https://pytorch.org)
-[![YOLOv8](https://img.shields.io/badge/YOLO-v8-00FFFF?logo=ultralytics)](https://ultralytics.com)
-[![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render)](https://render.com)
-[![Supabase](https://img.shields.io/badge/Prod%20DB-Supabase%20PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
-[![Aiven](https://img.shields.io/badge/Dev%20DB-Aiven%20PostgreSQL-FF3554?logo=aiven)](https://aiven.io)
-[![Upstash](https://img.shields.io/badge/Queue%20%26%20Cache-Upstash%20Redis%20%26%20QStash-00E599?logo=redis)](https://upstash.com)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.6-EE4C2C?logo=pytorch)](https://pytorch.org)
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
-
-- **Project:** AI-Powered Smart Farming
-- **Version:** 2.4
-- **Date:** 22 October 2026
-- **Status:** Active / Production hardening in progress
+[![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render)](https://render.com)
 
 ---
 
-## Table of Contents
+## Highlights
 
-- [Overview](#overview)
-- [System Architecture](#system-architecture)
-- [Multi-Environment Database Architecture](#multi-environment-database-architecture)
-- [Tech Stack](#tech-stack)
-- [Repository Structure](#repository-structure)
-- [Diagnostic Pipeline](#diagnostic-pipeline)
-- [Internationalization & Design System](#internationalization--design-system)
-- [Quick Start](#quick-start)
-  - [1-Click Unified Runner (Recommended)](#1-click-unified-runner-recommended)
-  - [Manual Service Startup](#manual-service-startup)
-  - [Mobile App (Flutter)](#mobile-app-flutter)
-- [Database Management & Migration Tools](#database-management--migration-tools)
-- [Background Workers & Asynchronous Tasks (ARQ + QStash)](#background-workers--asynchronous-tasks-arq--qstash)
-- [Authentication & Security](#authentication--security)
-- [Environment Configuration](#environment-configuration)
-- [Mobile Environment Configuration](#mobile-environment-configuration)
-- [Key API Endpoints](#key-api-endpoints)
-- [User Roles & Workflows](#user-roles--workflows)
-- [Production Deployment & CI/CD](#production-deployment--cicd)
-- [Running Tests](#running-tests)
-- [Documentation Index](#documentation-index)
-
----
-
-## Overview
-
-**Smart Farming** is a production-grade, distributed computer vision and precision agronomy platform. When a farmer captures or uploads a leaf photograph, the platform executes an end-to-end automated diagnostic and advisory workflow:
-
-1. **Leaf Validation & Preprocessing**: OpenCV evaluates image sharpness (Laplacian variance), illumination, and leaf presence.
-2. **Crop Identification**: EfficientNet-B0 classifies the crop species (`Cotton`, `Groundnut`, `Pepper Bell`, `Potato`, `Tomato`).
-3. **Decision Routing**: Dynamically dispatches the validated leaf to the crop-specific disease classifier.
-4. **Disease Classification**: Dedicated per-crop EfficientNet-B2 models classify diseases with confidence and uncertainty scores.
-5. **Severity Estimation**: Adaptive HSV thresholding estimates affected surface area percentage and severity tier (`Healthy`, `Low`, `Medium`, `High`).
-6. **Pest Detection**: Ultralytics YOLOv8 identifies agricultural pest infestations.
-7. **Visual Evidence (Grad-CAM)**: Generates activation attention heatmaps overlaid on the original leaf for farmer and expert inspection.
-8. **Real-Time Weather Context**: Fetches live meteorological conditions (temperature, humidity, rainfall) via OpenWeather API.
-9. **LLM Agronomy Advisory**: Google Gemini 2.5 Flash (with Hugging Face Qwen fallback) synthesizes diagnosis, weather, and farm telemetry into organic, chemical, and preventive treatment plans.
-10. **Multilingual Voice & Audio**: Localized into English, Hindi, and Gujarati with Google Cloud Text-to-Speech (TTS) audio narration.
-11. **Human-in-the-Loop Triage**: Sub-threshold (<70% confidence) diagnoses are routed to an Agronomist Expert Queue for review and MLOps retraining candidate collection.
-12. **Asynchronous Processing & Scheduled Crons**: Background tasks run via ARQ workers with Upstash Redis queues and serverless cron schedules orchestrated via Upstash QStash.
+- **7-Stage Vision Pipeline**: Validates leaf quality (OpenCV), identifies crop species (EfficientNet-B0), diagnoses diseases across 5 major cash crops (dedicated EfficientNet-B2 classifiers), estimates lesion severity (adaptive HSV), detects pests (YOLOv8), and generates transparent Grad-CAM activation heatmaps.
+- **Vernacular Audio Advisories**: Delivers structured 4-point agronomic recommendations (Immediate Action, ICAR Chemical Treatment, Prevention, Monitoring) localized in English, Hindi, and Gujarati with synchronized neural Text-to-Speech (Edge-TTS).
+- **Keyless GIS Field Mapping**: Interactive Leaflet maps with OpenStreetMap and high-resolution Esri satellite imagery, real-time geodesic acreage calculation, draggable polygon vertex editing, and in-place plot management.
+- **Offline-First Mobile App**: Native Android Flutter app for farmers with camera viewfinder assistance, Supabase Remote Config for dynamic backend discovery, and an offline SQLite scan queue with auto-sync.
+- **Human-in-the-Loop Triage**: Low-confidence diagnoses (<70%) are automatically escalated to an Agronomist Expert Queue with atomic 15-minute lease locking for expert review and label corrections.
+- **Closed-Loop MLOps**: Continuous retraining loop with spatial deterministic dataset splitting (hashed on `plot_id` to eliminate rescan leakage), EXIF GPS scrubbing, and multi-format dataset exports (PyTorch, YOLO, CSV, TFRecord).
+- **Hardened Security**: Zero open CodeQL alerts across 268+ checks, Argon2id password hashing, database-backed JWT refresh token rotation, signed Supabase storage URLs (15-min expiry), and encrypted mobile keychains.
 
 ---
 
 ## System Architecture
 
-The platform operates as a decoupled microservices architecture designed for fault tolerance and zero-downtime scalability:
+```mermaid
+flowchart TD
+    subgraph CLIENTS["Client Layer"]
+        WEB["React 19 + TypeScript SPA (Vercel)\nLeaflet GIS · Grad-CAM Viewer · EN/HI/GU"]
+        MOB["Flutter Android Client\nOffline SQLite Queue · Remote Config · Native TTS"]
+    end
 
+    subgraph GATEWAY["API Gateway (Render)"]
+        API["FastAPI (Python 3.12)\nJWT + Refresh Rotation · Rate Limiting · Sanitized Logs\nAsync ARQ Worker / In-Process Threadpool"]
+    end
+
+    subgraph AI_SERVICE["Unified AI Microservice (Hugging Face Spaces)"]
+        CV["7-Stage Vision Engine (PyTorch / YOLOv8)\nICAR Advisory Engine · IndicTrans2 · Edge-TTS"]
+    end
+
+    subgraph CLOUD["Managed Cloud Services"]
+        DB[("Supabase PostgreSQL\nSession Pooler (5432)")]
+        REDIS[("Upstash Redis REST\nDedup Cache · Weather Cache")]
+        STORAGE[("Supabase Object Storage\n15-min Signed URLs")]
+        CRON["Upstash QStash\nServerless Cron Webhooks"]
+    end
+
+    WEB -->|REST / HTTPS| API
+    MOB -->|REST / HTTPS| API
+    API -->|HTTP / Subroutes| AI_SERVICE
+    API --> DB
+    API --> REDIS
+    API --> STORAGE
+    CRON -->|Webhooks| API
 ```
-                                  ┌────────────────────────────────────────┐
-                                  │           Vercel CDN Edge              │
-                                  │      React 19 + Vite SPA Frontend      │
-                                  └──────────────────┬─────────────────────┘
-                                                     │ HTTPS / REST
-                                                     ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                      Render: smart-farming-backend                                      │
-│                                         (FastAPI API Gateway)                                           │
-│                                                                                                         │
-│  ├── JWT Authentication (Argon2id + Password Reset Tokens with SMTP)                                    │
-│  ├── Weather Service (OpenWeather API)                                                                  │
-│  ├── LLM Advisory Engine (Google Gemini 2.5 Flash / Hugging Face Qwen Fallback)                         │
-│  ├── AI-service translation and speech synthesis                                                      │
-│  ├── Storage Abstraction (Supabase signed URLs with 15-minute expiry)                                  │
-│  ├── ARQ Job Enqueuer & In-process Serverless Fallback                                                  │
-│  └── Notifications & Triage Alerts Engine (Auto-mark read on scan navigation)                           │
-└───┬───────────────────────────────┬────────────────────────────────┬───────────────────────────────┬────┘
-    │ HTTP / Multipart              │ Database Connection            │ Redis Protocol (TLS)          │ Supabase Storage API
-    ▼                               ▼                                ▼                               ▼
-┌─────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐
-│ Hugging Face Spaces    │   │ Supabase PostgreSQL       │   │ Upstash Redis             │   │ Supabase Object Storage   │
-│ inference-service       │   │                           │   │ & Serverless QStash       │   │ Bucket: smart-farming-data│
-│ (HF Space, Port 7860)   │   │ • Prod: Supabase Cloud    │   │                           │   │                           │
-│                         │   │   (Session Pooler: 5432)  │   │ • ARQ Job Queue           │   │ • uploads/ (Raw Leaf)     │
-│ • OpenCV Preprocessor   │   │ • Dev: Aiven Cloud        │   │ • Sub-15ms REST Cache     │   │ • processed/ (Grad-CAM)   │
-│ • EfficientNet-B0 Crop  │   │   (SSL Mode: Require)     │   │ • Scheduled Cron Webhooks │   │ • audio/ (TTS Narration)  │
-│ • EfficientNet-B2 Dis.  │   │                           │   │ • Rate Limiting & Dedup   │   │ • Presigned URL Streaming │
-│ • YOLOv8 Pest Detector  │   │ • Predictions & Images    │   │                           │   │                           │
-│ • Grad-CAM Visualizer   │   │ • Farms, Plots, Users     │   │ ┌───────────────────────┐ │   │                           │
-│ • In-Memory Pre-warming │   │ • Translations & Alerts   │   │ │ ARQ Background Worker │ │   │                           │
-└─────────────────────────┘   └───────────────────────────┘   │ │ (Async Translation/ML)│ │   └───────────────────────────┘
-                                                              │ └───────────────────────┘ │
-                                                              └───────────────────────────┘
-```
-
----
-
-## Multi-Environment Database Architecture
-
-Smart Farming maintains strict separation between Development and Production environments:
-
-| Environment | Provider | Endpoint / Usage | Connection Model |
-|---|---|---|---|
-| **Development** | **Aiven Cloud PostgreSQL** | `pg-xxx.aivencloud.com:25049/defaultdb` | SSL mode require, lightweight pool (size: 5, overflow: 5) |
-| **Local Fallback**| **SQLite** | `sqlite:///./dev_database.db` | Offline local development without cloud network access |
-| **Production** | **Supabase Cloud PostgreSQL** | `aws-0-xxx.pooler.supabase.com:5432/postgres` | Session Pooler (port 5432 for transactional DDL migrations) |
-
-### Key Migration Principles:
-1. **Alembic Single Source of Truth**: `Base.metadata.create_all` is strictly removed from production paths. All schema DDL must go through versioned Alembic revisions (`alembic upgrade head`).
-2. **User Data Protection**: Production user records (`users`, `farms`, `predictions`, `images`, `alerts`, etc.) are never overwritten by automated CI/CD pipelines.
-3. **Reference Data Allow-List**: Only safe, static reference tables defined in `REFERENCE_TABLES` can be synced via the optional `--sync-reference` flag.
-4. **PostgreSQL Sequence Auto-Sync**: Inserting records with explicit primary keys in PostgreSQL does not advance underlying serial sequences. Our sync tools automatically advance all PostgreSQL sequences to `MAX(id)` to prevent `UniqueViolation` duplicate key collisions.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technologies & Services | Details |
+| Tier | Technologies | Highlights |
 |---|---|---|
-| **Frontend (Web)** | React 19, TypeScript 7, Vite 8, Tailwind CSS 4, Leaflet & React-Leaflet | Multi-role dashboard, keyless Leaflet GIS boundary editor (OSM/Satellite), interactive Grad-CAM viewer, MLOps export tabs, EN/HI/GU localization |
-| **Mobile App** | Flutter 3.x (Dart), `flutter_map`, `latlong2`, `shared_preferences`, `flutter_tts` | Farmer-only native Android app with center-crosshair GIS boundary drawing, Supabase Remote Config, JWT auth, offline scan queue |
-| **Backend Gateway** | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic | RESTful API gateway, RBAC, background job orchestration |
-| **Model Microservice** | PyTorch 2.6 (CPU-optimised), timm, Ultralytics YOLOv8, OpenCV | Pure inference server, in-memory model pre-warming, Grad-CAM generation |
-| **Job Queue & Scheduling** | ARQ, Upstash Redis (TLS `rediss://`), Upstash QStash | Asynchronous translation workers, pipeline tasks, serverless cron jobs |
-| **Database** | Aiven PostgreSQL (Dev) & Supabase PostgreSQL (Prod) | Managed cloud PostgreSQL instances with connection pooling & SSL |
-| **Remote Config** | Supabase `public.app_config` table via PostgREST | Farmer app backend URL discovery without app rebuilds; read-only via anon RLS policy |
-| **Caching & Dedup** | Upstash Serverless Redis REST | Sub-15ms translation hit caching, SHA-256 image deduplication, rate limiting |
-| **Object Storage** | Supabase Object Storage | Raw leaves, Grad-CAM heatmaps, TTS audio narration with signed URLs |
-| **Generative AI** | Google Gemini 2.5 Flash (`google-genai`), Qwen3-4B-Instruct | Context-aware agronomic advisory generation |
-| **Translation & TTS** | AI-service translation and speech APIs; Flutter `flutter_tts` fallback | Hindi (`hi`) and Gujarati (`gu`) translation and narration |
-| **Email Service** | SMTP / TLS (Gmail / SendGrid compatible) | Password reset email tokens and security notifications |
-| **Hosting & CI/CD** | Render, Hugging Face Spaces, Vercel, GitHub Actions | Backend API, AI service, edge frontend, and migration workflows |
+| **Web Frontend** | React 19, TypeScript, Vite, Tailwind CSS 4 | Keyless Leaflet GIS, Grad-CAM viewer, MLOps export dashboard, trilingual UI |
+| **Mobile App** | Flutter 3.x, Dart, SQLite, `flutter_secure_storage` | Camera viewfinder, offline sync queue, crosshair GIS mapping, remote config |
+| **Backend API** | Python 3.12, FastAPI, SQLAlchemy 2.0, Alembic | RESTful gateway, RBAC, threadpool execution, Zero CodeQL alerts |
+| **AI Microservice** | PyTorch 2.6, timm, YOLOv8, OpenCV, Gradio | EfficientNet-B0/B2, adaptive HSV, Grad-CAM, IndicTrans2, Edge-TTS |
+| **Persistence** | Supabase PostgreSQL, Supabase Storage, Upstash Redis | Connection pooling, 15-min expiring signed URLs, sub-15ms REST caching |
+| **Orchestration** | Upstash QStash, ARQ, Docker, GitHub Actions | Serverless scheduled crons, async workers, gated CI/CD pipelines |
+
+---
+
+## Quick Start
+
+### 1-Click Unified Runner (Linux / Pop!_OS)
+
+To start the API Gateway, AI microservice, Frontend, and Worker concurrently:
+
+```bash
+# Launch core services:
+./start_all.sh
+
+# Or launch with Flutter mobile web:
+./start_all_with_mobile.sh
+
+# Stop all running services:
+./stop_all.sh
+```
+
+- **Backend API Gateway**: `http://127.0.0.1:8000` (Docs at `/docs`)
+- **Frontend Dashboard**: `http://localhost:5173`
+- **AI Microservice**: `http://127.0.0.1:7860`
+
+---
+
+### Docker Compose
+
+```bash
+docker compose up -d
+```
+
+---
+
+### Manual Service Setup
+
+<details>
+<summary><b>Click to expand manual setup instructions</b></summary>
+
+#### 1. AI Microservice (`ai_service/`)
+```bash
+cd ai_service
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python app.py  # Binds Gradio UI + FastAPI on port 7860
+```
+
+#### 2. Backend Gateway (`backend/`)
+```bash
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+uvicorn src.app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+#### 3. Web Frontend (`frontend/`)
+```bash
+cd frontend
+npm install
+npm run dev  # Starts Vite on http://localhost:5173
+```
+
+#### 4. Mobile Client (`mobile/`)
+```bash
+cd mobile
+flutter pub get
+flutter run -d <DEVICE_ID> --dart-define-from-file=.env
+```
+</details>
 
 ---
 
@@ -152,578 +150,57 @@ Smart Farming maintains strict separation between Development and Production env
 
 ```
 Smart-Farming/
-├── start_all.sh                            # 1-Click unified launcher for Linux / Pop!_OS
-├── start_all_with_mobile.sh               # Unified launcher including Flutter mobile web (Linux)
-├── stop_all.sh                             # Stop all running services (Linux)
-├── scripts/
-│   ├── start_all.sh                        # Linux unified non-blocking service orchestrator + ARQ watchdog
-│   ├── start_backend.sh                    # Standalone Backend starter (Port 8000)
-│   ├── start_model_server.sh               # Standalone Model Server starter (Port 8001)
-│   ├── start_worker.sh                     # Standalone ARQ Worker starter (Redis Queue)
-│   ├── start_frontend.sh                   # Standalone Frontend starter (Vite Port 5173)
-│   ├── start_mobile.sh                     # Standalone Flutter Web starter
-│   ├── stop_all.sh                         # Clean shutdown utility
-│   ├── count.py                            # Project structure file counter
-│   └── evaluate_calibration.py             # Calibration and reliability CLI evaluator
-│
-├── backend/                                # FastAPI API Gateway & Business Core (Server 1)
-│   ├── src/app/
-│   │   ├── main.py                         # Application entrypoint & middleware configuration
-│   │   ├── worker.py                       # ARQ worker definition (process_prediction, translate_entity)
-│   │   ├── pipeline.py                     # Diagnostic pipeline coordinator
-│   │   ├── api/
-│   │   │   ├── deps.py                     # Auth dependency injection (Argon2id, JWT guards)
-│   │   │   └── endpoints/                  # Modular REST routers
-│   │   │       ├── auth.py                 # Signup, login, password reset, refresh
-│   │   │       ├── predict.py              # Leaf upload, prediction invocation, rescan
-│   │   │       ├── farm.py                 # Farm & plot CRUD with GeoJSON polygon validation
-│   │   │       ├── expert.py               # Agronomist review queue & audit submissions
-│   │   │       ├── alerts.py               # Notifications & read-status management
-│   │   │       ├── history.py              # Diagnostic timeline & historical scans
-│   │   │       ├── weather.py              # OpenWeather metrics & forecasts
-│   │   │       ├── crops.py                # Supported crop species & pathogen catalog
-│   │   │       ├── tts.py                  # Audio generation & asset streaming
-│   │   │       ├── admin.py                # Admin telemetry & user management
-│   │   │       ├── translation.py          # Entity translation overlay
-│   │   │       └── mlops.py                # Retraining candidate export & registry
-│   │   ├── core/                           # Session pooling, settings, arq pool, storage clients
-│   │   ├── models/                         # SQLAlchemy declarative schema models (13 tables)
-│   │   ├── schemas/                        # Pydantic validation schemas
-│   │   ├── services/                       # Integrations (Gemini, Weather, TTS, Translation)
-│   │   └── crud/                           # Database repository queries
-│   ├── scripts/                            # Database & migration utilities
-│   │   ├── migrate_to_prod.py              # Dev/Prod migration, schema upgrade, reference sync
-│   │   ├── sync_prod_to_local.py           # Matches Dev DB to Prod DB (local use only)
-│   │   ├── reset_sequences.py              # Resets PostgreSQL auto-increment sequences to MAX(id)
-│   │   ├── setup_qstash_schedules.py       # Configures Upstash QStash cron schedules
-│   │   ├── verify_qstash_and_events.py     # Validates QStash webhook event delivery
-│   │   ├── verify_upstash_features.py      # Tests Upstash Redis connection & caching
-│   │   ├── test_smtp.py                    # Validates email sending & SMTP credentials
-│   ├── alembic/                            # Versioned database migrations
-│   ├── seed_users.py                       # Explicitly seeds users using required environment passwords
-│   ├── requirements.txt                    # Backend dependencies
-│   └── Dockerfile                          # Non-root multi-stage backend image
-│
-├── ai_service/                             # Unified inference, translation, advisory, and TTS service
-│   ├── app.py                              # FastAPI/Gradio service entrypoint
-│   ├── core/                               # Service configuration and shared runtime
-│   ├── routers/                            # Vision, translation, advisory, and TTS APIs
-│   ├── vision_engine/                      # Image analysis pipeline and model loading
-│   ├── training/                           # Training and evaluation utilities
-│   ├── models/                             # Model metadata and optional weights
-│   ├── config.yaml                         # AI service model and threshold configuration
-│   └── requirements.txt
-│
-├── frontend/                               # React 19 + Vite Web Application (Server 3)
-│   ├── src/
-│   │   ├── pages/                          # Application pages; remaining inline UI copy is tracked for localization
-│   │   │   ├── LandingPage.tsx             # Public marketing page with live diagnostic demo
-│   │   │   ├── AboutPage.tsx               # Project background and mission
-│   │   │   ├── ServicesPage.tsx            # Feature showcase
-│   │   │   ├── CropsPage.tsx               # Supported crop catalogue (public)
-│   │   │   ├── TermsPage.tsx               # Terms of Service (linked in footer)
-│   │   │   ├── PrivacyPage.tsx             # Privacy Policy (linked in footer)
-│   │   │   ├── LoginPage.tsx               # Authentication interface
-│   │   │   ├── RegisterPage.tsx            # Multi-step registration
-│   │   │   ├── ForgotPasswordPage.tsx      # Password reset request
-│   │   │   ├── ResetPasswordPage.tsx       # Email token-based password reset
-│   │   │   ├── DashboardPage.tsx           # Telemetry & quick action hub
-│   │   │   ├── ScanPage.tsx                # Drag-and-drop diagnostic leaf capture
-│   │   │   ├── ProcessingPage.tsx          # Live pipeline progress tracker
-│   │   │   ├── PredictionResultPage.tsx    # Diagnosis report, Grad-CAM viewer, audio player
-│   │   │   ├── HistoryPage.tsx             # Longitudinal scan records (Diagnostic Archive)
-│   │   │   ├── FarmSettingsPage.tsx        # Farm details, boundary map, plot management
-│   │   │   ├── WeatherPage.tsx             # Meteorological intelligence dashboard
-│   │   │   ├── AlertsPage.tsx              # Notifications with scan link & auto-read
-│   │   │   ├── SettingsPage.tsx            # Language preference, password change, theme
-│   │   │   ├── ExpertQueuePage.tsx         # Agronomist triage desk
-│   │   │   ├── ExpertReviewPage.tsx        # Side-by-side diagnostic verification interface
-│   │   │   ├── AdminFeedbackPage.tsx       # Aggregated farmer feedback with expert controls
-│   │   │   ├── AdminUsersPage.tsx          # User management with role assignment
-│   │   │   └── AdminMetricsPage.tsx        # System telemetry, model accuracy, drift signals
-│   │   ├── components/                     # Reusable UI component library
-│   │   │   ├── icons/                      # Custom SVG icon set (replaces third-party icon libs)
-│   │   │   ├── ui/                         # Primitives: Button, Card, Input, Badge, Modal, Table
-│   │   │   ├── LanguageToggle.tsx          # Globe + 2-letter code dropdown (EN/GU/HI)
-│   │   │   ├── ThemeToggle.tsx             # Light/dark mode toggle
-│   │   │   ├── Sidebar.tsx                 # Role-aware navigation sidebar
-│   │   │   ├── PublicNav.tsx               # Header for public/unauthenticated pages
-│   │   │   └── Footer.tsx                  # Footer with Terms and Privacy links
-│   │   ├── api/                            # Typed HTTP client modules
-│   │   ├── context/
-│   │   │   ├── AuthContext.tsx             # Provides { language, setLanguage, t, user, token, ... }
-│   │   │   └── ThemeContext.tsx
-│   │   └── i18n/                           # Localised dictionaries (EN/HI/GU)
-│   │       ├── en.ts                       # Source of truth — 670+ translation keys
-│   │       ├── gu.ts                       # Gujarati — typed as Record<keyof typeof en, string>
-│   │       ├── hi.ts                       # Hindi — typed as Record<keyof typeof en, string>
-│   │       ├── domain.ts                   # Runtime domain translators (crops, diseases, pests, weather, alerts)
-│   │       └── index.ts                    # Re-exports + Language type
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── mobile/                                 # Flutter Native Mobile App (Farmer-only, Android)
-│   ├── lib/
-│   │   ├── main.dart                       # App entry — loads RemoteConfig then runApp()
-│   │   ├── screens/
-│   │   │   ├── auth/
-│   │   │   │   ├── auth_wrapper.dart       # Token validation & auto-login logic
-│   │   │   │   └── login_screen.dart       # Login & registration (no server URL input)
-│   │   │   ├── shell/
-│   │   │   │   └── farmer_shell.dart       # 5-tab bottom nav (Today/Farm/Scan/Alerts/History)
-│   │   │   ├── map/
-│   │   │   │   └── field_boundary_screen.dart  # Center-crosshair GIS boundary drawing + magnetic snapping
-│   │   │   ├── farm/
-│   │   │   │   ├── farm_screen.dart        # Farm & plot list, launch boundary drawing
-│   │   │   │   └── widgets/
-│   │   │   │       └── farm_satellite_card.dart  # Satellite map thumbnail of farm boundary
-│   │   │   ├── scan/
-│   │   │   │   ├── create_prediction_sheet.dart  # Camera/gallery, plot selector, offline queue
-│   │   │   │   ├── processing_sheet.dart          # WebSocket live progress + polling fallback
-│   │   │   │   └── result_detail_sheet.dart       # Full result: TTS, feedback, translations
-│   │   │   ├── today/today_screen.dart     # Dashboard: weather widget, recent alerts
-│   │   │   ├── alerts/alerts_screen.dart   # Alert inbox with unread badge
-│   │   │   ├── history/history_screen.dart # Paginated scan history
-│   │   │   ├── weather/weather_screen.dart # Current conditions with km/h wind & TTS advisory
-│   │   │   └── settings/settings_screen.dart  # Language preference, password change
-│   │   ├── services/
-│   │   │   ├── api_service.dart            # JWT REST client, locked backend URL (no manual override)
-│   │   │   ├── remote_config_service.dart  # Supabase app_config fetch + SharedPreferences cache
-│   │   │   ├── sync_service.dart           # Offline scan queue with exponential backoff retry
-│   │   │   └── tts_service.dart            # Google Cloud TTS with on-device flutter_tts fallback
-│   │   ├── models/
-│   │   │   └── prediction.dart             # Prediction.fromJson(), localized text & audio helpers
-│   │   ├── providers/
-│   │   │   └── locale_provider.dart        # EN / HI / GU locale state
-│   │   ├── utils/
-│   │   │   ├── app_logger.dart             # Tagged mobile logger
-│   │   │   └── geo_math.dart               # Geodesic distance, point-on-segment snap, polygon area
-│   │   ├── theme/app_theme.dart            # Material 3 design tokens (AppColors, AppTheme)
-│   │   └── i18n/app_translations.dart      # EN / HI / GU string keys
-│   ├── .env.example                        # Mobile env template (API_BASE_URL, SUPABASE_*)
-│   └── pubspec.yaml                        # Flutter dependencies (flutter_map, latlong2, etc.)
-│
-├── .github/workflows/
-│   └── db_migration.yml                    # CI/CD: Automated Alembic prod migrations with approval gate
-├── Docs/                                   # Architecture, API, & deployment specifications
-└── README.md
+├── ai_service/         # Unified inference, advisory, translation & TTS microservice
+├── backend/            # FastAPI API gateway, business logic, ORM models & Alembic
+├── frontend/           # React 19 + TypeScript SPA with Leaflet GIS mapping
+├── mobile/             # Flutter native Android application for farmers
+├── Docs/               # Comprehensive architecture, API, IEEE, and operational docs
+├── scripts/            # Service orchestrators, database backup/restore drills
+└── docker-compose.yml  # Local container stack
 ```
 
 ---
 
-## Diagnostic Pipeline
-
-```
-  Step 1: Input Capture
-    Farmer uploads a leaf photo via web or mobile (.jpg, .png, .webp).
-           │
-           ▼
-  Step 2: Backend Gateway (Port 8000)
-    • Computes SHA-256 hash of image bytes.
-    • Checks Upstash Redis REST for deduplication (<15ms).
-    • Saves raw leaf to Google Cloud Storage (uploads/{hash}.jpg).
-           │
-           ▼
-  Step 3: Vision Microservice (Port 8001)
-    • Preprocessing: OpenCV verifies blur score, brightness, and green leaf presence.
-    • Crop ID: EfficientNet-B0 predicts species (e.g., Tomato).
-    • Router: Dispatches to the Tomato EfficientNet-B2 disease classifier.
-    • Disease Diagnosis: Predicts disease (e.g., Early Blight) + confidence percentage.
-    • Severity Mask: HSV thresholding calculates affected surface area (0–100%).
-    • Pest Scan: Ultralytics YOLOv8 flags presence of agricultural pests.
-    • Grad-CAM: Generates activation heatmap overlay and saves to GCS (processed/{hash}.jpg).
-           │
-           ▼
-  Step 4: Contextual Synthesis & Background Jobs
-    • Weather: Fetches live local weather via OpenWeather API.
-    • LLM Advisory: Google Gemini 2.5 Flash generates organic, chemical, and preventive advice.
-    • ARQ Worker / Async Queue:
-      - Asynchronously translates advice into Hindi & Gujarati using Google Translation API.
-      - Caches translations in Upstash Redis for sub-15ms instant retrieval.
-    • Audio: Generates spoken voice advisory via Google Cloud Text-to-Speech.
-           │
-           ▼
-  Step 5: Delivery & Triage
-    • Returns structured JSON to frontend.
-    • Sub-70% confidence diagnoses automatically enter the Agronomist Expert Queue.
-    • Generates notification alert in the farmer's alerts inbox.
-```
-
----
-
-## Internationalization & Design System
-
-### Trilingual Localization (EN / GU / HI)
-
-The platform provides English, Hindi, and Gujarati translation catalogs and domain-term translation helpers; full UI localization is not complete:
-
-- **Translation Catalogs**: English is the web catalog source of truth; Gujarati and Hindi catalogs are checked for key parity during TypeScript builds.
-- **Compile-Time Parity Enforcement**: In the web application (`frontend/src/i18n`), `gu.ts` and `hi.ts` are strictly typed as `Record<keyof typeof en, string>`. Any missing key or typo triggers a TypeScript compile error during `npm run build`.
-- **Runtime Domain Translators**: Dynamic server responses are localized at runtime via `frontend/src/i18n/domain.ts` and `mobile/lib/i18n/domain_translations.dart` for crops, diseases, pests, severity tiers, weather conditions, and alert titles.
-- **Known Gap**: Many static web and mobile UI strings are still inline and display in English. Catalog parity alone does not indicate complete localization coverage.
-- **Language Selection**: Powered by `LanguageToggle.tsx`, which displays a Globe icon with an uppercase 2-letter language code (`EN`, `GU`, `HI`). Supports dropdown, segmented pill, and icon-only variants with tooltips.
-
-### Anti-Vibecoded Design System
-
-The frontend interface was built from the ground up to eliminate generic AI design artifacts:
-
-- **Iconography**: Lucide React icons.
-- **Color Architecture**: Single agricultural green primary (`#15803d` / `green-700`) paired with a warm neutral scale. No neon colors, no purple-and-black schemes, and no multi-color or liquid gradients.
-- **Elevation and Depth**: Tonal borders (`border-neutral-200 dark:border-neutral-800`) and spatial contrast provide structural depth instead of default drop shadows.
-- **Radius System**: Controlled sharp corner radii (`rounded-sm` to `rounded-md`). No bubbly, oversized pill containers.
-- **Copy and Typography**: Clean, concrete agronomic language without decorative emojis or em dashes. Deliberately paired type scale optimized for sunlight legibility.
-- **Substance & Transparency**: Real interactive diagnostic pipeline demonstration with Grad-CAM visualization, skeleton loaders for all loading states, and full Terms of Service (`/terms`) and Privacy Policy (`/privacy`) pages linked in the footer.
-
----
-
-## Quick Start
-
-### 1-Click Unified Runner (Recommended)
-
-To launch all services concurrently in unified streaming mode with colored logs:
-
-**Pop!_OS / Linux:**
-```bash
-./start_all.sh
-
-# Or include Flutter mobile app:
-./start_all_with_mobile.sh
-
-# To stop all services at any time:
-./stop_all.sh
-```
-
-This starts:
-- **Backend API Gateway** $\to$ `http://127.0.0.1:8000` (Swagger docs at `/docs`)
-- **Model Inference Server** $\to$ `http://127.0.0.1:8001` (Pre-loads models into RAM)
-- **Frontend Dashboard** $\to$ `http://localhost:5173`
-- **ARQ Worker** $\to$ Connected to Upstash Redis queue with auto-watchdog
-
-*Press `Ctrl+C` to stop all services cleanly.*
-
----
-
-### Manual Service Startup
-
-#### 1. Model Inference Microservice (Server 2)
-```bash
-cd model_service
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --host 127.0.0.1 --port 8001 --reload
-```
-
-#### 2. Backend Gateway Server (Server 1)
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your database and API keys
-alembic upgrade head
-python seed_users.py  # Seeds default admin, expert, farmer accounts
-uvicorn src.app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-#### 3. ARQ Background Worker
-```bash
-cd backend
-source .venv/bin/activate
-arq src.app.worker.WorkerSettings
-```
-
-#### 4. Frontend Dashboard (Server 3)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
----
-
-### Mobile App (Flutter)
-
-The Flutter mobile app targets Android (API 21+) and is exclusively for the **farmer** role. The backend URL is fetched dynamically from Supabase Remote Config — no hardcoded URL, no in-app settings dialog.
-
-#### Prerequisites
-- Flutter SDK 3.x installed (`flutter doctor` should show ✅ Android toolchain)
-- Android device or emulator connected (`flutter devices`)
-- `mobile/.env` configured with your Supabase and backend keys
-
-#### Setup `mobile/.env`
-```env
-# Compile-time fallback backend URL (used if Supabase remote config unavailable)
-API_BASE_URL=https://smart-farming-backend-kkty.onrender.com
-
-# Supabase Remote Config
-SUPABASE_URL=https://<YOUR_PROJECT_REF>.supabase.co
-SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
-```
-
-#### Run on Device
-```powershell
-cd mobile
-flutter pub get
-flutter run -d <DEVICE_ID> --dart-define-from-file=.env
-```
-
-#### Build APK
-```powershell
-cd mobile
-flutter build apk --debug --dart-define-from-file=.env
-# Install to connected device:
-adb install -r build\app\outputs\flutter-apk\app-debug.apk
-```
-
-> **Remote Config:** At startup, the app queries `SUPABASE_URL/rest/v1/app_config?key=eq.api_base_url` using the `SUPABASE_ANON_KEY`. The result is cached in `SharedPreferences` for offline use. URL fallback order: Supabase → cached → `API_BASE_URL` → `http://127.0.0.1:8000`.
-
----
-
-## Database Management & Migration Tools
-
-The `backend/scripts/` directory provides comprehensive database synchronization and migration tools:
-
-### 1. Production Migration CLI (`migrate_to_prod.py`)
-Used for interactive or CI-driven schema migrations between Aiven (Dev) and Supabase (Prod):
-
-```powershell
-# Interactive menu:
-python backend/scripts/migrate_to_prod.py
-
-# Check database connectivity and compare row counts:
-python backend/scripts/migrate_to_prod.py --check
-
-# Apply Alembic schema migrations to Production (Supabase):
-python backend/scripts/migrate_to_prod.py --schema-only --yes
-
-# Apply schema migrations to Development (Aiven):
-python backend/scripts/migrate_to_prod.py --dev-only --yes
-
-# Upsert safe reference tables from Dev to Prod (Dev wins on conflict):
-python backend/scripts/migrate_to_prod.py --sync-reference --yes
-```
-
-### 2. Match Dev to Production (`sync_prod_to_local.py`)
-A dedicated local tool to mirror Production (Supabase) data down into Development (Aiven or local SQLite):
-
-```powershell
-# Sync Prod data into Dev (Aiven Cloud):
-python backend/scripts/sync_prod_to_local.py --yes
-
-# Sync Prod data into local SQLite dev_database.db:
-python backend/scripts/sync_prod_to_local.py --sqlite --yes
-```
-*(Blocked from executing inside GitHub Actions CI/CD for safety).*
-
-### 3. PostgreSQL Sequence Reset (`reset_sequences.py`)
-Fixes primary key sequence desynchronization on any target PostgreSQL database:
-
-```powershell
-python backend/scripts/reset_sequences.py
-```
-
----
-
-## Background Workers & Asynchronous Tasks (ARQ + QStash)
-
-### ARQ Redis Worker (`backend/src/app/worker.py`)
-- Offloads heavy or long-running I/O tasks (batch translations, rescan processing, MLOps exports) from the main FastAPI event loop.
-- Features resilient connection handling with 15s connection timeouts, 10 retries, and exponential backoff to handle idle cloud socket disconnects over public networks.
-- In-process fallback: if Redis is unavailable, background tasks execute in a managed thread pool with Upstash REST string caching.
-
-### Upstash QStash Crons (`backend/scripts/setup_qstash_schedules.py`)
-- Serverless recurring schedules trigger periodic webhooks without requiring always-on cron servers:
-  - Daily weather alert scans for user farms.
-  - Periodic follow-up rescan reminders for active infections.
-- Verify active schedules with:
-  ```powershell
-  python backend/scripts/verify_qstash_and_events.py
-  ```
-
----
-
-## Authentication & Security
-
-- **Password Hashing**: Encrypted using **Argon2id** (Version 19, 64 MB memory cost, 3 iterations, 4 parallel threads) via `pwdlib[argon2]`.
-- **JWT Authentication**: HS256 signed access tokens (30 minutes) and refresh tokens (30 days).
-- **Password Reset Flow**: Ephemeral, single-use reset tokens with expiry transmitted via SMTP email (TLS).
-- **Role-Based Access Control (RBAC)**:
-  - `farmer` — Upload scans, view personalized dashboard, listen to audio advisories, view notifications.
-  - `expert` — Access Expert Review Queue, verify Grad-CAM heatmaps, override diagnoses, provide agronomist notes.
-  - `admin` — System metrics, user role management, MLOps candidate dataset exports.
-
----
-
-## Environment Configuration
-
-Configure these parameters in `backend/.env` (see [`backend/.env.example`](backend/.env.example)):
-
-| Key | Description | Example / Default |
-|---|---|---|
-| `ENVIRONMENT` | Deployment environment | `development` / `production` |
-| `DEBUG` | Enable debug logs | `True` / `False` |
-| `DATABASE_URL` | Dev Database (Aiven PostgreSQL or SQLite) | `postgres://avnadmin:...@pg-xxx.aivencloud.com:25049/defaultdb?sslmode=require` |
-| `PROD_DATABASE_URL` | Prod Database (Supabase Session Pooler) | `postgresql://postgres.xxx:...@aws-0-xxx.pooler.supabase.com:5432/postgres?sslmode=require` |
-| `JWT_SECRET_KEY` | HMAC SHA-256 signing secret for JWT tokens | 64-character random hex string |
-| `REQUIRE_REDIS` | Toggle Redis queue mode | `False` (Upstash Cloud) / `True` (Local Docker) |
-| `UPSTASH_REDIS_URL` | Upstash Cloud Redis TLS endpoint for ARQ | `rediss://default:TOKEN@xxx.upstash.io:6379` |
-| `UPSTASH_REDIS_REST_URL` | Upstash Serverless REST endpoint | `https://xxx.upstash.io` |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash REST Bearer token | `[YOUR-TOKEN]` |
-| `QSTASH_URL` | Upstash QStash API endpoint | `https://qstash-us-east-1.upstash.io/v2` |
-| `QSTASH_TOKEN` | Upstash QStash authentication token | `[YOUR-QSTASH-TOKEN]` |
-| `MODEL_SERVER_URL` | URL of the vision inference route | Derived from `AI_SERVICE_URL` |
-| `MODEL_SERVER_TIMEOUT` | Read timeout for vision inference (seconds) | `120` |
-| `STORAGE_BACKEND` | Active object storage provider | `supabase` or `local` (`s3` is a legacy alias) |
-| `GEMINI_API_KEY` | Google Gemini API key for treatment advisories | `[YOUR-GEMINI-KEY]` |
-| `OPENWEATHER_API` | OpenWeather API key for meteorological metrics | `[YOUR-OPENWEATHER-KEY]` |
-| `SMTP_HOST` | SMTP server for password reset emails | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port | `587` |
-| `SMTP_USER` | SMTP username / sender email | `your_email@gmail.com` |
-| `SMTP_PASSWORD` | SMTP app password | `[APP-PASSWORD]` |
-| `SMTP_TLS` | Enable TLS encryption | `True` |
-| `CORS_ORIGINS` | Allowed origins (comma-separated) | `http://localhost:5173,https://your-domain.vercel.app` |
-
----
-
-## Mobile Environment Configuration
-
-Configure these in `mobile/.env` (passed via `--dart-define-from-file=.env` at build time):
-
-| Variable | Description | Example |
-|---|---|---|
-| `API_BASE_URL` | Compile-time fallback backend URL. Used only if Supabase Remote Config and cache are both unavailable. | `https://smart-farming-backend-kkty.onrender.com` |
-| `SUPABASE_URL` | Supabase project URL — used by `RemoteConfigService` to query the `app_config` table. | `https://ntqevjzjhntkilmknrfh.supabase.co` |
-| `SUPABASE_ANON_KEY` | Supabase anonymous (public) key. Required for PostgREST REST queries. RLS restricts to SELECT only. | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
-
-> **Security note:** No user or developer can view or change the backend URL from inside the app. The `RemoteConfigService` reads the URL from Supabase `app_config` at startup; the result is cached in `SharedPreferences`. All in-app server settings UI has been permanently removed.
-
----
-
-## Key API Endpoints
-
-| Category | Method | Endpoint | Description |
-|---|---|---|---|
-| **Auth** | `POST` | `/api/v1/auth/register` | Register new user account |
-| | `POST` | `/api/v1/auth/login` | Authenticate and obtain JWT access & refresh tokens |
-| | `POST` | `/api/v1/auth/forgot-password` | Request password reset email with secure token |
-| | `POST` | `/api/v1/auth/reset-password` | Set new password using email token |
-| | `POST` | `/api/v1/auth/refresh` | Refresh expired access token |
-| **Diagnostics** | `POST` | `/api/v1/predict` | Upload leaf image, invoke vision microservice, synthesize advice |
-| | `GET` | `/api/v1/predictions/{id}` | Retrieve diagnosis details, Grad-CAM URLs, auto-mark alert read |
-| | `POST` | `/api/v1/predictions/{id}/rescan` | Submit follow-up treatment progress scan |
-| **Farm & Plots** | `GET` | `/api/v1/farm` | Get farm details with all plots and multilingual overlays |
-| | `PUT` | `/api/v1/farm` | Create/update farm with name, location, GeoJSON boundary |
-| | `POST` | `/api/v1/farm/plots` | Create a new plot with optional GeoJSON geometry |
-| | `PUT` | `/api/v1/farm/plots/{id}` | Update plot details or boundary |
-| | `DELETE` | `/api/v1/farm/plots/{id}` | Remove a plot |
-| **Alerts** | `GET` | `/api/v1/alerts` | Get user notifications and triage advisories |
-| | `POST` | `/api/v1/alerts/{id}/read` | Mark individual alert as read |
-| **Expert Triage** | `GET` | `/api/v1/expert/queue` | List low-confidence diagnoses pending agronomist triage |
-| | `GET` | `/api/v1/expert/reviews/{id}` | Get review case with presigned raw leaf and Grad-CAM URLs |
-| | `POST` | `/api/v1/expert/reviews/{id}` | Approve, override, or request rescan with agronomist guidance |
-| **Telemetry** | `GET` | `/api/v1/weather` | Fetch live meteorological metrics for farm coordinates |
-| | `GET` | `/api/v1/crops` | Catalog of supported crop species, pathogens, and symptoms |
-| | `GET` | `/api/v1/history` | Longitudinal diagnostic timeline for authenticated user |
-| | `GET` | `/api/v1/admin/metrics` | System health, model inference latencies, triage counts |
-| **MLOps & Retraining** | `GET` | `/api/v1/admin/dataset/summary` | Candidate counts and per-crop review breakdown |
-| | `POST` | `/api/v1/admin/dataset/export` | Export training dataset with spatial split and replay mixing |
-| | `GET` | `/api/v1/admin/dataset/exports` | Retrieve historical export runs audit log |
-
----
-
-## User Roles & Workflows
-
-### Farmer
-- Submits leaf photographs via mobile camera or desktop file upload.
-- Views instant diagnostic breakdowns: disease name, confidence score, severity percentage, and pest warnings.
-- Interacts with the Grad-CAM visual evidence slider to inspect model focus areas.
-- Listens to audio treatment advisories in their native language (English, Hindi, Gujarati).
-- Toggles UI language at any time via the Globe icon in the navigation sidebar, public nav, and auth pages.
-- Receives automated alerts when specialist agronomists verify or adjust a treatment plan.
-- Navigating to a scan directly from the notifications inbox automatically marks the alert as read.
-
-### Expert (Field Agronomist)
-- Reviews low-confidence (<70%) or safety-flagged cases in the Expert Review Queue.
-- Inspects side-by-side visual evidence: original high-resolution leaf vs. AI Grad-CAM activation heatmap.
-- Verifies model accuracy, overrides diagnosis or severity when appropriate, and enters bespoke treatment dosage instructions.
-- Flags problematic samples to the dataset retraining candidate pool for continuous model improvement.
-
-### Administrator
-- Monitors real-time pipeline telemetry, throughput, and error rates via Render logs.
-- Manages user accounts and role assignments.
-- Audits expert review turnaround times and agreement rates.
-- Triggers MLOps dataset candidate exports for offline training cycles.
-
----
-
-## Production Deployment & CI/CD
-
-### Automated Database Migrations (`.github/workflows/db_migration.yml`)
-- Triggered on `push` to `main` when changes touch `backend/alembic/**` or `backend/scripts/migrate_to_prod.py`.
-- **Gated Execution**: Protected by a GitHub `production` environment approval gate requiring manual reviewer authorization before touching the production database.
-- **Strict DDL Path**: Executes `migrate_to_prod.py --schema-only --yes` to apply Alembic migrations against Supabase Session Pooler (port 5432).
-- **Opt-In Reference Sync**: Manual `workflow_dispatch` trigger allows optionally syncing safe allow-listed reference tables.
-
-### Hosting Services:
-- **API Gateway**: Render Web Service, configured by `render.yaml`.
-- **AI Microservice**: Hugging Face Space, deployed by `.github/workflows/deploy_ai_service.yml`.
-- **Frontend Dashboard**: Vercel Edge Network.
-- **Database**: Supabase Cloud PostgreSQL.
-- **Storage**: Supabase Object Storage.
-
----
-
-## Running Tests
-
-Execute backend test suites:
-```powershell
-cd backend
-.\.venv\Scripts\activate
-python -m pytest tests/ -v
-```
-
-Execute frontend build verification:
-```powershell
-cd frontend
-npm run build
-```
-
-Execute mobile static analysis and unit tests:
-```powershell
-cd mobile
-flutter analyze
-flutter test
-```
-
----
-
-## Documentation Index
-
-Comprehensive documentation is available in the [`Docs/`](Docs/) directory:
-
-- [Architecture & System Design](Docs/Architecture.md) — Technical specification of all layers, contracts, and services.
-- [API Specification](Docs/API_Specification.md) — OpenAPI / REST endpoint schemas, request parameters, and response structures.
-- [Deployment Guide](Docs/Deployment_Guide.md) — Render, Hugging Face Spaces, Vercel, Supabase, and Upstash deployment runbooks.
-- [Configuration Reference](Docs/Config_Reference.md) — Complete environment variable and `config.yaml` dictionary, including mobile Flutter variables.
-- [Authentication & Roles](Docs/Auth_Roles.md) — RBAC matrix, token lifecycle, and session security models.
-- [Model Cards](Docs/Model_Cards.md) — Model metrics, architecture benchmarks, datasets, and limitations.
-- [MLOps & Retraining Loop](Docs/MLOps_Retraining.md) — Feedback ingestion, dataset candidate curation, and model promotion.
-- [UI / UX Design System](Docs/UI_UX_Spec.md) — Design tokens, component states, mobile boundary drawing UI, and accessibility standards.
-- [Functionality Status](Docs/functionality-status.md) — Implementation status, gap analysis, and improvement roadmap.
-- [Production Readiness Audit](Docs/Production_Readiness_Audit.md) — Review findings, hardening changes, validation results, and remaining risks.
+## Documentation Hub
+
+Detailed documentation is available in the [`Docs/`](Docs/) directory (see [Docs/README.md](Docs/README.md) for the master index):
+
+### Architecture & Engineering
+- [**System Architecture**](Docs/Architecture.md) — Comprehensive technical specification, data flows, and infrastructure models.
+- [**API Specification**](Docs/API_Specification.md) — Canonical REST API documentation, `/api/v1` routes, and request/response contracts.
+- [**Configuration Reference**](Docs/Config_Reference.md) — Complete environment variables and `config.yaml` dictionary.
+- [**Authentication & Roles**](Docs/Auth_Roles.md) — RBAC matrix, token rotation lifecycle, and Supabase Auth triggers.
+- [**UI / UX Design System**](Docs/UI_UX_Spec.md) — Anti-vibecoded design system tokens, components, and route layout.
+
+### Academic Specifications & IEEE Standards
+- [**Software Requirements Specification (SRS)**](Docs/SRS.md) — Conforming to IEEE Std 830-1998.
+- [**System Design Document (SDD)**](Docs/Design_Document.md) — Conforming to IEEE Std 1016-2009.
+- [**Test Plan & Verification Report**](Docs/Test_Plan.md) — Conforming to IEEE Std 829-2008 (106+ backend tests, 0 CodeQL alerts).
+- [**Academic IEEE Report & LaTeX Suite**](Docs/report/README.md) — Conference paper source (`main.tex`) and publication PDF (`main.pdf`).
+- [**University Publication Scope Charter**](Docs/Publication_Scope.md) — Capstone governance under CHARUSAT University.
+
+### Operations & Production Runbooks
+- [**Production Readiness Audit**](Docs/Production_Readiness_Audit.md) — Security audits, hardening logs, and verification snapshots.
+- [**Deployment Guide**](Docs/Deployment_Guide.md) — Cloud production deployment runbook (Render, HF Spaces, Vercel, Supabase).
+- [**User & Operations Manual**](Docs/User_Manual.md) — Complete walkthrough for Farmers, Agricultural Experts, and Administrators.
+- [**Worker Architecture Runbook**](Docs/Worker_Architecture_Runbook.md) — ARQ worker topology, Redis broker, and queue monitoring.
+- [**Backup & Disaster Recovery Runbook**](Docs/Backup_Restore_Runbook.md) — Automated database backups and SHA-256 verification.
+- [**Incident Management Runbook**](Docs/Incident_Runbook.md) — SEV-1 to SEV-3 severity classifications and fast recovery checklists.
+
+### Machine Learning & Datasets
+- [**Model Cards**](Docs/Model_Cards.md) — Benchmark accuracy, architectures, and limitations across all 7 loaded models.
+- [**MLOps Retraining Pipeline**](Docs/MLOps_Retraining.md) — Continuous retraining loop, candidate curation, and model promotion.
+- [**Dataset Documentation**](Docs/DATASET.md) — Dataset provenance, merging methodology, and environment categorization.
 
 ---
 
 ## License & Academic Attribution
 
-This project is licensed under the **Apache License, Version 2.0** — see the [LICENSE](LICENSE) file for the full license terms. Third-party library and model acknowledgments are documented in the [NOTICE](NOTICE) file.
+This project is licensed under the **Apache License, Version 2.0** — see the [LICENSE](LICENSE) file and [NOTICE](NOTICE) for full terms and third-party attributions.
 
-### Academic Citation & Project Context
-This software was developed as an academic capstone project in the **Department of Information Technology, CSPIT, CHARUSAT University** under the guidance of **Prof. Rajnik Katariya**.
+### Academic Citation
+Developed as an academic capstone project in the **Department of Information Technology, CSPIT, CHARUSAT University** under the guidance of **Prof. Rajnik Katariya**.
 
-If you use or build upon this platform, code, or architecture in your academic work, please cite:
 ```bibtex
 @misc{kuvadiya2026smartfarming,
   author = {Manthan Kuvadiya and Kunj Lunagariya},
@@ -736,5 +213,4 @@ If you use or build upon this platform, code, or architecture in your academic w
 
 ---
 
-*AI-Powered Smart Farming Platform*  
-*Last Updated: 22 October 2026*
+*AI-Powered Smart Farming Platform • v1.0.0 Production Release • October 2026*

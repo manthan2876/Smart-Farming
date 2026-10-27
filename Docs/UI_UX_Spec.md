@@ -1,8 +1,8 @@
 # UI/UX Specification — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.3  
-**Date:** 22 October 2026  
+**Version:** 1.0.0 (Production Release)  
+**Date:** 27 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -30,11 +30,12 @@ This document is the canonical design reference for the frontend implementation.
 | Framework | React 19 + TypeScript 7 | Strict typing across components and translation catalogs |
 | Build Tool | Vite 8 | Fast HMR and optimized production bundle |
 | Styling | Tailwind CSS 4 | Utility-first with custom farmer-green and warm-neutral theme |
+| GIS Mapping | Leaflet 1.9 & React-Leaflet 5 | Keyless GIS polygon boundary editor, OpenStreetMap & Esri Satellite layers, draggable vertices, plot renaming |
 | Iconography | Lucide React | Consistent, tree-shakable icon components |
 | Routing | React Router v7 | Client-side routing with role-aware protected route guards |
 | State | React Context (`AuthContext`, `ThemeContext`) | Authentication state, user profile, theme, and language state |
 | HTTP Client | Centralized fetch client (`src/api/client.ts`) | Shared API URL, authentication, and error handling |
-| Internationalization | `src/i18n/` | EN/GU/HI catalogs are checked for key parity; some UI copy remains inline and untranslated |
+| Internationalization | `src/i18n/` | Trilingual EN/GU/HI catalogs with 100% key parity and automated Babel AST checks (`npm run localization:check`) enforcing zero untranslated literals |
 | Real-time | WebSocket | Live diagnostic pipeline stage progress tracker |
 | Telemetry & Analytics | `@vercel/analytics` (v2.0+) | Privacy-preserving pageview, client-side route, and custom event tracking |
 
@@ -627,4 +628,4 @@ High-value diagnostic milestones are tracked through the typed helper module `fr
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 22 October 2026*
+*Last Updated: 27 October 2026*

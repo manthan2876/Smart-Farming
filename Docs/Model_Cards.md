@@ -1,10 +1,10 @@
 # Model Cards — AI-Powered Smart Farming
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.0  
-**Date:** 19 October 2026  
-**Status:** Active / Production Reference  
-**Last Verified Against Codebase:** 19 October 2026  
+**Version:** 1.0.0 (Production Reference)  
+**Date:** 27 October 2026  
+**Status:** Active / Production Reference (v1.0.0)  
+**Last Verified Against Codebase:** 27 October 2026  
 
 ---
 
@@ -857,4 +857,4 @@ All image-based vision models (Crop Identifier, Disease Classifiers, Pest Detect
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 27 October 2026*

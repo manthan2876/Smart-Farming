@@ -50,6 +50,7 @@ flowchart TD
 | **API Contract Testing** | `openapi-typescript` + `openapi-generator-cli` | Zero drift between FastAPI schemas and client models | **Verified (Zero Drift)** |
 | **Security Scanning** | `gitleaks` | Complete Git commit history scan for secret leakage | **Zero Leaks Detected** |
 | **Dependency Auditing** | `pip-audit` + `npm audit` | Software supply chain CVE vulnerability checking | **Zero High/Critical CVEs** |
+| **CodeQL Security Analysis** | GitHub Advanced Security CodeQL | Static application security testing (SAST) across Python, JS/TS, and Actions | **0 Alerts (268+ Resolved)** |
 | **Code Health & Linting** | `ruff` + `mypy` + `flutter analyze` | Static analysis, strict typing, and style compliance | **Zero Warnings / Clean** |
 
 ---
@@ -125,9 +126,10 @@ flowchart TD
 
 - **Backend Pytest Suite**: 106 passed in 5.48s.
 - **Frontend Localization & Build**: Passed with 0 errors and 0 missing catalog keys.
-- **Supply Chain Security**:
+- **Supply Chain Security & Static Analysis**:
+  - `CodeQL`: **0 open alerts** across 17 categories (resolved all 268+ initial alerts).
   - `pip-audit`: Zero known vulnerabilities across all backend production dependencies.
   - `npm audit`: Zero high or critical vulnerabilities across frontend dependencies.
   - `gitleaks`: Scanned all 1,987 historical Git blobs with zero credential leaks.
-- **Conclusion**: The Smart Farming platform satisfies all formal functional and security verification criteria and is certified production-ready for academic submission.
+- **Conclusion**: The Smart Farming platform satisfies all formal functional, operational, and security verification criteria and is certified production-ready for academic submission and field deployment.
 

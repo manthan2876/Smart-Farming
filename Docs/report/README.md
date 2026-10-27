@@ -17,9 +17,9 @@ This directory contains the IEEE conference paper source code, the compiled PDF,
 ```text
 Docs/report/
 ├── README.md                                      # This reference guide
-├── Smart_Farming_IEEE_Report_Updated.tex          # Original LaTeX document (copied from Downloads)
-├── Smart_Farming_IEEE_Report_Updated.pdf          # Pre-compiled PDF report (copied from Downloads)
-├── Smart_Farming_IEEE_Report_With_Screenshots.tex # Enriched LaTeX document with embedded figures
+├── IEEEtran.cls                                   # Official IEEE LaTeX class file (v1.8b)
+├── main.tex                                       # Academic IEEE conference paper source with TikZ & figures
+├── main.pdf                                       # Compiled high-resolution publication PDF
 └── screenshots/                                   # High-resolution 2x Retina screenshots & AI matrices
     ├── 01_landing_page_hero.png                   # Landing page hero & inference architecture
     ├── 01_landing_page_full.png                   # Full landing page overview
@@ -47,17 +47,15 @@ Docs/report/
 
 ---
 
-## 📄 LaTeX Documents Overview
+## 📄 LaTeX Document Overview
 
-1. **`Smart_Farming_IEEE_Report_Updated.tex`**:
-   The exact baseline conference document imported from your `Downloads` directory. It uses TikZ for architecture diagrams and keeps Appendix A as a checklist table.
-
-2. **`Smart_Farming_IEEE_Report_With_Screenshots.tex`**:
-   An enriched edition pre-configured with `\graphicspath{{screenshots/}}` that integrates:
-   - **Fig. 4 (`fig:crops-catalog`)** in Section IV: Supported crop registry (`02_crops_catalog.png`).
-   - **Fig. 7 (`fig:prediction-advisory`)** in Section VI: Web diagnostic result & 4-field advisory (`10_demo_workbench_advisory_en.png`).
-   - **Fig. 8 (`fig:saliency-and-vernacular`)** in Section VI: Two-column subfigure comparison of Grad-CAM attention (`09_demo_workbench_saliency.png`) and Gujarati regional advisory (`11_demo_workbench_advisory_gujarati.png`).
-   - **Fig. 10 (`fig:platform-gallery`)** in Appendix A: Four-panel platform showcase displaying landing architecture, OpenCV segmentation, onboarding, and ICAR dosage advisory.
+**`main.tex`**:
+The canonical conference paper conforming to `IEEEtran.cls`. It uses TikZ for architecture diagrams and pre-configures `\graphicspath{{screenshots/}}` integrating:
+- **Fig. 1 (`fig:architecture`)**: Multi-tier cloud and microservices architecture with orthogonal planar routing.
+- **Fig. 4 (`fig:crops-catalog`)**: Supported crop registry (`02_crops_catalog.png`).
+- **Fig. 7 (`fig:prediction-advisory`)**: Web diagnostic result & 4-field advisory (`10_demo_workbench_advisory_en.png`).
+- **Fig. 8 (`fig:saliency-and-vernacular`)**: Two-column subfigure comparison of Grad-CAM attention (`09_demo_workbench_saliency.png`) and Gujarati regional advisory (`11_demo_workbench_advisory_gujarati.png`).
+- **Fig. 10 (`fig:platform-gallery`)**: Four-panel platform showcase displaying landing architecture, OpenCV segmentation, onboarding, and ICAR dosage advisory.
 
 ---
 
@@ -65,7 +63,7 @@ Docs/report/
 
 ### On Overleaf:
 1. Create a new project on [Overleaf](https://www.overleaf.com/).
-2. Upload `Smart_Farming_IEEE_Report_With_Screenshots.tex` and the `screenshots/` directory.
+2. Upload `main.tex`, `IEEEtran.cls`, and the `screenshots/` directory.
 3. Select `pdfLaTeX` as the compiler and click **Recompile**.
 
 > **Formatting Notes**:
@@ -76,8 +74,8 @@ Docs/report/
 
 ### Locally (CLI):
 ```bash
-pdflatex Smart_Farming_IEEE_Report_With_Screenshots.tex
-pdflatex Smart_Farming_IEEE_Report_With_Screenshots.tex
+pdflatex main.tex
+pdflatex main.tex
 ```
 *(Running twice resolves cross-references and figure numbers).*
 

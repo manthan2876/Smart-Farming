@@ -1,8 +1,8 @@
 # Architecture & System Design Document
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.3 (Hardened Monorepo, Gated CI/CD & Vercel Analytics)  
-**Date:** 22 October 2026  
+**Version:** 1.0.0 (Hardened Production Monorepo, Gated CI/CD & Zero CodeQL Alerts)  
+**Date:** 27 October 2026  
 **Status:** Active / Production Reference  
 
 ---
@@ -585,6 +585,14 @@ flowchart TD
 - **Strict Role-Change Guards:** Admins cannot demote themselves, nor can the last remaining admin be demoted.
 - **Magic-Byte Binary Validation:** Guarantees that uploaded payloads are genuine image files before disk or cloud persistence.
 - **Time-Bounded Storage Access:** Signed URLs strictly expire after 15 minutes (900s), ensuring private media assets are not exposed to unauthorized parties.
+- **Zero-Alert CodeQL Hardening:** Complete remediation of all 268+ GitHub CodeQL alerts across 17 CWE categories:
+  - Input sanitization against log injection (CWE-117) via `sanitize_for_log`.
+  - In-memory session token caching and HttpOnly cookies (eliminating clear-text web storage, CWE-312/359).
+  - Polynomial ReDoS regular expression hardening (CWE-1333).
+  - Server-Side Request Forgery (SSRF) URL and path boundary validation (CWE-918).
+  - Stack trace disclosure suppression across all error responses and crons (CWE-209).
+  - Strict path traversal defense on storage and local caches (CWE-22 / CWE-73).
+  - Cleaned sensitive credentials and phone numbers from application logs (CWE-532).
 
 ---
 
@@ -592,4 +600,4 @@ flowchart TD
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 27 October 2026*

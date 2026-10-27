@@ -1,9 +1,9 @@
 # Smart Farming Functionality Status
 
 **Project:** AI-Powered Smart Farming  
-**Version:** 2.4  
-**Date:** 24 October 2026  
-**Status:** Active / Production Reference  
+**Version:** 1.0.0 (Production Release)  
+**Date:** 27 October 2026  
+**Status:** Active / Production Reference (0 Open CodeQL Alerts)  
 
 ---
 
@@ -1585,8 +1585,9 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 4. ~~Database-backed refresh token rotation & reuse detection.~~ **Done** — `refresh_tokens` table with family revocation on reuse.
 5. ~~Hardened Supabase Auth trigger.~~ **Done** — `handle_new_user()` with `search_path = ''`, force role 'farmer', no conflict escalation, in Alembic `0003_supabase_auth_sync.py`.
 6. ~~Call `pipeline.reload_config()` from `PUT /admin/config`.~~ **Done** — `admin.py` calls `pipeline.reload_config()` on threshold updates and syncs to Upstash Redis REST (`sf:config:thresholds`).
+7. ~~Eliminate all 268+ GitHub CodeQL Alerts down to 0~~ **Done** — zero alerts across 17 categories: sanitized logging (CWE-117), in-memory session caching (CWE-312/359), ReDoS fixes (CWE-1333), SSRF protections (CWE-918), stack trace suppression (CWE-209), path injection defenses (CWE-22/73), and code quality cleanup.
 
-### Priority 2: Improve mobile robustness
+### Priority 2: Improve mobile & frontend robustness
 
 1. ~~Replace `SharedPreferences` with SQLite for the offline scan queue to safely persist large raw image payloads.~~ **Done** — `OfflineQueueDb` SQLite storage with max 5-attempt exponential backoff.
 2. ~~Preserve `plot_id`, lat, lon in queue items.~~ **Done** — `SyncQueueItem` persists `plot_id`, `lat`, and `lon`.
@@ -1594,6 +1595,7 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 4. ~~Migrate JWT storage from `SharedPreferences` to `flutter_secure_storage`.~~ **Done** — secure mobile token storage with auto 401 refresh.
 5. ~~1-Tap Guest Mode on mobile.~~ **Done** — `POST /api/v1/auth/guest` fast entry without mandatory signup.
 6. ~~Remote Config via Supabase `app_config` table~~ **Done** — `RemoteConfigService` fetches `api_base_url` from Supabase and caches it locally.
+7. ~~Keyless GIS field mapping via Leaflet~~ **Done** — replaced Google Maps with Leaflet and OpenStreetMap/Esri Satellite; added polygon vertex editing handles and in-place plot renaming.
 
 ### Priority 3: Expand test coverage & CI/CD Rigor
 
@@ -1623,25 +1625,35 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 |---|---|
 | [Architecture.md](Architecture.md) | System architecture overview — services, data flow, infrastructure. |
 | [API_Specification.md](API_Specification.md) | Full REST API reference: endpoints, request/response schemas, auth. |
+| [SRS.md](SRS.md) | Software Requirements Specification conforming to IEEE Std 830-1998. |
+| [Design_Document.md](Design_Document.md) | System Design Document conforming to IEEE Std 1016-2009. |
+| [Test_Plan.md](Test_Plan.md) | Verification plan and test execution matrix conforming to IEEE Std 829-2008. |
 | [Auth_Roles.md](Auth_Roles.md) | Authentication flows and role-based access control rules. |
 | [Config_Reference.md](Config_Reference.md) | Application configuration keys, defaults, and environment variables. |
 | [DATASET.md](DATASET.md) | Dataset descriptions: crops, disease classes, image sources. |
 | [Deployment_Guide.md](Deployment_Guide.md) | Deployment instructions for local, staging, and production environments. |
+| [User_Manual.md](User_Manual.md) | Complete user and operator manual for Farmers, Experts, and Admins. |
+| [Worker_Architecture_Runbook.md](Worker_Architecture_Runbook.md) | ARQ background worker architecture, Redis broker settings, and health monitoring. |
+| [Backup_Restore_Runbook.md](Backup_Restore_Runbook.md) | Database disaster recovery runbook, automated backups, and SHA-256 verification. |
+| [Incident_Runbook.md](Incident_Runbook.md) | Incident triage runbook, SEV classifications, and fast diagnosis checklists. |
 | [mlops_training_guide.md](mlops_training_guide.md) | Model training workflow, evaluation criteria, and artifact management. |
 | [MLOps_Retraining.md](MLOps_Retraining.md) | Automated retraining pipeline design and trigger conditions. |
 | [Model_Cards.md](Model_Cards.md) | Model cards for crop, disease, and pest models (inputs, outputs, limits). |
-| [UI_UX_Spec.md](UI_UX_Spec.md) | UI/UX specification: screens, navigation flows, component guidelines. |
-| [screen_specifications.md](screen_specifications.md) | *(Superseded by `UI_UX_Spec.md`)* Original per-screen specifications. |
+| [Production_Readiness_Audit.md](Production_Readiness_Audit.md) | Security audits, CodeQL 0-alert verification, and hardening report. |
+| [UI_UX_Spec.md](UI_UX_Spec.md) | Canonical UI/UX specification: screens, navigation flows, component guidelines. |
+| [Supabase_Email_Templates.md](Supabase_Email_Templates.md) | Branded responsive email templates for signup, recovery, and invite flows. |
+| [Terms_of_Service.md](Terms_of_Service.md) | User agreement, agronomic advisory disclaimers, and fair use terms. |
+| [Privacy_Policy.md](Privacy_Policy.md) | Data privacy policy conforming to DPDP Act 2023 (India) and GDPR. |
+| [Publication_Scope.md](Publication_Scope.md) | University publication scope charter and capstone project governance. |
+| [report/README.md](report/README.md) | Academic IEEE report suite, LaTeX conference paper source, and screenshots. |
 | [functionality-status.md](functionality-status.md) | This document — implementation status, gap analysis, and improvement plan. |
 
 **Other files (`Docs/`):**
 
 | File | Description |
 |---|---|
-| `smart_farming_roadmap_v2.pdf` | Project roadmap v2 (PDF). |
-| `smart_farming_roadmap.pdf` | Original project roadmap (PDF). |
-| `smart_farming_roadmap_stage10_plus.pdf` | Extended roadmap covering stage 10+ milestones (PDF). |
-| `Ai-Powered-Smart-Farming.pptx` | Project presentation deck. |
+| `report/main.pdf` | Compiled academic conference paper (IEEEtran format). |
+| `report/main.tex` | Source LaTeX conference document with TikZ architecture figures. |
 
 ---
 
@@ -1649,4 +1661,4 @@ The web frontend is a functional multi-role application on Vercel with a shared 
 *Lead Developer & Model Architect: Manthan Kuvadiya*  
 *Monorepo Repository: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)*  
 *Hugging Face Space: [Maharsh8805/smart-farming-ai](https://huggingface.co/spaces/Maharsh8805/smart-farming-ai)*  
-*Last Updated: 19 October 2026*
+*Last Updated: 27 October 2026*
