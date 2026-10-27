@@ -43,11 +43,12 @@ def create_farmer_feedback(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
+    safe_user_id = str(user_id).replace("\r", "").replace("\n", "")
     prediction_event(
         logger,
         "feedback_recorded",
         prediction_id=saved.prediction_id,
-        user_id=user_id,
+        user_id=safe_user_id,
         is_correct=saved.is_correct,
     )
     return saved

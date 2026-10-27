@@ -57,7 +57,8 @@ def get_expert_review(
     except HTTPException:
         raise
     except SQLAlchemyError as exc:
-        logger.exception("Database error while loading review %s", review_id)
+        safe_rid = str(review_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error while loading review %s", safe_rid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -74,7 +75,8 @@ def claim_expert_review(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error claiming review %s", review_id)
+        safe_rid = str(review_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error claiming review %s", safe_rid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -91,7 +93,8 @@ def release_expert_review(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error releasing review %s", review_id)
+        safe_rid = str(review_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error releasing review %s", safe_rid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -134,5 +137,6 @@ async def post_expert_review(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error submitting review %s", review_id)
+        safe_rid = str(review_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error submitting review %s", safe_rid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc

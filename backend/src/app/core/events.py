@@ -76,7 +76,8 @@ class PredictionStatusHub:
                 if cached and isinstance(cached, dict) and q.empty():
                     yield cached
         except Exception as exc:
-            logger.debug("Could not replay cached pipeline state for %s: %s", prediction_id, exc)
+            safe_pred_id = str(prediction_id).replace("\r", "").replace("\n", "")
+            logger.debug("Could not replay cached pipeline state for %s: %s", safe_pred_id, exc)
 
         try:
             while True:

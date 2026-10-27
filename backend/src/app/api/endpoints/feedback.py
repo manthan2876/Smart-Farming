@@ -39,7 +39,8 @@ def feedback(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error while submitting feedback for user %s", user_id)
+        safe_uid = str(user_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error while submitting feedback for user %s", safe_uid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -63,7 +64,8 @@ def update_feedback(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error updating feedback %s", feedback_id)
+        safe_fbid = str(feedback_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error updating feedback %s", safe_fbid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -85,5 +87,6 @@ def review_feedback(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error reviewing feedback %s", feedback_id)
+        safe_fbid = str(feedback_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error reviewing feedback %s", safe_fbid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc

@@ -26,7 +26,8 @@ def get_alerts(
         requested_language = lang or request.headers.get("accept-language")
         return list_alerts(session, user_id, offset, limit, requested_language)
     except SQLAlchemyError as exc:
-        logger.exception("Database error while listing alerts for user %s", user_id)
+        safe_user_id = str(user_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error while listing alerts for user %s", safe_user_id)
         raise HTTPException(status_code=503, detail="Unable to load alerts.") from exc
 
 
@@ -39,10 +40,12 @@ def mark_read(
     try:
         mark_alert_read(session, user_id, alert_id)
     except SQLAlchemyError as exc:
+        safe_alert_id = str(alert_id).replace("\r", "").replace("\n", "")
+        safe_user_id = str(user_id).replace("\r", "").replace("\n", "")
         logger.exception(
             "Database error while marking alert %s read for user %s",
-            alert_id,
-            user_id,
+            safe_alert_id,
+            safe_user_id,
         )
         raise HTTPException(status_code=503, detail="Unable to update alert.") from exc
     return {"status": "ok"}

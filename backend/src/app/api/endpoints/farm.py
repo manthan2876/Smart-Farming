@@ -82,7 +82,8 @@ def get_farmer_farm(
     except HTTPException:
         raise
     except SQLAlchemyError as exc:
-        logger.exception("Database error loading farm for user %s", user_id)
+        safe_uid = str(user_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error loading farm for user %s", safe_uid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -107,7 +108,8 @@ def save_farmer_farm(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error saving farm for user %s", user_id)
+        safe_uid = str(user_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error saving farm for user %s", safe_uid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -131,7 +133,8 @@ def create_plot(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error creating plot for user %s", user_id)
+        safe_uid = str(user_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error creating plot for user %s", safe_uid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -157,7 +160,9 @@ def update_plot(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error updating plot %s for user %s", plot_id, user_id)
+        safe_pid = str(plot_id).replace("\r", "").replace("\n", "")
+        safe_uid = str(user_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error updating plot %s for user %s", safe_pid, safe_uid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc
 
 
@@ -174,5 +179,7 @@ def delete_plot(
         raise
     except SQLAlchemyError as exc:
         session.rollback()
-        logger.exception("Database error deleting plot %s for user %s", plot_id, user_id)
+        safe_pid = str(plot_id).replace("\r", "").replace("\n", "")
+        safe_uid = str(user_id).replace("\r", "").replace("\n", "")
+        logger.exception("Database error deleting plot %s for user %s", safe_pid, safe_uid)
         raise HTTPException(status_code=503, detail="Database is unavailable.") from exc

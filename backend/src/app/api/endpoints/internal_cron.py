@@ -187,9 +187,10 @@ async def trigger_failure_callback(
     except Exception:
         body_json = {"raw": body_bytes.decode("utf-8", errors="replace")}
 
+    safe_body = str(body_json).replace("\r", "").replace("\n", "")
     logger.critical(
         "QSTASH CRON FAILURE ALERT (DLQ): A scheduled background job failed all retries! Payload: %s",
-        body_json,
+        safe_body,
     )
 
     # Store latest failure in Redis REST for 7 days

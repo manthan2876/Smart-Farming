@@ -606,7 +606,8 @@ async def prediction_detail(
             session.commit()
     except Exception as exc:
         session.rollback()
-        _LOGGER.warning("Could not auto-mark alerts as read for prediction %s: %s", prediction_id, exc)
+        safe_pred_id = str(prediction_id).replace("\r", "").replace("\n", "")
+        _LOGGER.warning("Could not auto-mark alerts as read for prediction %s: %s", safe_pred_id, exc)
 
     _ensure_processed_image_for_prediction(prediction, result, session)
     if prediction.processed_path and not result.get("image", {}).get("processed_path"):
@@ -806,7 +807,9 @@ async def prediction_detail(
                         flag_modified(prediction, "result")
                         session.commit()
                 except Exception as heal_err:
-                    _LOGGER.warning("Auto-heal translation failed for prediction %s in %s: %s", prediction_id, norm_code, heal_err)
+                    safe_pred_id = str(prediction_id).replace("\r", "").replace("\n", "")
+                    safe_code = str(norm_code).replace("\r", "").replace("\n", "")
+                    _LOGGER.warning("Auto-heal translation failed for prediction %s in %s: %s", safe_pred_id, safe_code, heal_err)
         elif norm_code in translations and translations[norm_code]:
             result["recommendation"] = dict(translations[norm_code])
         target_er = prediction.expert_review

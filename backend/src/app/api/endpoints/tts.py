@@ -83,10 +83,14 @@ async def generate_tts(payload: TTSRequest, user_id: str = Depends(get_current_u
             from app.services.translation.service import translate_text
             translated_text = await translate_text(cleaned_text, lang)
             if translated_text and any(ord(c) >= 0x0900 for c in translated_text):
-                logger.info("Auto-translated English TTS text to %s: '%s' -> '%s'", lang, cleaned_text[:30], translated_text[:30])
+                safe_lang = str(lang).replace("\r", "").replace("\n", "")
+                safe_cleaned = str(cleaned_text[:30]).replace("\r", "").replace("\n", "")
+                safe_trans = str(translated_text[:30]).replace("\r", "").replace("\n", "")
+                logger.info("Auto-translated English TTS text to %s: '%s' -> '%s'", safe_lang, safe_cleaned, safe_trans)
                 cleaned_text = translated_text
         except Exception as exc:
-            logger.warning("Failed to auto-translate TTS text to %s: %s", lang, exc)
+            safe_lang = str(lang).replace("\r", "").replace("\n", "")
+            logger.warning("Failed to auto-translate TTS text to %s: %s", safe_lang, exc)
 
     # Expand numbers and decimals into spoken regional words for Indic-TTS
     from app.services.tts_normalizer import expand_numbers_for_tts
