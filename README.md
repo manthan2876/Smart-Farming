@@ -77,49 +77,30 @@ flowchart TD
 
 ## Quick Start
 
-### 1-Click Unified Runner (Linux / Pop!_OS)
+### 1. Docker Compose (Recommended)
 
-To start the API Gateway, AI microservice, Frontend, and Worker concurrently:
-
-```bash
-# Launch core services:
-./start_all.sh
-
-# Or launch with Flutter mobile web:
-./start_all_with_mobile.sh
-
-# Stop all running services:
-./stop_all.sh
-```
-
-- **Backend API Gateway**: `http://127.0.0.1:8000` (Docs at `/docs`)
-- **Frontend Dashboard**: `http://localhost:5173`
-- **AI Microservice**: `http://127.0.0.1:7860`
-
----
-
-### Docker Compose
+Run the entire platform (API gateway, frontend web dashboard, Redis, and background worker) with Docker Compose:
 
 ```bash
 docker compose up -d
 ```
 
----
+- **Frontend Dashboard**: `http://localhost:8080`
+- **Backend API Gateway**: `http://localhost:8000` (Swagger UI at `/docs`)
+- **Health Checks**: `http://localhost:8000/api/v1/ready`
 
-### Manual Service Setup
-
-<details>
-<summary><b>Click to expand manual setup instructions</b></summary>
-
-#### 1. AI Microservice (`ai_service/`)
+To stop all containers:
 ```bash
-cd ai_service
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python app.py  # Binds Gradio UI + FastAPI on port 7860
+docker compose down
 ```
 
-#### 2. Backend Gateway (`backend/`)
+---
+
+### 2. Local Multi-Service Development
+
+To run services locally for active development:
+
+#### A. Backend Gateway (`backend/`)
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
@@ -129,20 +110,27 @@ alembic upgrade head
 uvicorn src.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-#### 3. Web Frontend (`frontend/`)
+#### B. Web Frontend (`frontend/`)
 ```bash
 cd frontend
 npm install
-npm run dev  # Starts Vite on http://localhost:5173
+npm run dev  # Starts Vite dev server on http://localhost:5173
 ```
 
-#### 4. Mobile Client (`mobile/`)
+#### C. AI Microservice (`ai_service/`)
+```bash
+cd ai_service
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python app.py  # Binds Gradio UI + FastAPI endpoints on http://127.0.0.1:7860
+```
+
+#### D. Mobile Client (`mobile/`)
 ```bash
 cd mobile
 flutter pub get
 flutter run -d <DEVICE_ID> --dart-define-from-file=.env
 ```
-</details>
 
 ---
 
@@ -150,13 +138,14 @@ flutter run -d <DEVICE_ID> --dart-define-from-file=.env
 
 ```
 Smart-Farming/
-├── ai_service/         # Unified inference, advisory, translation & TTS microservice
-├── backend/            # FastAPI API gateway, business logic, ORM models & Alembic
-├── frontend/           # React 19 + TypeScript SPA with Leaflet GIS mapping
+├── ai_service/         # Unified vision inference, ICAR advisory, translation & TTS microservice
+├── backend/            # FastAPI API gateway, business logic, ORM models, Alembic migrations & scripts
+├── frontend/           # React 19 + TypeScript SPA with keyless Leaflet GIS mapping
 ├── mobile/             # Flutter native Android application for farmers
-├── Docs/               # Comprehensive architecture, API, IEEE, and operational docs
-├── scripts/            # Service orchestrators, database backup/restore drills
-└── docker-compose.yml  # Local container stack
+├── Docs/               # Master index, system architecture, API specs, IEEE papers & runbooks
+├── scripts/            # Automated database backup and disaster recovery runbook scripts
+├── compose.yaml        # Local multi-container Docker Compose stack
+└── compose.staging.yaml# Staging environment orchestration
 ```
 
 ---

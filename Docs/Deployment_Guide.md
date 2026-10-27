@@ -322,13 +322,11 @@ Whenever code inside `ai_service/**` is pushed to `main`, [`.github/workflows/de
 4. Configures Git LFS for large `.pth` and `.pt` model weights.
 5. Pushes changes directly to Hugging Face, triggering an automatic rebuild.
 
-#### Manual Deployment via Script
-You can also trigger deployment locally:
-```bash
-cd ai_service
-export HF_TOKEN="hf_your_personal_access_token"
-bash deploy.sh
-```
+#### Deployment via GitHub Actions Workflow
+Automated on merge to `main` via [`.github/workflows/deploy_ai_service.yml`](../.github/workflows/deploy_ai_service.yml), or manually triggered via **workflow_dispatch**:
+1. Navigate to **Actions** → **Deploy AI Service to Hugging Face Space**.
+2. Click **Run workflow** on `main`.
+3. The workflow synchronizes `app.py`, `requirements.txt`, models, and routers to the Space mirror while preserving runtime promoted model weights.
 
 > [!IMPORTANT]
 > Hugging Face Spaces container runtime requires the server to bind strictly to port `7860`. The unified entrypoint `ai_service/app.py` explicitly binds to `0.0.0.0:7860`.
