@@ -235,14 +235,26 @@ def serve_data_file(file_path: str, request: Request):
     if clean_subpath.startswith("data/"):
         clean_subpath = clean_subpath[5:]
 
-    segments = [s for s in clean_subpath.split("/") if s and s != "."]
-    if not segments or any(s == ".." for s in segments):
+    parts = [s for s in clean_subpath.split("/") if s and s != "."]
+    if len(parts) != 2 or any(s == ".." for s in parts):
         raise HTTPException(status_code=404, detail="File not found.")
-    for s in segments:
-        if not s.replace("-", "").replace("_", "").replace(".", "").isalnum():
-            raise HTTPException(status_code=404, detail="File not found.")
+    folder, filename = parts[0], parts[1]
+    if folder not in ("uploads", "processed", "tts", "audio"):
+        raise HTTPException(status_code=404, detail="File not found.")
+    if "." not in filename:
+        raise HTTPException(status_code=404, detail="File not found.")
+    stem, ext = filename.rsplit(".", 1)
+    if ext.lower() not in ("jpg", "jpeg", "png", "webp", "mp3", "wav"):
+        raise HTTPException(status_code=404, detail="File not found.")
 
-    safe_subpath = "/".join(urllib.parse.quote(s, safe=".-_~") for s in segments)
+    stem_tokens = [tok for tok in re.split(r"[-_]", stem) if tok]
+    if not stem_tokens or not all(tok.isalnum() for tok in stem_tokens):
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    safe_folder = "uploads" if folder == "uploads" else ("processed" if folder == "processed" else ("tts" if folder == "tts" else "audio"))
+    safe_ext = "jpg" if ext.lower() in ("jpg", "jpeg") else ("png" if ext.lower() == "png" else ("webp" if ext.lower() == "webp" else ("mp3" if ext.lower() == "mp3" else "wav")))
+    safe_stem = "-".join(tok for tok in stem_tokens if tok.isalnum())
+    safe_subpath = f"{safe_folder}/{safe_stem}.{safe_ext}"
 
     base_dir = os.path.realpath(str(_DATA_DIR))
     unsafe_path = os.path.join(base_dir, safe_subpath)

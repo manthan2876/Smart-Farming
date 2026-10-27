@@ -59,7 +59,8 @@ def test_local_storage_backend_save_and_read(tmp_path: Path):
     assert "test_leaf.jpg" in url
 
     # Test delete
-    assert backend.delete(key) is True
+    deleted = backend.delete(key)
+    assert deleted is True
     assert not backend.exists(key)
 
 

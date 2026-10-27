@@ -150,12 +150,17 @@ def trigger_purge_blobs(
         audio_res = prune_cached_audio(dry_run=False, max_age_days=30)
         heatmaps_res = prune_unflagged_heatmaps(session, dry_run=False, max_age_days=7)
 
+        # Remove any internal exception / error details before returning in API response
+        safe_orphaned = {k: v for k, v in orphaned_res.items() if not k.lower().endswith("error") and k != "traceback"}
+        safe_audio = {k: v for k, v in audio_res.items() if not k.lower().endswith("error") and k != "traceback"}
+        safe_heatmaps = {k: v for k, v in heatmaps_res.items() if not k.lower().endswith("error") and k != "traceback"}
+
         return {
             "status": "success",
             "message": "Storage cleanup and blob purge completed successfully.",
-            "orphaned_blobs": orphaned_res,
-            "pruned_audio": audio_res,
-            "pruned_heatmaps": heatmaps_res,
+            "orphaned_blobs": safe_orphaned,
+            "pruned_audio": safe_audio,
+            "pruned_heatmaps": safe_heatmaps,
             "timestamp": time.time(),
         }
     except Exception as exc:

@@ -79,6 +79,7 @@ async def enqueue_translation(
                 )
             except Exception as e:
                 logger.warning("In-process translation fallback error for %s #%s: %s", entity_type, entity_id, e)
+                return None
             finally:
                 db.close()
 
@@ -119,6 +120,7 @@ async def enqueue_translation(
                 )
             except Exception as e:
                 logger.warning("In-process translation fallback error for %s #%s: %s", entity_type, entity_id, e)
+                return None
             finally:
                 db.close()
 
@@ -168,7 +170,7 @@ def enqueue_translation_sync(
                 main_loop.create_task(coro)
             else:
                 asyncio.run_coroutine_threadsafe(coro, main_loop)
-            return
+            return None
         except Exception as exc:
             logger.warning("Failed to dispatch translation to main event loop: %s", exc)
 
@@ -191,4 +193,5 @@ def enqueue_translation_sync(
             db.close()
     except Exception as exc:
         logger.warning("Could not execute fallback translation: %s", exc)
+    return None
 
