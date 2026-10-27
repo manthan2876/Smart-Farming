@@ -183,6 +183,7 @@ def test_predict_crop_with_temperature_scaling():
         from vision_engine.stages.crop_identifier import predict_crop
     except (ImportError, Exception) as e:
         pytest.skip(f"PyTorch / Vision dependencies unavailable: {e}")
+        return
 
     mock_model = MagicMock()
     mock_model.return_value = torch.tensor([[5.0, 1.0, 0.5, 0.2, 0.1]])
@@ -224,6 +225,7 @@ def test_predict_disease_with_temperature_scaling():
         from vision_engine.stages.disease_classifier import predict_disease
     except (ImportError, Exception) as e:
         pytest.skip(f"PyTorch / Vision dependencies unavailable: {e}")
+        return
 
     mock_model = MagicMock()
     mock_model.return_value = torch.tensor([[4.0, 1.0, 0.2, 0.1]])

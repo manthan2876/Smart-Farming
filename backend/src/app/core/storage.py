@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import re
 import time
 import urllib.parse
 from datetime import datetime, timezone
@@ -181,7 +182,14 @@ class SupabaseStorageBackend(StorageBackend):
 
         norm_key = self._normalize_key(key)
         safe_bucket = urllib.parse.quote(str(self.bucket_name), safe=".-_~")
-        safe_key = "/".join(urllib.parse.quote(seg, safe=".-_~") for seg in norm_key.split("/"))
+        key_segments = norm_key.split("/")
+        safe_segments = []
+        for seg in key_segments:
+            tokens = [tok for tok in re.split(r"[-_.]", seg) if tok]
+            if not all(tok.isalnum() for tok in tokens):
+                raise ValueError(f"Invalid characters in storage key segment: {seg}")
+            safe_segments.append(seg)
+        safe_key = "/".join(urllib.parse.quote(s, safe=".-_~") for s in safe_segments)
         url = f"{self.supabase_url}/storage/v1/object/authenticated/{safe_bucket}/{safe_key}"
         headers = self._get_headers()
 
@@ -618,7 +626,7 @@ def prune_cached_audio(
                         cloud_deleted += 1
         except Exception as exc:
             logger.warning("Supabase audio pruning failed: %s", exc)
-            cloud_error = str(exc)
+            cloud_error = "An error occurred while pruning cloud audio."
 
     return {
         "status": "dry_run" if dry_run else "success",
@@ -709,7 +717,7 @@ def prune_unflagged_heatmaps(
 
     except Exception as exc:
         logger.error("Error during heatmap pruning: %s", exc)
-        return {"status": "error", "error": str(exc), "heatmaps_pruned": pruned_count}
+        return {"status": "error", "error": "An error occurred during heatmap pruning.", "heatmaps_pruned": pruned_count}
 
     return {
         "status": "dry_run" if dry_run else "success",
