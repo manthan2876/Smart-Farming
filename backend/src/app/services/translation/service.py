@@ -595,7 +595,7 @@ async def _fallback_translate_batch(texts: list[str], target_code: str) -> list[
                 else:
                     out.append(t)
             except Exception as exc:
-                logger.warning("Fallback translate request failed for '%s': %s", t[:30], exc)
+                logger.warning("Fallback translate request failed: %s", exc)
                 out.append(t)
     return out
 
@@ -621,7 +621,7 @@ def _fallback_translate_batch_sync(texts: list[str], target_code: str) -> list[s
                 else:
                     out.append(t)
             except Exception as exc:
-                logger.warning("Fallback sync translate request failed for '%s': %s", t[:30], exc)
+                logger.warning("Fallback sync translate request failed: %s", exc)
                 out.append(t)
     return out
 

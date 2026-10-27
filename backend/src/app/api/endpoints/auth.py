@@ -99,13 +99,13 @@ async def sync_supabase_user_phone(user_id: str, phone: str) -> bool:
                 },
             )
             if resp.status_code in (200, 201):
-                logger.info("Successfully synced phone %s for user %s to Supabase Auth", phone, user_id)
+                logger.info("Successfully synced phone to Supabase Auth.")
                 return True
             else:
-                logger.warning("Supabase Auth admin update phone returned %s: %s", resp.status_code, resp.text)
+                logger.warning("Supabase Auth admin update phone returned status %s", resp.status_code)
                 return False
     except Exception as exc:
-        logger.warning("Failed to sync phone to Supabase Auth for user %s: %s", user_id, exc)
+        logger.warning("Failed to sync phone to Supabase Auth (%s)", exc)
         return False
 
 
@@ -147,12 +147,12 @@ async def verify_supabase_phone_otp(phone: str, token: str) -> bool:
                     },
                 )
                 if resp.status_code in (200, 201):
-                    logger.info("Supabase phone OTP successfully verified for candidate %s", cand)
+                    logger.info("Supabase phone OTP successfully verified.")
                     return True
                 else:
-                    logger.debug("Candidate %s verify returned %s: %s", cand, resp.status_code, resp.text)
+                    logger.debug("Phone OTP verify candidate returned status %s", resp.status_code)
         except Exception as exc:
-            logger.warning("Supabase phone OTP verify error for %s: %s", cand, exc)
+            logger.warning("Supabase phone OTP verify error (%s)", exc)
     return False
 
 
@@ -1108,7 +1108,7 @@ async def sync_session(
             if existing.id != user_id:
                 old_id = existing.id
                 existing.id = user_id
-                logger.info("Relinked existing user %s -> %s for session sync (%s)", old_id, user_id, sup_phone)
+                logger.info("Relinked existing user record for session sync.")
             if sup_phone and not existing.phone:
                 existing.phone = sup_phone
             if sup_email and not existing.email:
