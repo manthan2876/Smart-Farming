@@ -1,6 +1,6 @@
 FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
 
-FROM python:3.12-slim AS builder
+FROM python:3.15-slim AS builder
 
 ENV VIRTUAL_ENV=/opt/venv
 ENV UV_PROJECT_ENVIRONMENT=${VIRTUAL_ENV}
@@ -15,7 +15,7 @@ WORKDIR /build
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project --python /usr/local/bin/python
 
-FROM python:3.12-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
