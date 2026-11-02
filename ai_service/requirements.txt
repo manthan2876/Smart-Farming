@@ -4,27 +4,27 @@ gradio>=5.16.0
 uvicorn[standard]>=0.54.0
 python-multipart>=0.0.32
 pydantic==2.10.6
-pydantic-settings==2.7.1
+pydantic-settings==2.16.2
 httpx>=0.28.1
 pyyaml>=6.0.3
 
 # Vision & Machine Learning Stack (torch <= 2.13.0 required for Hugging Face ZeroGPU compatibility)
 torch>=2.2.0,<=2.13.0
 torchvision>=0.17.0
-timm>=1.0.0
-ultralytics>=8.4.184
+timm>=1.0.30
+ultralytics>=8.4.192
 opencv-python-headless>=4.10.0
 albumentations>=1.4.0
 numpy>=1.26.0,<2.0.0
 pillow>=10.4.0
 
 # NLP, Translation & Local LLMs
-transformers>=4.44.0
+transformers>=5.22.0
 accelerate>=0.30.0
 sentencepiece>=0.2.0
 sacremoses>=0.1.1
 indictranstoolkit>=1.1.1
-huggingface_hub>=0.28.0
+huggingface_hub>=2.4.0
 
 # Audio & Speech (Neural Indian Voices)
 edge-tts>=7.3.1
