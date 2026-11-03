@@ -43,8 +43,9 @@ jobs:
         id: evaluate_metrics
         env:
           BACKEND_URL: ${{ github.event.inputs.backend_url || vars.BACKEND_URL || 'https://smart-farming-backend-kkty.onrender.com' }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_JWT: ${{ secrets.ADMIN_JWT }}
-          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY || secrets.METRICS_API_KEY }}
         run: |
           python - << 'EOF'
           import os
@@ -54,14 +55,48 @@ jobs:
           import urllib.error
 
           backend_url = os.environ.get("BACKEND_URL", "https://smart-farming-backend-kkty.onrender.com").rstrip("/")
-          admin_jwt = os.environ.get("ADMIN_JWT", "")
-          admin_api_key = os.environ.get("ADMIN_API_KEY", "")
+          admin_jwt = os.environ.get("ADMIN_JWT", "").strip()
+          admin_email = os.environ.get("ADMIN_EMAIL", "").strip()
+          admin_password = os.environ.get("ADMIN_PASSWORD", "").strip()
 
-          headers = {"Accept": "application/json"}
-          if admin_jwt:
-              headers["Authorization"] = f"Bearer {admin_jwt}"
-          elif admin_api_key:
-              headers["X-API-Key"] = admin_api_key
+          # If ADMIN_JWT is not supplied, authenticate dynamically to acquire a fresh token
+          if not admin_jwt and admin_email and admin_password:
+              login_url = f"{backend_url}/api/v1/auth/login"
+              print(f"Authenticating admin user ({admin_email}) against {login_url}...")
+              login_payload = json.dumps({"identifier": admin_email, "password": admin_password}).encode("utf-8")
+              login_req = urllib.request.Request(
+                  login_url,
+                  data=login_payload,
+                  headers={"Content-Type": "application/json", "Accept": "application/json"},
+              )
+              try:
+                  with urllib.request.urlopen(login_req, timeout=45) as resp:
+                      auth_data = json.loads(resp.read().decode())
+                      tokens = auth_data.get("tokens") or {}
+                      admin_jwt = tokens.get("access_token") or auth_data.get("access_token")
+                      if not admin_jwt:
+                          print("Error: Authentication succeeded but no access_token found in response.", file=sys.stderr)
+                          sys.exit(1)
+                      print("Successfully obtained fresh admin access token.")
+              except urllib.error.HTTPError as http_err:
+                  print(f"Error: Admin login failed with HTTP {http_err.code}: {http_err.read().decode()}", file=sys.stderr)
+                  sys.exit(1)
+              except Exception as exc:
+                  print(f"Error connecting to login endpoint {login_url}: {exc}", file=sys.stderr)
+                  sys.exit(1)
+
+          if not admin_jwt:
+              print(
+                  "Error: No valid authentication provided. Please configure GitHub Secrets: "
+                  "ADMIN_EMAIL and ADMIN_PASSWORD (recommended), or a valid ADMIN_JWT.",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          headers = {
+              "Accept": "application/json",
+              "Authorization": f"Bearer {admin_jwt}",
+          }
 
           metrics_endpoint = f"{backend_url}/api/v1/admin/metrics"
           print(f"Querying production metrics from {metrics_endpoint}...")
