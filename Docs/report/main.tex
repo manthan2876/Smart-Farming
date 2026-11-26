@@ -1133,6 +1133,8 @@ The project-reported crop-identification metrics are promising for the evaluated
 \chapter{Smart Farming Application Screenshots}
 This appendix presents screenshots captured from the Smart Farming web application supplied with the project documentation. The screenshots are included as implementation evidence for the visible public pages and diagnostic demonstration interface. They do not, by themselves, establish the availability or correctness of every backend or model capability described in the technical chapters.
 
+\section{Public Portal and Authentication Interfaces}
+
 \begin{figure}[htbp]\centering
 \includegraphics[width=0.94\textwidth,height=0.72\textheight,keepaspectratio]{01_landing_page_full.png}
 \caption{Smart Farming landing page overview.}\label{fig:ss-landing-full}
@@ -1178,28 +1180,101 @@ This appendix presents screenshots captured from the Smart Farming web applicati
 \caption{Interactive diagnostic demonstration showing OpenCV foliage segmentation telemetry.}\label{fig:ss-workbench}
 \end{figure}
 
-\chapter{Suggested Screenshot Checklist}
-The following checklist identifies additional screenshots that may be attached if the corresponding screens are available in the final build. Only genuine application captures should be used as implementation evidence.
+\section{Farmer Portal and Diagnostic Workflow}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{14_farmer_dashboard.png}
+\caption{Authenticated farmer dashboard displaying plot statistics, weather forecast, and rapid diagnostic scan entry point.}\label{fig:ss-farmer-dashboard}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{15_farmer_scan_upload.png}
+\caption{Field leaf scan and diagnostic image upload interface with plot selection and client-side offline queueing.}\label{fig:ss-farmer-scan}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{16_prediction_result.png}
+\caption{Multi-stage diagnostic inference result exhibiting crop identification, pathology prediction, Grad-CAM attention heatmap, microclimate advisory, and chemical treatment guidance.}\label{fig:ss-prediction-result}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{17_prediction_history.png}
+\caption{Farmer historical diagnosis records and audit trail with filterable status badges and detailed view actions.}\label{fig:ss-prediction-history}
+\end{figure}
+
+\section{Farm Management, Meteorological Telemetry, and Localization}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{18_farm_plot_management.png}
+\caption{Geospatial farm and plot boundary management interface with interactive Leaflet mapping and crop assignment.}\label{fig:ss-farm-management}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{19_weather_advisory.png}
+\caption{Hyperlocal meteorological telemetry and real-time chemical spray window advisory.}\label{fig:ss-weather-advisory}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{20_farmer_alerts.png}
+\caption{Farmer alert notifications center for localized disease outbreaks and risk warnings.}\label{fig:ss-farmer-alerts}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{21_language_settings.png}
+\caption{Regional language selection (English, Gujarati, Hindi), measurement units, and user display preferences.}\label{fig:ss-language-settings}
+\end{figure}
+
+\section{Human-in-the-Loop Expert Agronomist Review Module}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{22_expert_review_queue.png}
+\caption{Agronomist human-in-the-loop review queue for triaging uncertain or appealed diagnoses.}\label{fig:ss-expert-queue}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{23_expert_review_detail.png}
+\caption{Expert review detail workspace with high-resolution crop imagery, model confidence distributions, correction dropdowns, and agronomist verification controls.}\label{fig:ss-expert-detail}
+\end{figure}
+
+\section{System Administration and Telemetry Module}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{24_admin_metrics_dashboard.png}
+\caption{System administrator operational metrics dashboard displaying inference latency, user counts, and system telemetry.}\label{fig:ss-admin-metrics}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{25_admin_user_management.png}
+\caption{Administrative user management interface with role-based access control (Farmer, Agronomist Expert, Admin).}\label{fig:ss-admin-users}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{26_admin_feedback_overview.png}
+\caption{Administrator feedback and quality monitoring overview for farmer diagnostic ratings.}\label{fig:ss-admin-feedback}
+\end{figure}
+
+\chapter{Suggested Screenshot Checklist and Verification Status}
+The following checklist identifies the suggested implementation screenshots, their functional demonstration purpose, and their current verification status within the live deployed production environment (hosted across Vercel, Render, Hugging Face Spaces, and Supabase). All listed screens have been verified and integrated into Appendix A as genuine implementation evidence.
 
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabular}{P{1.0cm}P{5.0cm}P{7.0cm}}
+\begin{tabular}{P{0.8cm}P{3.8cm}P{5.8cm}P{2.6cm}}
 \toprule
-\textbf{No.} & \textbf{Screenshot} & \textbf{What it should demonstrate}\\
+\textbf{No.} & \textbf{Screenshot} & \textbf{What it demonstrates} & \textbf{Evidence Ref.}\\
 \midrule
-1 & Landing page & Product identity and entry points.\\
-2 & Registration/login & Authentication flow; use dummy account data.\\
-3 & Image upload or camera screen & Supported file types and upload experience.\\
-4 & Prediction result & Crop, disease, severity, confidence, and recommendation display.\\
-5 & Prediction history & Past scans and status indicators.\\
-6 & Plot/farm management & Farm details and plot association.\\
-7 & Expert review queue & Cases awaiting review.\\
-8 & Expert review detail & Image, model output, correction controls, and review action.\\
-9 & Admin dashboard & Metrics or operational overview.\\
-10 & Model registry / MLOps page & Training run and promotion workflow, if implemented.\\
-11 & Language and audio controls & Gujarati/Hindi selection and narration, if available.\\
-12 & Mobile home/result screens & Actual Flutter implementation and responsive workflow.\\
+1 & Landing page & Product identity and entry points. & Fig.~\ref{fig:ss-landing-full}\\
+2 & Registration/login & Authentication and role credential flow. & Fig.~\ref{fig:ss-login}, \ref{fig:ss-register}\\
+3 & Image upload / scan & Supported file types, plot binding, and offline queueing. & Fig.~\ref{fig:ss-farmer-scan}\\
+4 & Prediction result & Crop, disease, severity, Grad-CAM, and advisory. & Fig.~\ref{fig:ss-prediction-result}\\
+5 & Prediction history & Historical scans and chronological audit records. & Fig.~\ref{fig:ss-prediction-history}\\
+6 & Plot/farm management & Interactive Leaflet geospatial boundaries and crop plots. & Fig.~\ref{fig:ss-farm-management}\\
+7 & Weather \& spray window & Hyperlocal weather metrics and spray timing window. & Fig.~\ref{fig:ss-weather-advisory}\\
+8 & Outbreak alerts & Localized disease outbreak alerts and notifications. & Fig.~\ref{fig:ss-farmer-alerts}\\
+9 & Language \& settings & Multilingual localization (English, Gujarati, Hindi). & Fig.~\ref{fig:ss-language-settings}\\
+10 & Expert review queue & Human-in-the-loop triage queue for agronomists. & Fig.~\ref{fig:ss-expert-queue}\\
+11 & Expert review detail & Diagnostic imagery, correction controls, and approval. & Fig.~\ref{fig:ss-expert-detail}\\
+12 & Admin dashboard & Operational metrics, latency telemetry, and user management. & Fig.~\ref{fig:ss-admin-metrics}, \ref{fig:ss-admin-users}\\
 \bottomrule
 \end{tabular}
 \end{table}
