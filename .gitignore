@@ -263,5 +263,5 @@ backend/package-lock.json
 *.toc
 *.bbl
 *.blg
-
-
+*.lof
+*.lot

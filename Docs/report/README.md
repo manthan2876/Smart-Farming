@@ -1,6 +1,6 @@
-# AI-Powered Smart Farming — Academic IEEE Report & Screenshot Suite
+# AI-Powered Smart Farming — University Project Report & Screenshot Suite
 
-This directory contains the IEEE conference paper source code, the compiled PDF, and high-resolution screenshots captured directly from the live production deployment.
+This directory contains the university-format project report source, a compiled PDF artifact, and screenshots captured from the Smart Farming application. The report source of record is `main.tex`; compile it to regenerate the PDF.
 
 * **Live Web Application**: [smart-farming-dashboard-green.vercel.app](https://smart-farming-dashboard-green.vercel.app/)
 * **Official GitHub Repository**: [github.com/manthan2876/Smart-Farming](https://github.com/manthan2876/Smart-Farming)
@@ -17,9 +17,8 @@ This directory contains the IEEE conference paper source code, the compiled PDF,
 ```text
 Docs/report/
 ├── README.md                                      # This reference guide
-├── IEEEtran.cls                                   # Official IEEE LaTeX class file (v1.8b)
-├── main.tex                                       # Academic IEEE conference paper source with TikZ & figures
-├── main.pdf                                       # Compiled high-resolution publication PDF
+├── main.tex                                       # University project report source with TikZ diagrams
+├── main.pdf                                       # Existing compiled PDF; regenerate from main.tex
 └── screenshots/                                   # High-resolution 2x Retina screenshots & AI matrices
     ├── 01_landing_page_hero.png                   # Landing page hero & inference architecture
     ├── 01_landing_page_full.png                   # Full landing page overview
@@ -49,13 +48,7 @@ Docs/report/
 
 ## 📄 LaTeX Document Overview
 
-**`main.tex`**:
-The canonical conference paper conforming to `IEEEtran.cls`. It uses TikZ for architecture diagrams and pre-configures `\graphicspath{{screenshots/}}` integrating:
-- **Fig. 1 (`fig:architecture`)**: Multi-tier cloud and microservices architecture with orthogonal planar routing.
-- **Fig. 4 (`fig:crops-catalog`)**: Supported crop registry (`02_crops_catalog.png`).
-- **Fig. 7 (`fig:prediction-advisory`)**: Web diagnostic result & 4-field advisory (`10_demo_workbench_advisory_en.png`).
-- **Fig. 8 (`fig:saliency-and-vernacular`)**: Two-column subfigure comparison of Grad-CAM attention (`09_demo_workbench_saliency.png`) and Gujarati regional advisory (`11_demo_workbench_advisory_gujarati.png`).
-- **Fig. 10 (`fig:platform-gallery`)**: Four-panel platform showcase displaying landing architecture, OpenCV segmentation, onboarding, and ICAR dosage advisory.
+**`main.tex`** is the university-format report. In addition to the application screenshots, TikZ figures illustrate the role hierarchy, system architecture, conceptual data model, prediction sequence and lifecycle, AI pipeline, advisory flow, and MLOps process.
 
 ---
 
@@ -63,19 +56,10 @@ The canonical conference paper conforming to `IEEEtran.cls`. It uses TikZ for ar
 
 ### On Overleaf:
 1. Create a new project on [Overleaf](https://www.overleaf.com/).
-2. Upload `main.tex`, `IEEEtran.cls`, and the `screenshots/` directory.
+2. Upload `main.tex`, the `logos/` directory, and the `screenshots/` directory.
 3. Select `pdfLaTeX` as the compiler and click **Recompile**.
-
-> **Formatting Notes**:
-> - **Figure 1 (TikZ Architecture)**: Formatted with clean planar orthogonal routing, wide 17.2\,cm coordinate distribution, protective `fill=white` label shields, and 0.82\,cm vertical clearance below the infrastructure tier to ensure zero box or text overlap.
-> - **Table Formatting**: All tables are built with `tabularx` (`\textwidth` for two-column spanning tables and `\columnwidth` for single-column tables) with explicit `\caption{...}` and `\label{...}`.
-> - **API Endpoints (Table III)**: Re-ordered with `Method` first, dedicated 6.6\,cm monospace `Endpoint / Path`, and auto-wrapping purpose descriptions to guarantee zero column collision or text overflow.
-> - **Underscore Escaping**: All code identifiers and URLs outside math mode have their underscores escaped (`\_`) to prevent `Missing $ inserted` compilation errors.
 
 ### Locally (CLI):
 ```bash
-pdflatex main.tex
-pdflatex main.tex
+latexmk -pdf main.tex
 ```
-*(Running twice resolves cross-references and figure numbers).*
-

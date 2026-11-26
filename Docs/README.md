@@ -22,7 +22,7 @@
 | [**Design_Document.md**](Design_Document.md) | System Design Document (SDD) with microservices, schemas, and sequence diagrams. | **IEEE Std 1016-2009** |
 | [**Test_Plan.md**](Test_Plan.md) | Verification plan, test execution matrices, and security audits. | **IEEE Std 829-2008** |
 | [**User_Manual.md**](User_Manual.md) | User & Operations Manual for Farmers, Agricultural Experts, and System Administrators. | Capstone Operations Standard |
-| [**report/README.md**](report/README.md) | Academic IEEE conference paper source (`main.tex`), compiled report (`main.pdf`), and figures. | **IEEEtran LaTeX v1.8b** |
+| [**report/README.md**](report/README.md) | University-format project report source (`report/main.tex`), compiled report, and figures. | CHARUSAT project-report format |
 | [**Publication_Scope.md**](Publication_Scope.md) | University publication scope, capstone project governance, and academic attribution. | CHARUSAT Governance Charter |
 
 ### 3. Operations, Deployment & Runbooks
@@ -62,4 +62,3 @@
 - **Faculty Guide:** Prof. Rajnik Katariya
 - **Student Authors:** Manthan Kuvadiya (`23it050@charusat.edu.in`), Kunj Lunagariya (`23it053@charusat.edu.in`)
 - **License:** Apache License, Version 2.0 ([`LICENSE`](../LICENSE)) with third-party attributions in [`NOTICE`](../NOTICE).
-
