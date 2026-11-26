@@ -19,7 +19,9 @@
 \usepackage{float}
 \usepackage{enumitem}
 \usepackage{fancyhdr}
-\usepackage{titlesec}
+\usepackage{needspace}
+\usepackage[nobottomtitles*]{titlesec}
+\renewcommand{\bottomtitlespace}{3.5\baselineskip}
 \usepackage{tocloft}
 % Table of Contents heading spacing
 \setlength{\cftbeforetoctitleskip}{5pt}
@@ -75,6 +77,10 @@
 \setlength{\cftchapnumwidth}{1.6em}
 \setlength{\cftsecnumwidth}{2.4em}
 \setlength{\cftsubsecnumwidth}{3.2em}
+\setlength{\cfttabindent}{0pt}
+\setlength{\cfttabnumwidth}{2.8em}
+\setlength{\cftfigindent}{0pt}
+\setlength{\cftfignumwidth}{2.8em}
 \onehalfspacing
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{2}
@@ -87,11 +93,27 @@
 \fancyfoot[R]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
-\fancypagestyle{plain}{\fancyhf{}\fancyhead[L]{\small PRJ/2026/IT}\fancyhead[R]{\small\nouppercase{\rightmark}}\fancyfoot[L]{\small CSPIT (KDPIT)}\fancyfoot[R]{\small\thepage}\renewcommand{\headrulewidth}{0.4pt}\renewcommand{\footrulewidth}{0.4pt}}
-\titleformat{\chapter}[hang]{\normalfont\bfseries\centering\Large}{CHAPTER \thechapter:}{0.6em}{\MakeUppercase}
-\titlespacing*{\chapter}{0pt}{-8pt}{22pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyhead[L]{\small PRJ/2026/IT}%
+  \fancyhead[R]{\small\nouppercase{\rightmark}}%
+  \fancyfoot[L]{\small CSPIT (KDPIT)}%
+  \fancyfoot[R]{\small\thepage}%
+  \renewcommand{\headrulewidth}{0.4pt}%
+  \renewcommand{\footrulewidth}{0.4pt}%
+}
+% Reset and synchronize header marks across chapter and section boundaries
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+
+% Uniform, balanced chapter heading typography (prevents single-word orphan wraps)
+\titleformat{\chapter}[block]{\normalfont\bfseries\centering\fontsize{12.5pt}{16pt}\selectfont}{\MakeUppercase{\chaptertitlename\ \thechapter:}}{0.5em}{\MakeUppercase}
+\titleformat{name=\chapter,numberless}[block]{\normalfont\bfseries\centering\fontsize{12.5pt}{16pt}\selectfont}{}{0pt}{\MakeUppercase}
+\titlespacing*{\chapter}{0pt}{-10pt}{18pt}
 \titleformat{\section}{\normalfont\bfseries\large}{\thesection}{0.8em}{}
 \titleformat{\subsection}{\normalfont\bfseries\normalsize}{\thesubsection}{0.8em}{}
+\titlespacing*{\section}{0pt}{12pt plus 3pt minus 2pt}{6pt plus 2pt minus 2pt}
+\titlespacing*{\subsection}{0pt}{10pt plus 2pt minus 2pt}{4pt plus 2pt minus 2pt}
 \captionsetup{font=small,labelfont=bf,justification=centering}
 % Compact, consistent float and table spacing
 \setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
@@ -425,10 +447,12 @@ A useful agricultural AI application must bridge several distinct tasks: vision 
 \section{Existing workflow challenges}
 Common challenges in a manual or fragmented workflow include delayed access to expert guidance, inconsistent descriptions of symptoms, difficulty comparing the same plant over time, and limited traceability of the recommendation that was shown to a farmer. A computer-vision model can also fail when a field image differs from its training data. The project therefore includes image validation, confidence-aware review, historical records, and a route for experts to correct or override a result.
 
+\clearpage
 \section{Functional requirements}
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
+\caption{Functional requirements and expected system behaviour}\label{tab:functional-reqs}
 \begin{tabular}{P{1.2cm}P{4.2cm}P{8.0cm}}
 \toprule
 \textbf{ID} & \textbf{Requirement} & \textbf{Expected behaviour}\\
@@ -452,10 +476,12 @@ FR-15 & Model operations & Export eligible labelled data, evaluate checkpoints, 
 \end{tabular}
 \end{table}
 
+\clearpage
 \section{Non-functional requirements}
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
+\caption{Non-functional requirements by system category}\label{tab:non-functional-reqs}
 \begin{tabular}{P{3.0cm}P{10.3cm}}
 \toprule
 \textbf{Category} & \textbf{Requirement}\\
@@ -475,7 +501,7 @@ Cost & Prefer free-tier or low-cost services, while documenting sleep, CPU, memo
 \section{Users and roles}
 The documented platform has three roles. Farmers use diagnosis, history, farm records, alerts, feedback, and expert escalation. Experts inherit farmer permissions and can review queued cases, inspect associated media, submit review decisions, and flag appropriate cases for retraining. Administrators inherit expert permissions and additionally manage users, configuration, platform metrics, model operations, and maintenance tasks. Elevated roles are assigned by an administrator rather than selected freely at ordinary registration. Figure~\ref{fig:role-hierarchy} summarises this permission inheritance and the main responsibilities.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}
@@ -731,9 +757,10 @@ Confidence scores should not be presented as universal probabilities unless cali
 The backend is documented as a FastAPI REST API. JSON bodies use \path{application/json}; image uploads use \path{multipart/form-data}. Protected endpoints require a bearer access token. List endpoints support pagination, and date filters use ISO 8601. The API reference documents structured error responses with a human-readable \texttt{detail} field \cite{api_spec,fastapi}.
 
 \section{Core endpoint groups}
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
+\caption{Core API endpoint groups and routing scope}\label{tab:core-endpoints}
 \begin{tabular}{P{4.2cm}P{2.2cm}P{7.0cm}}
 \toprule
 \textbf{Endpoint / group} & \textbf{Method} & \textbf{Purpose}\\
@@ -817,6 +844,7 @@ A completed response is documented to include a prediction identifier, crop labe
 \label{fig:lifecycle}
 \end{figure}
 
+\clearpage
 \section{Expert review}
 A farmer may explicitly request a review. The documented review transitions begin at \texttt{pending}; an expert can approve or override to \texttt{verified}, or request a rescan to \texttt{rescan\_requested}. A decision against a review that is already verified should be rejected with a conflict response. The expert may flag a case for a future retraining dataset, but this flag must not be confused with automatic inclusion in training: eligibility, consent, quality, label validation, and export policy still apply.
 
@@ -829,9 +857,9 @@ The web and mobile clients should share the same API contract and role semantics
 The authentication reference documents JWT bearer access tokens with a 30-minute lifetime and refresh tokens with a 30-day lifetime stored in an HttpOnly cookie. Refresh calls rotate the token pair. Passwords are hashed with Argon2id using the parameters stated in the security reference. The server is intended to refuse production startup when a default JWT secret is configured; the development-only bypass must never be available in production \cite{auth_reference}.
 
 \section{Role-based access control}
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
-\caption{Role capability summary}
+\caption{Role capability summary}\label{tab:role-capabilities}
 \begin{tabularx}{\textwidth}{P{2.2cm}XXX}
 \toprule
 \textbf{Capability} & \textbf{Farmer} & \textbf{Expert} & \textbf{Admin}\\
@@ -858,7 +886,7 @@ Two safeguards are documented for administrator role changes: an administrator c
 The system should minimise personal data in logs, restrict access to images, and define retention and deletion policies for original uploads, generated media, and prediction metadata. Data exported for retraining should be limited to eligible records and should carry provenance. User images should not be included in training merely because they exist in storage. Where appropriate, the system should provide a documented deletion or de-identification path.
 
 \section{Security review checklist}
-\begin{itemize}
+\begin{itemize}[topsep=2pt,itemsep=1.5pt,parsep=0pt,partopsep=0pt]
 \item Verify that production has a strong, rotated JWT secret and \texttt{DEBUG=False}.
 \item Ensure the development \texttt{X-User-ID} bypass is disabled in production.
 \item Confirm cookie flags, CORS allowlists, rate limits, and trusted proxy configuration.
@@ -877,7 +905,7 @@ The training guide documents Python 3.12+ in its updated version, with PyTorch, 
 \section{Training recipes}
 \begin{table}[htbp]
 \centering
-\caption{Documented baseline training configurations}
+\caption{Documented baseline training configurations}\label{tab:training-configs}
 \begin{tabularx}{\textwidth}{lXX}
 \toprule
 \textbf{Setting} & \textbf{Crop identifier} & \textbf{Disease classifier}\\
@@ -987,10 +1015,12 @@ Pest classifier & 82 & 97.6\% & 96.59\%\\
 \section{Metric interpretation}
 Accuracy is the fraction of correct predictions. Precision measures how many predictions assigned to a class are correct; recall measures how many true examples of that class are found; F1 is the harmonic mean of precision and recall. Macro-F1 computes F1 per class and averages the class scores equally, making it more sensitive to weak minority classes than overall accuracy. Confidence calibration should be assessed separately, because a model can be accurate while overconfident.
 
+\clearpage
 \section{Test strategy}
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
+\caption{Verification test strategy across system layers}\label{tab:test-strategy}
 \begin{tabular}{P{3.0cm}P{5.0cm}P{5.0cm}}
 \toprule
 \textbf{Test layer} & \textbf{Examples} & \textbf{Pass condition}\\
@@ -1068,10 +1098,12 @@ A language model can produce plausible but unsupported treatment instructions. T
 \section{Operational limitations}
 A multi-service architecture adds network dependencies and failure modes. Free-tier services can sleep, rate-limit requests, or change resource allowances. CPU-only models may be slow under concurrent load. Synchronous requests may exceed gateway timeouts; asynchronous mode introduces queue and worker dependencies. Production readiness requires observability, alerting, backup/restore tests, and a documented recovery process.
 
+\clearpage
 \section{Prioritised improvements}
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \scriptsize
+\caption{Prioritised operational and architectural improvements}\label{tab:prioritised-improvements}
 \begin{tabular}{P{1.0cm}P{4.2cm}P{8.0cm}}
 \toprule
 \textbf{Priority} & \textbf{Improvement} & \textbf{Reason and acceptance criterion}\\
@@ -1180,6 +1212,7 @@ This appendix presents screenshots captured from the Smart Farming web applicati
 \caption{Interactive diagnostic demonstration showing OpenCV foliage segmentation telemetry.}\label{fig:ss-workbench}
 \end{figure}
 
+\clearpage
 \section{Farmer Portal and Diagnostic Workflow}
 
 \begin{figure}[htbp]\centering
@@ -1202,6 +1235,7 @@ This appendix presents screenshots captured from the Smart Farming web applicati
 \caption{Farmer historical diagnosis records and audit trail with filterable status badges and detailed view actions.}\label{fig:ss-prediction-history}
 \end{figure}
 
+\clearpage
 \section{Farm Management, Meteorological Telemetry, and Localization}
 
 \begin{figure}[htbp]\centering
@@ -1224,6 +1258,7 @@ This appendix presents screenshots captured from the Smart Farming web applicati
 \caption{Regional language selection (English, Gujarati, Hindi), measurement units, and user display preferences.}\label{fig:ss-language-settings}
 \end{figure}
 
+\clearpage
 \section{Human-in-the-Loop Expert Agronomist Review Module}
 
 \begin{figure}[htbp]\centering
@@ -1236,6 +1271,7 @@ This appendix presents screenshots captured from the Smart Farming web applicati
 \caption{Expert review detail workspace with high-resolution crop imagery, model confidence distributions, correction dropdowns, and agronomist verification controls.}\label{fig:ss-expert-detail}
 \end{figure}
 
+\clearpage
 \section{System Administration and Telemetry Module}
 
 \begin{figure}[htbp]\centering
@@ -1256,9 +1292,10 @@ This appendix presents screenshots captured from the Smart Farming web applicati
 \chapter{Suggested Screenshot Checklist and Verification Status}
 The following checklist identifies the suggested implementation screenshots, their functional demonstration purpose, and their current verification status within the live deployed production environment (hosted across Vercel, Render, Hugging Face Spaces, and Supabase). All listed screens have been verified and integrated into Appendix A as genuine implementation evidence.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
+\caption{Verification checklist and implementation evidence mapping}\label{tab:screenshot-checklist}
 \begin{tabular}{P{0.8cm}P{3.8cm}P{5.8cm}P{2.6cm}}
 \toprule
 \textbf{No.} & \textbf{Screenshot} & \textbf{What it demonstrates} & \textbf{Evidence Ref.}\\
