@@ -256,6 +256,10 @@ def test_translate_prediction_endpoint_success():
         "immediate_action": "प्रभावित पौधों को अलग करें।",
         "treatment": "कॉपर स्प्रे लगाएं।",
         "language": "hi",
+        "is_fallback": False,
+        "farm_aware": True,
+        "plot_area_acres": 10.46,
+        "sources": ["ICAR Integrated Pest Management Guidelines"],
     }
 
     try:

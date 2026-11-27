@@ -38,10 +38,10 @@ class ApiService {
   }
 
   ApiService({String? baseUrl, this.accessToken, this.languageCode})
-      : baseUrl = baseUrl ?? customBaseUrl ?? '',
+      : baseUrl = baseUrl ?? customBaseUrl ?? RemoteConfigService.defaultBackendUrl,
         _dio = Dio(
           BaseOptions(
-            baseUrl: baseUrl ?? customBaseUrl ?? '',
+            baseUrl: baseUrl ?? customBaseUrl ?? RemoteConfigService.defaultBackendUrl,
             connectTimeout: const Duration(seconds: 45),
             receiveTimeout: const Duration(seconds: 45),
           ),

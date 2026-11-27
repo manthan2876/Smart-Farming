@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -119,8 +119,8 @@ class PredictionTranslationResponse(BaseModel):
     prediction_id: int
     language: str
     cached: bool
-    recommendation: dict[str, str]
+    recommendation: dict[str, Any]
     expert_guidance: str | None = None
-    translations: dict[str, dict[str, str]] | None = None
+    translations: dict[str, dict[str, Any]] | None = None
     translation_status: str | None = None
     warning: str | None = None

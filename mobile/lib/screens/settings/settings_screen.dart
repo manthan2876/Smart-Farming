@@ -342,12 +342,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
 
           // Language Selection Card
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
+          Material(
+            color: AppColors.cardBg,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder),
+              side: const BorderSide(color: AppColors.cardBorder),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 _buildLanguageTile('English', 'English', currentLang, (val) {
@@ -370,12 +371,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
 
           // Unit Preferences Card
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
+          Material(
+            color: AppColors.cardBg,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder),
+              side: const BorderSide(color: AppColors.cardBorder),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 ListTile(
@@ -418,12 +420,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
 
           // Security / Password Tile
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
+          Material(
+            color: AppColors.cardBg,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder),
+              side: const BorderSide(color: AppColors.cardBorder),
             ),
+            clipBehavior: Clip.antiAlias,
             child: ListTile(
               leading: const CircleAvatar(
                 backgroundColor: AppColors.primaryLight,

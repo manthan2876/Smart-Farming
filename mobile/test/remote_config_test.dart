@@ -9,17 +9,20 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _RealHttpOverrides();
 
-  test('RemoteConfigService fetches backend URL from Supabase', () async {
+  test('RemoteConfigService fetches latest Render backend URL from Supabase', () async {
     final url = await RemoteConfigService.fetchBackendUrl();
     expect(url, isNotNull);
-    expect(url, startsWith('https://smart-farming-backend-'));
-    expect(url, anyOf(contains('onrender.com'), contains('run.app')));
+    expect(url, equals('https://smart-farming-backend-kkty.onrender.com'));
   });
 
-  test('ApiService initializes backend URL strictly from Supabase Remote Config', () async {
+  test('RemoteConfigService fallback constant points to latest Render backend URL', () {
+    expect(RemoteConfigService.defaultBackendUrl, equals('https://smart-farming-backend-kkty.onrender.com'));
+    expect(RemoteConfigService.defaultBackendUrl, isNot(contains('run.app')));
+  });
+
+  test('ApiService initializes backend URL from Supabase Remote Config', () async {
     await ApiService.initBaseUrl();
-    expect(ApiService.customBaseUrl, isNotNull);
-    expect(ApiService.customBaseUrl, startsWith('https://smart-farming-backend-'));
+    expect(ApiService.customBaseUrl, equals('https://smart-farming-backend-kkty.onrender.com'));
 
     final api = ApiService();
     expect(api.baseUrl, equals(ApiService.customBaseUrl));

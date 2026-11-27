@@ -11,6 +11,12 @@ class RemoteConfigService {
   static const String defaultSupabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cWV2anpqaG50a2lsbWtucmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMjA5MTgsImV4cCI6MjEwNTg5NjkxOH0._WysQ1LtUunC7TQwt2LfqP_X0e_-ug9Z0ioi1fWSMZ0';
 
+  /// Default production backend URL used only when both live remote config and local cache are unavailable.
+  static const String defaultBackendUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://smart-farming-backend-kkty.onrender.com',
+  );
+
   /// Supabase project URL (configurable via compile-time --dart-define or .env)
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
@@ -66,8 +72,12 @@ class RemoteConfigService {
       AppLogger.warn('RemoteConfig', 'Failed to fetch config from Supabase ($e). Using cached value.');
     }
 
-    // 2. Offline fallback to previously cached value
-    return getCachedBackendUrl();
+    // 2. Offline fallback to previously cached value, then compile-time/default URL
+    final cached = await getCachedBackendUrl();
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+    return defaultBackendUrl;
   }
 
   /// Returns the cached backend URL from previous successful remote fetch.
