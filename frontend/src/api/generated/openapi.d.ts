@@ -2271,14 +2271,14 @@ export interface components {
             cached: boolean;
             /** Recommendation */
             recommendation: {
-                [key: string]: string;
+                [key: string]: unknown;
             };
             /** Expert Guidance */
             expert_guidance?: string | null;
             /** Translations */
             translations?: {
                 [key: string]: {
-                    [key: string]: string;
+                    [key: string]: unknown;
                 };
             } | null;
             /** Translation Status */

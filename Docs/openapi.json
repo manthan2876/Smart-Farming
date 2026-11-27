@@ -7980,9 +7980,7 @@
             "title": "Cached"
           },
           "recommendation": {
-            "additionalProperties": {
-              "type": "string"
-            },
+            "additionalProperties": true,
             "type": "object",
             "title": "Recommendation"
           },
@@ -8001,9 +7999,7 @@
             "anyOf": [
               {
                 "additionalProperties": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "object"

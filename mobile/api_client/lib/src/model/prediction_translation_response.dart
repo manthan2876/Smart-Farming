@@ -45,13 +45,13 @@ class PredictionTranslationResponse {
   final bool cached;
 
   @JsonKey(name: r'recommendation', required: true, includeIfNull: false)
-  final Map<String, String> recommendation;
+  final Map<String, Object> recommendation;
 
   @JsonKey(name: r'expert_guidance', required: false, includeIfNull: false)
   final String? expertGuidance;
 
   @JsonKey(name: r'translations', required: false, includeIfNull: false)
-  final Map<String, Map<String, String>>? translations;
+  final Map<String, Map<String, Object>>? translations;
 
   @JsonKey(name: r'translation_status', required: false, includeIfNull: false)
   final String? translationStatus;

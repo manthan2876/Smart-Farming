@@ -14,13 +14,13 @@ abstract class _$PredictionTranslationResponseCWProxy {
   PredictionTranslationResponse cached(bool cached);
 
   PredictionTranslationResponse recommendation(
-    Map<String, String> recommendation,
+    Map<String, Object> recommendation,
   );
 
   PredictionTranslationResponse expertGuidance(String? expertGuidance);
 
   PredictionTranslationResponse translations(
-    Map<String, Map<String, String>>? translations,
+    Map<String, Map<String, Object>>? translations,
   );
 
   PredictionTranslationResponse translationStatus(String? translationStatus);
@@ -37,9 +37,9 @@ abstract class _$PredictionTranslationResponseCWProxy {
     int predictionId,
     String language,
     bool cached,
-    Map<String, String> recommendation,
+    Map<String, Object> recommendation,
     String? expertGuidance,
-    Map<String, Map<String, String>>? translations,
+    Map<String, Map<String, Object>>? translations,
     String? translationStatus,
     String? warning,
   });
@@ -65,7 +65,7 @@ class _$PredictionTranslationResponseCWProxyImpl
 
   @override
   PredictionTranslationResponse recommendation(
-    Map<String, String> recommendation,
+    Map<String, Object> recommendation,
   ) => this(recommendation: recommendation);
 
   @override
@@ -74,7 +74,7 @@ class _$PredictionTranslationResponseCWProxyImpl
 
   @override
   PredictionTranslationResponse translations(
-    Map<String, Map<String, String>>? translations,
+    Map<String, Map<String, Object>>? translations,
   ) => this(translations: translations);
 
   @override
@@ -118,7 +118,7 @@ class _$PredictionTranslationResponseCWProxyImpl
       recommendation: recommendation == const $CopyWithPlaceholder()
           ? _value.recommendation
           // ignore: cast_nullable_to_non_nullable
-          : recommendation as Map<String, String>,
+          : recommendation as Map<String, Object>,
       expertGuidance: expertGuidance == const $CopyWithPlaceholder()
           ? _value.expertGuidance
           // ignore: cast_nullable_to_non_nullable
@@ -126,7 +126,7 @@ class _$PredictionTranslationResponseCWProxyImpl
       translations: translations == const $CopyWithPlaceholder()
           ? _value.translations
           // ignore: cast_nullable_to_non_nullable
-          : translations as Map<String, Map<String, String>>?,
+          : translations as Map<String, Map<String, Object>>?,
       translationStatus: translationStatus == const $CopyWithPlaceholder()
           ? _value.translationStatus
           // ignore: cast_nullable_to_non_nullable
@@ -172,13 +172,17 @@ PredictionTranslationResponse _$PredictionTranslationResponseFromJson(
       cached: $checkedConvert('cached', (v) => v as bool),
       recommendation: $checkedConvert(
         'recommendation',
-        (v) => Map<String, String>.from(v as Map),
+        (v) =>
+            (v as Map<String, dynamic>).map((k, e) => MapEntry(k, e as Object)),
       ),
       expertGuidance: $checkedConvert('expert_guidance', (v) => v as String?),
       translations: $checkedConvert(
         'translations',
         (v) => (v as Map<String, dynamic>?)?.map(
-          (k, e) => MapEntry(k, Map<String, String>.from(e as Map)),
+          (k, e) => MapEntry(
+            k,
+            (e as Map<String, dynamic>).map((k, e) => MapEntry(k, e as Object)),
+          ),
         ),
       ),
       translationStatus: $checkedConvert(
